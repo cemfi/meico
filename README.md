@@ -29,7 +29,7 @@ The command line mode expects the following command line options:
 - `[msm]` converts MEI to MSM; meico will write an MSM file to the path of the MEI file
 - `[midi]` converts MEI (to MSM, internally) to MIDI; meico will output a MIDI file to the path of the MEI file
 - `[debug]` to write debug versions of the MEI and MSM files to the path of the MEI file
-- The final argument should always be a path to a valid MEI file (e.g., `C:\myMeiCollection\test.mei`); always in quotes! This is the only mandatory argument if you want to convert something.
+- The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
 The third way of using meico is as a Java programming library. Its Mei, Msm and Midi class are the most important to work with. The MeiCoApp.java in package meico.app demonstrates the use of meico (the method commandLineMode() is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift.
 
