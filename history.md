@@ -1,5 +1,8 @@
 ###Version History
 
+####v0.0.5<br>
+Bugs fixed in Mei.java that were introduced by rewriting convert() for Java 1.6 compatibility.
+
 ####v0.0.4<br>
 Java 1.6+ compatibility<br>
 instrument dictionary extended (church organ: upper, lower, pedal)
