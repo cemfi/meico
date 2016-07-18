@@ -317,7 +317,11 @@ public class Mei {
             } else if (e.getLocalName().equals("breath")) {
                 continue;                                                   // TODO: relevant for expressive performance - cesura
             } else if (e.getLocalName().equals("bTrem")) {
-                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwardsthis.helper.currentChord = e;                               // handle it just like a chordthis.convert(e);                                            // process everything within this environmentthis.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptrif (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
+                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwards
+                this.helper.currentChord = e;                               // handle it just like a chord
+                this.convert(e);                                            // process everything within this environment
+                this.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptr
+                if (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
                 this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + this.helper.computeDuration(e)))); // update currentDate
                 continue;                                                   // continue with the next sibling
             } else if (e.getLocalName().equals("choice")) {
@@ -326,7 +330,11 @@ public class Mei {
                 if (e.getAttribute("grace") != null)                        // TODO: at the moment we ignore grace notes and grace chords; later on, for expressive performances, we should handle these somehow
                     continue;
                 this.preProcessChord(e);                                    // preprocessing of the chord element
-                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwardsthis.helper.currentChord = e;                               // set the temp.chord pointer to this chordthis.convert(e);                                            // process everything within this chordthis.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptrif (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
+                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwards
+                this.helper.currentChord = e;                               // set the temp.chord pointer to this chord
+                this.convert(e);                                            // process everything within this chord
+                this.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptr
+                if (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
                 this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + this.helper.computeDuration(e)))); // update currentDate
                 continue;                                                       // continue with the next sibling
             } else if (e.getLocalName().equals("chordTable")) {
@@ -358,7 +366,11 @@ public class Mei {
             } else if (e.getLocalName().equals("fermata")) {
                 continue;                                                   // TODO: relevant for expressive performance
             } else if (e.getLocalName().equals("fTrem")) {
-                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwardsthis.helper.currentChord = e;                               // handle it just like a chordthis.convert(e);                                            // process everything within this environmentthis.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptrif (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
+                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwards
+                this.helper.currentChord = e;                               // handle it just like a chord
+                this.convert(e);                                            // process everything within this environment
+                this.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptr
+                if (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
                 this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + this.helper.computeDuration(e)))); // update currentDate
                 continue;                                                   // continue with the next sibling
             } else if (e.getLocalName().equals("gap")) {
