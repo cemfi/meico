@@ -483,6 +483,7 @@ Sopran
 Alt
 Alto
 Tenor
+Tenore
 Bass
 Basso
 Sopran solo
@@ -491,6 +492,8 @@ Alto solo
 Tenor solo
 Bass solo
 Basso solo
+Canto
+Quinto
 
 % Synth Choir
 # 54
