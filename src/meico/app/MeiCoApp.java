@@ -55,24 +55,28 @@ public class MeiCoApp extends JFrame {
      * it shows you all you need if you want to use meico in your application
      *
      * @param args The following parameter strings are used
-     *             - "?" or "help": for this command line help text. If you use this, any other arguments are skipped.
-     *             - "addIds": to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file
-     *             - "resolveCopyOfs": mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file
-     *             - "msm": converts mei to msm; meico will write an msm file to the path of the mei
-     *             - "midi": converts mei to msm to midi; meico will output a midi file to the path of the mei
-     *             - "debug": to write debug versions of mei and msm
+     *             - "-?" or "--help": for this command line help text. If you use this, any other arguments are skipped.
+     *             - "-a" or "--add-ids": to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file
+     *             - "-r" or "--resolve-copy-ofs": mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file
+     *             - "-m" or "--msm": converts mei to msm; meico will write an msm file to the path of the mei
+     *             - "-i" or "--midi": converts mei to msm to midi; meico will output a midi file to the path of the mei
+     *             - "-p" or "--no-program-changes" call this to suppress the generation of program change events in midi
+     *             - "-d" or "--debug": to write debug versions of mei and msm
+     *             - "-t" or "--tempo" followed by the tempo in bpm: to set the tempo of the midi file; if this is not used the tempo is always 120 bpm
      *             - Path tho the mei file (e.g., D:\Arbeit\Software\Java\MEI Converter\test files\Hummel_Concerto_for_trumpet.mei), this should always be the last parameter -  always in quotes!
      */
     public static void commandLineMode(String[] args) {
         for (String arg : args) {
-            if (arg.equals("?") || arg.equals("help")) {
+            if (arg.equals("-?") || arg.equals("--help")) {
                 System.out.println("Meico requires the following arguments:\n");
-                System.out.println("[?] or [help]    for this command line help text. If you use this, any other arguments are skipped.");
-                System.out.println("[addIds]         to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file");
-                System.out.println("[resolveCopyOfs] mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file");
-                System.out.println("[msm]            converts mei to msm; meico will write an msm file to the path of the mei");
-                System.out.println("[midi]           converts mei (to msm, internally) to midi; meico will output a midi file to the path of the mei");
-                System.out.println("[debug]          to write debug versions of the mei and msm files  to the path");
+                System.out.println("[-?] or [--help]                    for this command line help text. If you use this, any other arguments are skipped.");
+                System.out.println("[-a] or [--add-ids]                 to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file");
+                System.out.println("[-r] or [--resolve-copy-ofs]        mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file");
+                System.out.println("[-m] or [--msm]                     converts mei to msm; meico will write an msm file to the path of the mei");
+                System.out.println("[-i] or [--midi]                    converts mei (to msm, internally) to midi; meico will output a midi file to the path of the mei");
+                System.out.println("[-p] or [--no-program-changes]      call this to suppress the generation of program change events in midi");
+                System.out.println("[-t argument] or [--tempo argument] this sets the tempo of the midi file; the argument must be a floating point number; if not used the tempo is always 120 bpm");
+                System.out.println("[-d] or [--debug]                   to write debug versions of the mei and msm files  to the path");
                 System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
                 return;
             }
@@ -83,8 +87,12 @@ public class MeiCoApp extends JFrame {
         try {
             System.out.println("Loading file: " + args[args.length-1]);
             meiFile = new File(args[args.length-1]);                    // load mei file
+            meiFile = new File(meiFile.getCanonicalPath());             // ensure that the absolute path in the file object
+
         } catch (NullPointerException error) {
             error.printStackTrace();                                    // print error to console
+            return;
+        } catch (IOException error) {
             return;
         }
         Mei mei = null;                              // read an mei file (without validation, hence, false)
@@ -107,13 +115,17 @@ public class MeiCoApp extends JFrame {
         boolean resolveCopyOfs = false;
         boolean msm = false;
         boolean midi = false;
+        boolean generateProgramChanges = true;
         boolean debug = false;
+        double tempo = 120;
         for (int i = 0; i < args.length-1; ++i) {
-            if (args[i].equals("addIds")) { addIds = true; continue; }
-            if (args[i].equals("resolveCopyOfs")) { resolveCopyOfs = true; continue; }
-            if (args[i].equals("msm")) { msm = true; continue; }
-            if (args[i].equals("midi")) { midi = true; continue; }
-            if (args[i].equals("debug")) { debug = true; }
+            if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
+            if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
+            if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
+            if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
+            if ((args[i].equals("-p")) || (args[i].equals("--no--program-changes"))) { generateProgramChanges = false; continue; }
+            if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; }
+            if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[i+1]); }
         }
 
         // optional mei processing functions
@@ -155,7 +167,7 @@ public class MeiCoApp extends JFrame {
             System.out.println("Converting msm to midi and writing midi to file system: ");
             List<Midi> midis = new ArrayList<Midi>();
             for (int i = 0; i < msms.size(); ++i) {
-                midis.add(msms.get(i).exportMidi());    // convert msm to midi
+                midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
                 try {
                     midis.get(i).writeMidi();           // write midi file to the file system
                 } catch (IOException e) {
@@ -709,6 +721,7 @@ public class MeiCoApp extends JFrame {
             private MeiCoApp app;
             private boolean restsRemoved;
             private double bpm;
+            private boolean generateProgramChanges = true;
 
             public Msm4Gui(Msm msm, MeiCoApp app) {
                 this.setFile(msm.getFile().getPath());
@@ -854,6 +867,16 @@ public class MeiCoApp extends JFrame {
                         }
                     });
 
+                    final JCheckBoxMenuItem generateProgramChangesCheckBox = new JCheckBoxMenuItem("Generate Program Change Messages (experimental)", this.generateProgramChanges);
+                    generateProgramChangesCheckBox.addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            generateProgramChanges = !generateProgramChanges;
+                            generateProgramChangesCheckBox.setState(generateProgramChanges);
+                            // TODO: if the new state is false send piano program changes to all channels so that the old settings are gone
+                        }
+                    });
+
                     JLabel ppqLabel = new JLabel("bpm");
                     JPanel bpmPanel = new JPanel();
 
@@ -864,6 +887,7 @@ public class MeiCoApp extends JFrame {
                     msm2midiPop.setEnabled(true);
                     msm2midiPop.add(bpmSetup);
                     msm2midiPop.add(bpmPanel);
+                    msm2midiPop.add(generateProgramChangesCheckBox);
 
                     final JLabel msm2midi = new JLabel(new ImageIcon(getClass().getResource("/resources/convert-gray.png")), JLabel.CENTER);
                     msm2midi.setOpaque(true);
@@ -892,7 +916,7 @@ public class MeiCoApp extends JFrame {
                         public void mouseReleased(MouseEvent e) {
                             if (SwingUtilities.isLeftMouseButton(e)) {
                                 if (msm2midi.contains(e.getPoint())) {
-                                    midi = new Midi4Gui(exportMidi(bpm), app);
+                                    midi = new Midi4Gui(exportMidi(bpm, generateProgramChanges), app);
                                     msm2midi.setBackground(new Color(232, 232, 232));
                                     app.doRepaint();
                                 }
