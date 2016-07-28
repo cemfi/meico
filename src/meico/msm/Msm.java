@@ -247,16 +247,33 @@ public class Msm {
      * @return the midi object created or null if this msm object is empty or something else wnet wrong
      */
     public Midi exportMidi() {
-        return this.exportMidi(120);
+        return this.exportMidi(120, true);
     }
+
+    /**
+     * converts the msm data into a midi sequence and create a meico.Midi object from it; the tempo is 120bpm by default
+     *
+     * @param generateProgramChanges if true, program change events are generated (useful for MIR and as a cheap kind of piano reduction); but be careful: if your channel is set on trumpet it would not be set on piano automatically, you have to take care!
+     * @return
+     */
+    public Midi exportMidi(boolean generateProgramChanges) { return this.exportMidi(120, generateProgramChanges);}
 
     /**
      * converts the msm data into a midi sequence and create a midi object from it
      *
      * @param bpm the tempo of the midi track
+     * @return
+     */
+    public Midi exportMidi(double bpm) { return this.exportMidi(bpm, true);}
+
+    /**
+     * converts the msm data into a midi sequence and create a midi object from it
+     *
+     * @param bpm the tempo of the midi track
+     * @param generateProgramChanges if true, program change events are generated (useful for MIR and as a cheap kind of piano reduction); but be careful: if your channel is set on trumpet it would not be set on piano automatically, you have to take care!
      * @return the midi object created or null if this msm object is empty or something else went wrong
      */
-    public Midi exportMidi(double bpm) {
+    public Midi exportMidi(double bpm, boolean generateProgramChanges) {
         if (this.isEmpty())                                                 // if there is no data
             return null;                                                    // return null
 
@@ -292,14 +309,14 @@ public class Msm {
             track = seq.createTrack();                                                                          // create a new midi track for this part and write all further data into it
 
             // parse the score, keySignatureMap, timeSignatureMap, markerMap to midi
-            this.partName(part, track);                                                             // scan the part attribute name for a known string to create a gm program change and instrument name event
+            this.partName(part, track, generateProgramChanges);                                                         // scan the part attribute name for a known string to create a gm program change and instrument name event
 
             // the following meta events seem to be supported only on the master track (i.e., track 0, the global) but not in the other tracks
 //            this.parseKeySignatureMap(part, track);                                                             // parse keySignatureMap
 //            this.parseTimeSignatureMap(part, track);                                                            // parse timeSignatureMap
 //            this.parseMarkerMap(part, track);                                                                   // parse markerMap
 
-            this.parseScore(part, track);                                                                       // parse score
+            this.parseScore(part, track);                                                       // parse score
         }
 
         // TODO: AllNotesOff at the end
@@ -336,19 +353,22 @@ public class Msm {
      *  scan the part attribute name for a known string to create a gm program change and instrument name event
      * @param part
      * @param track the track that shall correspond to the part
+     * @param generateProgramChanges if true, program change events are generated (useful for MIR and as a cheap kind of piano reduction)
      */
-    private void partName(Element part, Track track) {
+    private void partName(Element part, Track track, boolean generateProgramChanges) {
         short chan = Short.parseShort(part.getAttributeValue("channel"));
 
         if ((part.getAttribute("name") == null) || part.getAttributeValue("name").isEmpty()) {          // if there is no name
-            track.add(EventMaker.createProgramChange(chan, 0, (short)0));                               // add program change event for Acoustic Grand Piano
+            if (generateProgramChanges)
+                track.add(EventMaker.createProgramChange(chan, 0, (short)0));                           // add program change event for Acoustic Grand Piano
             track.add(EventMaker.createInstrumentName(0, ""));                                          // add an empty instrument name event to the track
             return;
         }
 
         String name = part.getAttributeValue("name");
 
-        track.add(EventMaker.createProgramChange(chan, 0, name));                                       // add program change event
+        if (generateProgramChanges)
+            track.add(EventMaker.createProgramChange(chan, 0, name));                                   // add program change event
         track.add(EventMaker.createInstrumentName(0, name));                                            // add an instrument name event to the track
     }
 
