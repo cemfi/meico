@@ -23,12 +23,14 @@ Meico can be used in several different ways. The jar file is a standalone runnab
 Starting the standalone jar without any command line options will start the windowed gui mode of meico. Simply drag your MEI, MSM and MIDI files into the window. You can find context information on each interface element in the statusbar. There are several additional functions accessible via right click. Conversion from MEI to MSM may take some time when the MEI source is very large. We have not built in a progress display, so far. Just be patient until the conversion button changes its color back and the MSM data appears. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement.
 
 The command line mode expects the following command line options:
-- `[?]` or `[help]` for command line help text. If you use this, any other arguments are skipped.
-- `[addIds]` to add xml:ids to note, rest and chord elements in MEI, as far as they do not have an xml:id; meico will output a revised MEI file
-- `[resolveCopyOfs]` MEI elements with a copyOf attribute are resolved into self-contained elements with an own xml:id; meico will output a revised MEI file
-- `[msm]` converts MEI to MSM; meico will write an MSM file to the path of the MEI file
-- `[midi]` converts MEI (to MSM, internally) to MIDI; meico will output a MIDI file to the path of the MEI file
-- `[debug]` to write debug versions of the MEI and MSM files to the path of the MEI file
+- `[-?]` or `[--help]`: for this command line help text. If you use this, any other arguments are skipped.
+- `[-a]` or `[--add-ids]`: to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file
+- `[-r]` or `[--resolve-copy-ofs]`: mei elements with a `copyOf` attribute are resolved into selfcontained elements with an own `xml:id`; meico will output a revised mei file
+- `[-m]` or `[--msm]`: converts mei to msm; meico will write an msm file to the path of the mei
+- `[-i]` or `[--midi]`: converts mei to msm to midi; meico will output a midi file to the path of the mei
+- `[-p]` or `[--no-program-changes]`: call this to suppress the generation of program change events in midi
+- `[-t argument]` or `[--tempo argument]`: this sets the tempo of the midi file; the argument must be a floating point number; if this is not used the tempo is always 120 bpm
+- `[-d]` or `[--debug]`: to write debug versions of mei and msm
 - The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
 The third way of using meico is as a Java programming library. Its Mei, Msm and Midi class are the most important to work with. The MeiCoApp.java in package meico.app demonstrates the use of meico (the method commandLineMode() is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift.
