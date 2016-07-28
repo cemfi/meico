@@ -91,7 +91,7 @@ public class Helper {
 
         Elements es = ((Element)ofThis.getParent()).getChildElements();     // get a list of all siblings
 
-        for (int i = es.size()-1; i >= 0; i--) {                            // go through all siblings starting at the element before the last (the last one cannot have a successor)
+        for (int i = es.size()-2; i >= 0; i--) {                            // go through all siblings starting at the element before the last (the last one cannot have a successor)
             if (ofThis == es.get(i)) {                                      // if ofThis was found
                 return es.get(i+1);                                         // the successor is the next sibling
             }
@@ -174,6 +174,21 @@ public class Helper {
         }
 
         return null;                                                        // ofThis is the final element and has no next sibling
+    }
+
+    /**
+     * this function became necessary because the XOM methods sometimes do not seem to work for whatever reason
+     * @param name
+     * @param ofThis
+     * @return
+     */
+    public static Element getFirstChildElement(String name, Element ofThis) {
+        for (int i=0; i < ofThis.getChildElements().size(); ++i) {
+            if (ofThis.getChildElements().get(i).getLocalName().equals(name)) {
+                return ofThis.getChildElements().get(i);
+            }
+        }
+        return null;
     }
 
     /** compute the midi time of an mei element
@@ -639,9 +654,12 @@ public class Helper {
                 if (!accid.isEmpty()) this.accid.add(ofThis);           // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
             }
             else {
-                if ((ofThis.getFirstChildElement("accid") != null) && (ofThis.getFirstChildElement("accid").getAttribute("accid") != null)) {   // if there are valid accid elements in the note environment
-                    ofThis.addAttribute(new Attribute("accid", ofThis.getFirstChildElement("accid").getAttributeValue("accid")));               // make an attribute of it
-                    if (!accid.isEmpty()) this.accid.add(ofThis);                                                                               // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
+                Element accidElement = getFirstChildElement("accid", ofThis);   // is there an accid child element instead of an attribute?
+
+                if ((accidElement != null) && (accidElement.getAttribute("accid") != null)) {                               // if there are valid accid elements in the note environment
+                    ofThis.addAttribute(new Attribute("accid", accidElement.getAttributeValue("accid")));                   // make an attribute of it
+                    accid = ofThis.getAttributeValue("accid");
+                    if (!accid.isEmpty()) this.accid.add(ofThis);                                                           // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
                 }
                 else {                                                                                                      // otherwise look for preceding accidentals in this measure
                     for (int i=0; i < this.accid.size(); ++i) {                                                             // go through the accid list
