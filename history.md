@@ -6,7 +6,7 @@
 - Changed id generation for copyOf resolution into a combined id: `source id + ":" + generated id`; hence, applications can now trace them back to the source element
 - Minor bugfix of commandline option `[--no--program-changes]` to `[--no-program-changes]`
 - Minor ui corrections for window mode
-- Adding new attributes, `date.midi` and `dur.midi`, to mei note and rest elements during conversion. This is just for debugging purpose and appears only in the `-debug.mei`.
+- Adding new attributes, `date.midi` and `dur.midi`, to mei note and rest elements during conversion. This is only for debugging purpose and appears only in the `-debug.mei` file when running the command line mode with `--debug` flag.
 
 
 ####v0.0.6<br>
