@@ -1,5 +1,13 @@
 ###Version History
 
+####v0.0.7<br>
+- Added flag to the mei-to-msm conversion to avoid the midi drum channel, added it to the window mode and command line options
+	- `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on
+- Changed id generation for copyOf resolution into a combined id: source id + ":" + "generated id"; hence, applications can now trace them back to the source element
+- Minor bugfix of commandline option `[--no--program-changes]` to `[--no-program-changes]`
+- Minor ui corrections for window mode
+
+
 ####v0.0.6<br>
 - Added `Canto`, `Quinto` and `Tenore` to the `VoiceOhs` in the instruments dictionary.
 - In `MeiCoApp`'s `commandLineMode()` a relative path can be used; the absolute path is derived automatically. Hence, users do not have to write down whole paths in the command line from now on.

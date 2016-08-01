@@ -13,27 +13,20 @@ import nu.xom.*;
 
 public class Helper {
 
-    protected int ppq;
-    protected Element currentMovement;
-    protected Element currentPart;
-    protected Element currentMeasure;
-    protected Element currentChord;
-    protected ArrayList<Element> accid;
-    protected ArrayList<Element> endids;
-    protected List<Msm> movements;
+    protected int ppq = 720;                            // default value for pulses per quarter
+    protected boolean dontUseChannel10 = true;          // set this flag false if you allow to "misuse" the midi drum channel for other instruments; in standard midi output this produces weird results, but when you work with vst plugins etc. there is no reason to avoid channel 10
+    protected Element currentMovement = null;
+    protected Element currentPart = null;
+    protected Element currentMeasure = null;
+    protected Element currentChord = null;
+    protected ArrayList<Element> accid = new ArrayList<Element>();
+    protected ArrayList<Element> endids = new ArrayList<Element>();
+    protected List<Msm> movements = new ArrayList<Msm>();
 
     /** constructor
      *
      */
     protected Helper() {
-        this.ppq = 720;                                                          // default value for pulses per quarter
-        this.currentMovement = null;
-        this.currentPart = null;
-        this.currentMeasure = null;
-        this.currentChord = null;
-        this.accid = new ArrayList<Element>();
-        this.endids = new ArrayList<Element>();
-        this.movements = new ArrayList<Msm>();
     }
 
     /** constructor
@@ -42,13 +35,6 @@ public class Helper {
      */
     protected Helper(int ppq) {
         this.ppq = ppq;
-        this.currentMovement = null;
-        this.currentPart = null;
-        this.currentMeasure = null;
-        this.currentChord = null;
-        this.accid = new ArrayList<Element>();
-        this.endids = new ArrayList<Element>();
-        this.movements = new ArrayList<Msm>();
     }
 
     /** this method is called when making a new movement

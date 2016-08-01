@@ -29,6 +29,7 @@ The command line mode expects the following command line options:
 - `[-m]` or `[--msm]`: converts mei to msm; meico will write an msm file to the path of the mei
 - `[-i]` or `[--midi]`: converts mei to msm to midi; meico will output a midi file to the path of the mei
 - `[-p]` or `[--no-program-changes]`: call this to suppress the generation of program change events in midi
+- `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on
 - `[-t argument]` or `[--tempo argument]`: this sets the tempo of the midi file; the argument must be a floating point number; if this is not used the tempo is always 120 bpm
 - `[-d]` or `[--debug]`: to write debug versions of mei and msm
 - The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.

@@ -61,6 +61,7 @@ public class MeiCoApp extends JFrame {
      *             - "-m" or "--msm": converts mei to msm; meico will write an msm file to the path of the mei
      *             - "-i" or "--midi": converts mei to msm to midi; meico will output a midi file to the path of the mei
      *             - "-p" or "--no-program-changes" call this to suppress the generation of program change events in midi
+     *             - "-c" or "--dont-use-channel-10": the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
      *             - "-d" or "--debug": to write debug versions of mei and msm
      *             - "-t" or "--tempo" followed by the tempo in bpm: to set the tempo of the midi file; if this is not used the tempo is always 120 bpm
      *             - Path tho the mei file (e.g., D:\Arbeit\Software\Java\MEI Converter\test files\Hummel_Concerto_for_trumpet.mei), this should always be the last parameter -  always in quotes!
@@ -75,6 +76,7 @@ public class MeiCoApp extends JFrame {
                 System.out.println("[-m] or [--msm]                     converts mei to msm; meico will write an msm file to the path of the mei");
                 System.out.println("[-i] or [--midi]                    converts mei (to msm, internally) to midi; meico will output a midi file to the path of the mei");
                 System.out.println("[-p] or [--no-program-changes]      call this to suppress the generation of program change events in midi");
+                System.out.println("[-c] or [--dont-use-channel-10]     the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on");
                 System.out.println("[-t argument] or [--tempo argument] this sets the tempo of the midi file; the argument must be a floating point number; if not used the tempo is always 120 bpm");
                 System.out.println("[-d] or [--debug]                   to write debug versions of the mei and msm files  to the path");
                 System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
@@ -116,6 +118,7 @@ public class MeiCoApp extends JFrame {
         boolean msm = false;
         boolean midi = false;
         boolean generateProgramChanges = true;
+        boolean dontUseChannel10 = false;
         boolean debug = false;
         double tempo = 120;
         for (int i = 0; i < args.length-1; ++i) {
@@ -123,7 +126,8 @@ public class MeiCoApp extends JFrame {
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
-            if ((args[i].equals("-p")) || (args[i].equals("--no--program-changes"))) { generateProgramChanges = false; continue; }
+            if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
+            if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
             if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; }
             if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[i+1]); }
         }
@@ -145,7 +149,7 @@ public class MeiCoApp extends JFrame {
 
         // convert mei -> msm -> midi
         System.out.println("Converting mei to msm.");
-        List<Msm> msms = mei.exportMsm(720, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
+        List<Msm> msms = mei.exportMsm(720, dontUseChannel10, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
         if (msms.isEmpty()) {
             System.out.println("No msm data created.");
             return;
@@ -462,6 +466,7 @@ public class MeiCoApp extends JFrame {
         private boolean idsAdded;
         private boolean copyofsResolved;
         private int ppq;
+        private boolean dontUseChannel10 = true;
 
         /**
          * constructor
@@ -631,13 +636,23 @@ public class MeiCoApp extends JFrame {
 
                 JLabel ppqLabel = new JLabel("ppq");
                 JPanel ppqPanel = new JPanel();
-                ppqPanel.add(ppqField);
-                ppqPanel.add(ppqLabel);
                 JLabel ppqSetup = new JLabel("Set Time Resolution");
                 JPopupMenu mei2msmPop = new JPopupMenu("Conversion Options");
                 mei2msmPop.setEnabled(true);
-                mei2msmPop.add(ppqSetup);
+                ppqPanel.add(ppqSetup);
+                ppqPanel.add(ppqField);
+                ppqPanel.add(ppqLabel);
                 mei2msmPop.add(ppqPanel);
+
+                final JCheckBoxMenuItem dontUseChannel10CheckBox = new JCheckBoxMenuItem("Don't use channel 10 (midi drum channel)", this.dontUseChannel10);
+                dontUseChannel10CheckBox.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                        dontUseChannel10 = !dontUseChannel10;
+                        dontUseChannel10CheckBox.setState(dontUseChannel10);
+                    }
+                });
+                mei2msmPop.add(dontUseChannel10CheckBox);
 
                 final JLabel mei2msm = new JLabel(new ImageIcon(getClass().getResource("/resources/convert-gray.png")), JLabel.CENTER);
                 mei2msm.setOpaque(true);
@@ -667,7 +682,7 @@ public class MeiCoApp extends JFrame {
                         if (SwingUtilities.isLeftMouseButton(e)) {
                             if (mei2msm.contains(e.getPoint())) {
                                 msm.clear();
-                                for (Msm m : exportMsm(ppq)) {
+                                for (Msm m : exportMsm(ppq, dontUseChannel10)) {
                                     msm.add(new Msm4Gui(m, app));
                                 }
                                 mei2msm.setBackground(new Color(232, 232, 232));
@@ -880,12 +895,12 @@ public class MeiCoApp extends JFrame {
                     JLabel ppqLabel = new JLabel("bpm");
                     JPanel bpmPanel = new JPanel();
 
-                    bpmPanel.add(bpmField);
-                    bpmPanel.add(ppqLabel);
                     JLabel bpmSetup = new JLabel("Set Tempo");
                     JPopupMenu msm2midiPop = new JPopupMenu("Conversion Options");
                     msm2midiPop.setEnabled(true);
-                    msm2midiPop.add(bpmSetup);
+                    bpmPanel.add(bpmSetup);
+                    bpmPanel.add(bpmField);
+                    bpmPanel.add(ppqLabel);
                     msm2midiPop.add(bpmPanel);
                     msm2midiPop.add(generateProgramChangesCheckBox);
 

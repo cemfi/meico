@@ -15,19 +15,15 @@ import meico.msm.Msm;
 
 public class Mei {
 
-    private File file;                                              // the source file
+    private File file = null;                                       // the source file
     private Document mei = null;                                    // the mei document
-    private boolean meiValidation;                                  // indicates whether the input file contained valid mei code (true) or not (false)
-    private Helper helper;                                          // some variables and methods to make life easier
+    private boolean meiValidation = false;                          // indicates whether the input file contained valid mei code (true) or not (false)
+    private Helper helper = null;                                   // some variables and methods to make life easier
 
     /**
      * a default constructor that creates an empty Mei instance
      */
     public Mei() {
-        this.file = null;
-        this.mei = null;
-        this.meiValidation = false;
-        this.helper = null;
     }
 
     /** constructor; reads the mei file without validation
@@ -54,7 +50,6 @@ public class Mei {
      */
     protected void readMeiFile(File file, boolean validate) throws IOException, ParsingException {
         this.file = file;
-        this.helper = null;
 
         if (!file.exists()) {
             this.meiValidation = false;
@@ -234,16 +229,27 @@ public class Mei {
      * @return the list of msm documents (movements) created
      */
     public List<Msm> exportMsm(int ppq) {
-        return this.exportMsm(ppq, true);
+        return this.exportMsm(ppq, true, true);
     }
 
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv, ppq (pulses per quarter) sets the time resolution
      *
      * @param ppq the ppq resolution for the conversion; this is counterchecked with the minimal required resolution to capture the shortest duration in the mei data; if a higher resolution is necessary, this input parameter is overridden
+     * @param  dontUseChannel10 the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
+     * @return the list of msm documents (movements) created
+     */
+    public List<Msm> exportMsm(int ppq, boolean dontUseChannel10) {
+        return this.exportMsm(ppq, dontUseChannel10, true);
+    }
+
+    /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv, ppq (pulses per quarter) sets the time resolution
+     *
+     * @param ppq the ppq resolution for the conversion; this is counterchecked with the minimal required resolution to capture the shortest duration in the mei data; if a higher resolution is necessary, this input parameter is overridden
+     * @param  dontUseChannel10 the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
      * @param msmCleanup set true to return a clean msm file or false to keep all the crap from the conversion
      * @return the list of msm documents (movements) created
      */
-    public List<Msm> exportMsm(int ppq, boolean msmCleanup) {
+    public List<Msm> exportMsm(int ppq, boolean dontUseChannel10, boolean msmCleanup) {
         if (this.isEmpty() || (this.getMusic() == null) || (this.getMusic().getFirstChildElement("body", this.getMusic().getNamespaceURI()) == null))      // if no mei music data available
             return new ArrayList<Msm>();                                        // return empty list
 
@@ -258,6 +264,7 @@ public class Mei {
         this.reorderElements();                                                 // control elements (e.g. tupletSpan) are often not placed in the timeline but at the end of the measure, this must be resolved
 
         this.helper = new Helper(ppq);                                          // some variables and methods to make life easier
+        this.helper.dontUseChannel10 = dontUseChannel10;                        // set the flag that says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
         List<Msm> msms = this.convert(this.getMusic().getFirstChildElement("body", this.getMusic().getNamespaceURI()));
         this.helper = null;                                                     // as this is a class variable it would remain in memory after this method, so it has to be nulled for garbage collection
 
@@ -908,6 +915,8 @@ public class Mei {
             else {
                 Element p = ps.get(ps.size()-1);                                                            // choose last part entry
                 int channel = (Integer.parseInt(p.getAttributeValue("channel")) + 1) % 16;                  // increment channel counter mod 16
+                if ((channel == 9) && this.helper.dontUseChannel10)                                                    // if the drum channel should be avoided
+                    ++channel;                                                                                  // do so
                 int port = (channel == 0) ? (Integer.parseInt(p.getAttributeValue("port")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("port"));	// increment port counter if channels of previous port are full
                 part.addAttribute(new Attribute("channel", Integer.toString(channel)));                          // set midi channel
                 part.addAttribute(new Attribute("port", Integer.toString(port)));                                // set midi port
@@ -1575,8 +1584,9 @@ public class Mei {
             // generate new ids for those elements with a copied id
             Nodes ids = copy.query("descendant-or-self::*[@xml:id]");                           // get all the nodes with an xml:id attribute
             for (int j = 0; j < ids.size(); ++j) {                                              // go through all the nodes
-                String uuid = UUID.randomUUID().toString();                                     // generate new ids for them
-                ((Element) ids.get(j)).getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(uuid);   // and write into the attribute
+                Element idElement = (Element) ids.get(j);
+                String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + ":" + UUID.randomUUID().toString();   // generate new ids for them
+                idElement.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(uuid);    // and write into the attribute
             }
             System.out.print("\rResolving copyofs " + i);
         }
