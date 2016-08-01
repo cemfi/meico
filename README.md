@@ -34,7 +34,7 @@ The command line mode expects the following command line options:
 - `[-d]` or `[--debug]`: to write debug versions of mei and msm
 - The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
-The third way of using meico is as a Java programming library. Its Mei, Msm and Midi class are the most important to work with. The MeiCoApp.java in package meico.app demonstrates the use of meico (the method commandLineMode() is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift.
+The third way of using meico is as a Java programming library. Its Mei, Msm and Midi classes are the most important to work with. The MeiCoApp.java in package meico.app demonstrates the use of meico (the method commandLineMode() is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift.
 
 ###License information
 
