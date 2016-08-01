@@ -1339,6 +1339,10 @@ public class Mei {
         s.addAttribute(new Attribute("dur", Double.toString(dur)));                         // else store attribute
         this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur)));    // update currentDate counter
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(s); // insert the new note into the part->dated->score
+
+        // this is just for the debugging in mei
+        rest.addAttribute(new Attribute("date.midi", s.getAttributeValue("date")));
+        rest.addAttribute(new Attribute("dur.midi", s.getAttributeValue("dur")));
     }
 
     /** process an mei octave element; this method does not process tstamp and tstamp2 or tstamp.ges or tstamp.real; there MUST be a dur, dur.ges or endid attribute
@@ -1443,6 +1447,7 @@ public class Mei {
         }
 
         double date = this.helper.getMidiTime();
+
         Element s = new Element("note");                                        // create a note element
         Helper.copyId(note, s);                                                 // copy the id
         s.addAttribute(new Attribute("date", Double.toString(date)));  // compute the date of the note
@@ -1464,6 +1469,10 @@ public class Mei {
         // update currentDate counter
         if (this.helper.currentChord == null)                                   // the next instruction must be suppressed in the chord environment
             this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(date + dur));  // update currentDate counter
+
+        //adding some attributes to the mei source, this is only for the debugging in mei
+        note.addAttribute(new Attribute("date.midi", String.valueOf(date)));
+        note.addAttribute(new Attribute("dur.midi", String.valueOf(dur)));
 
         // handle ties
         char tie = 'n';                                                         // what kind of tie is it? i: initial, m: medial, t: terminal, n: nothing

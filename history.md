@@ -3,9 +3,10 @@
 ####v0.0.7<br>
 - Added flag to the mei-to-msm conversion to avoid the midi drum channel, added it to the window mode and command line options
 	- `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on
-- Changed id generation for copyOf resolution into a combined id: source id + ":" + "generated id"; hence, applications can now trace them back to the source element
+- Changed id generation for copyOf resolution into a combined id: `source id + ":" + generated id`; hence, applications can now trace them back to the source element
 - Minor bugfix of commandline option `[--no--program-changes]` to `[--no-program-changes]`
 - Minor ui corrections for window mode
+- Adding new attributes, `date.midi` and `dur.midi`, to mei note and rest elements during conversion. This is just for debugging purpose and appears only in the `-debug.mei`.
 
 
 ####v0.0.6<br>
