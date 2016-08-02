@@ -7,6 +7,7 @@
 - Minor bugfix of commandline option `[--no--program-changes]` to `[--no-program-changes]`
 - Minor ui corrections for window mode
 - Adding new attributes, `date.midi` and `dur.midi`, to mei note and rest elements during conversion. This is only for debugging purpose and appears only in the `-debug.mei` file when running the command line mode with `--debug` flag.
+- Also a `pnum` is added to the notes ehich holds the calculated midi pitch value.
 
 
 ####v0.0.6<br>

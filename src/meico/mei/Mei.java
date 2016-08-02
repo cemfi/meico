@@ -1471,6 +1471,7 @@ public class Mei {
             this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(date + dur));  // update currentDate counter
 
         //adding some attributes to the mei source, this is only for the debugging in mei
+        note.addAttribute(new Attribute("pnum", String.valueOf(pitch)));
         note.addAttribute(new Attribute("date.midi", String.valueOf(date)));
         note.addAttribute(new Attribute("dur.midi", String.valueOf(dur)));
 
