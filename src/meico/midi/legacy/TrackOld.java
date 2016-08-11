@@ -1,4 +1,6 @@
-package meico.midi;
+package meico.midi.legacy;
+
+import meico.midi.legacy.Event;
 
 import java.util.List;
 

@@ -5,11 +5,18 @@ package meico.mei;
  * @author Axel Berndt.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.thaiopensource.relaxng.jaxp.XMLSyntaxSchemaFactory;
 import meico.msm.Msm;
 import nu.xom.*;
+import org.xml.sax.SAXException;
+
+import javax.xml.transform.stream.StreamSource;
 
 public class Helper {
 
@@ -47,6 +54,17 @@ public class Helper {
         this.currentChord = null;
         this.accid.clear();
         this.endids.clear();
+    }
+
+    /**
+     * This method validates a file against a schema. If the validation fails it throws an exception.
+     * @param file
+     * @param schema
+     * @throws SAXException
+     * @throws IOException
+     */
+    public static void validateAgainstSchema(File file, URL schema) throws SAXException, IOException {
+        (new XMLSyntaxSchemaFactory()).newSchema(schema).newValidator().validate(new StreamSource(file));  // create a new validator with the schema and validate the file, if this fails, it throws an exception
     }
 
     /**

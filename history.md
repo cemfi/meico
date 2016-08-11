@@ -1,5 +1,19 @@
 ###Version History
 
+####v0.1.0 (beta release)<br>
+- Moved unused code in the `meico.midi` package into the `legacy` sub-package.
+- Added validation of MEI files against `mei-CMN.rng` version 3.0.0 (August 2016).
+    - The file `mei-CMN.rng` from [MEI GitHub repository](https://github.com/music-encoding/music-encoding/blob/develop/schemata/mei-CMN.rng) was added to the resources. 
+    - The `Jing` library (version 20091111) was added to the externals (notice the `copyright.txt` in file `jing-20091111.jar`).
+    - The method `validateAgainstRNG()` is implemented in class `Helper` and called by `validate()` through `readMeiFile()` in class `Mei`. 
+    - New addition to command line mode: `[-v]` or `[--validate]`: to activate validation of mei files loaded
+    - In window mode files are read without validation by default. Right click on the MEI file loaded to trigger validation and get a popup message on the success. 
+    - Applications may call method `isValid()` in class `Mei` after the file was read to check validity. If the file has been loaded without validation it remains `false` by default. To do the validation afterwards, call `validate()`.
+- In window mode all command line outputs (`System.out`s and `System.err`s) are now redirected into a log file `meico.log`.
+- Added `Bratsche` to the instruments dictionary.
+- Replaced the `:` in the id generation for copyOf resolution into: `_`
+
+
 ####v0.0.7<br>
 - Added flag to the mei-to-msm conversion to avoid the midi drum channel, added it to the window mode and command line options
 	- `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on

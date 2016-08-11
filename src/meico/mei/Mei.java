@@ -10,14 +10,16 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
+
 import nu.xom.*;
 import meico.msm.Msm;
+import org.xml.sax.SAXException;
 
 public class Mei {
 
     private File file = null;                                       // the source file
     private Document mei = null;                                    // the mei document
-    private boolean meiValidation = false;                          // indicates whether the input file contained valid mei code (true) or not (false)
+    private boolean validMei = false;                               // indicates whether the input file contained valid mei code (true) or not (false)
     private Helper helper = null;                                   // some variables and methods to make life easier
 
     /**
@@ -52,23 +54,25 @@ public class Mei {
         this.file = file;
 
         if (!file.exists()) {
-            this.meiValidation = false;
+            this.validMei = false;
             System.out.println("No such file or directory: " + file.getPath());
             return;
         }
 
         // read file into the mei instance of Document
-        Builder builder = new Builder(validate);                    // if the validate argument is true, the mei should be valid; TODO: this validator does not support RNG validation, hence, throws a ValidityException even for valid mei code
-        this.meiValidation = true;                                  // the mei code is valid until validation fails (ValidityException)
+        if (validate)                                               // if the mei file should be validated
+            this.validate();                                        // do so, the result is stored in this.validMei
+        Builder builder = new Builder(false);                    // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
+//        this.validMei = true;                                  // the mei code is valid until validation fails (ValidityException)
         try {
             this.mei = builder.build(file);
         }
         catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
-            this.meiValidation = false;                             // set meiValidation false to indicate that the mei code is not valid
-            e.printStackTrace();                                    // output exception message
-            for (int i=0; i < e.getErrorCount(); i++) {             // output all validity error descriptions
-                System.out.println(e.getValidityError(i));
-            }
+//            this.validMei = false;                             // set validMei false to indicate that the mei code is not valid
+//            e.printStackTrace();                                    // output exception message
+//            for (int i=0; i < e.getErrorCount(); i++) {             // output all validity error descriptions
+//                System.out.println(e.getValidityError(i));
+//            }
             this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
         }
     }
@@ -175,7 +179,32 @@ public class Mei {
      * @return true if the validation of the mei file (see constructor method) succeeded and false if failed
      */
     public boolean isValid() {
-        return this.meiValidation;
+        return this.validMei;
+    }
+
+    /**
+     * validate the data loaded into this.file and return whether it is proper mei according to mei-CMN.rng
+     * @return
+     */
+    public boolean validate() {
+        if (this.isEmpty()) return false;       // no file, no validation
+
+        this.validMei = true;                   // it is valid until the validator throws an exception
+
+        try {
+            Helper.validateAgainstSchema(this.file, this.getClass().getResource("/resources/mei-CMN.rng"));
+//            Helper.validateAgainstSchema(this.file, new URL("http://www.music-encoding.org/schema/current/mei-CMN.rng"));     // this variant takes the schema from the web, the user has to be online for this!
+        } catch (SAXException e) {              // invalid mei
+            this.validMei = false;
+            e.printStackTrace();                // print the full error message
+//            System.out.println(e.getMessage()); // print only the validation error message, not the complete stackTrace
+        } catch (IOException e) {               // missing rng file
+            this.validMei = false;
+//            e.printStackTrace();
+            System.out.println("Validation failed: missing file /resources/mei-CMN.rng!");
+        }
+        System.out.println("Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + this.validMei);  // command line output of the result
+        return this.validMei;                   // return the result
     }
 
     /**
@@ -781,7 +810,7 @@ public class Mei {
         }
 
         // the part was not found, create one
-        System.out.println("There is an undefined staff element in the score (no corresponding staffDef with attribute " + ref + "). Generating a new part for it.");  // output notification
+        System.out.println("There is an undefined staff element in the score (no corresponding staffDef with attribute n=" + ref.getValue() + "). Generating a new part for it.");  // output notification
         return this.makePart(staff);                                            // generate a part and return it
     }
 
@@ -1554,6 +1583,7 @@ public class Mei {
         ArrayList<String> notfound = new ArrayList<String>();                           // store those references that cannot be found
 
         // resolve the copyofs
+        System.out.println("Resolving copyofs:");
         for (int i = placeholders.size()-1; i >= 0; --i) {                              // go through all elements with copyof attribute
             String ref = ((Element) placeholders.get(i)).getAttributeValue("copyof");   // get the copyof string
 
@@ -1595,12 +1625,12 @@ public class Mei {
             Nodes ids = copy.query("descendant-or-self::*[@xml:id]");                           // get all the nodes with an xml:id attribute
             for (int j = 0; j < ids.size(); ++j) {                                              // go through all the nodes
                 Element idElement = (Element) ids.get(j);
-                String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + ":" + UUID.randomUUID().toString();   // generate new ids for them
+                String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + "_" + UUID.randomUUID().toString();   // generate new ids for them
                 idElement.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(uuid);    // and write into the attribute
             }
-            System.out.print("\rResolving copyofs " + i);
+            System.out.print("\r" + i + " ");
         }
-        System.out.print("\r");
+        System.out.println("done");
 
         return notfound;
     }
@@ -1618,6 +1648,7 @@ public class Mei {
 
         // replace all elemenets in ns
         // TODO: dynamics instructions are also often placed at the end of the measure and with a tstamp
+        System.out.println("Restucturing mei:");
         for (int i = ns.size()-1; i >= 0; --i) {                                        // go through all elements with startid attribute
             String ref = ((Element) ns.get(i)).getAttributeValue("startid");            // get the startid string
 
@@ -1647,9 +1678,9 @@ public class Mei {
             // insert a copy of this node before idNode
             ns.get(i).detach();
             idNode.getParent().insertChild(ns.get(i), idNode.getParent().indexOf(idNode));
-            System.out.print("\rRestucturing mei " + i);
+            System.out.print("\r" + i + " ");
         }
-        System.out.print("\r");
+        System.out.println("done");
 
         return notfound;
     }

@@ -1,4 +1,4 @@
-package meico.midi;
+package meico.midi.legacy;
 
 import java.math.BigInteger;
 import java.util.List;

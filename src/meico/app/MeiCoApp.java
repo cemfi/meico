@@ -5,6 +5,7 @@ package meico.app;
  * @author Axel Berndt.
  */
 
+import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.midi.Midi;
 import meico.msm.Msm;
@@ -44,8 +45,9 @@ public class MeiCoApp extends JFrame {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        if (args.length == 0)               // if meico.jar is called without command line arguments
+        if (args.length == 0) {            // if meico.jar is called without command line arguments
             new MeiCoApp();                 // start meico in window mode
+        }
         else                                // in case of command line arguments
             commandLineMode(args);          // run the command line mode
     }
@@ -56,6 +58,7 @@ public class MeiCoApp extends JFrame {
      *
      * @param args The following parameter strings are used
      *             - "-?" or "--help": for this command line help text. If you use this, any other arguments are skipped.
+     *             - "-v" or "--validation": to activate validation of mei files loaded
      *             - "-a" or "--add-ids": to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file
      *             - "-r" or "--resolve-copy-ofs": mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file
      *             - "-m" or "--msm": converts mei to msm; meico will write an msm file to the path of the mei
@@ -70,7 +73,8 @@ public class MeiCoApp extends JFrame {
         for (String arg : args) {
             if (arg.equals("-?") || arg.equals("--help")) {
                 System.out.println("Meico requires the following arguments:\n");
-                System.out.println("[-?] or [--help]                    for this command line help text. If you use this, any other arguments are skipped.");
+                System.out.println("[-?] or [--help]                    for this command line help text. If you use this, any other arguments are skipped");
+                System.out.println("[-v] or [--validation]              to activate validation of mei files loaded");
                 System.out.println("[-a] or [--add-ids]                 to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file");
                 System.out.println("[-r] or [--resolve-copy-ofs]        mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file");
                 System.out.println("[-m] or [--msm]                     converts mei to msm; meico will write an msm file to the path of the mei");
@@ -82,6 +86,28 @@ public class MeiCoApp extends JFrame {
                 System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
                 return;
             }
+        }
+
+        // what does the user want meico to do with the file just loaded?
+        boolean validate = false;
+        boolean addIds = false;
+        boolean resolveCopyOfs = false;
+        boolean msm = false;
+        boolean midi = false;
+        boolean generateProgramChanges = true;
+        boolean dontUseChannel10 = false;
+        boolean debug = false;
+        double tempo = 120;
+        for (int i = 0; i < args.length-1; ++i) {
+            if ((args[i].equals("-v")) || (args[i].equals("--validation"))) { validate = true; continue; }
+            if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
+            if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
+            if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
+            if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
+            if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
+            if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
+            if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; }
+            if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[i+1]); }
         }
 
         // load the file
@@ -99,7 +125,7 @@ public class MeiCoApp extends JFrame {
         }
         Mei mei = null;                              // read an mei file (without validation, hence, false)
         try {
-            mei = new Mei(meiFile, false);
+            mei = new Mei(meiFile, validate);
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -110,26 +136,6 @@ public class MeiCoApp extends JFrame {
         if (mei.isEmpty()) {
             System.out.println("Failed.");
             return;
-        }
-
-        // what does the user want meico to do with the file just loaded?
-        boolean addIds = false;
-        boolean resolveCopyOfs = false;
-        boolean msm = false;
-        boolean midi = false;
-        boolean generateProgramChanges = true;
-        boolean dontUseChannel10 = false;
-        boolean debug = false;
-        double tempo = 120;
-        for (int i = 0; i < args.length-1; ++i) {
-            if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
-            if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
-            if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
-            if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
-            if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
-            if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
-            if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; }
-            if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[i+1]); }
         }
 
         // optional mei processing functions
@@ -198,6 +204,17 @@ public class MeiCoApp extends JFrame {
     public MeiCoApp(String title) {
         super(title);
 
+        // in window mode all the command line output and error messages are redirected to a log file
+        try {
+            FileOutputStream log = new FileOutputStream("meico.log");
+            PrintStream out = new PrintStream(log);
+            System.setOut(out);
+            System.setErr(out);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        // initialize the music list
         this.music = new ArrayList<Mei4Gui>();
 
         // initialize the midi sequencer for midi playback
@@ -508,6 +525,14 @@ public class MeiCoApp extends JFrame {
             else {
                 JPopupMenu meiNamePop = new JPopupMenu("MEI Processing");
                 meiNamePop.setEnabled(true);
+                JMenuItem validate = new JMenuItem(new AbstractAction("Validate") {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        JOptionPane.showMessageDialog(null, "Validation of " + getFile().getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + validate() + ((isValid()) ? "." : ".\n Please read file meico.log for a detailed validation error message."));
+                    }
+                });
+                validate.setEnabled(true);
+
                 JMenuItem addIDs = new JMenuItem(new AbstractAction("Add IDs") {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -546,6 +571,7 @@ public class MeiCoApp extends JFrame {
                 });
                 reload.setEnabled(true);
 
+                meiNamePop.add(validate);
                 meiNamePop.add(addIDs);
                 meiNamePop.add(resolveCopyofs);
                 meiNamePop.add(reload);
@@ -882,7 +908,7 @@ public class MeiCoApp extends JFrame {
                         }
                     });
 
-                    final JCheckBoxMenuItem generateProgramChangesCheckBox = new JCheckBoxMenuItem("Generate Program Change Messages (experimental)", this.generateProgramChanges);
+                    final JCheckBoxMenuItem generateProgramChangesCheckBox = new JCheckBoxMenuItem("Generate Program Change Messages", this.generateProgramChanges);
                     generateProgramChangesCheckBox.addMouseListener(new MouseAdapter() {
                         @Override
                         public void mouseReleased(MouseEvent e) {
