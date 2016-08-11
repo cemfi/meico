@@ -9,7 +9,7 @@
     - New addition to command line mode: `[-v]` or `[--validate]`: to activate validation of mei files loaded
     - In window mode files are read without validation by default. Right click on the MEI file loaded to trigger validation and get a popup message on the success. 
     - Applications may call method `isValid()` in class `Mei` after the file was read to check validity. If the file has been loaded without validation it remains `false` by default. To do the validation afterwards, call `validate()`.
-- In window mode all command line outputs (`System.out`s and `System.err`s) are now redirected into a log file `meico.log`.
+- In window mode all command line outputs (`System.out` and `System.err`) are now redirected into a log file `meico.log`.
 - Added `Bratsche` to the instruments dictionary.
 - Replaced the `:` in the id generation for copyOf resolution into: `_`
 
