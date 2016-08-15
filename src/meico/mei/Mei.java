@@ -286,11 +286,14 @@ public class Mei {
         int minPPQ = this.computeMinimalPPQ();                                  // compute the minimal required ppq resolution
         if (minPPQ > ppq) {                                                     // if it is greater than the specified resolution
             ppq = minPPQ;                                                       // adjust the specified ppq to ensure viable results
-            System.out.println("The specified pulses per quarternote resolution (ppq) is too coarse to capture the shortest duration values in the mei source. Using the minimal requred resolution of " + ppq + " instead");
+            System.out.println("The specified pulses per quarternote resolution (ppq) is too coarse to capture the shortest duration values in the mei source. Using the minimal required resolution of " + ppq + " instead");
         }
 
+//        long t = System.currentTimeMillis();
+        this.resolveTieElements();                                              // first resolve the ties in case they are affected by the copyof resolution which comes next
         this.resolveCopyofs();
         this.reorderElements();                                                 // control elements (e.g. tupletSpan) are often not placed in the timeline but at the end of the measure, this must be resolved
+//        System.out.println("Time consumed: " + (System.currentTimeMillis()-t));
 
         this.helper = new Helper(ppq);                                          // some variables and methods to make life easier
         this.helper.dontUseChannel10 = dontUseChannel10;                        // set the flag that says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
@@ -601,7 +604,7 @@ public class Mei {
             } else if (e.getLocalName().equals("tempo")) {
                 continue;                                                   // TODO: relevant for expressive performance
             } else if (e.getLocalName().equals("tie")) {
-                continue;                                                   // we do not process these elements; in our implementation it is mandatory to use the tie attributes of tied note elements
+                continue;                                                   // tie are handled in the preprocessing, they can be ignored here
             } else if (e.getLocalName().equals("timeline")) {
                 continue;                                                   // can be ignored
             } else if (e.getLocalName().equals("trill")) {
@@ -810,7 +813,7 @@ public class Mei {
         }
 
         // the part was not found, create one
-        System.out.println("There is an undefined staff element in the score (no corresponding staffDef with attribute n=" + ref.getValue() + "). Generating a new part for it.");  // output notification
+        System.out.println("There is an undefined staff element in the score with no corresponding staffDef.\n" + staff.toXML() + "\nGenerating a new part for it.");  // output notification
         return this.makePart(staff);                                            // generate a part and return it
     }
 
@@ -938,17 +941,17 @@ public class Mei {
         {
             Elements ps = this.helper.currentMovement.getChildElements("part");
             if (ps.size() == 0) {
-                part.addAttribute(new Attribute("channel", "0"));                                              // set midi channel
-                part.addAttribute(new Attribute("port", "0"));                                                 // set midi port
+                part.addAttribute(new Attribute("channel.midi", "0"));                                              // set midi channel
+                part.addAttribute(new Attribute("port.midi", "0"));                                                 // set midi port
             }
             else {
                 Element p = ps.get(ps.size()-1);                                                            // choose last part entry
-                int channel = (Integer.parseInt(p.getAttributeValue("channel")) + 1) % 16;                  // increment channel counter mod 16
+                int channel = (Integer.parseInt(p.getAttributeValue("channel.midi")) + 1) % 16;                  // increment channel counter mod 16
                 if ((channel == 9) && this.helper.dontUseChannel10)                                                    // if the drum channel should be avoided
                     ++channel;                                                                                  // do so
-                int port = (channel == 0) ? (Integer.parseInt(p.getAttributeValue("port")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("port"));	// increment port counter if channels of previous port are full
-                part.addAttribute(new Attribute("channel", Integer.toString(channel)));                          // set midi channel
-                part.addAttribute(new Attribute("port", Integer.toString(port)));                                // set midi port
+                int port = (channel == 0) ? (Integer.parseInt(p.getAttributeValue("port.midi")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("port.midi"));	// increment port counter if channels of previous port are full
+                part.addAttribute(new Attribute("channel.midi", Integer.toString(channel)));                          // set midi channel
+                part.addAttribute(new Attribute("port.midi", Integer.toString(port)));                                // set midi port
             }
         }
 
@@ -1301,7 +1304,7 @@ public class Mei {
             return;
 
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(rest);                          // insert in movement
-        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("dur")))));  // update currentDate
+        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("duration")))));  // update currentDate
     }
 
     /** make a rest that lasts a complete measure
@@ -1328,7 +1331,7 @@ public class Mei {
         }
 
         rest.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));       // compute date
-        rest.addAttribute(new Attribute("dur", Double.toString(dur)));                              // store in rest element
+        rest.addAttribute(new Attribute("duration", Double.toString(dur)));                         // store in rest element
 
         return rest;
     }
@@ -1348,9 +1351,9 @@ public class Mei {
 
         int num = (multiRest.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRest.getAttributeValue("num"));
         if (num > 1)                                                                        // if multiple measures (more than 1)
-            rest.getAttribute("dur").setValue(Double.toString(Double.parseDouble(rest.getAttributeValue("dur")) * num));    // rest duration of one measure times the number of measures
+            rest.getAttribute("duration").setValue(Double.toString(Double.parseDouble(rest.getAttributeValue("duration")) * num));    // rest duration of one measure times the number of measures
 
-        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("dur")))));  // update currentDate counter
+        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("duration")))));  // update currentDate counter
     }
 
     /** process an mei rest element
@@ -1365,13 +1368,13 @@ public class Mei {
         double dur = this.helper.computeDuration(rest);                                     // compute note duration in midi ticks
         if (dur == 0.0) return;                                                             // if failed, cancel
 
-        s.addAttribute(new Attribute("dur", Double.toString(dur)));                         // else store attribute
+        s.addAttribute(new Attribute("duration", Double.toString(dur)));                    // else store attribute
         this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur)));    // update currentDate counter
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(s); // insert the new note into the part->dated->score
 
         // this is just for the debugging in mei
         rest.addAttribute(new Attribute("date.midi", s.getAttributeValue("date")));
-        rest.addAttribute(new Attribute("dur.midi", s.getAttributeValue("dur")));
+        rest.addAttribute(new Attribute("dur.midi", s.getAttributeValue("duration")));
     }
 
     /** process an mei octave element; this method does not process tstamp and tstamp2 or tstamp.ges or tstamp.real; there MUST be a dur, dur.ges or endid attribute
@@ -1493,7 +1496,7 @@ public class Mei {
         // compute midi duration
         double dur = this.helper.computeDuration(note);                         // compute note duration in midi ticks
         if (dur == 0.0) return;                                                 // if failed, cancel
-        s.addAttribute(new Attribute("dur", Double.toString(dur)));
+        s.addAttribute(new Attribute("duration", Double.toString(dur)));
 
         // update currentDate counter
         if (this.helper.currentChord == null)                                   // the next instruction must be suppressed in the chord environment
@@ -1516,18 +1519,18 @@ public class Mei {
         switch (tie) {
             case 'n':
                 break;
-            case 'i':
+            case 'i':                                                           // the tie starts here
                 s.addAttribute(new Attribute("tie", "true"));                   // indicate that this notes is tied to its successor (with same pitch)
                 break;
-            case 'm':
-            case 't':
+            case 'm':                                                           // intermedieate tie
+            case 't':                                                           // the tie ends here
                 Nodes ps = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").query("descendant::*[local-name()='note' and @tie]");    // select all preceding msm notes with a tie attribute
-                for (int i = ps.size() - 1; i >= 0; --i) {                                                                                                               // check each of them
+                for (int i = ps.size() - 1; i >= 0; --i) {                                                                                                              // check each of them
                     Element p = ((Element) ps.get(i));
                     if (p.getAttributeValue("pitch").equals(s.getAttributeValue("pitch"))                                                                               // if the pitch is equal
-                            && ((Double.parseDouble(p.getAttributeValue("date")) + Double.parseDouble(p.getAttributeValue("dur"))) == date)                             // and the tie note and this note are next to each other (there is zero time between them and they do not overlap)
+                            && ((Double.parseDouble(p.getAttributeValue("date")) + Double.parseDouble(p.getAttributeValue("duration"))) == date)                             // and the tie note and this note are next to each other (there is zero time between them and they do not overlap)
                             ) {
-                        p.addAttribute(new Attribute("dur", Double.toString(Double.parseDouble(p.getAttributeValue("dur")) + dur)));    // add this duration to the preceeding note with the same pitch
+                        p.addAttribute(new Attribute("duration", Double.toString(Double.parseDouble(p.getAttributeValue("duration")) + dur)));                          // add this duration to the preceeding note with the same pitch
                         if (tie == 't')                                         // terminal tie
                             p.removeAttribute(p.getAttribute("tie"));           // delete tie attribute
                         return;                                                 // this note is not to be stored in the score, it only extends its predecessor; remark: if no fitting note is found, this note will be stored in the score map because this line is not reached
@@ -1576,66 +1579,196 @@ public class Mei {
      * @return null (no document loaded), an ArrayList with those ids that could not be resolved, or an empty ArrayList if everything went well
      */
     public ArrayList<String> resolveCopyofs() {
-        Element e = this.getRootElement();
+        Element e = this.getRootElement();                                                              // this also includes the meiHead section, not only the music section, as there might be reference from music into the head
         if (e == null) return null;
 
-        Nodes placeholders = e.query("descendant::*[attribute::copyof]");               // get all nodes that have a copyof attribute
-        ArrayList<String> notfound = new ArrayList<String>();                           // store those references that cannot be found
+        ArrayList<String> notResolved = new ArrayList<String>();                                             // store those ids that are not resolved
+        HashMap<Element, String> previousPlaceholders = new HashMap<Element, String>();                               // this is a copy of the placeholders hashmap in the while loop; if it does not change from one iteration to the next, there is a placeholder refering to another placeholder refering back to the first; this cannot be resolved and leads to an infinite loop; this hashmap here is to detect this situation
 
-        // resolve the copyofs
-        System.out.println("Resolving copyofs:");
-        for (int i = placeholders.size()-1; i >= 0; --i) {                              // go through all elements with copyof attribute
-            String ref = ((Element) placeholders.get(i)).getAttributeValue("copyof");   // get the copyof string
+        System.out.print("Resolving copyofs:");
 
-            if (ref.charAt(0) == '#')                                                   // local references within the document should start with #
-                ref = ref.substring(1);                                                 // remove the # from the string to get the pure id
+        while (true) {                                                                                  // this loop can only be exited if no placeholders are left (it is possible that multiple runs are necessary when placeholders are within placeholders)
+            HashMap<String, Element> elements = new HashMap<String, Element>();                                       // this hashmap will be filled with elements and their ids
+            HashMap<Element, String> placeholders = new HashMap<Element, String>();                                   // this hashmap will be filled with placeholder elements that have a copyof attribute and the id in the copyof
 
-            Node source;
-            try {
-                source = e.query("//*[@xml:id='" + ref + "']").get(0);                  // find the first source element with the id
-            }
-            catch (XPathException error) {                                              // something went wrong with the XPath query
-                error.printStackTrace();                                                // print error to console
-                continue;
-            }
-            catch (IndexOutOfBoundsException error) {                                   // the get(0) call didn't work because no source could be found
-                notfound.add(ref);                                                      // append the id string that was not found
-                continue;
-            }
+            Nodes all = e.query("descendant::*[attribute::copyof or attribute::xml:id]");               // get all elements with a copyof or xml:id attribute
+            for (int i = 0; i < all.size(); ++i) {                                                      // for each of them
+                Element element = (Element) all.get(i);                                                 // make an Element out of it
 
-            // replace the placeholder with the deep copy of the source
-            Node copy = source.copy();                                                          // make a deep copy of the node
-            try {
-                placeholders.get(i).getParent().replaceChild(placeholders.get(i), copy);        // replace the placeholder by it
-            }
-            catch (NoSuchChildException error) {   // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
-                error.printStackTrace();                                                        // print error
-                notfound.add(ref);                                                              // append the id string that was not found
-            }
-            catch (NullPointerException error) {   // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
-                error.printStackTrace();                                                        // print error
-                notfound.add(ref);                                                              // append the id string that was not found
-            }
-            catch (IllegalAddException error) {   // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
-                error.printStackTrace();                                                        // print error
-                notfound.add(ref);                                                              // append the id string that was not found
+                Attribute a = element.getAttribute("copyof");                                           // get the copyof attribute, if there is one
+                if (a != null) {                                                                        // if there is a copyof attribute
+                    String copyof = a.getValue();                                                       // get its value
+                    if (copyof.charAt(0) == '#') copyof = copyof.substring(1);                          // local references within the document usually start with #; this must be excluded when searching for the id
+                    placeholders.put(element, copyof);                                                  // put that entry on the placeholder hashmap
+                    //continue;                                                                         // this elemnt may also have an xml:id, so it must be added to the other list as well and we later on have the possibility to resolve references of placeholders to other placeholders
+                }
+
+                a = element.getAttribute("id", "http://www.w3.org/XML/1998/namespace");                 // get the element's xml:id
+                if (a != null) {                                                                        // if it has one
+                    elements.put(a.getValue(), element);                                                // put it on the elements hashmap
+                }
             }
 
-            // generate new ids for those elements with a copied id
-            Nodes ids = copy.query("descendant-or-self::*[@xml:id]");                           // get all the nodes with an xml:id attribute
-            for (int j = 0; j < ids.size(); ++j) {                                              // go through all the nodes
-                Element idElement = (Element) ids.get(j);
-                String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + "_" + UUID.randomUUID().toString();   // generate new ids for them
-                idElement.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(uuid);    // and write into the attribute
+            if (placeholders.size() == 0) break;                                                        // we are done, this stops the while loop
+
+            // detect placeholders that cannot be resolved but lead to infinite loops because of circular references
+            if ((placeholders.values().containsAll(previousPlaceholders.values()))
+                    && previousPlaceholders.values().containsAll(placeholders.values())) {              // if the same copyof references recur
+                for (Map.Entry<Element, String> placeholder : placeholders.entrySet()) {
+                    notResolved.add(placeholder.getKey().toXML());                                      // add all entries to the return list
+                    placeholder.getKey().getParent().removeChild(placeholder.getKey());                 // delete all placeholders from the xml, we cannot resolve them anyway
+                }
+                System.out.print(" circular copyof referencing detected, cannot be resolved,");
+                break;                                                                                  // stop the while loop
             }
-            System.out.print("\r" + i + " ");
+            previousPlaceholders = placeholders;
+
+            System.out.print(" " + placeholders.size() + " copyofs ...");
+
+            // replace alle placeholders in the xml tree by copies of the source
+            for (Map.Entry<Element, String> placeholder : placeholders.entrySet()) {                    // for each placeholder
+                Element found = elements.get(placeholder.getValue());                                   // search the elements hashmap for the id
+
+                if (found == null) {                                                                    // if no element with this id has been found
+                    notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
+                    placeholder.getKey().getParent().removeChild(placeholder.getKey());                 // delete the placeholder from the xml, we cannot process it anyway
+                    continue;                                                                           // continue with the next placeholder
+                }
+
+                // make the replacement
+                Node copy = found.copy();                                                               // make a deep copy of the source
+
+                try {
+                    placeholder.getKey().getParent().replaceChild(placeholder.getKey(), copy);          // replace the placeholder by it
+//                System.out.println("replacing: " + placeholder.getKey().toXML() + "\nby\n" + copy.toXML() + "\n\n");
+                } catch (NoSuchChildException error) {                                                  // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
+                    error.printStackTrace();                                                            // print error
+                    notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
+                    continue;
+                } catch (NullPointerException error) {                                                  // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
+                    error.printStackTrace();                                                            // print error
+                    notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
+                    continue;
+                } catch (IllegalAddException error) {                                                   // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
+                    error.printStackTrace();                                                            // print error
+                    notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
+                    continue;
+                }
+
+                // generate new ids for those elements with a copied id
+                Nodes ids = copy.query("descendant-or-self::*[@xml:id]");                                                   // get all the nodes with an xml:id attribute
+                for (int j = 0; j < ids.size(); ++j) {                                                                      // go through all the nodes
+                    Element idElement = (Element) ids.get(j);
+                    String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + "_" + UUID.randomUUID().toString();   // generate new ids for them
+                    idElement.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(uuid);                    // and write into the attribute
+                }
+
+                // but keep the possibly existing placeholder id for the copy's root node
+                Attribute id = placeholder.getKey().getAttribute("id", "http://www.w3.org/XML/1998/namespace");             // get the placeholder's xml:id
+                if (id != null) {                                                                                           // if the placeholder has one
+                    ((Element) copy).getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(id.getValue());     // set the copy's id to the id of the placeholder
+                }
+            }
         }
-        System.out.println("done");
 
-        return notfound;
+        System.out.println(" done");
+
+        if (!notResolved.isEmpty())
+            System.out.println("The following placeholders could not be resolved:\n" + notResolved.toString());
+
+        return notResolved;
     }
 
-    /** this function tries to put some malplaced elements at the right place in the timeline (e.g. tupletSpans at the end of a measure are placed before their startid element)
+    /**
+     * this method recodes tie elements as tie attributes in the corresponing note elements;
+     * therefore, the tie element MUST have a startid and an endid attribute; tstamp and staff alone do not generally suffice for an unambiguous resolution.
+     *
+     * @return null (no document loaded), an ArrayList with those tie elements that could not be resolved, or an empty ArrayList if everything went well
+     */
+    public ArrayList<String> resolveTieElements() {
+        Element e = this.getMusic();
+        if (e == null) return null;                                                                 // if there is no music, cancel
+
+        ArrayList<String> notResolved = new ArrayList<String>();                                         // store those tie elements that are not resolved
+        HashMap<String, Element> notes = new HashMap<String, Element>();                                          // this hashmap will be filled with notes and their ids
+        ArrayList<Element> ties = new ArrayList<Element>();                                               // this list will be filled with tie elements that have startid and endid attributes
+
+        System.out.print("Resolving tie elements:");
+
+        Nodes tiesAndNotes = e.query("descendant::*[local-name()='tie' or local-name()='note']");   // get all note and tie elements
+        for (int i = 0; i < tiesAndNotes.size(); ++i) {                                             // for each of them
+            Element tn = (Element)tiesAndNotes.get(i);                                              // make an Element out of it
+            if (tn.getLocalName().equals("note")) {                                                 // if it is a note
+                Attribute id = tn.getAttribute("id", "http://www.w3.org/XML/1998/namespace");       // get its xml:id
+                if (id != null) {                                                                   // if it has an xml:id
+                    notes.put(id.getValue(), tn);                                                   // add it to the hashmap
+                }
+                continue;
+            }
+            if (tn.getLocalName().equals("tie")) {                                                  // if it is a tie element
+                if ((tn.getAttribute("startid") == null) || (tn.getAttribute("endid") == null)) {   // if startid and/or endid are missing, no unambiguous assignment to a note element possible
+                    notResolved.add(tn.toXML());                                                    // make an entry into the return list
+                    tn.getParent().removeChild(tn);                                                 // delete the tie element from the xml, we cannot process it anyway
+                    continue;
+                }
+                ties.add(tn);                                                                       // if the tie has a startid and endid, it is now added to the ties list
+            }
+        }
+
+        System.out.print(" " + ties.size() + " elements ... ");
+
+        // replace the tie elements by tie attributes in the notes
+        for (Element tie : ties) {                                                  // for each tie element in the ties list
+            String startid = tie.getAttributeValue("startid");
+            String endid = tie.getAttributeValue("endid");
+            if (startid.charAt(0) == '#') startid = startid.substring(1);           // local references within the document usually start with #; this must be excluded when searching for the id
+            if (endid.charAt(0) == '#') endid = endid.substring(1);                 // local references within the document usually start with #; this must be excluded when searching for the id
+            Element startNote = notes.get(startid);                                 // get the note with this tie's startid
+            Element endNote = notes.get(endid);                                     // get the note with this tie's endid
+
+            if ((startNote == null) || (endNote == null)) {                         // if no corresponding notes were found
+                notResolved.add(tie.toXML());                                       // make an entry into the return list
+                tie.getParent().removeChild(tie);                                   // delete the tie element from the xml, we cannot process it anyway
+                continue;                                                           // continue with the next entry in ties
+            }
+
+            // add/edit tie attribute at the startid note
+            Attribute a = startNote.getAttribute("tie");                            // get its tie attribute if it has one
+            if (a != null) {                                                        // if the note has already a tie attribute
+                if (a.getValue().equals("t"))                                       // but it says that the tie ends here
+                    a.setValue("m");                                                // make an intermediate tie out of it
+                else if (a.getValue().equals("n"))                                  // but it says "no tie"
+                    a.setValue("i");                                                // make an initial tie out of it
+            }
+            else {                                                                  // otherwise the element had no tie attribute
+                startNote.addAttribute(new Attribute("tie", "i"));                  // hence, we add an initial tie attribute
+            }
+
+            // add/edit tie attribute at the endid note
+            a = endNote.getAttribute("tie");                                        // get its tie attribute if it has one
+            if (a != null) {                                                        // if the note has already a tie attribute
+                if (a.getValue().equals("i"))                                       // but it says that the tie is initial
+                    a.setValue("m");                                                // make an intermediate tie out of it
+                else if (a.getValue().equals("n"))                                  // but it says "no tie"
+                    a.setValue("t");                                                // make a terminal tie out of it
+            }
+            else {                                                                  // otherwise the element had no tie attribute
+                endNote.addAttribute(new Attribute("tie", "t"));                    // hence, we add an terminal tie attribute
+            }
+
+            tie.getParent().removeChild(tie);                                       // delete the tie element from the xml (all the other information are not needed any further)
+        }
+
+        System.out.println("done");
+
+        if (!notResolved.isEmpty())
+            System.out.println("The following ties could not be resolved:\n" + notResolved.toString());
+
+        return notResolved;
+    }
+
+    /** this method tries to put some "malplaced" elements at the right place in the timeline (e.g., tupletSpans at the end of a measure are placed before their startid element);
+     * this method works only with startids, tstamps are not resolved as it is impossible to resolve these during the preprocessing - this is left to the postprocessing
      *
      * @return null (no document loaded), an ArrayList with those ids that could not be reordered, or an empty ArrayList if everything went well without reordering
      */
@@ -1643,46 +1776,55 @@ public class Mei {
         Element e = this.getRootElement();
         if (e == null) return null;
 
-        Nodes ns = e.query("descendant::*[attribute::startid]");                        // get all nodes that have a startid attribute
-        ArrayList<String> notfound = new ArrayList<String>();                           // store those references that cannot be found
+        ArrayList<String> notResolved = new ArrayList<String>();                                // store those elements that cannot be replaced because the startdid was not found
+        HashMap<String, Element> elements = new HashMap<String, Element>();                              // this hashmap will be filled with elements and their ids
+        HashMap<Element, String> shiftMe = new HashMap<Element, String>();                               // this hashmap will be filled with "malplaced" elements and their startids
 
-        // replace all elemenets in ns
-        // TODO: dynamics instructions are also often placed at the end of the measure and with a tstamp
-        System.out.println("Restucturing mei:");
-        for (int i = ns.size()-1; i >= 0; --i) {                                        // go through all elements with startid attribute
-            String ref = ((Element) ns.get(i)).getAttributeValue("startid");            // get the startid string
+        System.out.print("Restucturing mei:");
 
-            if (ref.charAt(0) == '#')                                                   // local references within the document should start with #
-                ref = ref.substring(1);                                                 // remove the # from the string to get the pure id
+        Nodes all = e.query("descendant::*[attribute::startid or attribute::xml:id]");     // get all elements with a startid (potential candidate for replacement) or xml:id attribute
+        for (int i = 0; i < all.size(); ++i) {                                             // for each of them
+            Element element = (Element) all.get(i);                                        // make an Element out of it
 
-            // find the deepest node to start searching for the id (always starting at the root is inefficient)
-            Element start;
-            for (start = (Element)ns.get(i).getParent(); start.getLocalName().equals("mdiv"); start = (Element)start.getParent()) {  // search the parents until the mdiv
-                if (start.getLocalName().equals("measure")) break;                      // if a measure was found start here
+            Attribute a = element.getAttribute("startid");                                  // get the startid attribute, if there is one
+            if (a != null) {                                                                // if there is a startid attribute
+                String startid = a.getValue();                                              // get its value
+                if (startid.charAt(0) == '#') startid = startid.substring(1);               // local references within the document usually start with #; this must be excluded when searching for the id
+                shiftMe.put(element, startid);                                              // put that entry on the shiftMe hashmap
+                //continue;                                                                 // this elemnt may also have an xml:id, so we go on
             }
 
-            // move the node
-            Node idNode;
-            try {
-                idNode = start.query("//*[@xml:id='" + ref + "']").get(0);              // find the first source element with the id
+            a = element.getAttribute("id", "http://www.w3.org/XML/1998/namespace");         // get the element's xml:id
+            if (a != null) {                                                                // if it has one
+                elements.put(a.getValue(), element);                                        // put it on the elements hashmap
             }
-            catch (XPathException error) {                                              // something went wrong with the XPath query
-                error.printStackTrace();                                                // print error to console
-                continue;
-            }
-            catch (IndexOutOfBoundsException error) {                                   // the get(0) call didn't work because no source could be found
-                notfound.add(ref);                                                      // append the id string that was not found
-                continue;
-            }
-
-            // insert a copy of this node before idNode
-            ns.get(i).detach();
-            idNode.getParent().insertChild(ns.get(i), idNode.getParent().indexOf(idNode));
-            System.out.print("\r" + i + " ");
         }
-        System.out.println("done");
 
-        return notfound;
+        System.out.print(" " + shiftMe.size() + " elements for repositioning ...");
+        // replace alle placeholders in the xml tree by copies of the source
+        for (Map.Entry<Element, String> shiftThis : shiftMe.entrySet()) {                   // for each potential candidate for repositioning
+            Element found = elements.get(shiftThis.getValue());                             // search the elements hashmap for the id
+
+            if (found == null) {                                                            // if no element with this id has been found
+                notResolved.add(shiftThis.getKey().toXML());                                // add entry to the return list
+                continue;                                                                   // continue with the next candidate
+            }
+
+            if (Helper.getNextSiblingElement(shiftThis.getKey()) == found)                  // the element is already well-placed
+                continue;                                                                   // continue with the next candidate
+
+            // make the repositioning
+            shiftThis.getKey().detach();                                                    // take it out of the xml tree
+            found.getParent().insertChild(shiftThis.getKey(), found.getParent().indexOf(found));    // and insert it directly before the found element
+
+        }
+
+        System.out.println(" done");
+
+        if (!notResolved.isEmpty())
+            System.out.println("The following elements could not be repositioned:\n" + notResolved.toString());
+
+        return notResolved;
     }
 
     /** this method adds ids to note, rest and chord elements in mei, as far as they do not have an id

@@ -1,17 +1,27 @@
 ###Version History
 
+####v0.1.1
+- Renamed the `dur` attribute in MSM notes and rests into `duration`.
+- Added `Bassus`, `Cantus`, `Singstimme`, `Singstimmen`, `Pianoforte`, `Trumpet in`, `Trompete in` to the instruments dictionary.
+- Added a flag to the window mode constructor method `MeiCoApp(String title, boolean makeLogFile)`. The redirection of console output into a log file is done only when `makeLogFile` is set true.
+- Bugfixing in `Mei.processStaff()` and `Helper.getPart()`.
+- `tie` elements are now processed (new method `Mei.resolveTieElements()`); they are resolved into `tie` attributes of `note` elements during the preprocessing. Hence, meico now supports the use of `tie`elements and is no longer restricted to `tie` attributes. However, users shoulod not mix `tie` and `slur` elements; the latter are not and will not be processed as ties.
+- Method `Mei.resolveCopyOfs()` rewritten. It is not only faster now. It might happen that a placeholder element (the one with the `copyof` attribute) copies elements that again contain placeholders; it requires multiple runs to resolve this. The new implementation can handle circular referencing (cannot be resolved and would otherwise lead to infinite loops). Furthermore, if the placeholder element has an `xml:id` this id is no longer overwritten by the newly generated ids.
+- Method `Mei.reorderElements()` (part of the MEI preprocessing) has been rewritter and is much faster now.
+
+
 ####v0.1.0 (beta release)<br>
 - Moved unused code in the `meico.midi` package into the `legacy` sub-package.
 - Added validation of MEI files against `mei-CMN.rng` version 3.0.0 (August 2016).
     - The file `mei-CMN.rng` from [MEI GitHub repository](https://github.com/music-encoding/music-encoding/blob/develop/schemata/mei-CMN.rng) was added to the resources. 
     - The `Jing` library (version 20091111) was added to the externals (notice the `copyright.txt` in file `jing-20091111.jar`).
     - The method `validateAgainstSchema()` is implemented in class `Helper` and called by `validate()` through `readMeiFile()` in class `Mei`. 
-    - New addition to command line mode: `[-v]` or `[--validate]`: to activate validation of mei files loaded
+    - New addition to command line mode: `[-v]` or `[--validate]`: to activate validation of mei files loaded.
     - In window mode files are read without validation by default. Right click on the MEI file loaded to trigger validation and get a popup message on the success. 
     - Applications may call method `isValid()` in class `Mei` after the file was read to check validity. If the file has been loaded without validation it remains `false` by default. To do the validation afterwards, call `validate()`.
 - In window mode all command line outputs (`System.out` and `System.err`) are now redirected into a log file `meico.log`.
 - Added `Bratsche` to the instruments dictionary.
-- Replaced the `:` in the id generation for copyOf resolution into `_`
+- Replaced the `:` in the id generation for copyOf resolution into `_`.
 
 
 ####v0.0.7<br>

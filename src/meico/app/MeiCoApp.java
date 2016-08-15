@@ -5,7 +5,6 @@ package meico.app;
  * @author Axel Berndt.
  */
 
-import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.midi.Midi;
 import meico.msm.Msm;
@@ -46,7 +45,7 @@ public class MeiCoApp extends JFrame {
      */
     public static void main(String[] args) {
         if (args.length == 0) {            // if meico.jar is called without command line arguments
-            new MeiCoApp();                 // start meico in window mode
+            new MeiCoApp("meico - MEI Converter", true);                 // start meico in window mode
         }
         else                                // in case of command line arguments
             commandLineMode(args);          // run the command line mode
@@ -194,24 +193,27 @@ public class MeiCoApp extends JFrame {
      * <tt>MeiCoApp m = new MeiCoApp();</tt>
      */
     public MeiCoApp() {
-        this("meico - MEI Converter");
+        this("meico - MEI Converter", true);
     }
 
     /**
      * The constructor method which starts meico in window mode with a user defined title.
      * @param title the title of the meico window
+     * @param makeLogFile set this true to redirect the console output to the file "meico.log"
      */
-    public MeiCoApp(String title) {
+    public MeiCoApp(String title, boolean makeLogFile) {
         super(title);
 
         // in window mode all the command line output and error messages are redirected to a log file
-        try {
-            FileOutputStream log = new FileOutputStream("meico.log");
-            PrintStream out = new PrintStream(log);
-            System.setOut(out);
-            System.setErr(out);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        if (makeLogFile) {
+            try {
+                FileOutputStream log = new FileOutputStream("meico.log");
+                PrintStream out = new PrintStream(log);
+                System.setOut(out);
+                System.setErr(out);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
 
         // initialize the music list

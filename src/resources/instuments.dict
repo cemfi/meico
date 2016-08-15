@@ -16,6 +16,7 @@ Konzertflügel
 Konzertflugel
 Konzertfluegel
 Hammerklavier
+Pianoforte
 
 % Bright Acoustic Piano
 # 1
@@ -475,6 +476,7 @@ Bässe
 Basse
 Baesse
 Bassi
+Singstimmen
 
 % Voice Oohs
 # 53
@@ -483,10 +485,12 @@ Voice
 Sopran
 Alt
 Alto
+Altus
 Tenor
 Tenore
 Bass
 Basso
+Bassus
 Sopran solo
 Alt solo
 Alto solo
@@ -494,7 +498,9 @@ Tenor solo
 Bass solo
 Basso solo
 Canto
+Cantus
 Quinto
+Singstimme
 
 % Synth Choir
 # 54
@@ -512,7 +518,9 @@ Orchestral Hit
 % Trumpet
 # 56
 Trumpet
+Trumpet in
 Trompete
+Trompete in
 Naturtrompete
 Trump
 Tromba

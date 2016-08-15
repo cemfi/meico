@@ -345,7 +345,7 @@ public class Helper {
      * @return
      */
     protected Element getPart(String id) {
-        if (id.isEmpty()) return null;
+        if ((id == null) || (id.isEmpty())) return null;
 
         Elements parts = this.currentMovement.getChildElements("part");
 
