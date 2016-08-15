@@ -5,7 +5,7 @@
 - Added `Bassus`, `Cantus`, `Singstimme`, `Singstimmen`, `Pianoforte`, `Trumpet in`, `Trompete in` to the instruments dictionary.
 - Added a flag to the window mode constructor method `MeiCoApp(String title, boolean makeLogFile)`. The redirection of console output into a log file is done only when `makeLogFile` is set true.
 - Bugfixing in `Mei.processStaff()` and `Helper.getPart()`.
-- `tie` elements are now processed (new method `Mei.resolveTieElements()`); they are resolved into `tie` attributes of `note` elements during the preprocessing. Hence, meico now supports the use of `tie`elements and is no longer restricted to `tie` attributes. However, users shoulod not mix `tie` and `slur` elements; the latter are not and will not be processed as ties.
+- `tie` elements are now processed (new method `Mei.resolveTieElements()`); they are resolved into `tie` attributes of `note` elements during the preprocessing. Hence, meico now supports the use of `tie`elements and is no longer restricted to `tie` attributes. However, users should not mix `tie` and `slur` elements; the latter are not and will not be processed as ties.
 - Method `Mei.resolveCopyOfs()` rewritten. It is not only faster now. It might happen that a placeholder element (the one with the `copyof` attribute) copies elements that again contain placeholders; it requires multiple runs to resolve this. The new implementation can handle circular referencing (cannot be resolved and would otherwise lead to infinite loops). Furthermore, if the placeholder element has an `xml:id` this id is no longer overwritten by the newly generated ids.
 - Method `Mei.reorderElements()` (part of the MEI preprocessing) has been rewritter and is much faster now.
 
