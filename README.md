@@ -40,12 +40,13 @@ The third way of using meico is as a Java programming library. Its Mei, Msm and 
 ###License information
 
 Meico makes use of the following third party libraries:
-- XOM v1.2.10 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1
-- Java-String-Similarity v0.13 by Thibault Debatty, MIT license
-- MigLayout v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license
-- parts of GNU Classpath by Free Software Foundation, Inc., GNU GPL license
-- the FileDrop class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release
+- XOM v1.2.10 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1.
+- Java-String-Similarity v0.13 by Thibault Debatty, MIT license.
+- MigLayout v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license.
+- parts of GNU Classpath by Free Software Foundation, Inc., GNU GPL license.
+- the FileDrop class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
 - Jing v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
+- MEI Common Music Notation Schema (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
 
 We publish meico under GNU LGPL version 3. The meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
 If you use meico in your project make sure that you do not conflict with any of the above licenses.
