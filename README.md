@@ -18,7 +18,7 @@ There are several features open, though. Currently, meico ignores any MEI data t
 
 ###How to use meico?
 
-Meico can be used in several different ways. The jar file (to be found on the [project page](http://www.zemfi.de/resources/meico-mei-converter/) ) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.6 (or higher) Runtime Environment installed on your computer. 
+Meico can be used in several different ways. The jar file (see the GitHub release page) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.6 (or higher) Runtime Environment installed on your computer. 
 
 Starting the standalone jar without any command line options will start the windowed gui mode of meico. Simply drag your MEI, MSM and MIDI files into the window. You can find context information on each interface element in the statusbar. There are several additional functions accessible via right click. Conversion from MEI to MSM may take some time when the MEI source is very large. We have not built in a progress display, so far. Just be patient until the conversion button changes its color back and the MSM data appears. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement.
 
