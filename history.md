@@ -1,7 +1,8 @@
 ###Version History
 
 ####v0.1.1
-- Renamed the `dur` attribute in MSM notes and rests into `duration`.
+- Renamed the `dur` attribute in MSM notes and rests into `midi.duration`.
+- Further renamings: `date` into `midi.date`, `pitch` into `midi.pitch`, `channel.midi` into `midi.channel`, and `port.midi` into `midi.port`.
 - Added `Bassus`, `Cantus`, `Singstimme`, `Singstimmen`, `Pianoforte`, `Trumpet in`, `Trompete in` to the instruments dictionary.
 - Added a flag to the window mode constructor method `MeiCoApp(String title, boolean makeLogFile)`. The redirection of console output into a log file is done only when `makeLogFile` is set true.
 - Bugfixing in `Mei.processStaff()` and `Helper.getPart()`.
