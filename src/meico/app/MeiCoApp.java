@@ -66,7 +66,6 @@ public class MeiCoApp extends JFrame {
      *             - "-c" or "--dont-use-channel-10": the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
      *             - "-d" or "--debug": to write debug versions of mei and msm
      *             - "-t" or "--tempo" followed by the tempo in bpm: to set the tempo of the midi file; if this is not used the tempo is always 120 bpm
-     *             - "-l" or "--log" to redirect command line output into a log file
      *             - Path tho the mei file (e.g., D:\Arbeit\Software\Java\MEI Converter\test files\Hummel_Concerto_for_trumpet.mei), this should always be the last parameter -  always in quotes!
      */
     public static void commandLineMode(String[] args) {
