@@ -45,7 +45,7 @@ public class MeiCoApp extends JFrame {
      */
     public static void main(String[] args) {
         if (args.length == 0) {               // if meico.jar is called without command line arguments
-            new MeiCoApp("meico - MEI Converter", true);                 // start meico in window mode
+            new MeiCoApp("meico - MEI Converter", false);                 // start meico in window mode
         }
         else                                // in case of command line arguments
             commandLineMode(args);          // run the command line mode

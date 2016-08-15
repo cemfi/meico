@@ -482,9 +482,9 @@ public class Mei {
                 // update the duration of the measure; if the measure is overful, take the respective duration; if underful, keep the defined duration in accordance to its time signature
                 Element cm = this.helper.currentMeasure;
                 this.helper.currentMeasure = null;                          // this has to be set null so that getMidiTime() does not return the measure's date
-                double dur1 = Double.parseDouble(cm.getAttributeValue("dur"));                                  // duration of the measure
-                double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
-                cm.getAttribute("dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
+                double dur1 = Double.parseDouble(cm.getAttributeValue("midi.dur"));                                  // duration of the measure
+                double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("midi.date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
+                cm.getAttribute("midi.dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
                 continue;
             } else if (e.getLocalName().equals("mensur")) {
                 continue;                                                   // TODO: ignore
@@ -692,7 +692,7 @@ public class Mei {
             return;
         }
 
-        scoreDef.addAttribute(new Attribute("date", Double.toString(helper.getMidiTime())));
+        scoreDef.addAttribute(new Attribute("midi.date", Double.toString(helper.getMidiTime())));
 
         // otherwise all entries are done in globally maps
         Element s;
@@ -729,7 +729,7 @@ public class Mei {
             trans = (scoreDef.getAttribute("trans.semi") == null) ? 0 : Integer.parseInt(scoreDef.getAttributeValue("trans.semi"));
             trans += Helper.processClefDis(scoreDef);
             Element d = new Element("transposition");                                               // create a transposition entry
-            d.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));
+            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
             d.addAttribute(new Attribute("semi", Integer.toString(trans)));                         // copy the value or write "0" for no transposition (this is to cancel previous entries)
             Helper.copyId(scoreDef, d);                                                             // copy the id
             this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);    // make an entry in the miscMap
@@ -749,7 +749,7 @@ public class Mei {
     private void processStaffDef(Element staffDef) {
         Element part = this.makePart(staffDef);                                                             // create a part element in movement, or get Element pointer if this part exists already
 
-        staffDef.addAttribute(new Attribute("date", Double.toString(helper.getMidiTime())));
+        staffDef.addAttribute(new Attribute("midi.date", Double.toString(helper.getMidiTime())));
 
         // handle local time signature entry
         Element t = this.makeTimeSignature(staffDef);                                                       // create a time signature element, or null if there is no such data
@@ -785,7 +785,7 @@ public class Mei {
             trans += Helper.processClefDis(staffDef);
             Element d = new Element("transposition");                                                       // create a transposition entry
             d.addAttribute(new Attribute("semi", Integer.toString(trans)));  // copy the value or write "0" for no transposition (this is to cancel previous entries)
-            d.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));
+            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
             Helper.copyId(staffDef, d);                                                                     // copy the id
             part.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);              // make an entry in the miscMap
         }
@@ -807,7 +807,7 @@ public class Mei {
         Element s = this.helper.getPart((ref == null) ? "" : ref.getValue());   // get the part
 
         if (s != null) {
-//            s.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("date") : "0.0"));  // set currentDate of processing
+//            s.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("midi.date") : "0.0"));  // set currentDate of processing
             s.addAttribute(new Attribute("currentDate", Double.toString(this.helper.getMidiTime())));  // set currentDate of processing
             return s;                                                           // if that part entry was found, return it
         }
@@ -822,7 +822,7 @@ public class Mei {
      * @param layerDef an mei layerDef element
      */
     private void processLayerDef(Element layerDef) {
-        layerDef.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));
+        layerDef.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
 
         if (layerDef.getAttribute("dur.default") != null) {                                                         // if there is a default duration defined
             Element d = new Element("dur.default");
@@ -851,7 +851,7 @@ public class Mei {
      * @param measure an mei measure element
      */
     private void processMeasure(Element measure) {
-        measure.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));    // set the measure's date
+        measure.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));    // set the measure's date
 
         // compute the duration of this measure
         double dur = 0.0;                                               // its duration
@@ -865,7 +865,7 @@ public class Mei {
             dur = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));
         }
 
-        measure.addAttribute(new Attribute("dur", Double.toString(dur)));
+        measure.addAttribute(new Attribute("midi.dur", Double.toString(dur)));
     }
 
     /** process an mei meterSig element
@@ -941,17 +941,17 @@ public class Mei {
         {
             Elements ps = this.helper.currentMovement.getChildElements("part");
             if (ps.size() == 0) {
-                part.addAttribute(new Attribute("channel.midi", "0"));                                              // set midi channel
-                part.addAttribute(new Attribute("port.midi", "0"));                                                 // set midi port
+                part.addAttribute(new Attribute("midi.channel", "0"));                                              // set midi channel
+                part.addAttribute(new Attribute("midi.port", "0"));                                                 // set midi port
             }
             else {
                 Element p = ps.get(ps.size()-1);                                                            // choose last part entry
-                int channel = (Integer.parseInt(p.getAttributeValue("channel.midi")) + 1) % 16;                  // increment channel counter mod 16
+                int channel = (Integer.parseInt(p.getAttributeValue("midi.channel")) + 1) % 16;                  // increment channel counter mod 16
                 if ((channel == 9) && this.helper.dontUseChannel10)                                                    // if the drum channel should be avoided
                     ++channel;                                                                                  // do so
-                int port = (channel == 0) ? (Integer.parseInt(p.getAttributeValue("port.midi")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("port.midi"));	// increment port counter if channels of previous port are full
-                part.addAttribute(new Attribute("channel.midi", Integer.toString(channel)));                          // set midi channel
-                part.addAttribute(new Attribute("port.midi", Integer.toString(port)));                                // set midi port
+                int port = (channel == 0) ? (Integer.parseInt(p.getAttributeValue("midi.port")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("midi.port"));	// increment port counter if channels of previous port are full
+                part.addAttribute(new Attribute("midi.channel", Integer.toString(channel)));                          // set midi channel
+                part.addAttribute(new Attribute("midi.port", Integer.toString(port)));                                // set midi port
             }
         }
 
@@ -965,7 +965,7 @@ public class Mei {
         dated.appendChild(new Element("score"));
         part.appendChild(new Element("header"));
         part.appendChild(dated);
-        part.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("date") : "0.0"));    // set currentDate of processing
+        part.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("midi.date") : "0.0"));    // set currentDate of processing
 
         this.helper.currentMovement.appendChild(part);                                                         // insert it into movement
 
@@ -982,7 +982,7 @@ public class Mei {
         Helper.copyId(meiSource, s);                                                        // copy the id
 
         // date of the element
-        s.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));  // compute the date
+        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));  // compute the date
 
         // count and unit are preferred in the processing; if not givven take sym
         if (((meiSource.getAttribute("count") != null) && (meiSource.getAttribute("unit") != null)) || ((meiSource.getAttribute("meter.count") != null) && (meiSource.getAttribute("meter.unit") != null))) {
@@ -1030,7 +1030,7 @@ public class Mei {
     private Element makeKeySignature(Element meiSource) {
         Element s = new Element("element");                                                             // create an element
         Helper.copyId(meiSource, s);                                                                    // copy the id
-        s.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));              // compute date
+        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));              // compute date
 
         // process scoreDef and staffDef
         if (meiSource.getLocalName().equals("scoreDef") || meiSource.getLocalName().equals("staffDef")) {   // if meiSource is a scoreDef or staffDef
@@ -1110,7 +1110,7 @@ public class Mei {
 
         // make a clone of the element and store its tick date
         Element clone = Helper.cloneElement(tupletSpan);
-        clone.addAttribute(new Attribute("date", this.helper.currentPart.getAttributeValue("currentDate")));
+        clone.addAttribute(new Attribute("midi.date", this.helper.currentPart.getAttributeValue("currentDate")));
 
         // compute duration if already possible (if a du or dur.ges attribute is given) and set the end attribute accordingly
         double dur = this.helper.computeDuration(tupletSpan);                               // compute duration
@@ -1137,7 +1137,7 @@ public class Mei {
         // create marker element
         Element marker = new Element("element");
         Helper.copyId(reh, marker);                                                                 // copy a possibly present xml:id
-        marker.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));     // store the date of the element
+        marker.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));     // store the date of the element
         marker.addAttribute(new Attribute("message", reh.getValue()));                              // store its text or empty string
         Helper.copyId(reh, marker);                                                                 // copy the id
 
@@ -1185,7 +1185,7 @@ public class Mei {
 
         // check the timeSignatureMap for time signature changes between this and the previous measure
         if (es.size() != 0) {                                                       // this check is only possible if there is time signature information
-            if ((this.helper.getMidiTime() - (2.0 * timeframe)) < (Double.parseDouble(es.get(es.size()-1).getAttributeValue("date")))) {    // if the last time signature element is within the timeframe
+            if ((this.helper.getMidiTime() - (2.0 * timeframe)) < (Double.parseDouble(es.get(es.size()-1).getAttributeValue("midi.date")))) {    // if the last time signature element is within the timeframe
                 Element second = Helper.cloneElement(es.get(es.size()-1));          // get the last time signature element
                 Element first;
                 if (es.size() < 2) {                                                // if no second to last time signature element exists
@@ -1196,11 +1196,11 @@ public class Mei {
                 else {                                                              // otherwise
                     first = Helper.cloneElement(es.get(es.size() - 2));             // get the second to last time signature element
                 }
-                first.addAttribute(new Attribute("date", this.helper.currentPart.getAttributeValue("currentDate")));  // update date of first  to currentDate
+                first.addAttribute(new Attribute("midi.date", this.helper.currentPart.getAttributeValue("currentDate")));  // update date of first  to currentDate
 
                 // set date of the last time signature element to the beginning of currentDate + 1 measure
                 double timeframe2 = (4.0 * this.helper.ppq * Integer.parseInt(first.getAttributeValue("numerator"))) / Integer.parseInt(first.getAttributeValue("denominator"));    // compute the length of one measure of time signature element first
-                second.getAttribute("date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // update date of second time signature element
+                second.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // update date of second time signature element
 
                 // add both instructions to the timeSignatureMap
                 es.get(0).getParent().appendChild(first);
@@ -1227,14 +1227,14 @@ public class Mei {
         if (ts.size() == 0)                                                                                                                                                         // if local map empty
             ts = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");     // get global entries
         int timesign = ts.size() - 1;                                                                                                                                               // get index of the last element in ts
-        double tsdate = (timesign > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("date")) : 0.0;                                                                      // get the date of the current time signature
+        double tsdate = (timesign > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                      // get the date of the current time signature
 
         // go back measure-wise, check for time signature changes, sum up the measure lengths to variable timeframe
         for (int measureCount = (multiRpt.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRpt.getAttributeValue("num")); measureCount > 0; --measureCount) {        // for each measure
             timeframe += measureLength;                                                                                         // add its length to the timeframe for repetition
             while (tsdate >= (currentDate - timeframe)) {                                                                       // if we pass the date of the current time signature (and maybe others, too)
                 --timesign;                                                                                                     // choose predecessor in the ts list
-                tsdate = ((timesign) > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("date")) : 0.0;               // get its date
+                tsdate = ((timesign) > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;               // get its date
                 measureLength = ((timesign) > 0) ? this.helper.computeMeasureLength(Integer.parseInt(ts.get(timesign).getAttributeValue("numerator")), Integer.parseInt(ts.get(timesign).getAttributeValue("denominator"))) : this.helper.computeMeasureLength(4, 4);   // update measureLength
             }
         }
@@ -1244,7 +1244,7 @@ public class Mei {
             Element tsMap = (Element)ts.get(0).getParent();                                     // get the map
             for(++timesign; timesign < ts.size(); ++timesign) {                                 // go through all time signature elements we just passed
                 Element clone = Helper.cloneElement(ts.get(timesign));                          // clone the element
-                clone.getAttribute("date").setValue(Double.toString(Double.parseDouble(clone.getAttributeValue("date")) + timeframe));  // update its date
+                clone.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(clone.getAttributeValue("midi.date")) + timeframe));  // update its date
                 tsMap.appendChild(clone);
             }
         }
@@ -1276,10 +1276,10 @@ public class Mei {
 
         // go back in the score map, copy all elements with date at and after the last beat, recalculate the date (date += beat value)
         for (Element e = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").getChildElements().get(this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").getChildElements().size()-1); e != null; e = Helper.getPreviousSiblingElement(e)) {
-            double date = Double.parseDouble(e.getAttributeValue("date"));                                                          // get date of the element
+            double date = Double.parseDouble(e.getAttributeValue("midi.date"));                                                          // get date of the element
             if (date < datePrevBeat)                                                                                                // if all elements from the previous beat were collected
                 break;                                                                                                              // break the for loop
-            els.push(Helper.cloneElement(e)).getAttribute("date").setValue(Double.toString(date + timeframe));                      // make a new element, push onto the els stack, and update its date value
+            els.push(Helper.cloneElement(e)).getAttribute("midi.date").setValue(Double.toString(date + timeframe));                      // make a new element, push onto the els stack, and update its date value
         }
 
         // append the elements in the els stack to the score map
@@ -1304,7 +1304,7 @@ public class Mei {
             return;
 
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(rest);                          // insert in movement
-        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("duration")))));  // update currentDate
+        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))));  // update currentDate
     }
 
     /** make a rest that lasts a complete measure
@@ -1330,8 +1330,8 @@ public class Mei {
             return null;                                                // cancel
         }
 
-        rest.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));       // compute date
-        rest.addAttribute(new Attribute("duration", Double.toString(dur)));                         // store in rest element
+        rest.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));       // compute date
+        rest.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                         // store in rest element
 
         return rest;
     }
@@ -1346,14 +1346,14 @@ public class Mei {
         Element rest = this.makeMeasureRest(multiRest);                                     // generate a one measure rest
         if (rest == null) return;                                                           // if failed to create a rest, cancel
 
-        rest.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));   // compute date
+        rest.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));   // compute date
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(rest);  // insert the rest into the score
 
         int num = (multiRest.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRest.getAttributeValue("num"));
         if (num > 1)                                                                        // if multiple measures (more than 1)
-            rest.getAttribute("duration").setValue(Double.toString(Double.parseDouble(rest.getAttributeValue("duration")) * num));    // rest duration of one measure times the number of measures
+            rest.getAttribute("midi.duration").setValue(Double.toString(Double.parseDouble(rest.getAttributeValue("midi.duration")) * num));    // rest duration of one measure times the number of measures
 
-        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("duration")))));  // update currentDate counter
+        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))));  // update currentDate counter
     }
 
     /** process an mei rest element
@@ -1363,18 +1363,18 @@ public class Mei {
     private void processRest(Element rest) {
         Element s = new Element("rest");                                                    // this is the new rest element
         Helper.copyId(rest, s);                                                             // copy the id
-        s.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));  // compute date
+        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));  // compute date
 
         double dur = this.helper.computeDuration(rest);                                     // compute note duration in midi ticks
         if (dur == 0.0) return;                                                             // if failed, cancel
 
-        s.addAttribute(new Attribute("duration", Double.toString(dur)));                    // else store attribute
+        s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                    // else store attribute
         this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur)));    // update currentDate counter
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(s); // insert the new note into the part->dated->score
 
         // this is just for the debugging in mei
-        rest.addAttribute(new Attribute("date.midi", s.getAttributeValue("date")));
-        rest.addAttribute(new Attribute("dur.midi", s.getAttributeValue("duration")));
+        rest.addAttribute(new Attribute("midi.date", s.getAttributeValue("midi.date")));
+        rest.addAttribute(new Attribute("midi.dur", s.getAttributeValue("midi.duration")));
     }
 
     /** process an mei octave element; this method does not process tstamp and tstamp2 or tstamp.ges or tstamp.real; there MUST be a dur, dur.ges or endid attribute
@@ -1417,7 +1417,7 @@ public class Mei {
 
         Element s = new Element("addTransposition");                                        // create an addTransposition element (it adds to other transpositions, e.g. from the staffDef or scoreDef)
         Helper.copyId(octave, s);                                                           // copy the id
-        s.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));  // compute starting date of transposition
+        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));  // compute starting date of transposition
         s.addAttribute(new Attribute("semi", Integer.toString(result)));                    // write the semitone transposition into the element
 
         // compute duration or store endid for later reference
@@ -1452,7 +1452,7 @@ public class Mei {
 
         Element s = new Element("pedal");                                                               // create pedal element
         Helper.copyId(pedal, s);                                                                        // copy the id
-        s.addAttribute(new Attribute("date", Double.toString(this.helper.getMidiTime())));              // compute starting of the pedal
+        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));              // compute starting of the pedal
         s.addAttribute(new Attribute("state", pedal.getAttributeValue("dir")));                         // pedal state can be "down", "up", "half", and "bounce" (release then immediately depress the pedal)
 
         s.addAttribute(new Attribute("endid", pedal.getAttributeValue("endid")));                       // store endid for later reference
@@ -1482,13 +1482,13 @@ public class Mei {
 
         Element s = new Element("note");                                        // create a note element
         Helper.copyId(note, s);                                                 // copy the id
-        s.addAttribute(new Attribute("date", Double.toString(date)));  // compute the date of the note
+        s.addAttribute(new Attribute("midi.date", Double.toString(date)));      // compute the date of the note
 
         // compute midi pitch
         ArrayList<String> pitchdata = new ArrayList<String>();                  // this is to store pitchname, accidentals and octave as additional attributes of the note
         double pitch = this.helper.computePitch(note, pitchdata);               // compute pitch of the note
         if (pitch == -1) return;                                                // if failed, cancel
-        s.addAttribute(new Attribute("pitch", Double.toString(pitch)));         // store resulting pitch in the note
+        s.addAttribute(new Attribute("midi.pitch", Double.toString(pitch)));         // store resulting pitch in the note
         s.addAttribute(new Attribute("pitchname", pitchdata.get(0)));           // store pitchname as additional attribute
         s.addAttribute(new Attribute("accidentals", pitchdata.get(1)));         // store accidentals as additional attribute
         s.addAttribute(new Attribute("octave", pitchdata.get(2)));              // store octave as additional attribute
@@ -1496,7 +1496,7 @@ public class Mei {
         // compute midi duration
         double dur = this.helper.computeDuration(note);                         // compute note duration in midi ticks
         if (dur == 0.0) return;                                                 // if failed, cancel
-        s.addAttribute(new Attribute("duration", Double.toString(dur)));
+        s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));
 
         // update currentDate counter
         if (this.helper.currentChord == null)                                   // the next instruction must be suppressed in the chord environment
@@ -1504,8 +1504,8 @@ public class Mei {
 
         //adding some attributes to the mei source, this is only for the debugging in mei
         note.addAttribute(new Attribute("pnum", String.valueOf(pitch)));
-        note.addAttribute(new Attribute("date.midi", String.valueOf(date)));
-        note.addAttribute(new Attribute("dur.midi", String.valueOf(dur)));
+        note.addAttribute(new Attribute("midi.date", String.valueOf(date)));
+        note.addAttribute(new Attribute("midi.dur", String.valueOf(dur)));
 
         // handle ties
         char tie = 'n';                                                         // what kind of tie is it? i: initial, m: medial, t: terminal, n: nothing
@@ -1527,10 +1527,10 @@ public class Mei {
                 Nodes ps = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").query("descendant::*[local-name()='note' and @tie]");    // select all preceding msm notes with a tie attribute
                 for (int i = ps.size() - 1; i >= 0; --i) {                                                                                                              // check each of them
                     Element p = ((Element) ps.get(i));
-                    if (p.getAttributeValue("pitch").equals(s.getAttributeValue("pitch"))                                                                               // if the pitch is equal
-                            && ((Double.parseDouble(p.getAttributeValue("date")) + Double.parseDouble(p.getAttributeValue("duration"))) == date)                             // and the tie note and this note are next to each other (there is zero time between them and they do not overlap)
+                    if (p.getAttributeValue("midi.pitch").equals(s.getAttributeValue("midi.pitch"))                                                                               // if the pitch is equal
+                            && ((Double.parseDouble(p.getAttributeValue("midi.date")) + Double.parseDouble(p.getAttributeValue("midi.duration"))) == date)                             // and the tie note and this note are next to each other (there is zero time between them and they do not overlap)
                             ) {
-                        p.addAttribute(new Attribute("duration", Double.toString(Double.parseDouble(p.getAttributeValue("duration")) + dur)));                          // add this duration to the preceeding note with the same pitch
+                        p.addAttribute(new Attribute("midi.duration", Double.toString(Double.parseDouble(p.getAttributeValue("midi.duration")) + dur)));                          // add this duration to the preceeding note with the same pitch
                         if (tie == 't')                                         // terminal tie
                             p.removeAttribute(p.getAttribute("tie"));           // delete tie attribute
                         return;                                                 // this note is not to be stored in the score, it only extends its predecessor; remark: if no fitting note is found, this note will be stored in the score map because this line is not reached

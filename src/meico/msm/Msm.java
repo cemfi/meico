@@ -297,11 +297,11 @@ public class Msm {
 
         // parse the parts
         for (Element part = this.getRootElement().getFirstChildElement("part"); part != null; part = Helper.getNextSiblingElement("part", part)) {  // go through all parts in the msm document
-            if (part.getAttribute("channel.midi") == null) continue;                                                 // no channel information, cancel this part element's processing and continue with the next part
+            if (part.getAttribute("midi.channel") == null) continue;                                                 // no channel information, cancel this part element's processing and continue with the next part
 
 //            { // this stuff is used, when tracks represent ports, not parts!
 //              // select the midi track, or create it if necessary
-//                int port = Integer.parseInt(part.getAttributeValue("port.midi"));                                    // the port number
+//                int port = Integer.parseInt(part.getAttributeValue("midi.port"));                                    // the port number
 //                while ((seq.getTracks().length - 1) < port) seq.createTrack();                                  // create as many tracks as necessary, so that the port number corresponds to the track number in seq (port 0 = seq.getTracks().[0])
 //                track = seq.getTracks()[port];                                                                  // select the track
 //            }
@@ -356,7 +356,7 @@ public class Msm {
      * @param generateProgramChanges if true, program change events are generated (useful for MIR and as a cheap kind of piano reduction)
      */
     private void partName(Element part, Track track, boolean generateProgramChanges) {
-        short chan = Short.parseShort(part.getAttributeValue("channel.midi"));
+        short chan = Short.parseShort(part.getAttributeValue("midi.channel"));
 
         if ((part.getAttribute("name") == null) || part.getAttributeValue("name").isEmpty()) {          // if there is no name
             if (generateProgramChanges)
@@ -381,19 +381,19 @@ public class Msm {
     private void parseScore(Element part,  Track track) {
         if ((part.getFirstChildElement("dated") == null)
                 || (part.getFirstChildElement("dated").getFirstChildElement("score") == null)
-                || (part.getAttribute("channel.midi") == null))                                                      // if no sufficient information
+                || (part.getAttribute("midi.channel") == null))                                                      // if no sufficient information
             return;                                                                                             // cancel
 
-        int chan = Integer.parseInt(part.getAttributeValue("channel.midi"));                                         // get the midi channel number
+        int chan = Integer.parseInt(part.getAttributeValue("midi.channel"));                                         // get the midi channel number
 
         for (Element n = part.getFirstChildElement("dated").getFirstChildElement("score").getFirstChildElement("note"); n != null; n = Helper.getNextSiblingElement("note", n)) {   // go through all note elements in score
 //            switch (n.getLocalName()) {
 //                case "rest":                                                                                    // rests are not represented in midi
 //                    break;
 //                case "note":                                                                                    // for note elements create note_on and note_off events
-                    int pitch = Math.round(Float.parseFloat(n.getAttributeValue("pitch")));                     // Math.round(float) returns int; so far pitches are well captured by number type float
-                    long date = Math.round(Double.parseDouble(n.getAttributeValue("date")));                    // Math.round(double) returns long
-                    long dur = Math.round(Double.parseDouble(n.getAttributeValue("duration")));
+                    int pitch = Math.round(Float.parseFloat(n.getAttributeValue("midi.pitch")));                     // Math.round(float) returns int; so far pitches are well captured by number type float
+                    long date = Math.round(Double.parseDouble(n.getAttributeValue("midi.date")));                    // Math.round(double) returns long
+                    long dur = Math.round(Double.parseDouble(n.getAttributeValue("midi.duration")));
                     track.add(EventMaker.createNoteOn(chan, date, pitch, 100));
                     track.add(EventMaker.createNoteOff(chan, date + dur, pitch, 100));
 //                    break;
@@ -414,7 +414,7 @@ public class Msm {
             return;                                                                                             // cancel
 
         for (Element e = part.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").getFirstChildElement("element"); e != null; e = Helper.getNextSiblingElement("element", e)) {   // go through all elements in the keySignatureMap
-            long date = Math.round(Double.parseDouble(e.getAttributeValue("date")));
+            long date = Math.round(Double.parseDouble(e.getAttributeValue("midi.date")));
             int accids = (e.getAttribute("accidentals") == null) ? 0 : Integer.parseInt(e.getAttributeValue("accidentals"));
             track.add(EventMaker.createKeySignature(date, accids));
         }
@@ -431,7 +431,7 @@ public class Msm {
             return;                                                                                             // cancel
 
         for (Element e = part.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("element"); e != null; e = Helper.getNextSiblingElement("element", e)) {   // go through all elements in the keySignatureMap
-            long date = Math.round(Double.parseDouble(e.getAttributeValue("date")));
+            long date = Math.round(Double.parseDouble(e.getAttributeValue("midi.date")));
             int numerator = (e.getAttribute("numerator") == null) ? 4 : (int)Math.round(Double.parseDouble(e.getAttributeValue("numerator")));
             int denominator = (e.getAttribute("denominator") == null) ? 4 : (int)Math.round(Double.parseDouble(e.getAttributeValue("denominator")));
             track.add(EventMaker.createTimeSignature(date, numerator, denominator));
@@ -458,7 +458,7 @@ public class Msm {
             } catch (NumberFormatException error) {
                 message = "marker";
             }
-            track.add(EventMaker.createMarker(Math.round(Double.parseDouble(e.getAttributeValue("date"))), message));
+            track.add(EventMaker.createMarker(Math.round(Double.parseDouble(e.getAttributeValue("midi.date"))), message));
         }
     }
 }
