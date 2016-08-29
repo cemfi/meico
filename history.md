@@ -1,7 +1,7 @@
 ###Version History
 
 ####v0.1.2
-- Bugfix in commandline mode: missing path when writing `"-debug.mei"` and the file has been loaded via relative path.
+- Bugfix in command line mode: missing path when writing `"-debug.mei"` and the file has been loaded via relative path.
 - Added `S.`, `A.`, `T.`, `B.` to the instrument dictionary for ChoirOhs.
 - Method `InstrumentsDictionary.getProgramChange()` outputs its string matching results to the command line or log file, resp.
 - Missing `accid.ges` attribute processing in `Helper.computePitch()` added.
@@ -36,7 +36,7 @@
 - Added flag to the mei-to-msm conversion to avoid the midi drum channel, added it to the window mode and command line options
 	- `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on
 - Changed id generation for copyOf resolution into a combined id: `source id + ":" + generated id`; hence, applications can now trace them back to the source element
-- Minor bugfix of commandline option `[--no--program-changes]` to `[--no-program-changes]`
+- Minor bugfix of command line option `[--no--program-changes]` to `[--no-program-changes]`
 - Minor ui corrections for window mode
 - Adding new attributes, `date.midi` and `dur.midi`, to mei note and rest elements during conversion. This is only for debugging purpose and appears only in the `-debug.mei` file when running the command line mode with `--debug` flag.
 - Also a `pnum` is added to the mei `note` elements in the debug version which holds the calculated midi pitch value.
