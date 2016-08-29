@@ -479,8 +479,8 @@ public class Helper {
             }
             else {
                 if (chordEnvironment && (this.currentChord.getAttribute("dur") != null)) {          // if a chord environment defines a duration
-                    focus = this.currentChord;                                                     // from now on, look only in the chord environment for all further duration related attributes
-                    sdur = focus.getAttributeValue("dur");                              // take this
+                    focus = this.currentChord;                                                      // from now on, look only in the chord environment for all further duration related attributes
+                    sdur = focus.getAttributeValue("dur");                                          // take this
                 }
                 else {
                     Elements durdefaults = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");
@@ -606,7 +606,7 @@ public class Helper {
      */
     protected double computePitch(Element ofThis, ArrayList<String> pitchdata) {
         String pname;                                                   // the attribute strings
-        String accid = "";                                              //
+        String accid = "";                                              // the accidental string
         int oct = 0;                                                    // octave transposition value
         int trans = 0;                                                  // transposition
 
@@ -654,15 +654,24 @@ public class Helper {
         }
         else {
             if (ofThis.getAttribute("accid") != null) {                 // look for non-gestural accid attribute
-                accid = ofThis.getAttributeValue("accid");
+                accid = ofThis.getAttributeValue("accid");              // store the accidental string
                 if (!accid.isEmpty()) this.accid.add(ofThis);           // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
             }
             else {
                 Element accidElement = getFirstChildElement("accid", ofThis);   // is there an accid child element instead of an attribute?
+                if (accidElement != null) {
+                    if (accidElement.getAttribute("accid.ges") != null) {                                                   // does it have an accid.ges attribute
+                        ofThis.addAttribute(new Attribute("accid.ges", accidElement.getAttributeValue("accid.ges")));       // make an attribute of it
+                        accid = ofThis.getAttributeValue("accid.ges");                                                      // store the accidental string
 
-                if ((accidElement != null) && (accidElement.getAttribute("accid") != null)) {                               // if there are valid accid elements in the note environment
-                    ofThis.addAttribute(new Attribute("accid", accidElement.getAttributeValue("accid")));                   // make an attribute of it
-                    accid = ofThis.getAttributeValue("accid");
+                    }
+                    else {
+                        if (accidElement.getAttribute("accid") != null) {                                                   // does it have an accid attribute
+                            ofThis.addAttribute(new Attribute("accid", accidElement.getAttributeValue("accid")));           // make an attribute of it
+                            accid = ofThis.getAttributeValue("accid");                                                      // store the accidental string
+
+                        }
+                    }
                     if (!accid.isEmpty()) this.accid.add(ofThis);                                                           // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
                 }
                 else {                                                                                                      // otherwise look for preceding accidentals in this measure

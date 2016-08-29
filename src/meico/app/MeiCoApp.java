@@ -160,8 +160,9 @@ public class MeiCoApp extends JFrame {
             return;
         }
 
-        if (debug)
-            mei.writeMei(args[args.length-1].substring(0, args[args.length-1].length()-4) + "-debug.mei"); // After the msm export, there is some new stuff in the mei ... mainly the date and dur attribute at measure elements (handy to check for numeric problems that occured during conversion), some ids and expanded copyofs. This was required for the conversion and can be output with this function call. It is, however, mainly interesting for debugging.
+        if (debug) {
+            mei.writeMei(mei.getFile().getPath().substring(0, mei.getFile().getPath().length() - 4) + "-debug.mei"); // After the msm export, there is some new stuff in the mei ... mainly the date and dur attribute at measure elements (handy to check for numeric problems that occured during conversion), some ids and expanded copyofs. This was required for the conversion and can be output with this function call. It is, however, mainly interesting for debugging.
+        }
 
         if (msm) {
             System.out.println("Writing msm to file system: ");

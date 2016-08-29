@@ -90,8 +90,8 @@ public class InstrumentsDictionary {
         String n = name.toLowerCase();                              // to ignore the case, the name string is changed to lower case and all the strings it is compared to will be in lower case, too
         short pc = 0;                                               // here comes the result
         double distance = Double.MAX_VALUE;                         // indicates the distance to the name string
-//        String foo = "";                                            // just for debugging
-        long time = System.currentTimeMillis();                     // for runtime measurements
+        String foo = "";                                            // just for debugging
+//        long time = System.currentTimeMillis();                     // for runtime measurements
 
         for (Map.Entry<String,Short> entry : this.dict.entrySet()) {
 //            time = System.nanoTime();
@@ -137,18 +137,18 @@ public class InstrumentsDictionary {
 
             if (cur_distance == 0) {                                        // found perfect match
 //                System.out.println(System.nanoTime() - time);
-//                System.out.println(name + " wurde zu " + entry.getKey() + " mit " + cur_distance);
+                System.out.println(name + " is mapped to " + entry.getKey() + " with " + cur_distance);
                 return entry.getValue();                                    // return the value
             }
 
             if (cur_distance < distance) {
                 distance = cur_distance;
                 pc = entry.getValue();
-//                foo = entry.getKey();
+                foo = entry.getKey();
             }
         }
 //        System.out.println(System.nanoTime() - time);
-//        System.out.println(name + " wurde zu " + foo + " mit " + distance);
+        System.out.println(name + " is mapped to " + foo + " with " + distance);
         return pc;
     }
 

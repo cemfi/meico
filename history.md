@@ -1,5 +1,12 @@
 ###Version History
 
+####v0.1.2
+- Bugfix in commandline mode: missing path when writing `"-debug.mei"` and the file has been loaded via relative path.
+- Added `S.`, `A.`, `T.`, `B.` to the instrument dictionary for ChoirOhs.
+- Method `InstrumentsDictionary.getProgramChange()` outputs its string matching results to the command line or log file, resp.
+- Missing `accid.ges` attribute processing in `Helper.computePitch()` added.
+
+
 ####v0.1.1
 - Renamed the `dur` attribute in MSM notes and rests into `midi.duration`.
 - Further renamings: `date` into `midi.date`, `pitch` into `midi.pitch`, `channel.midi` into `midi.channel`, and `port.midi` into `midi.port`.
