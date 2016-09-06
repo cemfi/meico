@@ -340,7 +340,7 @@ public class Msm {
         double beatlength;
         // if there are global time signature information, take the denominator value as beatlength, otherwise default beatlength is 1/4
         try {
-            beatlength = 1.0 / Integer.parseInt(this.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("element").getAttributeValue("denominator"));
+            beatlength = 1.0 / Integer.parseInt(this.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature").getAttributeValue("denominator"));
         } catch (NumberFormatException e) {
             beatlength = 0.25;
         } catch (NullPointerException e) {
@@ -413,7 +413,7 @@ public class Msm {
                 || (part.getFirstChildElement("dated").getFirstChildElement("keySignatureMap") == null))        // if no sufficient information
             return;                                                                                             // cancel
 
-        for (Element e = part.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").getFirstChildElement("element"); e != null; e = Helper.getNextSiblingElement("element", e)) {   // go through all elements in the keySignatureMap
+        for (Element e = part.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").getFirstChildElement("keySignature"); e != null; e = Helper.getNextSiblingElement("keySignature", e)) {   // go through all elements in the keySignatureMap
             long date = Math.round(Double.parseDouble(e.getAttributeValue("midi.date")));
             int accids = (e.getAttribute("accidentals") == null) ? 0 : Integer.parseInt(e.getAttributeValue("accidentals"));
             track.add(EventMaker.createKeySignature(date, accids));
@@ -430,7 +430,7 @@ public class Msm {
                 || (part.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap") == null))       // if no sufficient information
             return;                                                                                             // cancel
 
-        for (Element e = part.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("element"); e != null; e = Helper.getNextSiblingElement("element", e)) {   // go through all elements in the keySignatureMap
+        for (Element e = part.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature"); e != null; e = Helper.getNextSiblingElement("timeSignature", e)) {   // go through all elements in the keySignatureMap
             long date = Math.round(Double.parseDouble(e.getAttributeValue("midi.date")));
             int numerator = (e.getAttribute("numerator") == null) ? 4 : (int)Math.round(Double.parseDouble(e.getAttributeValue("numerator")));
             int denominator = (e.getAttribute("denominator") == null) ? 4 : (int)Math.round(Double.parseDouble(e.getAttributeValue("denominator")));
@@ -450,7 +450,7 @@ public class Msm {
 
         String message;                                                                                         // the marker message
 
-        for (Element e = part.getFirstChildElement("dated").getFirstChildElement("markerMap").getFirstChildElement("element"); e != null; e = Helper.getNextSiblingElement("element", e)) {
+        for (Element e = part.getFirstChildElement("dated").getFirstChildElement("markerMap").getFirstChildElement("marker"); e != null; e = Helper.getNextSiblingElement("marker", e)) {
             try {
                 message = e.getAttributeValue("message");
             } catch (NullPointerException error) {

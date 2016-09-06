@@ -297,7 +297,12 @@ public class Mei {
 
         this.helper = new Helper(ppq);                                          // some variables and methods to make life easier
         this.helper.dontUseChannel10 = dontUseChannel10;                        // set the flag that says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
-        List<Msm> msms = this.convert(this.getMusic().getFirstChildElement("body", this.getMusic().getNamespaceURI()));
+
+        LinkedList<Msm> msms = new LinkedList<Msm>();                           // the list of Msm instances, each one is an mdiv in mei
+        Elements bodies = this.getMusic().getChildElements("body", this.getMusic().getNamespaceURI());  // get the list of body elements in the mei source
+        for (int b = 0; b < bodies.size(); ++b) {                               // for each body
+            msms.addAll(this.convert(bodies.get(b)));                           // convert each body to msm and add the output list to msms
+        }
         this.helper = null;                                                     // as this is a class variable it would remain in memory after this method, so it has to be nulled for garbage collection
 
         if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
@@ -328,8 +333,9 @@ public class Mei {
             this.helper.checkEndid(e);                                          // check for pending elements with endid attributes to be finished when the element with this endid is found
 
             // process the element
-            if (e.getLocalName().equals("accid")) {
-                continue;                                                   // this element is proccessed as child of a note, not here
+            if (e.getLocalName().equals("accid")) {                         // process accid elements that are not children of notes
+                this.processAccid(e);
+                continue;
             } else if (e.getLocalName().equals("add")) {
                 continue;                                                   // TODO: ignore
             } else if (e.getLocalName().equals("anchorText")) {
@@ -344,8 +350,8 @@ public class Mei {
                 continue;                                                   // TODO: relevant for expressive performance
             } else if (e.getLocalName().equals("barline")) {
                 continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("beam")) {// contains the notes to be beamed TODO: relevant for expressive performance
-
+            } else if (e.getLocalName().equals("beam")) {
+                // contains the notes to be beamed TODO: relevant for expressive performance
             } else if (e.getLocalName().equals("beamSpan")) {
                 continue;                                                   // TODO: may be relavant for expressive phrasing
             } else if (e.getLocalName().equals("beatRpt")) {
@@ -356,25 +362,14 @@ public class Mei {
             } else if (e.getLocalName().equals("breath")) {
                 continue;                                                   // TODO: relevant for expressive performance - cesura
             } else if (e.getLocalName().equals("bTrem")) {
-                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwards
-                this.helper.currentChord = e;                               // handle it just like a chord
-                this.convert(e);                                            // process everything within this environment
-                this.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptr
-                if (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
-                this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + this.helper.computeDuration(e)))); // update currentDate
+                this.processChord(e);                                       // bTrems are treated as chords
                 continue;                                                   // continue with the next sibling
             } else if (e.getLocalName().equals("choice")) {
                 continue;                                                   // TODO: ignore
             } else if (e.getLocalName().equals("chord")) {
                 if (e.getAttribute("grace") != null)                        // TODO: at the moment we ignore grace notes and grace chords; later on, for expressive performances, we should handle these somehow
                     continue;
-                this.preProcessChord(e);                                    // preprocessing of the chord element
-                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwards
-                this.helper.currentChord = e;                               // set the temp.chord pointer to this chord
-                this.convert(e);                                            // process everything within this chord
-                this.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptr
-                if (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
-                this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + this.helper.computeDuration(e)))); // update currentDate
+                this.processChord(e);
                 continue;                                                       // continue with the next sibling
             } else if (e.getLocalName().equals("chordTable")) {
                 continue;                                                   // can be ignored
@@ -405,12 +400,7 @@ public class Mei {
             } else if (e.getLocalName().equals("fermata")) {
                 continue;                                                   // TODO: relevant for expressive performance
             } else if (e.getLocalName().equals("fTrem")) {
-                Element f = this.helper.currentChord;                       // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwards
-                this.helper.currentChord = e;                               // handle it just like a chord
-                this.convert(e);                                            // process everything within this environment
-                this.helper.currentChord = f;                               // foget the pointer to this chord and return to the surrounding environment or nullptr
-                if (this.helper.currentChord == null)                       // we are done with all chord/bTrem environments
-                this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + this.helper.computeDuration(e)))); // update currentDate
+                this.processChord(e);                                       // fTrems are treated as chords
                 continue;                                                   // continue with the next sibling
             } else if (e.getLocalName().equals("gap")) {
                 continue;                                                   // TODO: ignore
@@ -422,14 +412,14 @@ public class Mei {
                 continue;                                                   // TODO: relevant for expressive performance, cresc./decresc.
             } else if (e.getLocalName().equals("halfmRpt")) {
                 this.processHalfmRpt(e);
-
-                continue;                                                   // TODO: ignore
             } else if (e.getLocalName().equals("handShift")) {
                 continue;                                                   // TODO: ignore
             } else if (e.getLocalName().equals("harm")) {
                 continue;                                                   // can be ignored
             } else if (e.getLocalName().equals("harpPedal")) {
                 continue;                                                   // can be ignored
+            } else if (e.getLocalName().equals("incip")) {
+                    continue;                                               // can be ignored
             } else if (e.getLocalName().equals("ineume")) {
                 continue;                                                   // ignored, this implementation focusses on common modern notation
             } else if (e.getLocalName().equals("instrDef")) {
@@ -440,7 +430,6 @@ public class Mei {
                 continue;                                                   // this element is processed within a keySig; if it occurs outside of a keySig environment it is invalid, hence, ignored
             } else if (e.getLocalName().equals("keySig")) {
                 this.processKeySig(e);
-
             } else if (e.getLocalName().equals("label")) {
                 continue;                                                   // can be ignored
             } else if (e.getLocalName().equals("layer")) {
@@ -525,10 +514,8 @@ public class Mei {
                 continue;                                                   // TODO: ignore
             } else if (e.getLocalName().equals("ossia")) {
                 continue;                                                   // TODO: ignored for the moment but may be included later on
-            } else if (e.getLocalName().equals("parts")) {
-                continue;                                                   // TODO: For the moment, parts are ignored, but have to be handled later on: create additional part entries and midi channels from them.
-            } else if (e.getLocalName().equals("part")) {
-                continue;                                                   // TODO: For the moment, part is ignored, but has to be handled later on
+            } else if (e.getLocalName().equals("parts")) {                  // just dive into it
+            } else if (e.getLocalName().equals("part")) {                   // just dive into it
             } else if (e.getLocalName().equals("pb")) {
                 continue;                                                   // can be ignored
             } else if (e.getLocalName().equals("pedal")) {
@@ -613,7 +600,8 @@ public class Mei {
                 if (e.getAttribute("dur") != null) {
                     double cd = Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate"));   // store the current date for use afterwards
                     this.convert(e);                                        // process the child elements
-                    this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(cd + this.helper.computeDuration(e)));   // this compensates for numeric problems with the single note durations within the tuplet
+                    double dur = this.helper.computeDuration(e);
+                    this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(cd + dur));    // this compensates for numeric problems with the single note durations within the tuplet
                     continue;
                 }
 
@@ -651,7 +639,7 @@ public class Mei {
             movement.addAttribute(new Attribute("id", id.getValue()));              // reuse it
         }
         else {                                                                      // otherwise generate a unique id
-            String uuid = UUID.randomUUID().toString();
+            String uuid = "meico_" + UUID.randomUUID().toString();
             mdiv.addAttribute(new Attribute("id", uuid));
             movement.addAttribute(new Attribute("id", uuid));
         }
@@ -856,12 +844,12 @@ public class Mei {
         // compute the duration of this measure
         double dur = 0.0;                                               // its duration
 
-        if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("element") != null)) {    // if there is a local time signature map that is not empty
-            Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null)) {    // if there is a local time signature map that is not empty
+            Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
             dur = this.helper.computeMeasureLength(Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));
         }
-        else if (this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("element") != null) {   // if there is a global time signature map
-            Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        else if (this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null) {   // if there is a global time signature map
+            Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
             dur = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));
         }
 
@@ -904,6 +892,28 @@ public class Mei {
         }
     }
 
+    /**
+     * process accid elements that are not children of notes
+     * @param accid an accid element
+     */
+    private void processAccid(Element accid) {
+        if (accid.getAttribute("ploc") == null)                                         // If the equivalent to the note's pname attribute, here called ploc, is missing? These are the only ones that we process here to determine the pitch of an accidental.
+            return;                                                                     // cancel
+
+        Attribute accidAttribute = accid.getAttribute("accid.ges");                     // get the accid.ges attribute
+        if (accidAttribute == null)                                                     // if there is none
+            accidAttribute = accid.getAttribute("accid");                               // get the accid attribute
+        if (accidAttribute == null)                                                     // if also missing
+            return;                                                                     // not enough information to process it, cancel
+
+        // make the accid compatible to note elements (ploc -> pname, oloc -> oct) so it can be added to the helper.accid list and processed in the same way as the notes in there, see method Helper.computePitch()
+        accid.addAttribute(new Attribute("pname", accid.getAttributeValue("ploc")));    // store the ploc value in the pname attribute
+        if (accid.getAttribute("oloc") != null)                                         // if there is the equivalent to the oct (octave transposition) attribute in notes
+            accid.addAttribute(new Attribute("oct", accid.getAttributeValue("oloc")));  // store it in an attribute named oct
+
+        this.helper.accid.add(accid);
+    }
+
     /** make a part entry in xml from an mei staffDef and insert into movement, if it exists already, return it
      *
      * @param staffDef an mei staffDef element
@@ -932,8 +942,8 @@ public class Mei {
         if (staffDef.getAttribute("n") != null) {
             part.addAttribute(new Attribute("number", staffDef.getAttributeValue("n")));                       // take the n attribute instead
         }
-        else {                                                                                             // otherwise generate an id
-            String id = UUID.randomUUID().toString();                                                      // ids of generated parts start with UUID
+        else {                                                                                                 // otherwise generate an id
+            String id = "meico_" + UUID.randomUUID().toString();                                               // ids of generated parts start with UUID
             staffDef.addAttribute(new Attribute("n", id));
             part.addAttribute(new Attribute("number", id));
         }
@@ -978,7 +988,7 @@ public class Mei {
      * @return an msm element for the timeSignatureMap
      */
     private Element makeTimeSignature(Element meiSource) {
-        Element s = new Element("element");                                                 // create an element
+        Element s = new Element("timeSignature");                                                 // create an element
         Helper.copyId(meiSource, s);                                                        // copy the id
 
         // date of the element
@@ -1028,62 +1038,125 @@ public class Mei {
      * @return an msm element for the keySignatureMap or null
      */
     private Element makeKeySignature(Element meiSource) {
-        Element s = new Element("element");                                                             // create an element
+        Element s = new Element("keySignature");                                                        // create an element
         Helper.copyId(meiSource, s);                                                                    // copy the id
-        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));              // compute date
+        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // compute date
 
-        // process scoreDef and staffDef
+        LinkedList<Element> accidentals = new LinkedList<Element>();                                    // create an empty list which will be filled with the accidentals of this key signature
+
+        String sig = "";                                                                                // indicates where the key lies in the circle of fifths, can also be "mixed"
+//        String accid = "";                                                                              // one single accidental
+//        String pname = "";                                                                              // a pitch name
+        String mixed = "";                                                                              // the string value of a sig.mixed or key.sig.mixed attribute
+
         if (meiSource.getLocalName().equals("scoreDef") || meiSource.getLocalName().equals("staffDef")) {   // if meiSource is a scoreDef or staffDef
-            if (meiSource.getAttribute("key.sig") != null) {                                            // if there are no key signature data, return nullptr
-                String accidentals = meiSource.getAttributeValue("key.sig");                            // get key signature string
+            // scoreDefs and staffDefs may also contain keySigs, but this will be processed when method convert() dives into them, here, we process only attributes that indicate a key signature
+            // read the key signature related attributes
+            if (meiSource.getAttribute("key.sig") != null)
+                sig = meiSource.getAttributeValue("key.sig");
+            else return null;                                                                           // no key.sig attribut means no key signature change, hence, skip
+//            if (meiSource.getAttribute("key.accid") != null)
+//                accid = meiSource.getAttributeValue("key.accid");
+//            if (meiSource.getAttribute("key.pname") != null)
+//                pname = meiSource.getAttributeValue("key.pname");
+            if (meiSource.getAttribute("key.sig.mixed") != null)
+                mixed = meiSource.getAttributeValue("key.sig.mixed");
+        }
+        else if (meiSource.getLocalName().equals("keySig")) {                                           // if it is a keySig element
+            // read the key signature related attributes
+            if (meiSource.getAttribute("sig") != null)                                                  // if this attribute is not present meico interprets it as C major and does not skip as it does above (for scoreDefs and staffDefs); and there may of course be some keyAccid children
+                sig = meiSource.getAttributeValue("sig");
+//            if (meiSource.getAttribute("accid") != null)
+//                accid = meiSource.getAttributeValue("accid");
+//            if (meiSource.getAttribute("pname") != null)
+//                pname = meiSource.getAttributeValue("pname");
+            if (meiSource.getAttribute("sig.mixed") != null)
+                mixed = meiSource.getAttributeValue("sig.mixed");
 
-                switch (accidentals.charAt(accidentals.length()-1)) {                                   // check last character for flats (f) or sharps (s)
-                    case 'f':                                                                           // if flats
-                        accidentals = accidentals.substring(0, accidentals.length()-1);                 // remove 'f' from string
-                        s.addAttribute(new Attribute("accidentals", "-" + accidentals));                // store minus number of accidentals
-                        break;
-                    case 's':                                                                           // if sharps
-                        accidentals = accidentals.substring(0, accidentals.length()-1);                 // remove 's' from string
-                        s.addAttribute(new Attribute("accidentals", accidentals));                      // store positive number of accidentals
-                        break;
-                    case '0':                                                                           // no accidentals from now on
-                        s.addAttribute(new Attribute("accidentals", "0"));                              // store it
-                        break;
-                    default:                                                                            // what if neither 'f' nor 's'?
-                        System.out.println("There is an invalid key.sig attribute: " + accidentals);    // output error message
+            // process keyAccid children
+            Elements accids = meiSource.getChildElements("keyAccid");                                   // get all keyAccid elements
+            for (int i=0; i < accids.size(); ++i) {                                                     // go through all the keyAccid elements
+                if ((accids.get(i).getAttribute("pname") == null)                                       // if there is no pitch name, we don't know where to apply the accidental
+                        || (accids.get(i).getAttribute("accid") == null)) {                             // if there is no accid, there is no need for an accidental
+                    System.out.println("The following keyAccid element requires a pname and accid attribute for processing in meico: " + accids.get(i).toXML());
+                    continue;                                                                           // skip this keyAccid element and continue with the next
                 }
-                return s;
-            }
-            return null;                                                                                // cancel
-        }
-
-        if (!meiSource.getLocalName().equals("keySig"))                                                 // if meiSource is also no keySig
-            return null;                                                                                // it is no valid key signature related element, hence, cancel
-
-        // process keySig
-        int flats = 0;                                                                                  // number of flats
-        int sharps = 0;                                                                                 // number of sharps
-        Elements acs = meiSource.getChildElements("keyAccid");                                          // get all keyAccid elements
-        for (int i = acs.size()-1; i >= 0; --i) {                                                       // count the accids
-            if (acs.get(i).getAttribute("accid") == null) continue;                                     // if none given, continue
-            // the following does not justice to mei, there you can define key signatures with whatever accidentals on whatever notes (eg. a key signature with two flats on e and f and one sharp on g); this is nothing that a midi time signature can capture, the mei note pitches must be given correctly so the time signature does not matter!
-            String s1 = acs.get(i).getAttributeValue("accid");
-            if (s1.equals("s") || s1.equals("ss") || s1.equals("x") || s1.equals("xs") || s1.equals("ts") || s1.equals("ns") || s1.equals("su") || s1.equals("sd") || s1.equals("nu") || s1.equals("1qs") || s1.equals("3qs")) {
-                sharps++;
-
-            } else if (s1.equals("f") || s1.equals("ff") || s1.equals("tf") || s1.equals("nf") || s1.equals("fu") || s1.equals("fd") || s1.equals("nd") || s1.equals("1qf") || s1.equals("3qf")) {
-                flats++;
+                double pitch = Helper.pname2midi(accids.get(i).getAttributeValue("pname"));             // get the pitch class that the accidental is applied to
+                if (pitch < 0.0) {                                                                      // if invalid
+                    System.out.println("No valid value in attribute pname: " + accids.get(i).toXML());  // error message
+                    continue;                                                                           // continue with the next keyAccid
+                }
+                Element accidental = new Element("accidental");                                                                                         // create an accidental element for the msm keySignature
+                accidental.addAttribute(new Attribute("pitch", Double.toString(pitch)));                                                                // add the pitch attribute that says which pitch class is affected by the accidental
+                accidental.addAttribute(new Attribute("value", Double.toString(Helper.accidString2decimal(accids.get(i).getAttributeValue("accid"))))); // add the decimal value of the accidental as attribute (+1=sharp, -1=flat, and so on)
+                accidentals.add(accidental);                                                                                                            // add it to the accidentals list
             }
         }
-        s.addAttribute(new Attribute("accidentals", Integer.toString(sharps-flats)));                   // store the result of sharps-flats
-        return s;
+
+        // process sig, accid, pname and mixed to generate msm accidentals from them
+        if (accidentals.isEmpty() && !sig.isEmpty()) {                                                  // if the meiSource is a keySig element and had keyAccid children, these overrule the attributes and, hence, the attributes will not be processed, this part will be skipped; same if there is no signature data
+            if (sig.equals("mixed")) {                                                                  // process an unorthodox key signature, e.g. "a4 c5ss e5f"
+                if (!mixed.isEmpty()) {                                                                 // is there something standing in the mixed string
+                    String[] acs = mixed.split(" ");                                                    // split the space separated mixed string into an array of single strings
+                    for (String ac : acs) {                                                             // for each accidental string extracted from the mixed string
+                        double pitch = Helper.pname2midi(ac.substring(0, 1));                           // the first character designates the pitch to be affected by the accidental
+                        if (pitch < 0.0)                                                                // if there is no valide pitch character
+                            continue;                                                                   // skip this substring and continue with the next
+
+                        if (ac.charAt(ac.length()-1) >= '0' && ac.charAt(ac.length()-2) <= '9')         // if the last character is a number, there is actually no accidental on this pitch
+                            continue;                                                                   // hence, skip this and continue with the next
+
+                        boolean secondLastIsDigit = (ac.charAt(ac.length()-2) >= '0' && ac.charAt(ac.length()-2) <= '9');       // is the second last character a number? if no the accidental is given by the final 2 chars, otherwise only by the last char
+                        double accid = Helper.accidString2decimal(ac.substring(ac.length() - ((secondLastIsDigit) ? 1 : 2)));   // take the accid substring and convert it to decimal
+
+                        Element accidental = new Element("accidental");                                 // create an accidental element for the msm keySignature
+                        accidental.addAttribute(new Attribute("pitch", Double.toString(pitch)));        // add the pitch attribute that says which pitch class is affected by the accidental
+                        accidental.addAttribute(new Attribute("value", Double.toString(accid)));        // add the decimal value of the accidental as attribute (+1=sharp, -1=flat, and so on)
+                        accidentals.add(accidental);                                                    // add it to the accidentals list
+                    }
+                }
+            }
+            else {                                                                                      // process a regular key signature
+                int accidCount;                                                                         // this variable holds how many accidentals
+                switch (sig.charAt(sig.length()-1)) {                                                   // get the direction
+                    case 'f':
+                        accidCount = Integer.parseInt(sig.substring(0, sig.length()-1));                // get the accidentals count
+                        accidCount *= -1;                                                               // flats are negative direction (see the sharps array below, with flats we start at the end and go back)
+                        break;
+                    case 's':
+                        accidCount = Integer.parseInt(sig.substring(0, sig.length()-1));                // get the accidentals count
+                        break;
+                    case '0':
+                        accidCount = 0;                                                                 // no accidentals, accidCount = 0
+                        break;
+                    default:
+                        accidCount = 0;                                                                 // no accidentals that meico can understand
+                        System.out.println("Unknown sig or key.sig attribute value in " + meiSource.toXML() + ". Assume 0 in the further processing.");     // output error message
+                }
+                // generate msm accidentals and add them to the accidentals list
+                String[] acs = (accidCount > 0) ? new String[]{"5.0", "0.0", "7.0", "2.0", "9.0", "4.0", "11.0"} : new String[]{"11.0", "4.0", "9.0", "2.0", "7.0", "0.0", "5.0"};  // the sequence of (midi) pitches to apply the accidentals
+                for (int i=0; i < Math.abs(accidCount); ++i) {                                           // create the accidentals
+                    Element accidental = new Element("accidental");                                      // create an accidental element for the msm keySignature
+                    accidental.addAttribute(new Attribute("pitch", acs[i]));                             // add the pitch attribute that says which pitch class is affected by the accidental
+                    accidental.addAttribute(new Attribute("value", (accidCount > 0) ? "1.0" : "-1.0"));  // add the decimal value of the accidental as attribute (1=sharp, -1=flat)
+                    accidentals.add(accidental);                                                         // add it to the accidentals list
+                }
+            }
+        }
+
+        // add all generated accidentals as children to the msm keySignature element
+        for (Element accidental : accidentals) {                                                        // for each accidentals
+            s.appendChild(accidental);                                                                  // add to the msm keySignature
+        }
+
+        return s;                                                                                       // return the msm keySignature element
     }
 
-    /** preprocessing of an mei chord element
+    /** process an mei chord element; this method is also used to process bTrem and fTrem elements
      *
-     * @param chord an mei chord element
+     * @param chord an mei chord, bTrem or fTrem element
      */
-    private void preProcessChord(Element chord) {
+    private void processChord(Element chord) {
         // inherit attributes of the surrounding environment
         if (this.helper.currentChord != null) {                                                                     // if we are already within a chord or bTrem or fTrem environment
             if ((chord.getAttribute("dur") == null) && (this.helper.currentChord.getAttribute("dur") != null)) {    // if duration attribute missing, but there is one in the environment
@@ -1092,6 +1165,28 @@ public class Mei {
             if ((chord.getAttribute("dots") == null) && (this.helper.currentChord.getAttribute("dots") != null)) {  // if dots attribute missing, but there is one in the environment
                 chord.addAttribute(new Attribute("dots", this.helper.currentChord.getAttributeValue("dots")));      // take this
             }
+        }
+
+        // make sure that we have a duration for this chord
+        double dur = 0.0;                                                   // this holds the duration of the chord
+        if (chord.getAttribute("dur") != null) {                            // if the chord has a dur attribute
+            dur = this.helper.computeDuration(chord);                       // compute its duration
+        }
+        else {                                                              // if the dur attribute is missing, TODO: search the children for the longest dur + dots attribute and add it to this element
+            Nodes durs = chord.query("descendant::*[attribute::dur]");      // get all child elements with a dur attribute
+            double idur = 0.0;
+            for (int i=0; i < durs.size(); ++i) {                           // for each child element with a dur attribute
+                idur = this.helper.computeDuration((Element)durs.get(i));   // compute its duration
+                if (idur > dur) dur = idur;                                 // if it is longer than the longest duration so far, store this in variable dur
+            }
+        }
+
+        Element f = this.helper.currentChord;                               // we could already be within a chord or bTrem or fTrem environemnt; this should be stored to return to it afterwards
+        this.helper.currentChord = chord;                                   // set the temp.chord pointer to this chord
+        this.convert(chord);                                                // process everything within this chord
+        this.helper.currentChord = f;                                       // foget the pointer to this chord and return to the surrounding environment or nullptr
+        if (this.helper.currentChord == null) {                             // we are done with all chord/bTrem/fTrem environments
+            this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur))); // update currentDate
         }
     }
 
@@ -1105,7 +1200,7 @@ public class Mei {
 //                || ((tupletSpan.getAttribute("startid") == null) && (tupletSpan.getAttribute("tstamp") == null) && (tupletSpan.getAttribute("tstamp.ges") == null) && (tupletSpan.getAttribute("tstamp.real") == null)) // or no starting information
                 || ((tupletSpan.getAttribute("dur") == null) && (tupletSpan.getAttribute("dur.ges") == null) && (tupletSpan.getAttribute("endid") == null))  // or no ending information
                 || (tupletSpan.getAttribute("num") == null) || (tupletSpan.getAttribute("numbase") == null)){   // and no num or numbase attribute
-            return;                                                                                                                                                                                                     // cancel
+            return;                                                                                             // cancel
         }
 
         // make a clone of the element and store its tick date
@@ -1135,11 +1230,11 @@ public class Mei {
             return;                                                                                                                                                                                 // that marker cannot be put anywere, cancel
 
         // create marker element
-        Element marker = new Element("element");
-        Helper.copyId(reh, marker);                                                                 // copy a possibly present xml:id
-        marker.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));     // store the date of the element
-        marker.addAttribute(new Attribute("message", reh.getValue()));                              // store its text or empty string
-        Helper.copyId(reh, marker);                                                                 // copy the id
+        Element marker = new Element("marker");
+        Helper.copyId(reh, marker);                                                                     // copy a possibly present xml:id
+        marker.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));    // store the date of the element
+        marker.addAttribute(new Attribute("message", reh.getValue()));                                  // store its text or empty string
+        Helper.copyId(reh, marker);                                                                     // copy the id
 
         markerMap.appendChild(marker);      // add to the markerMap
     }
@@ -1150,9 +1245,9 @@ public class Mei {
      */
     private void processBeatRpt(Element beatRpt) {
         // get the value of one beat from the local or global timeSignatureMap
-        Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
         if (es.size() == 0) {                                                                                                       // if local map empty
-            es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element"); // get global entries
+            es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature"); // get global entries
         }
 
         double beatLength = (es.size() == 0) ? 4 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator"));        // store the denominator value; if still no time signature information, one beat is 1/4 by default
@@ -1178,9 +1273,9 @@ public class Mei {
         double timeframe = this.helper.getOneMeasureLength();
 
         // get the value of one measure from the local or global timeSignatureMap
-        Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
         if (es.size() == 0) {                                                       // if local map empty
-            es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element"); // get global entries
+            es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature"); // get global entries
         }
 
         // check the timeSignatureMap for time signature changes between this and the previous measure
@@ -1189,7 +1284,7 @@ public class Mei {
                 Element second = Helper.cloneElement(es.get(es.size()-1));          // get the last time signature element
                 Element first;
                 if (es.size() < 2) {                                                // if no second to last time signature element exists
-                    first = new Element("element");                                 // create one with default time signature 4/4
+                    first = new Element("timeSignature");                                 // create one with default time signature 4/4
                     first.addAttribute(new Attribute("numerator", "4"));
                     first.addAttribute(new Attribute("denominator", "4"));
                 }
@@ -1223,9 +1318,9 @@ public class Mei {
         double measureLength = currentDate - this.helper.getOneMeasureLength();                 // length of one measure in ticks
 
         // get time signature element
-        Elements ts = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        Elements ts = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
         if (ts.size() == 0)                                                                                                                                                         // if local map empty
-            ts = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");     // get global entries
+            ts = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");     // get global entries
         int timesign = ts.size() - 1;                                                                                                                                               // get index of the last element in ts
         double tsdate = (timesign > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                      // get the date of the current time signature
 
@@ -1318,12 +1413,12 @@ public class Mei {
         double dur = 0.0;                                               // its duration
 
         // compute duration
-        if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("element") != null)) {    // if there is a local time signature map that is not empty
-            Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null)) {    // if there is a local time signature map that is not empty
+            Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
             dur = (4.0 * this.helper.ppq * Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator"))) / Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator"));
         }
-        else if (this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("element") != null) {   // if there is a global time signature map
-            Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        else if (this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null) {   // if there is a global time signature map
+            Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
             dur = (4.0 * this.helper.ppq * Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator"))) / Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator"));
         }
         if (dur == 0.0) {                                               // if duration could not be computed
@@ -1659,7 +1754,7 @@ public class Mei {
                 Nodes ids = copy.query("descendant-or-self::*[@xml:id]");                                                   // get all the nodes with an xml:id attribute
                 for (int j = 0; j < ids.size(); ++j) {                                                                      // go through all the nodes
                     Element idElement = (Element) ids.get(j);
-                    String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + "_" + UUID.randomUUID().toString();   // generate new ids for them
+                    String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + "_meico_" + UUID.randomUUID().toString();   // generate new ids for them
                     idElement.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(uuid);                    // and write into the attribute
                 }
 
@@ -1791,7 +1886,7 @@ public class Mei {
                 String startid = a.getValue();                                              // get its value
                 if (startid.charAt(0) == '#') startid = startid.substring(1);               // local references within the document usually start with #; this must be excluded when searching for the id
                 shiftMe.put(element, startid);                                              // put that entry on the shiftMe hashmap
-                //continue;                                                                 // this elemnt may also have an xml:id, so we go on
+                //continue;                                                                 // this element may also have an xml:id, so we go on
             }
 
             a = element.getAttribute("id", "http://www.w3.org/XML/1998/namespace");         // get the element's xml:id
@@ -1812,6 +1907,13 @@ public class Mei {
 
             if (Helper.getNextSiblingElement(shiftThis.getKey()) == found)                  // the element is already well-placed
                 continue;                                                                   // continue with the next candidate
+
+            // check if the id is contained in shiftThis.getKey() by a child element; we cannot shift an element to its child
+            Nodes isIn = shiftThis.getKey().query("descendant::*[attribute::xml:id='" + shiftThis.getValue() + "']");
+            if (isIn.size() > 0) {                                                          // the id refers to a child, shiftThis.getKey() cannot be replaced within itself
+                System.out.println(shiftThis.getKey() + " will not be shifted. " + isIn.size() + "\n");
+                continue;                                                                   // continue with the next candidate
+            }
 
             // make the repositioning
             shiftThis.getKey().detach();                                                    // take it out of the xml tree
@@ -1837,7 +1939,7 @@ public class Mei {
 
         Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest' or local-name()='mRest' or local-name()='multiRest' or local-name()='chord' or local-name()='tuplet' or local-name()='mdiv' or local-name()='reh') and not(@xml:id)]");
         for (int i = 0; i < e.size(); ++i) {                                    // go through all the nodes
-            String uuid = UUID.randomUUID().toString();                         // generate new ids for them
+            String uuid = "meico_" + UUID.randomUUID().toString();                         // generate new ids for them
             Attribute a = new Attribute("id", uuid);                            // create an attribute
             a.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");      // set its namespace to xml
             ((Element) e.get(i)).addAttribute(a);                               // add attribute to the node

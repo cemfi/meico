@@ -20,13 +20,13 @@ import javax.xml.transform.stream.StreamSource;
 
 public class Helper {
 
-    protected int ppq = 720;                            // default value for pulses per quarter
-    protected boolean dontUseChannel10 = true;          // set this flag false if you allow to "misuse" the midi drum channel for other instruments; in standard midi output this produces weird results, but when you work with vst plugins etc. there is no reason to avoid channel 10
+    protected int ppq = 720;                                        // default value for pulses per quarter
+    protected boolean dontUseChannel10 = true;                      // set this flag false if you allow to "misuse" the midi drum channel for other instruments; in standard midi output this produces weird results, but when you work with vst plugins etc. there is no reason to avoid channel 10
     protected Element currentMovement = null;
     protected Element currentPart = null;
     protected Element currentMeasure = null;
     protected Element currentChord = null;
-    protected ArrayList<Element> accid = new ArrayList<Element>();
+    protected ArrayList<Element> accid = new ArrayList<Element>();        // holds accidentals that appear within measures to be considered during pitch computation
     protected ArrayList<Element> endids = new ArrayList<Element>();
     protected List<Msm> movements = new ArrayList<Msm>();
 
@@ -226,9 +226,9 @@ public class Helper {
      */
     protected double getOneMeasureLength() {
         // get the value of one measure from the local or global timeSignatureMap
-        Elements es = this.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");
+        Elements es = this.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
         if (es.size() == 0) {                                                                                                                                               // if local map empty
-            es = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("element");    // get global entries
+            es = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");    // get global entries
         }
 
         // get length of one measure (4/4 is default if information is insufficient)
@@ -463,6 +463,7 @@ public class Helper {
                 && !ofThis.getLocalName().equals("note")
                 && !ofThis.getLocalName().equals("octave")
                 && !ofThis.getLocalName().equals("rest")
+                && !ofThis.getLocalName().equals("tuplet")
                 && !ofThis.getLocalName().equals("space")) {        // if none of these
             return 0.0;                                             // return 0.0
         }
@@ -531,7 +532,7 @@ public class Helper {
         }
 
         // tuplets
-        // TODO: es gibt auch das tuplet-Attribut; wie muss ich das lesen und verarbeiten? Manchmal wird keine Tuplet-Umgebung gedruckt; dann fehlt es auch in der MEI und nur das tuplet-Attribut gibt Aufschluss.
+        // TODO: what about the tuplet attribute (without the tuplet environment); how to read and process this?
         for (Element e = Helper.getParentElement(focus); (e != null) && (!e.getLocalName().equals("mdiv")); e = Helper.getParentElement(e)) {  // search for tuplet environment among the parents
             if (e.getLocalName().equals("tuplet")) {                                                                                            // if the ofThis lies within a tuplet
                 if ((e.getAttribute("numbase") == null) || (e.getAttribute("num") == null)) {                                                   // insufficient information to compute the note duration
@@ -597,6 +598,84 @@ public class Helper {
         return 0.0;
     }
 
+    /**
+     * compute the decimal value of the accidental (1 = 1 semitone)
+     * @param accid the string to be converted
+     * @return the decimal value of the accidental
+     */
+    public static double accidString2decimal(String accid) {
+        double accidentals = 0;
+        if (accid.equals("s")) {
+            accidentals = 1;
+        } else if (accid.equals("f")) {
+            accidentals = -1;
+        } else if (accid.equals("ss")) {
+            accidentals = 2;
+        } else if (accid.equals("x")) {
+            accidentals = 2;
+        } else if (accid.equals("ff")) {
+            accidentals = -2;
+        } else if (accid.equals("xs")) {
+            accidentals = 3;
+        } else if (accid.equals("ts")) {
+            accidentals = 3;
+        } else if (accid.equals("tf")) {
+            accidentals = -3;
+        } else if (accid.equals("n")) {
+        } else if (accid.equals("nf")) {
+            accidentals = -1;
+        } else if (accid.equals("ns")) {
+            accidentals = 1;
+        } else if (accid.equals("su")) {
+            accidentals = 1.5;
+        } else if (accid.equals("sd")) {
+            accidentals = 0.5;
+        } else if (accid.equals("fu")) {
+            accidentals = -0.5;
+        } else if (accid.equals("fd")) {
+            accidentals = -1.5;
+        } else if (accid.equals("nu")) {
+            accidentals = 0.5;
+        } else if (accid.equals("nd")) {
+            accidentals = -0.5;
+        } else if (accid.equals("1qf")) {
+            accidentals = -0.5;
+        } else if (accid.equals("3qf")) {
+            accidentals = -1.5;
+        } else if (accid.equals("1qs")) {
+            accidentals = 0.5;
+        } else if (accid.equals("3qs")) {
+            accidentals = 1.5;
+        }
+        return accidentals;
+    }
+
+    /**
+     * converts an mei pname to a midi pitch number in the first midi octave
+     * @param pname the pname string
+     * @return the midi pitch number in the first midi octave (one octave below the first MEI CMN octave)
+     */
+    public static double pname2midi(String pname) {
+        double pitch = -1.0;
+        switch (pname.charAt(0)) {      // get value of attribute (first character of the array, it hopefully has only one character!)
+            case 'c':
+            case 'C':   pitch = 0.0; break;
+            case 'd':
+            case 'D':   pitch = 2.0; break;
+            case 'e':
+            case 'E':   pitch = 4.0; break;
+            case 'f':
+            case 'F':   pitch = 5.0; break;
+            case 'g':
+            case 'G':   pitch = 7.0; break;
+            case 'a':
+            case 'A':   pitch = 9.0; break;
+            case 'b':
+            case 'B':   pitch = 11.0; break;
+        }
+        return pitch;
+    }
+
     /** compute midi pitch of an mei note or return -1.0 if failed; the return is a double number that captures microtonality, too; 0.5 is a quarter tone
      * parameter pitchdata should be an empty ArrayList<String>, it is filled with pitchname, accidentals and octave of the computed midi pitch for further use
      *
@@ -609,6 +688,7 @@ public class Helper {
         String accid = "";                                              // the accidental string
         int oct = 0;                                                    // octave transposition value
         int trans = 0;                                                  // transposition
+        boolean checkKeySign = false;                                   // is set true
 
         // get the attributes, prefer gesturals
 
@@ -619,6 +699,7 @@ public class Helper {
         else {
             if (ofThis.getAttribute("pname") != null) {
                 pname = ofThis.getAttributeValue("pname");
+                checkKeySign = true;                                    // the key signature must be checked for accidentals later on; this is done only when the non-gestural pname attribute has been used
             }
             else {                                                      // if no pitch class specified we cannot do anything
                 return -1;                                              // cancel by returning -1
@@ -651,38 +732,65 @@ public class Helper {
         // get accidental
         if (ofThis.getAttribute("accid.ges") != null) {                 // look for gestural accid attribute
             accid = ofThis.getAttributeValue("accid.ges");
+            checkKeySign = false;
         }
         else {
             if (ofThis.getAttribute("accid") != null) {                 // look for non-gestural accid attribute
                 accid = ofThis.getAttributeValue("accid");              // store the accidental string
-                if (!accid.isEmpty()) this.accid.add(ofThis);           // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
+                if (!accid.isEmpty()) {
+                    this.accid.add(ofThis);                             // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
+                    checkKeySign = false;
+                }
             }
             else {
                 Element accidElement = getFirstChildElement("accid", ofThis);   // is there an accid child element instead of an attribute?
                 if (accidElement != null) {
-                    if (accidElement.getAttribute("accid.ges") != null) {                                                   // does it have an accid.ges attribute
-                        ofThis.addAttribute(new Attribute("accid.ges", accidElement.getAttributeValue("accid.ges")));       // make an attribute of it
-                        accid = ofThis.getAttributeValue("accid.ges");                                                      // store the accidental string
-
+                    if (accidElement.getAttribute("accid.ges") != null) {                                               // does it have an accid.ges attribute
+                        ofThis.addAttribute(new Attribute("accid.ges", accidElement.getAttributeValue("accid.ges")));   // make an attribute of it
+                        accid = ofThis.getAttributeValue("accid.ges");                                                  // store the accidental string
                     }
                     else {
-                        if (accidElement.getAttribute("accid") != null) {                                                   // does it have an accid attribute
-                            ofThis.addAttribute(new Attribute("accid", accidElement.getAttributeValue("accid")));           // make an attribute of it
-                            accid = ofThis.getAttributeValue("accid");                                                      // store the accidental string
-
+                        if (accidElement.getAttribute("accid") != null) {                                               // does it have an accid attribute
+                            ofThis.addAttribute(new Attribute("accid", accidElement.getAttributeValue("accid")));       // make an attribute of it
+                            accid = ofThis.getAttributeValue("accid");                                                  // store the accidental string
                         }
                     }
-                    if (!accid.isEmpty()) this.accid.add(ofThis);                                                           // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
+                    if (!accid.isEmpty()) {
+                        this.accid.add(ofThis);                                                       // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
+                        checkKeySign = false;
+                    }
                 }
-                else {                                                                                                      // otherwise look for preceding accidentals in this measure
-                    for (int i=0; i < this.accid.size(); ++i) {                                                             // go through the accid list
-                        if ((this.accid.get(i).getAttribute("pname") != null)                                               // if it has a pitch attribute
-                                && (this.accid.get(i).getAttributeValue("pname").equals(ofThis.getAttributeValue("pname"))) // the same pitch class as ofThis
-                                && (this.accid.get(i).getAttribute("oct") != null)                                          // has an oct attribute
-                                && (this.accid.get(i).getAttributeValue("oct").equals(ofThis.getAttributeValue("oct")))) {  // the same octave transposition as ofThis
+                else {                                                                                                  // otherwise look for preceding accidentals in this measure
+                    for (Element anAccid : this.accid) {                                                                // go through the accid list
+                        if ((anAccid.getAttribute("pname") != null)                                                     // if it has a pitch attribute
+                                && (anAccid.getAttributeValue("pname").equals(ofThis.getAttributeValue("pname")))       // the same pitch class as ofThis
+                                && (anAccid.getAttribute("oct") != null)                                                // has an oct attribute
+                                && (anAccid.getAttributeValue("oct").equals(ofThis.getAttributeValue("oct")))) {        // the same octave transposition as ofThis
 
-                            accid = this.accid.get(i).getAttributeValue("accid");                                           // apply its accid attribute
-                            break;                                                                                          // stop the for loop
+                            accid = anAccid.getAttributeValue("accid");                                                 // apply its accid attribute
+                            checkKeySign = false;                                                                       // local accidentals overrule the key signature
+                            break;                                                                                      // stop the for loop
+                        }
+                    }
+                    if (checkKeySign) {                                                                                 // if the note's pitch was defined by a pname attribute and had no local accidentals, we must check the key signature for accidentals
+                        // get the local or global key signature in the msm document and check its accidentals' pitch attribute if it is of the same pitch class as pname
+                        Element keySigMap = this.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap");     // get the local key signature map from mpm
+                        if ((keySigMap == null) || (keySigMap.getFirstChildElement("keySignature") == null)) {                          // if there is no local, non-empty key signature map
+                            keySigMap = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap");  // get the global key signature map
+                        }
+                        if ((keySigMap != null) && (keySigMap.getFirstChildElement("keySignature") != null)) {                          // if we finally found a non-empty key signature map
+                            Elements keySigs = keySigMap.getChildElements("keySignature");                                              // get its entries
+                            Element keySig = keySigs.get(keySigs.size()-1);                                                             // the the latest of these entries
+                            Elements keySigAccids = keySig.getChildElements("accidental");                                              // get its accidentals
+                            for (int i=0; i < keySigAccids.size(); ++i) {                                                               // check the accidentals for a matching pitch class
+                                Element a = keySigAccids.get(i);                                                                        // take an accidental
+                                double aPitch = Double.parseDouble(a.getAttributeValue("pitch"));                                       // get its pitch value
+                                double pitchOfThis = Helper.pname2midi(pname) % 12;                                                     // get the current note's pitch as midi value modulo 12
+                                if (aPitch == pitchOfThis) {                                                                            // the accidental indeed affects the pitch ofThis
+                                    accid = a.getAttributeValue("value");                                                               // get the accidental's value
+                                    break;                                                                                              // done here, break the for loop
+                                }
+                            }
                         }
                     }
                 }
@@ -745,25 +853,9 @@ public class Helper {
             }
         }
 
-        double pitch = -1.0;            // here comes the result
-        switch (pname.charAt(0)) {      // get value of attribute (first character of the array, it hopefully has only one character!)
-            case 'c':
-            case 'C':   pitch = 12; break;
-            case 'd':
-            case 'D':   pitch = 14; break;
-            case 'e':
-            case 'E':   pitch = 16; break;
-            case 'f':
-            case 'F':   pitch = 17; break;
-            case 'g':
-            case 'G':   pitch = 19; break;
-            case 'a':
-            case 'A':   pitch = 21; break;
-            case 'b':
-            case 'B':   pitch = 23; break;
-            default:                    // if no valid pitch name found
-                return -1;              // cancel
-        }
+        double pitch = Helper.pname2midi(pname) + 12;            // here comes the result
+        if (pitch == -1.0)                                  // if no valid pitch name found
+            return -1.0;                                    // cancel
 
         double initialPitch = pitch;    // need this to compute the untransposed pitchname for the pitchdata list
 
@@ -771,50 +863,7 @@ public class Helper {
         pitch += 12 * oct;
 
         // accidentals
-        double accidentals = 0;
-        if (accid.equals("s")) {
-            accidentals = 1;
-        } else if (accid.equals("f")) {
-            accidentals = -1;
-        } else if (accid.equals("ss")) {
-            accidentals = 2;
-        } else if (accid.equals("x")) {
-            accidentals = 2;
-        } else if (accid.equals("ff")) {
-            accidentals = -2;
-        } else if (accid.equals("xs")) {
-            accidentals = 3;
-        } else if (accid.equals("ts")) {
-            accidentals = 3;
-        } else if (accid.equals("tf")) {
-            accidentals = -3;
-        } else if (accid.equals("n")) {
-        } else if (accid.equals("nf")) {
-            accidentals = -1;
-        } else if (accid.equals("ns")) {
-            accidentals = 1;
-        } else if (accid.equals("su")) {
-            accidentals = 1.5;
-        } else if (accid.equals("sd")) {
-            accidentals = 0.5;
-        } else if (accid.equals("fu")) {
-            accidentals = -0.5;
-        } else if (accid.equals("fd")) {
-            accidentals = -1.5;
-        } else if (accid.equals("nu")) {
-            accidentals = 0.5;
-        } else if (accid.equals("nd")) {
-            accidentals = -0.5;
-        } else if (accid.equals("1qf")) {
-            accidentals = -0.5;
-        } else if (accid.equals("3qf")) {
-            accidentals = -1.5;
-        } else if (accid.equals("1qs")) {
-            accidentals = 0.5;
-        } else if (accid.equals("3qs")) {
-            accidentals = 1.5;
-        } else {
-        }
+        double accidentals = (checkKeySign) ? ((accid.isEmpty()) ? 0.0 : Double.parseDouble(accid)) : Helper.accidString2decimal(accid);    // if the accidental string was taken from the msm key signature it is already numeric, otherwise it is still an mei accidental string
         pitch += accidentals;
 
         // transposition
@@ -877,197 +926,4 @@ public class Helper {
 
         return pitch;
     }
-
-
-    /** compute midi pitch of an mei note or return -1 if failed; this version of the method does not mix gestural and non-gestural attributes; if pname.ges is present only gestural attributes are used, else only non-gesturals are used
-     *
-     * @param ofThis
-     * @return
-     */
-    @Deprecated
-    protected int computePitchOld(Element ofThis) {
-        String pname;                                                   // the attribute strings
-        String accid = "";                                              //
-        int oct;                                                        // octave transposition value
-        int trans = 0;                                                  // transposition
-
-        // accidentals preprocessing: non-gestural accidentals have to be processed even if gestural attributes are used later on
-        // in this implementation accid attributes at the note element overrule accid elements within the note environment
-        if ((ofThis.getAttribute("accid") != null)                      // if the note has an accid attribute
-                && !ofThis.getAttributeValue("accid").isEmpty()         // that is not empty
-                && (ofThis.getAttribute("pname") != null)) {            // and the note has a pitch attribute
-            this.accid.add(ofThis);                                     // insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
-        }
-        else if ((ofThis.getFirstChildElement("accid") != null)         // if there are accid elements in the note environment
-                && (ofThis.getFirstChildElement("accid").getAttribute("accid") != null)             // that defines a
-                && !ofThis.getFirstChildElement("accid").getAttributeValue("accid").isEmpty()       // nonempty accidental
-                && (ofThis.getAttribute("pname") != null)) {                                        // and the note has a pitch attribute
-            ofThis.addAttribute(new Attribute("accid", ofThis.getFirstChildElement("accid").getAttributeValue("accid")));   // make an attribute of it
-            this.accid.add(ofThis);                                     // insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
-        }
-
-        // get the attributes (gestural or nongestural; don't mix them!)
-        if (ofThis.getAttribute("pname.ges") != null) {                 // check and read gestural attributes
-            pname = ofThis.getAttributeValue("pname.ges");              // get gestural pitch name
-            accid = (ofThis.getAttribute("accid.ges") != null) ? ofThis.getAttributeValue("accid.ges") : "";            // get gestural accidentals
-            oct = (ofThis.getAttribute("oct.ges") != null) ? Integer.parseInt(ofThis.getAttributeValue("oct.ges")) : 0; // get gestural octave transposition
-        }
-        else {                                                          // non-gestural attributes
-            // initial pitch
-            if (ofThis.getAttribute("pname") == null) {                 // if that note has no pitch
-                return -1;                                              // cancel
-            }
-            pname = ofThis.getAttributeValue("pname");                  // get pitch name
-
-            // octave transposition
-            if (ofThis.getAttribute("oct") != null) {                   // is there an octave transposition
-                oct = Integer.parseInt(ofThis.getAttributeValue("oct"));
-            }
-            else {
-                Elements es = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");
-                if (es.size() != 0) {                                   // is there a local default octave transposition
-                    oct = Integer.parseInt(es.get(es.size()-1).getAttributeValue("oct"));
-                }
-                else {
-                    es = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");
-                    if (es.size() != 0) {                               // is there a global default octave transposition
-                        oct = Integer.parseInt(es.get(es.size()-1).getAttributeValue("oct"));
-                    }
-                    else {
-                        oct = 0;                                        // default oct value
-                    }
-                    ofThis.addAttribute(new Attribute("oct", Integer.toString(oct)));   // there was no oct attribute, so fill the gap with the computed value
-                }
-            }
-
-            // accidentals
-            if ((ofThis.getAttribute("accid") != null)                          // if an accidental is present
-                    && !ofThis.getAttributeValue("accid").isEmpty()) {          // and non-empty
-                accid = ofThis.getAttributeValue("accid");                      // get it
-            }
-            else {                                                              // otherwise look for preceding accidentals in this measure
-                for (int i=0; i < this.accid.size(); ++i) {                     // go through the accid list
-                    if ((this.accid.get(i).getAttribute("pname") != null)                                           // if it has a pitch attribute
-                        && (this.accid.get(i).getAttributeValue("pname").equals(ofThis.getAttributeValue("pname"))) // the same pitch class as ofThis
-                        && (this.accid.get(i).getAttribute("oct") != null)                                          // has an oct attribute
-                        && (this.accid.get(i).getAttributeValue("oct").equals(ofThis.getAttributeValue("oct")))) {  // the same octave transposition as ofThis
-
-                        accid = this.accid.get(i).getAttributeValue("accid");   // apply this accid attribute
-                        break;                                                  // stop the for loop
-                    }
-                }
-            }
-
-            // transposition
-            Elements es = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
-            if (es.size() > 0) {                                               // look for local transposition information
-                trans = Integer.parseInt(es.get(es.size()-1).getAttributeValue("semi"));
-            }
-            else {
-                es = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
-                if (es.size() > 0){                                             // look for global transposition information
-                    trans = Integer.parseInt(es.get(es.size()-1).getAttributeValue("semi"));
-                }
-            }
-            // !!! this solution allows no combined transposition, e.g. a staffDef defines "Trumpet in B" and somewhere in the score an octave element appears
-        }
-
-        int pitch;                                                              // here comes the result
-
-        // get value of attribute (first character of the array, it hopefully has only one character!)
-        switch (pname.charAt(0)) {
-            case 'c':
-            case 'C':
-                pitch = 12;
-                break;
-            case 'd':
-            case 'D':
-                pitch = 14;
-                break;
-            case 'e':
-            case 'E':
-                pitch = 16;
-                break;
-            case 'f':
-            case 'F':
-                pitch = 17;
-                break;
-            case 'g':
-            case 'G':
-                pitch = 19;
-                break;
-            case 'a':
-            case 'A':
-                pitch = 21;
-                break;
-            case 'b':
-            case 'B':
-                pitch = 23;
-                break;
-            default:
-                return -1;
-        }
-
-        // octave transposition that are directly on the note as an attribute oct; transpositions other than by this attribute have to be added after parsing the complete mei tree because relevant tags can occur later in the tree and in other subtrees
-        pitch += 12 * oct;
-
-        // accidentals
-        if (accid.equals("s")) {
-            pitch++;
-
-        } else if (accid.equals("f")) {
-            pitch--;
-
-        } else if (accid.equals("ss")) {
-            pitch += 2;
-
-        } else if (accid.equals("x")) {
-            pitch += 2;
-
-        } else if (accid.equals("ff")) {
-            pitch -= 2;
-
-        } else if (accid.equals("xs")) {
-            pitch += 3;
-
-        } else if (accid.equals("ts")) {
-            pitch += 3;
-
-        } else if (accid.equals("tf")) {
-            pitch -= 3;
-
-        } else if (accid.equals("n")) {
-        } else if (accid.equals("nf")) {
-            pitch--;
-
-        } else if (accid.equals("ns")) {
-            pitch++;
-
-        } else if (accid.equals("su")) {
-            pitch++;    // TODO: actually +1.5, here it's just a semi; later maybe done by pitchbend
-
-        } else if (accid.equals("sd")) {
-            pitch++;    // TODO: actually +0,5, here it's just a semi; later maybe done by pitchbend
-
-        } else if (accid.equals("fu")) {
-            pitch--;    // TODO: actually -0,5, here it's just a semi; later maybe done by pitchbend
-
-        } else if (accid.equals("fd")) {
-            pitch--;    // TODO: actually -1,5, here it's just a semi; later maybe done by pitchbend
-
-        } else if (accid.equals("nu")) {
-            pitch++;    // TODO: actually +0,5, here it's just a semi; later maybe done by pitchbend
-
-        } else if (accid.equals("nd")) {
-            pitch--;    // TODO: actually -0,5, here it's just a semi; later maybe done by pitchbend
-
-        } else {
-        }
-
-        // transposition
-        pitch += trans;
-
-        return pitch;
-    }
-
 }

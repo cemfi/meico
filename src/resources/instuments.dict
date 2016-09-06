@@ -144,6 +144,7 @@ Orgel
 upper
 lower
 Pedal
+Prinzipal
 
 % Reed Organ
 # 20
@@ -465,6 +466,7 @@ Choir
 Chor Aah
 Chor
 Gesang
+Chant
 Soprane
 Soprani
 Alti
@@ -487,6 +489,7 @@ B.
 Voice Oohs
 Voice
 Sopran
+Soprano
 Alt
 Alto
 Altus
@@ -505,6 +508,7 @@ Canto
 Cantus
 Quinto
 Singstimme
+Baritone
 
 % Synth Choir
 # 54
@@ -550,6 +554,7 @@ Kontrabaßtuba
 Wagner Tuba
 Wagnertuba
 Basso Tuba
+Euphonium
 
 % Muted Trumpet
 # 59
