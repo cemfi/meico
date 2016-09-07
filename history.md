@@ -19,6 +19,7 @@
 - The processing of `chord` elements (`bTrem` and `fTrem` are processed similarly) has been redone. If a `chord` element has no duration data in its attributes (`dur`, `dots`) and does not inherit it from a parent element, its duration is now specified by the longest child element.
 - Added `Prinzipal`, `Soprano`, `Baritone`, `Euphonium`, `Chant` to the instruments dictionary.
 - Bugfix in `Mei.reorderElements()`, relevant in the case that a `startid` attribute refers to an element within the element.
+- Minor corrections in `MeiCoApp.commandLineMode()`.
 
 
 ####v0.1.2

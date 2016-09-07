@@ -120,11 +120,12 @@ public class MeiCoApp extends JFrame {
             error.printStackTrace();                                    // print error to console
             return;
         } catch (IOException error) {
+            error.printStackTrace();                                    // print error to console
             return;
         }
-        Mei mei = null;                              // read an mei file (without validation, hence, false)
+        Mei mei = null;
         try {
-            mei = new Mei(meiFile, validate);
+            mei = new Mei(meiFile, validate);                           // read an mei file
         } catch (IOException e) {
             e.printStackTrace();
             return;
