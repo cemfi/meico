@@ -10,23 +10,20 @@ import java.io.IOException;
 
 public class Midi {
 
-    private Sequence sequence;              // the midi sequence
+    private Sequence sequence = null;       // the midi sequence
     private Sequencer sequencer = null;     // a sequencer to play back midi sequences
-    private File file;                      // the midi file
+    private File file = null;               // the midi file
 
     /**
      * the most primitive constructor
      */
     public Midi() {
-        this.sequence = null;
-        this.file = null;
     }
 
     /**
      * constructor, creates an empty MidiOld instance
      */
     public Midi(int ppq) throws InvalidMidiDataException {
-        this.file = null;
         this.sequence = new Sequence(Sequence.PPQ, 720);
     }
 
@@ -47,7 +44,6 @@ public class Midi {
      * @param sequence
      */
     public Midi(Sequence sequence) {
-        this.file = null;
         this.sequence = sequence;
     }
 
@@ -198,6 +194,43 @@ public class Midi {
             this.sequencer.stop();
             this.sequencer.setMicrosecondPosition(0);
         }
+    }
+
+    /**
+     * this is a wave file exporter
+     * @return
+     */
+    public File exportWav() {
+        Midi2WavRenderer renderer;
+        try {
+            renderer = new Midi2WavRenderer();
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+            return null;
+        } catch (InvalidMidiDataException e) {
+            e.printStackTrace();
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        File wavFile = new File(this.getFile().getPath().substring(0, this.getFile().getPath().length() - 3) + "wav");
+
+        try {
+            renderer.createWavFile(this.sequence, wavFile);
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+            return null;
+        } catch (InvalidMidiDataException e) {
+            e.printStackTrace();
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        return wavFile;
     }
 }
 

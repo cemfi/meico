@@ -167,10 +167,10 @@ public class MeiCoApp extends JFrame {
 
         if (msm) {
             System.out.println("Writing msm to file system: ");
-            for (int i = 0; i < msms.size(); ++i) {
-                if (!debug) msms.get(i).removeRests();  // purge the data (some applications may keep the rests from the mei; these should not call this function)
-                msms.get(i).writeMsm();                 // write the msm file to the file system
-                System.out.println("\t" + msms.get(i).getFile().getPath());
+            for (Msm msm1 : msms) {
+                if (!debug) msm1.removeRests();  // purge the data (some applications may keep the rests from the mei; these should not call this function)
+                msm1.writeMsm();                 // write the msm file to the file system
+                System.out.println("\t" + msm1.getFile().getPath());
             }
         }
 
@@ -185,6 +185,7 @@ public class MeiCoApp extends JFrame {
                     e.printStackTrace();
                 }
                 System.out.println("\t" + midis.get(i).getFile().getPath());
+                midis.get(i).exportWav();   // TODO this is just preliminary for testing
             }
         }
     }
