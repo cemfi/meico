@@ -1,7 +1,7 @@
 ###Version History
 
 
-###v0.2.0
+####v0.2.0
 - Added subpackage `graphics` to `resources` and moved all graphics resources into it.
 - Added audio export in Wave format.
     - Added new command line options (`[-w]` or `[--wav]`) to trigger wave export in command line mode.
@@ -16,7 +16,7 @@
 - Introduced some layouting variables in class `meico.app.MeiCoApp` for better editing of the window mode graphical user interface via global variables.
 
 
-###v0.1.4
+####v0.1.4
 - Added basic audio export to midi package (`meico.midi.Midi2WavRenderer.java`).
 - Added `UnsupportedSoundbankException.java` to package `meico.midi`.
 - Added test audio output to command line mode.
