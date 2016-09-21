@@ -1,5 +1,27 @@
 ###Version History
 
+
+###v0.2.0
+- Added subpackage `graphics` to `resources` and moved all graphics resources into it.
+- Added audio export in Wave format.
+    - Added new command line options (`[-w]` or `[--wav]`) to trigger wave export in command line mode.
+    - Modified `Midi.exportAudio()` (former `Midi.exportWav()`) to create and return an instance of `meico.audio.Audio`.
+    - Added several methods to class `Audio`. Audio data is now represented in an `AudioInputStream` and can be written into a file.
+    - Modified method `meico.midi.Midi2WavRenderer`. Its rendering methods return an `AudioInputStream` object instead of directly writing a file into the file system.
+    - Extended the window mode graphical user interface to include the new functionalities.
+    - Updated `README.md`.
+- Added subpackage `soundfonts` to `resources`.
+- Instead of using one global midi sequencer for Midi playback in class `meico.app.MeiCoApp` (window mode) I switched to the built-in local sequencers in class `meico.midi.Midi`.
+- Added tooltips in window mode for better user guidance.
+- Introduced some layouting variables in class `meico.app.MeiCoApp` for better editing of the window mode graphical user interface via global variables.
+
+
+###v0.1.4
+- Added basic audio export to midi package (`meico.midi.Midi2WavRenderer.java`).
+- Added `UnsupportedSoundbankException.java` to package `meico.midi`.
+- Added test audio output to command line mode.
+
+
 ####v0.1.3
 - Renamed the `element` elements in the MSM format. In the `timeSignatureMap` they are called `timeSignature`, in `keySignatureMap` they are called `keySignature` and in the `markerMap`they are now called `marker`.
 - Method `Helper.computePitchOld()` deleted.

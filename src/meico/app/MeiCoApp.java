@@ -5,6 +5,7 @@ package meico.app;
  * @author Axel Berndt.
  */
 
+import meico.audio.Audio;
 import meico.mei.Mei;
 import meico.midi.Midi;
 import meico.msm.Msm;
@@ -13,6 +14,8 @@ import net.miginfocom.swing.MigLayout;
 import nu.xom.ParsingException;
 
 import javax.sound.midi.*;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -24,19 +27,34 @@ import java.util.List;
 
 public class MeiCoApp extends JFrame {
 
-    private List<Mei4Gui> music;
+    private List<Mei4Gui> music = new ArrayList<Mei4Gui>();
     private Sequencer sequencer;
 
-    private final JLabel statusMessage;             // the message component of the statusbar
-    private final JLabel fileListPanel;             // a container for the list of loaded and generated files, here, the main interactions take place
-    private final JPanel backgroundPanel;           // the conainer of everything that happens in the work area of the window
-    private final JPanel statusPanel;               // the container of the statusbar components
-    private final JLabel dropLabel;                 // a text label that tells the user to drop files
-    private final JLabel meilabel;                  // mei logo
-    private final JLabel msmlabel;                  // msm logo
-    private final JLabel midilabel;                 // midi logo
-    private final JLabel loadIcon;                  // a clickable icon in the statusbar to start the filo open dialog
-    private final JLabel closeAllIcon;              // a clickable icon to close all loaded data in the work area, it is placed in the statusbar
+    // some global interface elements
+    private final JLabel statusMessage = new JLabel();             // the message component of the statusbar
+    private final JLabel fileListPanel = new JLabel();             // a container for the list of loaded and generated files, here, the main interactions take place
+    private final JPanel backgroundPanel = new JPanel();           // the conainer of everything that happens in the work area of the window
+    private final JPanel statusPanel = new JPanel();               // the container of the statusbar components
+    private final JLabel dropLabel = new JLabel("Drop your MEI, MSM, Midi, and Wave files here.", JLabel.CENTER);                               // a text label that tells the user to drop files
+//    private final JLabel dropLabel = new JLabel("Drop your mei, msm and midi files here.", new ImageIcon(getClass().getResource("/resources/drop-inverse.png")), JLabel.CENTER);
+    private final JLabel meilabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/mei-inverse.png")), JLabel.CENTER);    // mei logo
+    private final JLabel msmlabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/msm-inverse.png")), JLabel.CENTER);    // msm logo
+    private final JLabel midilabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/midi-inverse.png")), JLabel.CENTER);  // midi logo
+    private final JLabel audiolabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/audio-inverse.png")), JLabel.CENTER);  // audio logo
+    private final JLabel loadIcon = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/open-small.png")));                    // a clickable icon in the statusbar to start the filo open dialog
+    private final JLabel closeAllIcon = new JLabel("\u2716");      // a clickable icon to close all loaded data in the work area, it is placed in the statusbar
+
+    // layout variables
+    private final int windowWidth = 1020;
+    private final int windowHeight = 500;
+    private final int fontSize = 14;
+    private final int fontStyle = Font.BOLD;
+    private final String fontName = "default";
+    private final double iconScaleFactor = 0.85;
+    private final ImageIcon saveIcon = new ImageIcon((new ImageIcon(getClass().getResource("/resources/graphics/save-gray.png")).getImage()).getScaledInstance((int)(25 * this.iconScaleFactor), (int)(26 * this.iconScaleFactor), Image.SCALE_AREA_AVERAGING));
+    private final ImageIcon convertIcon = new ImageIcon((new ImageIcon(getClass().getResource("/resources/graphics/convert-gray.png")).getImage()).getScaledInstance((int)(25 * this.iconScaleFactor), (int)(18 * this.iconScaleFactor), Image.SCALE_AREA_AVERAGING));
+    private final double fileNameFieldWidtch = 16.5;  // in percent of the whole window width
+    private final double iconFieldWidth = 3.5;       // in percent of the whole window width
 
 
     /**
@@ -62,6 +80,7 @@ public class MeiCoApp extends JFrame {
      *             - "-r" or "--resolve-copy-ofs": mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file
      *             - "-m" or "--msm": converts mei to msm; meico will write an msm file to the path of the mei
      *             - "-i" or "--midi": converts mei to msm to midi; meico will output a midi file to the path of the mei
+     *             - "-w" or "--wav": converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei
      *             - "-p" or "--no-program-changes" call this to suppress the generation of program change events in midi
      *             - "-c" or "--dont-use-channel-10": the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
      *             - "-d" or "--debug": to write debug versions of mei and msm
@@ -78,6 +97,7 @@ public class MeiCoApp extends JFrame {
                 System.out.println("[-r] or [--resolve-copy-ofs]        mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file");
                 System.out.println("[-m] or [--msm]                     converts mei to msm; meico will write an msm file to the path of the mei");
                 System.out.println("[-i] or [--midi]                    converts mei (to msm, internally) to midi; meico will output a midi file to the path of the mei");
+                System.out.println("[-w] or [--wav]                     converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei");
                 System.out.println("[-p] or [--no-program-changes]      call this to suppress the generation of program change events in midi");
                 System.out.println("[-c] or [--dont-use-channel-10]     the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on");
                 System.out.println("[-t argument] or [--tempo argument] this sets the tempo of the midi file; the argument must be a floating point number; if not used the tempo is always 120 bpm");
@@ -93,6 +113,7 @@ public class MeiCoApp extends JFrame {
         boolean resolveCopyOfs = false;
         boolean msm = false;
         boolean midi = false;
+        boolean wav = false;
         boolean generateProgramChanges = true;
         boolean dontUseChannel10 = false;
         boolean debug = false;
@@ -103,6 +124,7 @@ public class MeiCoApp extends JFrame {
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
+            if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
             if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
             if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
             if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; }
@@ -151,7 +173,7 @@ public class MeiCoApp extends JFrame {
             mei.writeMei();                             // this outputs an expanded mei file with more xml:id attributes and resolved copyof's
         }
 
-        if (!(msm || midi)) return;                     // if no conversion is required, we are done here
+        if (!(msm || midi || wav)) return;             // if no conversion is required, we are done here
 
         // convert mei -> msm -> midi
         System.out.println("Converting mei to msm.");
@@ -174,9 +196,9 @@ public class MeiCoApp extends JFrame {
             }
         }
 
-        if (midi) {
+        List<meico.midi.Midi> midis = new ArrayList<Midi>();
+        if (midi || wav) {                      // midi conversion is also required for wav export
             System.out.println("Converting msm to midi and writing midi to file system: ");
-            List<Midi> midis = new ArrayList<Midi>();
             for (int i = 0; i < msms.size(); ++i) {
                 midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
                 try {
@@ -185,7 +207,24 @@ public class MeiCoApp extends JFrame {
                     e.printStackTrace();
                 }
                 System.out.println("\t" + midis.get(i).getFile().getPath());
-                midis.get(i).exportWav();   // TODO this is just preliminary for testing
+            }
+        }
+
+        List<meico.audio.Audio> audios = new ArrayList<Audio>();
+        if (wav) {
+            System.out.println("Converting midi to wave and writing wav file to file system: ");
+            for (meico.midi.Midi m : midis) {
+                Audio a = m.exportAudio();     // this generates an Audio object
+                if (a == null)
+                    continue;
+                audios.add(a);
+                try {
+                    a.writeAudio();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("\t" + a.getFile().getPath());
+
             }
         }
     }
@@ -219,9 +258,6 @@ public class MeiCoApp extends JFrame {
             }
         }
 
-        // initialize the music list
-        this.music = new ArrayList<Mei4Gui>();
-
         // initialize the midi sequencer for midi playback
         try {
             this.sequencer = MidiSystem.getSequencer();
@@ -236,7 +272,7 @@ public class MeiCoApp extends JFrame {
             this.sequencer.addMetaEventListener(new MetaEventListener() {               // Add a listener for meta message events to detect when ...
                 public void meta(MetaMessage event) {
                     if (event.getType() == 47) {                                        // ... the sequencer is done playing
-                        stopPlayback();                                                 // switch all playMaidi buttons to triangle
+                        stopAllMidiPlayback();                                                 // switch all playMaidi buttons to triangle
                     }
                 }
             });
@@ -283,24 +319,11 @@ public class MeiCoApp extends JFrame {
 
         // some general window settings
         //this.setBounds(100, 100, 1000, 400);                                          // set window size and position
-        this.setSize(1000, 500);                                                        // set window size
+        this.setSize(this.windowWidth, this.windowHeight);                              // set window size
         this.setResizable(true);                                                        // don't allow resizing
         this.setLocationRelativeTo(null);                                               // set window position
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);                   // what happens when the X is clicked?
         this.setLayout(new BorderLayout());                                             // the layout manager of the main window frame
-
-        // initialize the gui elements
-        this.statusPanel = new JPanel();                                                // the container of the statusbar label
-        this.backgroundPanel = new JPanel();                                            // a background panel
-        this.fileListPanel = new JLabel();                                              // the container to display loaded files
-        this.statusMessage = new JLabel();                                              // the statusbar message
-        this.loadIcon = new JLabel(new ImageIcon(getClass().getResource("/resources/open-small.png")));             // the file load icon that opens the file chooser dialog
-        this.closeAllIcon = new JLabel("\u2716");                                            // the icon to close all loaded data
-        this.dropLabel = new JLabel("Drop your mei, msm and midi files here.", JLabel.CENTER);   // the file drop label
-//        this.dropLabel = new JLabel("Drop your mei, msm and midi files here.", new ImageIcon(getClass().getResource("/resources/drop-inverse.png")), JLabel.CENTER);   // the file drop label
-        this.meilabel = new JLabel(new ImageIcon(getClass().getResource("/resources/mei-inverse.png")), JLabel.CENTER);     // mei icon label
-        this.msmlabel = new JLabel(new ImageIcon(getClass().getResource("/resources/msm-inverse.png")), JLabel.CENTER);     // msm icon label
-        this.midilabel = new JLabel(new ImageIcon(getClass().getResource("/resources/midi-inverse.png")), JLabel.CENTER);   // midi icon label
 
         // prepare the components
         this.makeStatusbar();                                                           // compile the statusbar
@@ -325,6 +348,8 @@ public class MeiCoApp extends JFrame {
             this.setStatusMessage(e.toString());            // if it is neither of the above file formats, output a statusbar message
         } catch (IOException e) {
             this.setStatusMessage(e.toString());            // if it is neither of the above file formats, output a statusbar message
+        } catch (UnsupportedAudioFileException e) {
+            e.printStackTrace();
         }
     }
 
@@ -338,6 +363,7 @@ public class MeiCoApp extends JFrame {
         chooser.addChoosableFileFilter(new FileNameExtensionFilter("digital music edition (*.mei)", "mei"));
         chooser.addChoosableFileFilter(new FileNameExtensionFilter("musical sequence markup (*.msm)", "msm"));
         chooser.addChoosableFileFilter(new FileNameExtensionFilter("midi file (*.mid)", "mid"));
+        chooser.addChoosableFileFilter(new FileNameExtensionFilter("audio file (*.wav)", "wav"));
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {      // file open has been approved
             loadFile(chooser.getSelectedFile());                                // load it
             this.doRepaint();
@@ -369,12 +395,11 @@ public class MeiCoApp extends JFrame {
         this.statusPanel.setLayout(new MigLayout(/*Layout Constraints*/ "", /*Column constraints*/ "", /*Row constraints*/ "0[]0"));
         this.statusMessage.setForeground(Color.DARK_GRAY);                              // the text color
         this.statusMessage.setHorizontalAlignment(SwingConstants.LEFT);                 // text alignment
-        // TODO: use System.setOut() and System.setErr() to redirect the output stream to statusMessage
 
         // add a file load icon to the statusbar
         this.loadIcon.setPreferredSize(new Dimension(16, 16));                          // make the icon very small
         this.loadIcon.setHorizontalAlignment(JLabel.CENTER);
-        //this.loadIcon.setToolTipText("<html>open file load dialog</html>");
+        this.loadIcon.setToolTipText("<html>open file load dialog</html>");
         this.loadIcon.addMouseListener(new MouseAdapter() {                             // add a mouse listener to the button
             @Override
             public void mouseClicked(MouseEvent e) {                                    // when clicked
@@ -396,8 +421,8 @@ public class MeiCoApp extends JFrame {
         this.closeAllIcon.setPreferredSize(new Dimension(16, 16));
         this.closeAllIcon.setHorizontalAlignment(JLabel.CENTER);
         this.closeAllIcon.setForeground(Color.DARK_GRAY);                               // the text color
-        this.closeAllIcon.setFont(new Font("default", Font.PLAIN, 15));                 // font type, style and size
-        //this.closeAllIcon.setToolTipText("<html>clear the workspace</html>");
+        this.closeAllIcon.setFont(new Font(fontName, Font.PLAIN, 15));                 // font type, style and size
+        this.closeAllIcon.setToolTipText("<html>clear the workspace</html>");
         this.closeAllIcon.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -436,7 +461,8 @@ public class MeiCoApp extends JFrame {
         // add the file format logos
         this.backgroundPanel.add(meilabel, "center, pushx, gap 20 20 30 30");
         this.backgroundPanel.add(msmlabel, "center, pushx, gap 20 20 30 30");
-        this.backgroundPanel.add(midilabel, "center, pushx, gap 20 20 30 30, wrap");
+        this.backgroundPanel.add(midilabel, "center, pushx, gap 20 20 30 30");
+        this.backgroundPanel.add(audiolabel, "center, pushx, gap 20 20 30 30, wrap");
 
         if (this.music.isEmpty()) {                                                         // if no files are loaded
             // create a file drop label
@@ -464,16 +490,12 @@ public class MeiCoApp extends JFrame {
         }
     }
 
-    private void stopPlayback() {
-        if ((this.sequencer != null) && this.sequencer.isOpen()) {
-            this.sequencer.stop();
-            this.sequencer.setMicrosecondPosition(0);
-        }
+    private void stopAllMidiPlayback() {
         for (Mei4Gui mei : music) {
             for (Mei4Gui.Msm4Gui msm : mei.msm) {
-                if (msm.midi != null) {
-                    msm.midi.panel[2].setText("\u25BA");
-                }
+                if ((msm.midi == null) || msm.midi.isEmpty())
+                    continue;
+                msm.midi.stop();
             }
         }
     }
@@ -494,7 +516,7 @@ public class MeiCoApp extends JFrame {
          * constructor
          * @param file
          */
-        public Mei4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, ParsingException {
+        public Mei4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, ParsingException, UnsupportedAudioFileException {
             this.msm = new ArrayList<Msm4Gui>();
 
             if (file.getName().substring(file.getName().length()-4).equals(".mei")) {           // if it is an mei file
@@ -519,7 +541,7 @@ public class MeiCoApp extends JFrame {
             // create the panel component and its content
             this.panel.removeAll();
             this.panel.setOpaque(false);
-            this.panel.setLayout(new MigLayout(/*Layout Constraints*/ "wrap 9", /*Column constraints*/ "[left, 23%:23%:23%][right, 4%:4%:4%][right, 4%:4%:4%][left, 23%:23%:23%][right, 4%:4%:4%][right, 4%:4%:4%][left, 23%:23%:23%][right, 4%:4%:4%][right, 4%:4%:4%]", /*Row constraints*/ ""));
+            this.panel.setLayout(new MigLayout(/*Layout Constraints*/ "wrap 12", /*Column constraints*/ "[left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%]", /*Row constraints*/ ""));
 
             int skip = 0;
 
@@ -586,13 +608,13 @@ public class MeiCoApp extends JFrame {
                 meiName.setBackground(Color.LIGHT_GRAY);
                 meiName.setForeground(Color.DARK_GRAY);
                 meiName.setBorder(new EmptyBorder(0, 4, 0, 0));
-                meiName.setFont(new Font("default", Font.PLAIN, 18));
-                //meiName.setToolTipText("<html>" + this.getFile().getPath() + "</html>");
+                meiName.setFont(new Font(fontName, fontStyle, fontSize));
+                meiName.setToolTipText("<html>" + this.getFile().getPath() + "<br>RIGHT CLICK: further MEI processing functions</html>");
                 meiName.setComponentPopupMenu(meiNamePop);
                 meiName.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseEntered(MouseEvent e) {
-                        app.setStatusMessage(getFile().getPath() + ", RIGHT CLICK: mei processing functions");
+                        app.setStatusMessage(getFile().getPath());
                     }
                     @Override
                     public void mouseExited(MouseEvent e) {
@@ -600,16 +622,16 @@ public class MeiCoApp extends JFrame {
                     }
                 });
 
-                final JLabel saveMei = new JLabel(new ImageIcon(getClass().getResource("/resources/save-gray.png")), JLabel.CENTER);
+                final JLabel saveMei = new JLabel(saveIcon, JLabel.CENTER);
                 saveMei.setOpaque(true);
                 saveMei.setBackground(Color.LIGHT_GRAY);
                 saveMei.setForeground(Color.DARK_GRAY);
-                //saveMei.setToolTipText("<html>LEFT CLICK: quick save with default filename <br> RIGHT CLICK: open save dialog</html>");
+                saveMei.setToolTipText("<html>LEFT CLICK: quick save with default filename <br> RIGHT CLICK: open save dialog</html>");
                 saveMei.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseEntered(MouseEvent e) {
                         saveMei.setBackground(new Color(232, 232, 232));
-                        app.setStatusMessage("LEFT CLICK: quick save with default filename, RIGHT CLICK: open save dialog");
+                        app.setStatusMessage("Save MEI file to file system");
                     }
                     @Override
                     public void mouseExited(MouseEvent e) {
@@ -675,7 +697,7 @@ public class MeiCoApp extends JFrame {
                 ppqPanel.add(ppqLabel);
                 mei2msmPop.add(ppqPanel);
 
-                final JCheckBoxMenuItem dontUseChannel10CheckBox = new JCheckBoxMenuItem("Don't use channel 10 (midi drum channel)", this.dontUseChannel10);
+                final JCheckBoxMenuItem dontUseChannel10CheckBox = new JCheckBoxMenuItem("Do not use channel 10 (midi drum channel)", this.dontUseChannel10);
                 dontUseChannel10CheckBox.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseReleased(MouseEvent e) {
@@ -685,17 +707,17 @@ public class MeiCoApp extends JFrame {
                 });
                 mei2msmPop.add(dontUseChannel10CheckBox);
 
-                final JLabel mei2msm = new JLabel(new ImageIcon(getClass().getResource("/resources/convert-gray.png")), JLabel.CENTER);
+                final JLabel mei2msm = new JLabel(convertIcon, JLabel.CENTER);
                 mei2msm.setOpaque(true);
                 mei2msm.setBackground(Color.LIGHT_GRAY);
                 mei2msm.setForeground(Color.DARK_GRAY);
-                //mei2msm.setToolTipText("<html>convert to msm</html>");
+                mei2msm.setToolTipText("<html>LEFT CLICK: convert to msm<br>RIGHT CLICK: conversion options</html>");
                 mei2msm.setComponentPopupMenu(mei2msmPop);
                 mei2msm.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseEntered(MouseEvent e) {
                         mei2msm.setBackground(new Color(232, 232, 232));
-                        app.setStatusMessage("Convert to msm, RIGHT CLICK: set time resolution (currently " + ppq + " ppq)");
+                        app.setStatusMessage("Convert to MSM");
                     }
                     @Override
                     public void mouseExited(MouseEvent e) {
@@ -725,33 +747,48 @@ public class MeiCoApp extends JFrame {
                     }
                 });
 
-                this.panel.add(meiName, "pushx, height 35px!, width 23%!");
-                this.panel.add(saveMei, "pushx, height 35px!, width 4%!");
-                this.panel.add(mei2msm, "pushx, height 35px!, width 4%!");
+                this.panel.add(meiName, "pushx, height 35px!, width " + fileNameFieldWidtch + "%!");
+                this.panel.add(saveMei, "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                this.panel.add(mei2msm, "pushx, height 35px!, width " + iconFieldWidth + "%!");
             }
 
-            // msm and midi components
+            // msm, midi and audio components
             for (Msm4Gui m : this.msm) {
                 // the msm components
                 if (m.isEmpty()) {
                     skip += 3;
                 }
                 else {
-                    this.panel.add(m.getPanel()[0], "pushx, height 35px!, width 23%!, skip " + skip);
-                    this.panel.add(m.getPanel()[1], "pushx, height 35px!, width 4%!");
-                    this.panel.add(m.getPanel()[2], "pushx, height 35px!, width 4%!");
+                    this.panel.add(m.getPanel()[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
+                    this.panel.add(m.getPanel()[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                    this.panel.add(m.getPanel()[2], "pushx, height 35px!, width " + iconFieldWidth + "%!");
                     skip = 0;
                 }
 
                 // the midi components
-                if ((m.midi == null) || m.midi.isEmpty()) {
-                    skip = 6;       // skip the 3 midi cells and the 3 mei cells of the next line
+                if (m.midi == null) {
+                    skip = 9;       // skip the 4 midi cells and the 4 mei cells of the next line
                 }
                 else {
-                    this.panel.add(m.midi.getPanel()[0], "pushx, height 35px!, width 23%!, skip " + skip);
-                    this.panel.add(m.midi.getPanel()[1], "pushx, height 35px!, width 4%!");
-                    this.panel.add(m.midi.getPanel()[2], "pushx, height 35px!, width 4%!");
-                    skip = 3;       // all further msm and midi components that belong to this mei instance have 3 skips in the panel so that they are placed in the correct column
+                    if (m.midi.isEmpty()) {
+                        skip = 10;
+                    }
+                    else {
+                        this.panel.add(m.midi.getPanel()[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
+                        this.panel.add(m.midi.getPanel()[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        this.panel.add(m.midi.getPanel()[2], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        this.panel.add(m.midi.getPanel()[3], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        skip = 0;       // all further msm and midi components that belong to this mei instance have 3 skips in the panel so that they are placed in the correct column
+                    }
+
+                    if ((m.midi.audio == null) || m.midi.audio.isEmpty()) {
+                        skip = 5;
+                    }
+                    else {
+                        this.panel.add(m.midi.audio.getPanel()[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
+                        this.panel.add(m.midi.audio.getPanel()[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        skip = 3;
+                    }
                 }
             }
 
@@ -783,7 +820,7 @@ public class MeiCoApp extends JFrame {
              * constructor
              * @param file
              */
-            public Msm4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, ParsingException {
+            public Msm4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, ParsingException, UnsupportedAudioFileException {
                 this.midi = null;
 
                 if (file.getName().substring(file.getName().length()-4).equals(".msm")) {       // if it is an msm file
@@ -829,13 +866,13 @@ public class MeiCoApp extends JFrame {
                     msmName.setBackground(Color.LIGHT_GRAY);
                     msmName.setForeground(Color.DARK_GRAY);
                     msmName.setBorder(new EmptyBorder(0, 4, 0, 0));
-                    msmName.setFont(new Font("default", Font.PLAIN, 18));
-                    //msmName.setToolTipText("<html>" + this.getFile().getPath() + "</html>");
+                    msmName.setFont(new Font(fontName, fontStyle, fontSize));
+                    msmName.setToolTipText("<html>" + this.getFile().getPath() + "<br>RIGHT CLICK: further MSM processing functions</html>");
                     msmName.setComponentPopupMenu(msmNamePop);
                     msmName.addMouseListener(new MouseAdapter() {
                         @Override
                         public void mouseEntered(MouseEvent e) {
-                            app.setStatusMessage(getFile().getPath() + ", RIGHT CLICK: msm processing options");
+                            app.setStatusMessage(getFile().getPath());
                         }
                         @Override
                         public void mouseExited(MouseEvent e) {
@@ -843,16 +880,16 @@ public class MeiCoApp extends JFrame {
                         }
                     });
 
-                    final JLabel saveMsm = new JLabel(new ImageIcon(getClass().getResource("/resources/save-gray.png")), JLabel.CENTER);
+                    final JLabel saveMsm = new JLabel(saveIcon, JLabel.CENTER);
                     saveMsm.setOpaque(true);
                     saveMsm.setBackground(Color.LIGHT_GRAY);
                     saveMsm.setForeground(Color.DARK_GRAY);
-                    //saveMsm.setToolTipText("<html>LEFT CLICK: quick save with default filename <br> RIGHT CLICK: open save dialog</html>");
+                    saveMsm.setToolTipText("<html>LEFT CLICK: quick save with default filename <br> RIGHT CLICK: open save dialog</html>");
                     saveMsm.addMouseListener(new MouseAdapter() {
                         @Override
                         public void mouseEntered(MouseEvent e) {
                             saveMsm.setBackground(new Color(232, 232, 232));
-                            app.setStatusMessage("LEFT CLICK: quick save with default filename, RIGHT CLICK: open save dialog");
+                            app.setStatusMessage("Save MSM file to file system");
                         }
                         @Override
                         public void mouseExited(MouseEvent e) {
@@ -935,17 +972,17 @@ public class MeiCoApp extends JFrame {
                     msm2midiPop.add(bpmPanel);
                     msm2midiPop.add(generateProgramChangesCheckBox);
 
-                    final JLabel msm2midi = new JLabel(new ImageIcon(getClass().getResource("/resources/convert-gray.png")), JLabel.CENTER);
+                    final JLabel msm2midi = new JLabel(convertIcon, JLabel.CENTER);
                     msm2midi.setOpaque(true);
                     msm2midi.setBackground(Color.LIGHT_GRAY);
                     msm2midi.setForeground(Color.DARK_GRAY);
                     msm2midi.setComponentPopupMenu(msm2midiPop);
-                    //msm2midi.setToolTipText("<html>convert to midi</html>");
+                    msm2midi.setToolTipText("<html>LEFT CLICK: convert to Midi<br>RIGHT CLICK: conversion options</html>");
                     msm2midi.addMouseListener(new MouseAdapter() {
                         @Override
                         public void mouseEntered(MouseEvent e) {
                             msm2midi.setBackground(new Color(232, 232, 232));
-                            app.setStatusMessage("Convert to midi, RIGHT CLICK: set the tempo (currently " + bpm + " bpm)");
+                            app.setStatusMessage("Convert to Midi");
                         }
                         @Override
                         public void mouseExited(MouseEvent e) {
@@ -986,26 +1023,28 @@ public class MeiCoApp extends JFrame {
              */
             private class Midi4Gui extends meico.midi.Midi {
                 protected final JLabel[] panel;             // the actual gui extension
+                private Audio4Gui audio = null;
                 private MeiCoApp app;
 
                 /**
                  * constructor
                  * @param file
                  */
-                public Midi4Gui(File file, MeiCoApp app) throws InvalidFileTypeException {
-                    if (!file.getName().substring(file.getName().length()-4).equals(".mid")) {      // if it is not a midi file
-                        throw new InvalidFileTypeException(file.getName() + " invalid file format!");
+                public Midi4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, UnsupportedAudioFileException {
+                    if (file.getName().substring(file.getName().length()-4).equals(".mid")) {      // if it is not a midi file
+                        try {
+                            this.readMidiFile(file);
+                        } catch (InvalidMidiDataException e) {
+                            throw new InvalidFileTypeException(file.getName() + " invalid Midi file!");
+                        } catch (IOException e) {
+                            throw new InvalidFileTypeException(file.getName() + " invalid Midi file!");
+                        }
+                    }
+                    else {
+                        this.audio = new Audio4Gui(file, app);
                     }
 
-                    try {
-                        this.readMidiFile(file);
-                    } catch (InvalidMidiDataException e) {
-                        throw new InvalidFileTypeException(file.getName() + " invalid midi file!");
-                    } catch (IOException e) {
-                        throw new InvalidFileTypeException(file.getName() + " invalid midi file!");
-                    }
-
-                    this.panel = new JLabel[3];     // the name label, save label and play label
+                    this.panel = new JLabel[4];     // the name label, save label, play, and convert label
                     this.app = app;
                 }
 
@@ -1014,7 +1053,7 @@ public class MeiCoApp extends JFrame {
                  */
                 public Midi4Gui(meico.midi.Midi midi, MeiCoApp app) {
                     super(midi.getSequence(), midi.getFile());
-                    this.panel = new JLabel[3];
+                    this.panel = new JLabel[4];
                     this.app = app;
                 }
 
@@ -1027,6 +1066,7 @@ public class MeiCoApp extends JFrame {
                         this.panel[0] = new JLabel();       // return
                         this.panel[1] = new JLabel();       // empty
                         this.panel[2] = new JLabel();       // labels
+                        this.panel[3] = new JLabel();       //
                     }
                     else {
                         JLabel midiName = new JLabel(this.getFile().getName());
@@ -1034,8 +1074,8 @@ public class MeiCoApp extends JFrame {
                         midiName.setBackground(Color.LIGHT_GRAY);
                         midiName.setForeground(Color.DARK_GRAY);
                         midiName.setBorder(new EmptyBorder(0, 4, 0, 0));
-                        midiName.setFont(new Font("default", Font.PLAIN, 18));
-                        //midiName.setToolTipText("<html>" + this.getFile().getPath() + "</html>");
+                        midiName.setFont(new Font(fontName, fontStyle, fontSize));
+                        midiName.setToolTipText("<html>" + this.getFile().getPath() + "</html>");
                         midiName.addMouseListener(new MouseAdapter() {
                             @Override
                             public void mouseEntered(MouseEvent e) {
@@ -1047,16 +1087,16 @@ public class MeiCoApp extends JFrame {
                             }
                         });
 
-                        final JLabel saveMidi = new JLabel(new ImageIcon(getClass().getResource("/resources/save-gray.png")), JLabel.CENTER);
+                        final JLabel saveMidi = new JLabel(saveIcon, JLabel.CENTER);
                         saveMidi.setOpaque(true);
                         saveMidi.setBackground(Color.LIGHT_GRAY);
                         saveMidi.setForeground(Color.DARK_GRAY);
-                        //saveMidi.setToolTipText("<html>LEFT CLICK: quick save with default filename <br> RIGHT CLICK: open save dialog</html>");
+                        saveMidi.setToolTipText("<html>LEFT CLICK: quick save with default filename<br>RIGHT CLICK: open save dialog</html>");
                         saveMidi.addMouseListener(new MouseAdapter() {
                             @Override
                             public void mouseEntered(MouseEvent e) {
                                 saveMidi.setBackground(new Color(232, 232, 232));
-                                app.setStatusMessage("LEFT CLICK: quick save with default filename, RIGHT CLICK: open save dialog");
+                                app.setStatusMessage("Save Midi file to file system");
                             }
                             @Override
                             public void mouseExited(MouseEvent e) {
@@ -1096,17 +1136,17 @@ public class MeiCoApp extends JFrame {
                         });
 
                         final JLabel playMidi = new JLabel("\u25BA");
-                        playMidi.setFont(new Font("default", Font.PLAIN, 18));
+                        playMidi.setFont(new Font(fontName, fontStyle, fontSize));
                         playMidi.setHorizontalAlignment(JLabel.CENTER);
                         playMidi.setOpaque(true);
                         playMidi.setBackground(Color.LIGHT_GRAY);
                         playMidi.setForeground(Color.DARK_GRAY);
-                        //playMidi.setToolTipText("<html>play midi file</html>");
+                        playMidi.setToolTipText("<html>play Midi file</html>");
                         playMidi.addMouseListener(new MouseAdapter() {
                             @Override
                             public void mouseEntered(MouseEvent e) {
                                 playMidi.setBackground(new Color(232, 232, 232));
-                                app.setStatusMessage("Play midi file");
+                                app.setStatusMessage("Play Midi file");
                             }
                             @Override
                             public void mouseExited(MouseEvent e) {
@@ -1122,41 +1162,190 @@ public class MeiCoApp extends JFrame {
                             public void mouseReleased(MouseEvent e) {
                                 if (playMidi.contains(e.getPoint())) {
                                     if (playMidi.getText().equals("\u25A0")) {
-                                        app.stopPlayback();
+                                        stop();
+                                        playMidi.setText("\u25BA");
                                         playMidi.setBackground(new Color(232, 232, 232));
                                         return;
                                     }
-                                    app.stopPlayback();
+                                    app.stopAllMidiPlayback();
+                                    playMidi.setBackground(new Color(232, 232, 232));
                                     try {
-                                        app.sequencer.setSequence(getSequence());
-                                        app.sequencer.start();
-                                    } catch (InvalidMidiDataException err) {
-                                        app.setStatusMessage(err.toString());
-                                        playMidi.setBackground(new Color(232, 232, 232));
+                                        play();
+                                    } catch (MidiUnavailableException e1) {
+                                        e1.printStackTrace();
                                         return;
-                                    } catch (NullPointerException err) {
-                                        app.setStatusMessage(err.toString());
-                                        playMidi.setBackground(new Color(232, 232, 232));
-                                        return;
-                                    } catch (IllegalStateException err) {
-                                        app.setStatusMessage(err.toString());
-                                        playMidi.setBackground(new Color(232, 232, 232));
+                                    } catch (InvalidMidiDataException e1) {
+                                        e1.printStackTrace();
                                         return;
                                     }
                                     playMidi.setText("\u25A0");
-                                    playMidi.setBackground(new Color(232, 232, 232));
                                 }
                                 else
                                     playMidi.setBackground(Color.LIGHT_GRAY);
                             }
                         });
 
+                        final JLabel midi2audio = new JLabel(convertIcon, JLabel.CENTER);
+                        midi2audio.setOpaque(true);
+                        midi2audio.setBackground(Color.LIGHT_GRAY);
+                        midi2audio.setForeground(Color.DARK_GRAY);
+                        midi2audio.setToolTipText("<html>LEFT CLICK: convert to audio</html>");
+                        midi2audio.addMouseListener(new MouseAdapter() {
+                            @Override
+                            public void mouseEntered(MouseEvent e) {
+                                midi2audio.setBackground(new Color(232, 232, 232));
+                                app.setStatusMessage("Convert to audio");
+                            }
+                            @Override
+                            public void mouseExited(MouseEvent e) {
+                                if (midi2audio.getBackground() != Color.GRAY)
+                                    midi2audio.setBackground(Color.LIGHT_GRAY);
+                                app.setStatusMessage("");
+                            }
+                            @Override
+                            public void mousePressed(MouseEvent e) {
+                                if (SwingUtilities.isLeftMouseButton(e))
+                                    midi2audio.setBackground(Color.GRAY);
+                            }
+                            @Override
+                            public void mouseReleased(MouseEvent e) {
+                                if (SwingUtilities.isLeftMouseButton(e)) {
+                                    if (midi2audio.contains(e.getPoint())) {
+                                        try {
+                                            Audio a = exportAudio();
+                                            audio = new Audio4Gui(a.getAudioStream(), a.getFile(), app);
+                                        } catch (IOException e1) {
+                                            e1.printStackTrace();
+                                        } catch (UnsupportedAudioFileException e1) {
+                                            e1.printStackTrace();
+                                        }
+                                        midi2audio.setBackground(new Color(232, 232, 232));
+                                        app.doRepaint();
+                                    }
+                                    else
+                                        midi2audio.setBackground(Color.LIGHT_GRAY);
+                                }
+                            }
+                        });
+
                         this.panel[0] = midiName;
                         this.panel[1] = saveMidi;
                         this.panel[2] = playMidi;
+                        this.panel[3] = midi2audio;
                     }
 
                     return this.panel;
+                }
+
+                private class Audio4Gui extends meico.audio.Audio {
+                    protected final JLabel[] panel;             // the actual gui extension
+                    private MeiCoApp app;
+
+                    /**
+                     * constructor
+                     * @param file
+                     */
+                    public Audio4Gui(AudioInputStream inputStream, File file, MeiCoApp app) throws IOException, UnsupportedAudioFileException {
+                        super(inputStream, file);
+                        this.panel = new JLabel[2];     // the name label, save label and play label
+                        this.app = app;
+                    }
+
+                    /**
+                     *
+                     * @param file
+                     * @param app
+                     * @throws IOException
+                     * @throws UnsupportedAudioFileException
+                     */
+                    public Audio4Gui(File file, MeiCoApp app) throws IOException, UnsupportedAudioFileException {
+                        super(file);
+                        this.panel = new JLabel[2];     // the name label, save label and play label
+                        this.app = app;
+                    }
+
+                    /**
+                     * This method draws and returns the panel that the MeiCoApp displays.
+                     * @return
+                     */
+                    public JLabel[] getPanel() {
+                        if (this.isEmpty()) {                   // if no msm data loaded
+                            this.panel[0] = new JLabel();       // return
+                            this.panel[1] = new JLabel();       // empty
+                        }
+                        else {
+                            JLabel audioName = new JLabel(this.getFile().getName());
+                            audioName.setOpaque(true);
+                            audioName.setBackground(Color.LIGHT_GRAY);
+                            audioName.setForeground(Color.DARK_GRAY);
+                            audioName.setBorder(new EmptyBorder(0, 4, 0, 0));
+                            audioName.setFont(new Font(fontName, fontStyle, fontSize));
+                            audioName.setToolTipText("<html>" + this.getFile().getPath() + "</html>");
+                            audioName.addMouseListener(new MouseAdapter() {
+                                @Override
+                                public void mouseEntered(MouseEvent e) {
+                                    app.setStatusMessage(getFile().getPath());
+                                }
+                                @Override
+                                public void mouseExited(MouseEvent e) {
+                                    app.setStatusMessage("");
+                                }
+                            });
+
+                            final JLabel saveAudio = new JLabel(saveIcon, JLabel.CENTER);
+                            saveAudio.setOpaque(true);
+                            saveAudio.setBackground(Color.LIGHT_GRAY);
+                            saveAudio.setForeground(Color.DARK_GRAY);
+                            saveAudio.setToolTipText("<html>LEFT CLICK: quick save with default filename <br> RIGHT CLICK: open save dialog</html>");
+                            saveAudio.addMouseListener(new MouseAdapter() {
+                                @Override
+                                public void mouseEntered(MouseEvent e) {
+                                    saveAudio.setBackground(new Color(232, 232, 232));
+                                    app.setStatusMessage("Save audio file to file system");
+                                }
+                                @Override
+                                public void mouseExited(MouseEvent e) {
+                                    if (saveAudio.getBackground() != Color.GRAY)
+                                        saveAudio.setBackground(Color.LIGHT_GRAY);
+                                    app.setStatusMessage("");
+                                }
+                                @Override
+                                public void mousePressed(MouseEvent e) {
+                                    saveAudio.setBackground(Color.GRAY);
+                                }
+                                @Override
+                                public void mouseReleased(MouseEvent e) {
+                                    if (saveAudio.contains(e.getPoint())) {
+                                        if (SwingUtilities.isLeftMouseButton(e)) {                                  // quick save with default filename with left mouse button
+                                            try {
+                                                writeAudio();
+                                            } catch (IOException err) {
+                                                app.setStatusMessage(err.toString());
+                                            }
+                                        }
+                                        else {                                                                      // svae dialog with right mouse button
+                                            JFileChooser chooser = new JFileChooser();                              // open the fileopen dialog
+                                            if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {      // file save has been approved
+                                                try {
+                                                    writeAudio(chooser.getSelectedFile().getAbsolutePath());        // save it
+                                                } catch (IOException err) {
+                                                    app.setStatusMessage(err.toString());
+                                                }
+                                            }
+                                        }
+                                        saveAudio.setBackground(new Color(232, 232, 232));
+                                    }
+                                    else
+                                        saveAudio.setBackground(Color.LIGHT_GRAY);
+                                }
+                            });
+
+                            this.panel[0] = audioName;
+                            this.panel[1] = saveAudio;
+                        }
+
+                        return this.panel;
+                    }
                 }
             }
         }

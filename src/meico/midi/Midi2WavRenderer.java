@@ -3,10 +3,8 @@ package meico.midi;
 import com.sun.media.sound.AudioSynthesizer;
 
 import javax.sound.midi.*;
-import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -56,12 +54,11 @@ public class Midi2WavRenderer {
      * @param soundbankFile
      * @param patches an array of Patch objects, each specifying the bank index and program change number
      * @param sequence
-     * @param outputFile
      * @throws MidiUnavailableException
      * @throws InvalidMidiDataException
      * @throws IOException
      */
-    public void createWavFile(File soundbankFile, int[] patches, Sequence sequence, File outputFile) throws MidiUnavailableException, InvalidMidiDataException, IOException, UnsupportedSoundbankException {
+    public void renderMidi2Wave(File soundbankFile, int[] patches, Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException, UnsupportedSoundbankException {
         Soundbank soundbank = loadSoundbank(soundbankFile);         // Load soundbank
 
         // Open the Synthesizer and load the requested instruments
@@ -71,23 +68,22 @@ public class Midi2WavRenderer {
             this.synth.loadInstrument(soundbank.getInstrument(new Patch(0, patch)));
         }
 
-        createWavFile(sequence, outputFile);
+        renderMidi2Wave(sequence);
     }
 
     /**
      * Creates a WAV file based on the Sequence, using the default soundbank.
      *
      * @param sequence
-     * @param outputFile
      * @throws MidiUnavailableException
      * @throws InvalidMidiDataException
      * @throws IOException
      */
-    public void createWavFile(Sequence sequence, File outputFile) throws MidiUnavailableException, InvalidMidiDataException, IOException {
+    public AudioInputStream renderMidi2Wave(Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException {
         AudioSynthesizer synth = findAudioSynthesizer();
         if (synth == null) {
             System.err.println("No AudioSynthesizer was found!");
-            return;
+            return null;
         }
 
         AudioFormat format = new AudioFormat(96000, 24, 2, true, false);
@@ -103,10 +99,9 @@ public class Midi2WavRenderer {
         long len = (long) (stream.getFormat().getFrameRate() * (total + 4));
         stream = new AudioInputStream(stream, stream.getFormat(), len);
 
-        // Write WAVE file to disk.
-        AudioSystem.write(stream, AudioFileFormat.Type.WAVE, outputFile);
-
         this.synth.close();
+
+        return stream;
     }
 
     /**

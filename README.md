@@ -29,6 +29,7 @@ The command line mode expects the following command line options:
 - `[-r]` or `[--resolve-copy-ofs]`: mei elements with a `copyOf` attribute are resolved into selfcontained elements with an own `xml:id`; meico will output a revised mei file
 - `[-m]` or `[--msm]`: converts mei to msm; meico will write an msm file to the path of the mei
 - `[-i]` or `[--midi]`: converts mei to msm to midi; meico will output a midi file to the path of the mei
+- `[-w]` or `[--wav]`: converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei
 - `[-p]` or `[--no-program-changes]`: call this to suppress the generation of program change events in midi
 - `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on
 - `[-t argument]` or `[--tempo argument]`: this sets the tempo of the midi file; the argument must be a floating point number; if this is not used the tempo is always 120 bpm
@@ -47,6 +48,7 @@ Meico makes use of the following third party libraries:
 - the FileDrop class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
 - Jing v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
 - MEI Common Music Notation Schema (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
+- parts of `MidiToWavRenderer.java` (an add-on to the JFugue library), LGPL license.
 
 We publish meico under GNU LGPL version 3. The meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
 If you use meico in your project make sure that you do not conflict with any of the above licenses.

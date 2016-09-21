@@ -4,7 +4,10 @@ package meico.midi;
  * @author Axel Berndt.
  */
 
+import meico.audio.Audio;
+
 import javax.sound.midi.*;
+import javax.sound.sampled.AudioInputStream;
 import java.io.File;
 import java.io.IOException;
 
@@ -197,13 +200,13 @@ public class Midi {
     }
 
     /**
-     * this is a wave file exporter
+     * this is an audio file exporter
      * @return
      */
-    public File exportWav() {
-        Midi2WavRenderer renderer;
+    public Audio exportAudio() {
+        Midi2WavRenderer renderer;                  // an instance of the renderer
         try {
-            renderer = new Midi2WavRenderer();
+            renderer = new Midi2WavRenderer();      // initialize the renderer
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
             return null;
@@ -215,22 +218,29 @@ public class Midi {
             return null;
         }
 
-        File wavFile = new File(this.getFile().getPath().substring(0, this.getFile().getPath().length() - 3) + "wav");
-
+        AudioInputStream stream = null;              // the stream that the renerer fills
         try {
-            renderer.createWavFile(this.sequence, wavFile);
+            stream = renderer.renderMidi2Wave(this.sequence);   // do rendering of midi sequence into audio stream
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
-            return null;
         } catch (InvalidMidiDataException e) {
             e.printStackTrace();
-            return null;
         } catch (IOException e) {
             e.printStackTrace();
-            return null;
         }
 
-        return wavFile;
+        if (stream == null)                         // if rendering failed
+            return null;                            // return null
+
+        Audio audio;                                // create Audio object
+        if (this.file != null) {
+            audio = new Audio(stream, new File(this.file.getPath().substring(0, this.file.getPath().length() - 3) + "wav"));  // set its file name, derived from this name but with different file type extension
+        }
+        else {
+            audio = new Audio(stream);
+        }
+
+        return audio;                   // return the Audio object
     }
 }
 
