@@ -14,6 +14,7 @@ import net.miginfocom.swing.MigLayout;
 import nu.xom.ParsingException;
 
 import javax.sound.midi.*;
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
@@ -28,7 +29,6 @@ import java.util.List;
 public class MeiCoApp extends JFrame {
 
     private List<Mei4Gui> music = new ArrayList<Mei4Gui>();
-    private Sequencer sequencer;
 
     // some global interface elements
     private final JLabel statusMessage = new JLabel();             // the message component of the statusbar
@@ -258,26 +258,6 @@ public class MeiCoApp extends JFrame {
             }
         }
 
-        // initialize the midi sequencer for midi playback
-        try {
-            this.sequencer = MidiSystem.getSequencer();
-            this.sequencer.open();
-        } catch (MidiUnavailableException e) {
-            this.setStatusMessage(e.toString());
-            this.sequencer = null;
-        }
-        if (sequencer != null) {
-            // TODO: load a higher quality soundbank
-
-            this.sequencer.addMetaEventListener(new MetaEventListener() {               // Add a listener for meta message events to detect when ...
-                public void meta(MetaMessage event) {
-                    if (event.getType() == 47) {                                        // ... the sequencer is done playing
-                        stopAllMidiPlayback();                                                 // switch all playMaidi buttons to triangle
-                    }
-                }
-            });
-        }
-
         // set the OS' look and feel (this is mainly relevant for the JFileChooser that is used later)
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());        // try to use the system's look and feel
@@ -426,8 +406,7 @@ public class MeiCoApp extends JFrame {
         this.closeAllIcon.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if ((sequencer != null) && sequencer.isOpen())
-                    sequencer.stop();
+                stopAllMidiPlayback();
                 music.clear();
                 doRepaint();
             }
@@ -759,9 +738,10 @@ public class MeiCoApp extends JFrame {
                     skip += 3;
                 }
                 else {
-                    this.panel.add(m.getPanel()[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
-                    this.panel.add(m.getPanel()[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
-                    this.panel.add(m.getPanel()[2], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                    JLabel[] msmPanel = m.getPanel();
+                    this.panel.add(msmPanel[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
+                    this.panel.add(msmPanel[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                    this.panel.add(msmPanel[2], "pushx, height 35px!, width " + iconFieldWidth + "%!");
                     skip = 0;
                 }
 
@@ -774,10 +754,11 @@ public class MeiCoApp extends JFrame {
                         skip = 10;
                     }
                     else {
-                        this.panel.add(m.midi.getPanel()[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
-                        this.panel.add(m.midi.getPanel()[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
-                        this.panel.add(m.midi.getPanel()[2], "pushx, height 35px!, width " + iconFieldWidth + "%!");
-                        this.panel.add(m.midi.getPanel()[3], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        JLabel[] midiPanel = m.midi.getPanel();
+                        this.panel.add(midiPanel[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
+                        this.panel.add(midiPanel[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        this.panel.add(midiPanel[2], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        this.panel.add(midiPanel[3], "pushx, height 35px!, width " + iconFieldWidth + "%!");
                         skip = 0;       // all further msm and midi components that belong to this mei instance have 3 skips in the panel so that they are placed in the correct column
                     }
 
@@ -785,8 +766,9 @@ public class MeiCoApp extends JFrame {
                         skip = 5;
                     }
                     else {
-                        this.panel.add(m.midi.audio.getPanel()[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
-                        this.panel.add(m.midi.audio.getPanel()[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        JLabel[] audioPanel = m.midi.audio.getPanel();
+                        this.panel.add(audioPanel[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
+                        this.panel.add(audioPanel[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
                         skip = 3;
                     }
                 }
@@ -1044,6 +1026,7 @@ public class MeiCoApp extends JFrame {
                         this.audio = new Audio4Gui(file, app);
                     }
 
+                    this.initSequencer();
                     this.panel = new JLabel[4];     // the name label, save label, play, and convert label
                     this.app = app;
                 }
@@ -1135,7 +1118,7 @@ public class MeiCoApp extends JFrame {
                             }
                         });
 
-                        final JLabel playMidi = new JLabel("\u25BA");
+                        final JLabel playMidi = new JLabel((this.getSequencer().isRunning()) ? "\u25A0" : "\u25BA");
                         playMidi.setFont(new Font(fontName, fontStyle, fontSize));
                         playMidi.setHorizontalAlignment(JLabel.CENTER);
                         playMidi.setOpaque(true);
@@ -1161,24 +1144,12 @@ public class MeiCoApp extends JFrame {
                             @Override
                             public void mouseReleased(MouseEvent e) {
                                 if (playMidi.contains(e.getPoint())) {
-                                    if (playMidi.getText().equals("\u25A0")) {
+                                    if ((getSequencer().isRunning())) {
                                         stop();
-                                        playMidi.setText("\u25BA");
-                                        playMidi.setBackground(new Color(232, 232, 232));
                                         return;
                                     }
                                     app.stopAllMidiPlayback();
-                                    playMidi.setBackground(new Color(232, 232, 232));
-                                    try {
-                                        play();
-                                    } catch (MidiUnavailableException e1) {
-                                        e1.printStackTrace();
-                                        return;
-                                    } catch (InvalidMidiDataException e1) {
-                                        e1.printStackTrace();
-                                        return;
-                                    }
-                                    playMidi.setText("\u25A0");
+                                    play();
                                 }
                                 else
                                     playMidi.setBackground(Color.LIGHT_GRAY);
@@ -1213,7 +1184,7 @@ public class MeiCoApp extends JFrame {
                                     if (midi2audio.contains(e.getPoint())) {
                                         try {
                                             Audio a = exportAudio();
-                                            audio = new Audio4Gui(a.getAudioStream(), a.getFile(), app);
+                                            audio = new Audio4Gui(a, app);
                                         } catch (IOException e1) {
                                             e1.printStackTrace();
                                         } catch (UnsupportedAudioFileException e1) {
@@ -1237,16 +1208,60 @@ public class MeiCoApp extends JFrame {
                     return this.panel;
                 }
 
+                /**
+                 * extend the initSequencer() mehtod by a MetaEventListener
+                 * @return
+                 */
+                @Override
+                public boolean initSequencer() {
+                    if (super.initSequencer()) {
+                        this.getSequencer().addMetaEventListener(new MetaEventListener() {  // Add a listener for meta message events to detect when ...
+                            public void meta(MetaMessage event) {
+                                if (event.getType() == 47) {                                // ... the sequencer is done playing
+                                    panel[2].setText("\u25BA");
+                                    panel[2].setBackground(Color.LIGHT_GRAY);
+                                }
+                            }
+                        });
+                        return true;
+                    }
+                    return false;
+                }
+
+                /**
+                 * playback start method extended by some gui stuff
+                 */
+                @Override
+                public void play() {
+                    try {
+                        super.play();
+                    } catch (InvalidMidiDataException e) {
+                        return;
+                    }
+                    panel[2].setText("\u25A0");
+                    panel[2].setBackground(new Color(232, 232, 232));
+                }
+
+                /**
+                 * playback stop method extended by some gui stuff
+                 */
+                @Override
+                public void stop() {
+                    super.stop();
+                    panel[2].setText("\u25BA");
+                    panel[2].setBackground(Color.LIGHT_GRAY);
+                }
+
                 private class Audio4Gui extends meico.audio.Audio {
                     protected final JLabel[] panel;             // the actual gui extension
                     private MeiCoApp app;
 
                     /**
                      * constructor
-                     * @param file
+                     * @param audio
                      */
-                    public Audio4Gui(AudioInputStream inputStream, File file, MeiCoApp app) throws IOException, UnsupportedAudioFileException {
-                        super(inputStream, file);
+                    public Audio4Gui(Audio audio, MeiCoApp app) throws IOException, UnsupportedAudioFileException {
+                        super(audio.getAudio(), audio.getFormat(), audio.getFile());
                         this.panel = new JLabel[2];     // the name label, save label and play label
                         this.app = app;
                     }

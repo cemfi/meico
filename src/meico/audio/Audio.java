@@ -1,9 +1,7 @@
 package meico.audio;
 
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.sound.sampled.*;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 
@@ -13,12 +11,14 @@ import java.io.IOException;
  */
 public class Audio {
     private File file = null;                       // the audio file
-    private AudioInputStream audioStream = null;    // audio data in stream
+    private byte[] audio;                           // the audio data
+    private AudioFormat format = null;              // audio format data
 
     /**
      * constructor, generates empty instance
      */
     public Audio() {
+        this.audio = new byte[0];                   // initialize an empty array
     }
 
     /**
@@ -27,53 +27,79 @@ public class Audio {
      * @param inputStream
      */
     public Audio(AudioInputStream inputStream) {
-       this.audioStream = inputStream;
+        this.audio = convertAudioInputStream2ByteArray(inputStream);
+        this.format = inputStream.getFormat();
     }
 
     /**
      * constructor
      *
-     * @param audioFile
-     */
-    public Audio(File audioFile) throws IOException, UnsupportedAudioFileException {
-        this.loadFile(audioFile);
-    }
-
-    /**
-     * constructor with AudioInputStream for the audio data and file object for potential storing to file system
-     * @param inputStream
      * @param file
      */
-    public Audio(AudioInputStream inputStream, File file) {
-        this.audioStream = inputStream;
+    public Audio(File file) throws IOException, UnsupportedAudioFileException {
+        AudioInputStream stream = loadFileToAudioInputStream(file);
+        this.audio = convertAudioInputStream2ByteArray(stream);
+        this.format = stream.getFormat();
         this.file = file;
     }
 
     /**
-     * a setter for the audio stream
-     * @param stream
+     * this constructor reades audio data from the AudioInputStream and associates the file with it;
+     * the file may differ from the input stream
+     * @param inputStream
+     * @param file
      */
-    public void setAudioStream(AudioInputStream stream) {
-        this.audioStream = stream;
+    public Audio(AudioInputStream inputStream, File file) {
+        this.audio = convertAudioInputStream2ByteArray(inputStream);
+        this.format = inputStream.getFormat();
+        this.file = file;
     }
 
     /**
-     * a getter for the audio stream
-     * @return
+     * with this constructor all data is given explicitly
+     * @param audioData
+     * @param format
+     * @param file
      */
-    public AudioInputStream getAudioStream() {
-        return this.audioStream;
+    public Audio(byte[] audioData, AudioFormat format, File file) {
+        this.audio = audioData;
+        this.format = format;
+        this.file = file;
     }
 
     /**
      * loads the audio file into an AudioInputStream
-     * @param audioFile
+     * @param file
      * @throws IOException
      * @throws UnsupportedAudioFileException
      */
-    public void loadFile(File audioFile) throws IOException, UnsupportedAudioFileException {
-        this.file = audioFile;
-        this.audioStream = AudioSystem.getAudioInputStream(audioFile);
+    public static AudioInputStream loadFileToAudioInputStream(File file) throws IOException, UnsupportedAudioFileException {
+        return AudioSystem.getAudioInputStream(file);
+    }
+
+    /**
+     * convert an AudioInputStream to a byte array
+     * @param stream
+     * @return
+     */
+    public static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
+        byte[] array;
+        try {
+            array = new byte[stream.available()];
+            stream.read(array);
+        } catch (IOException e) {       // in case of an IOException
+            e.printStackTrace();        // output error
+            return new byte[0];         // return empty array
+        }
+        return array;
+    }
+
+    /**
+     * check if there is data in the audio byte array
+     * @return
+     */
+    public boolean isEmpty() {
+        return ((this.audio == null) || (this.audio.length == 0));
     }
 
     /**
@@ -93,15 +119,79 @@ public class Audio {
     }
 
     /**
+     * a getter for the audio data
+     * @return
+     */
+    public byte[] getAudio() {
+        return this.audio;
+    }
+
+    public AudioFormat getFormat() {
+        return this.format;
+    }
+
+    /**
+     * a getter for the sample rate
+     * @return
+     */
+    public float getSampleRate() {
+        return this.format.getSampleRate();
+    }
+
+    /**
+     * a getter for the sample size in bits
+     * @return
+     */
+    public int getSampleSizeInBits() {
+        return this.format.getSampleSizeInBits();
+    }
+
+    /**
+     * a getter for the frame size
+     * @return
+     */
+    public int getFrameSize() {
+        return this.format.getFrameSize();
+    }
+
+    /**
+     * a getter for the frame rate
+     * @return
+     */
+    public float getFrameRate() {
+        return this.format.getFrameRate();
+    }
+
+    /**
+     * a getter for the number of channels
+     * @return
+     */
+    public int getChannels() {
+        return this.format.getChannels();
+    }
+
+    /**
+     * a getter for the encoding
+     * @return
+     */
+    public AudioFormat.Encoding getEncoding() {
+        return this.format.getEncoding();
+    }
+
+    /**
+     * a getter for the bigEndian
+     * @return
+     */
+    public boolean isBigEndian() {
+        return this.format.isBigEndian();
+    }
+
+    /**
      * (over-)write the file with the data in audioStream
      * @throws IOException
      */
     public void writeAudio() throws IOException {
-        if (this.file == null) {
-            System.out.println("Cannot write to the file system. Path and filename required.");
-            return;
-        }
-        AudioSystem.write(this.audioStream, AudioFileFormat.Type.WAVE, this.file);
+        this.writeAudio(this.file);
     }
 
     /**
@@ -109,19 +199,27 @@ public class Audio {
      * @param filename
      */
     public void writeAudio(String filename) throws IOException {
-        this.file = new File(filename);
-        this.writeAudio();
-    }
-
-    public void writeAudio(File file) {
-
+        File file = new File(filename);
+        this.writeAudio(file);
     }
 
     /**
-     * check if there is data in the file object
-     * @return
+     * write the audio data to the file system
+     * @param file
+     * @throws IOException
      */
-    public boolean isEmpty() {
-        return (this.audioStream == null);
+    public void writeAudio(File file) throws IOException {
+        if (file == null) {
+            System.err.println("No file specified to write audio data.");
+            return;
+        }
+
+        if (this.file == null)                  // if no file has been specified, yet
+            this.file = file;                   // take this
+
+        // TODO: the following code doesn't work
+//        ByteArrayInputStream bis = new ByteArrayInputStream(this.audio);
+//        AudioInputStream ais = new AudioInputStream(bis, this.format, this.audio.length);
+//        AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);    // write to file system
     }
 }

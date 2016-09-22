@@ -1,6 +1,16 @@
 ###Version History
 
 
+####v0.2.1
+- Fixed delay and "hiccup" in Midi playback when initializing and starting a sequencer of a `Midi` object for the first time.
+- Added content to method `Audio.writeAudio(File file)`.(so far it was empty).
+- Added format data to class `Audio`. New getter methods have been added.
+- In class `Audio` audio data are no longer represented as `AudioInputStream` but as Byte Array. Constructors have been adapted. Class `MeiCoApp` has also been adapted in subclass `Audio4Gui`.
+- Deactivated methods `Audio.writeAudio()` until byte-array-to-AudioInputStream conversion works properly.
+- Fixed issues with the playback buttons in window mode.
+- Updated `README.md`.
+
+
 ####v0.2.0
 - Added subpackage `graphics` to `resources` and moved all graphics resources into it.
 - Added audio export in Wave format.
@@ -10,7 +20,6 @@
     - Modified method `meico.midi.Midi2WavRenderer`. Its rendering methods return an `AudioInputStream` object instead of directly writing a file into the file system.
     - Extended the window mode graphical user interface to include the new functionalities.
     - Updated `README.md`.
-- Added subpackage `soundfonts` to `resources`.
 - Instead of using one global midi sequencer for Midi playback in class `meico.app.MeiCoApp` (window mode) I switched to the built-in local sequencers in class `meico.midi.Midi`.
 - Added tooltips in window mode for better user guidance.
 - Introduced some layouting variables in class `meico.app.MeiCoApp` for better editing of the window mode graphical user interface via global variables.

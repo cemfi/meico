@@ -21,6 +21,7 @@ public class Midi {
      * the most primitive constructor
      */
     public Midi() {
+        this.initSequencer();
     }
 
     /**
@@ -28,6 +29,7 @@ public class Midi {
      */
     public Midi(int ppq) throws InvalidMidiDataException {
         this.sequence = new Sequence(Sequence.PPQ, 720);
+        this.initSequencer();
     }
 
     /**
@@ -39,6 +41,7 @@ public class Midi {
     public Midi(Sequence sequence, File midifile) {
         this.sequence = sequence;
         this.file = midifile;
+        this.initSequencer();
     }
 
     /**
@@ -47,6 +50,7 @@ public class Midi {
      * @param sequence
      */
     public Midi(Sequence sequence) {
+        this.initSequencer();
         this.sequence = sequence;
     }
 
@@ -58,8 +62,38 @@ public class Midi {
      */
     public Midi(File midifile) throws InvalidMidiDataException, IOException {
         this.readMidiFile(midifile);
+        this.initSequencer();
     }
 
+    /**
+     * initialize the sequencer for Midi playback;
+     * this is automatically done during initialization, but if that fails the application might call this method to try again
+     *
+     * @return return true if successful, else false
+     */
+    public boolean initSequencer() {
+        // TODO: load higher quality soundbank
+
+        if (this.sequencer != null)
+            return true;
+
+        try {
+            this.sequencer = MidiSystem.getSequencer();
+            this.sequencer.open();
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * read a Midi file into the sequence
+     * @param file
+     * @throws InvalidMidiDataException
+     * @throws IOException
+     */
     protected void readMidiFile(File file) throws InvalidMidiDataException, IOException {
         this.sequence = (new MidiFileReader()).getSequence(file);
         this.file = file;
@@ -97,6 +131,15 @@ public class Midi {
      */
     public void setFile(File file) {
         this.file = file;
+    }
+
+    /**
+     * a getter for the sequencer object
+     *
+     * @return
+     */
+    public Sequencer getSequencer() {
+        return this.sequencer;
     }
 
     /**
@@ -175,16 +218,18 @@ public class Midi {
 
     /**
      * start playing the midi sequence
-     * @throws MidiUnavailableException
      * @throws InvalidMidiDataException
      */
-    public void play() throws MidiUnavailableException, InvalidMidiDataException {
-        if (this.sequencer == null)                     // if no sequencer created so far
-            this.sequencer = MidiSystem.getSequencer(); // create a sequencer instance
+    public void play() throws InvalidMidiDataException {
+        if (this.sequencer == null) {                   // if no sequencer created so far (should be done at initialization)
+            if (!this.initSequencer()) {                // try again, if it still fails
+                System.err.println("Midi playback failed: no Midi sequencer initialized."); // output error message
+                return;                                 // skip
+            }
+        }
         else                                            // otherwise there is a sequencer that may even play midi data at the moment
             this.stop();                                // stop it
 
-        this.sequencer.open();
         this.sequencer.setSequence(this.sequence);      // assign the midi sequence to the sequencer
         this.sequencer.start();                         // start playback
     }
