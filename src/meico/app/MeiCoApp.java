@@ -14,8 +14,6 @@ import net.miginfocom.swing.MigLayout;
 import nu.xom.ParsingException;
 
 import javax.sound.midi.*;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

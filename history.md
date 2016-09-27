@@ -1,11 +1,16 @@
 ###Version History
 
 
+####v0.2.2
+- Fixed Midi-to-Audio conversion. Export of wave files works now.
+- Updated `README.md`.
+
+
 ####v0.2.1
 - Fixed delay and "hiccup" in Midi playback when initializing and starting a sequencer of a `Midi` object for the first time.
-- Added content to method `Audio.writeAudio(File file)`.(so far it was empty).
+- Added content to method `Audio.writeAudio(File file)` (so far it was empty).
 - Added format data to class `Audio`. New getter methods have been added.
-- In class `Audio` audio data are no longer represented as `AudioInputStream` but as Byte Array. Constructors have been adapted. Class `MeiCoApp` has also been adapted in subclass `Audio4Gui`.
+- In class `Audio` audio data are no longer represented as `AudioInputStream` but as byte array. Constructors have been adapted. Class `MeiCoApp` has also been adapted in subclass `Audio4Gui`.
 - Deactivated methods `Audio.writeAudio()` until byte-array-to-AudioInputStream conversion works properly.
 - Fixed issues with the playback buttons in window mode.
 - Updated `README.md`.
@@ -17,7 +22,7 @@
     - Added new command line options (`[-w]` or `[--wav]`) to trigger wave export in command line mode.
     - Modified `Midi.exportAudio()` (former `Midi.exportWav()`) to create and return an instance of `meico.audio.Audio`.
     - Added several methods to class `Audio`. Audio data is now represented in an `AudioInputStream` and can be written into a file.
-    - Modified method `meico.midi.Midi2WavRenderer`. Its rendering methods return an `AudioInputStream` object instead of directly writing a file into the file system.
+    - Modified method `meico.midi.Midi2AudioRenderer`. Its rendering methods return an `AudioInputStream` object instead of directly writing a file into the file system.
     - Extended the window mode graphical user interface to include the new functionalities.
     - Updated `README.md`.
 - Instead of using one global midi sequencer for Midi playback in class `meico.app.MeiCoApp` (window mode) I switched to the built-in local sequencers in class `meico.midi.Midi`.
@@ -26,7 +31,7 @@
 
 
 ####v0.1.4
-- Added basic audio export to midi package (`meico.midi.Midi2WavRenderer.java`).
+- Added basic audio export to midi package (`meico.midi.Midi2AudioRenderer.java`).
 - Added `UnsupportedSoundbankException.java` to package `meico.midi`.
 - Added test audio output to command line mode.
 

@@ -85,13 +85,25 @@ public class Audio {
     public static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
         byte[] array;
         try {
-            array = new byte[stream.available()];
-            stream.read(array);
+            array = new byte[(int)(stream.getFrameLength() * stream.getFormat().getFrameSize())];   // initialize the byte array with the length of the stream
+            stream.read(array);         // write the stream's bytes into the byte array
         } catch (IOException e) {       // in case of an IOException
             e.printStackTrace();        // output error
             return new byte[0];         // return empty array
         }
         return array;
+    }
+
+    /**
+     * convert a byte array (without audio file header, just pure audio data) into an AudioInputStream in a given AudioFormat
+     * @param array
+     * @param format
+     * @return
+     */
+    public static AudioInputStream convertByteArray2AudioInputStream(byte[] array, AudioFormat format) {
+        ByteArrayInputStream bis = new ByteArrayInputStream(array);             // byte array to ByteArrayInputStream
+        AudioInputStream ais = new AudioInputStream(bis, format, array.length); // byteArrayInputStream to AudioInputStream
+        return ais;                                                             // return it
     }
 
     /**
@@ -199,8 +211,8 @@ public class Audio {
      * @param filename
      */
     public void writeAudio(String filename) throws IOException {
-        File file = new File(filename);
-        this.writeAudio(file);
+        File file = new File(filename);     // create the file with this filename
+        this.writeAudio(file);              // write into it
     }
 
     /**
@@ -209,17 +221,15 @@ public class Audio {
      * @throws IOException
      */
     public void writeAudio(File file) throws IOException {
-        if (file == null) {
-            System.err.println("No file specified to write audio data.");
-            return;
+        if (file == null) {                                                 // if no valid file
+            System.err.println("No file specified to write audio data.");   // print error message
+            return;                                                         // cancel
         }
 
-        if (this.file == null)                  // if no file has been specified, yet
-            this.file = file;                   // take this
+        if (this.file == null)                                              // if no file has been specified, yet
+            this.file = file;                                               // take this
 
-        // TODO: the following code doesn't work
-//        ByteArrayInputStream bis = new ByteArrayInputStream(this.audio);
-//        AudioInputStream ais = new AudioInputStream(bis, this.format, this.audio.length);
-//        AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);    // write to file system
+        AudioInputStream ais = convertByteArray2AudioInputStream(this.audio, this.format);  // convert the audio byte array to an AudioInputStream
+        AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);                            // write to file system
     }
 }

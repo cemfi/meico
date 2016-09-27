@@ -16,7 +16,7 @@ import java.util.Map;
  *
  * Created by Axel Berndt on 19.09.2016.
  */
-public class Midi2WavRenderer {
+public class Midi2AudioRenderer {
     private Synthesizer synth = null;       // the synthesizer object, used for midi to wav conversion
 
     /**
@@ -26,7 +26,7 @@ public class Midi2WavRenderer {
      * @throws InvalidMidiDataException
      * @throws IOException
      */
-    public Midi2WavRenderer() throws MidiUnavailableException, InvalidMidiDataException, IOException {
+    public Midi2AudioRenderer() throws MidiUnavailableException, InvalidMidiDataException, IOException {
         this.synth = MidiSystem.getSynthesizer();
     }
 
@@ -48,7 +48,7 @@ public class Midi2WavRenderer {
     }
 
     /**
-     * Creates a WAV file based on the Sequence, using the sounds from the specified soundbank;
+     * creates an AudioInputStream based on the sequence, using the sounds from the specified soundbank;
      * to prevent memory problems, this method asks for an array of patches (instruments) to load.
      *
      * @param soundbankFile
@@ -58,8 +58,8 @@ public class Midi2WavRenderer {
      * @throws InvalidMidiDataException
      * @throws IOException
      */
-    public void renderMidi2Wave(File soundbankFile, int[] patches, Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException, UnsupportedSoundbankException {
-        Soundbank soundbank = loadSoundbank(soundbankFile);         // Load soundbank
+    public void renderMidi2Audio(File soundbankFile, int[] patches, Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException, UnsupportedSoundbankException {
+        Soundbank soundbank = this.loadSoundbank(soundbankFile);         // Load soundbank
 
         // Open the Synthesizer and load the requested instruments
         this.synth.open();
@@ -68,25 +68,41 @@ public class Midi2WavRenderer {
             this.synth.loadInstrument(soundbank.getInstrument(new Patch(0, patch)));
         }
 
-        renderMidi2Wave(sequence);
+        renderMidi2Audio(sequence);
     }
 
     /**
-     * Creates a WAV file based on the Sequence, using the default soundbank.
+     * creates an AudioInputStream based on the sequence
      *
      * @param sequence
      * @throws MidiUnavailableException
      * @throws InvalidMidiDataException
      * @throws IOException
      */
-    public AudioInputStream renderMidi2Wave(Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException {
-        AudioSynthesizer synth = findAudioSynthesizer();
+    public AudioInputStream renderMidi2Audio(Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException {
+        return this.renderMidi2Audio(sequence, 44100, 16, 2);
+    }
+
+    /**
+     * creates an AudioInputStream based on the sequence
+     *
+     * @param sequence
+     * @param sampleRate
+     * @param sampleSizeInBits
+     * @param channels
+     * @return
+     * @throws MidiUnavailableException
+     * @throws InvalidMidiDataException
+     * @throws IOException
+     */
+    public AudioInputStream renderMidi2Audio(Sequence sequence, float sampleRate, int sampleSizeInBits, int channels) throws MidiUnavailableException, InvalidMidiDataException, IOException {
+        AudioSynthesizer synth = this.findAudioSynthesizer();
         if (synth == null) {
             System.err.println("No AudioSynthesizer was found!");
             return null;
         }
 
-        AudioFormat format = new AudioFormat(96000, 24, 2, true, false);
+        AudioFormat format = new AudioFormat(sampleRate, sampleSizeInBits, channels, true, false);
         Map<String, Object> p = new HashMap<String, Object>();
         p.put("interpolation", "sinc");
         p.put("max polyphony", "1024");
@@ -98,6 +114,8 @@ public class Midi2WavRenderer {
         // Calculate how long the WAVE file needs to be.
         long len = (long) (stream.getFormat().getFrameRate() * (total + 4));
         stream = new AudioInputStream(stream, stream.getFormat(), len);
+
+//        AudioSystem.write(stream, AudioFileFormat.Type.WAVE, new File("temp.wav"));
 
         this.synth.close();
 

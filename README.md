@@ -23,6 +23,8 @@ Meico can be used in several different ways. The jar file (see the GitHub releas
 
 Starting the standalone jar without any command line options will start the windowed gui mode of meico. Simply drag your MEI, MSM, MIDI, and Wave files into the window. You can find context information on each interface element in the tooltips and statusbar. There are several additional functions accessible via right click. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement. Conversion from MIDI to audio may take some time when it is a long piece. We have not built in a progress display, so far. Just be patient until the conversion button changes its color back and the audio data appears.
 
+![A screenshot of the meico graphical user interface.](figures/meico-screenshot.png)
+
 The command line mode expects the following command line options:
 - `[-?]` or `[--help]`: for this command line help text. If you use this, any other arguments are skipped.
 - `[-v]` or `[--validate]`: to activate validation of mei files loaded

@@ -249,9 +249,9 @@ public class Midi {
      * @return
      */
     public Audio exportAudio() {
-        Midi2WavRenderer renderer;                  // an instance of the renderer
+        Midi2AudioRenderer renderer;                  // an instance of the renderer
         try {
-            renderer = new Midi2WavRenderer();      // initialize the renderer
+            renderer = new Midi2AudioRenderer();      // initialize the renderer
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
             return null;
@@ -265,7 +265,7 @@ public class Midi {
 
         AudioInputStream stream = null;              // the stream that the renerer fills
         try {
-            stream = renderer.renderMidi2Wave(this.sequence);   // do rendering of midi sequence into audio stream
+            stream = renderer.renderMidi2Audio(this.sequence);   // do rendering of midi sequence into audio stream
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
         } catch (InvalidMidiDataException e) {
