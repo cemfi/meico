@@ -5,6 +5,7 @@
 - Added Soundbank support for Midi-to-audio rendering. 
     - Instead of Java's default sounds the user can now freely choose a `.dls` or `.sf2` file from the file system and use this for the synthesis of audio files. 
     - A corresponding conversion option has been added to the window mode. Just right click the Midi-to-audio conversion button and click the `Choose soundbank` option, then select a corresponding file from the file system. I recommend testing [these](https://sourceforge.net/projects/androidframe/files/soundfonts/) SoundFonts.
+    - A command line option has been added: `[-s "C:\mySoundfonts\mySoundfont.sf2"]` or `[--soundbank "C:\mySoundfonts\mySoundfont.sf2"]` to choose a specific `.sf2` or `.dls` file for higher quality sounds rendering
 - Deleted method `Midi2AudioRenderer.renderMidi2Audio(File soundbankFile, int[] patches, Sequence sequence)`.
 - Bugfix in class `meico.midi.Midi`: the `sequencer` has been opened in the constructor but was never closed. Now it is opened when method `start()` is called and closed when method `stop()` is called. Thus, it is only open during Midi playback.
 - Added Ant build script `build.xml`, thanks to Simon Waloschek.
