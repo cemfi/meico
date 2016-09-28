@@ -1,4 +1,5 @@
 # meico: MEI Converter
+[![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg?maxAge=2592000)](https://github.com/cemfi/meico/releases/latest) ![Java compatibility 1.7, 1.8](https://img.shields.io/badge/java-1.7%2C%201.8-red.svg)
 
 Author: Axel Berndt<br>
 MEI support: Benjamin W. Bohl<br>

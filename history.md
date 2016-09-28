@@ -7,8 +7,8 @@
     - A corresponding conversion option has been added to the window mode. Just right click the Midi-to-audio conversion button and click the `Choose soundbank` option, then select a corresponding file from the file system. I recommend testing [these](https://sourceforge.net/projects/androidframe/files/soundfonts/) SoundFonts.
 - Deleted method `Midi2AudioRenderer.renderMidi2Audio(File soundbankFile, int[] patches, Sequence sequence)`.
 - Bugfix in class `meico.midi.Midi`: the `sequencer` has been opened in the constructor but was never closed. Now it is opened when method `start()` is called and closed when method `stop()` is called. Thus, it is only open during Midi playback.
-- Added Ant build script `build.xml`, thanks to Simon Waloschek (@sonovice).
-- Added Travis CI continuous integration system `.travic.yml`, thanks to Simon Waloschek (@sonovice).
+- Added Ant build script `build.xml`, thanks to Simon Waloschek.
+- Added Travis CI continuous integration system `.travic.yml`, thanks to Simon Waloschek.
 - Updated `README.md`.
 
 
