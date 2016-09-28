@@ -46,6 +46,9 @@ public class Midi2AudioRenderer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
             return synth.getDefaultSoundbank();
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+            return synth.getDefaultSoundbank();
         }
         return loadSoundbank(soundbankFile, synth);    // return the soundbank object
     }
@@ -59,6 +62,10 @@ public class Midi2AudioRenderer {
      */
     public static Soundbank loadSoundbank(File soundbankFile, Synthesizer synth) {
         Soundbank soundbank;
+
+        if (soundbankFile == null)
+            return synth.getDefaultSoundbank();
+
         try {
             soundbank = MidiSystem.getSoundbank(soundbankFile);
         } catch (InvalidMidiDataException e) {
@@ -67,7 +74,11 @@ public class Midi2AudioRenderer {
         } catch (IOException e) {
             e.printStackTrace();
             return synth.getDefaultSoundbank();
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+            return synth.getDefaultSoundbank();
         }
+
         if (!synth.isSoundbankSupported(soundbank)) {
 //            throw new UnsupportedSoundbankException("Soundbank not supported by synthesizer!");
             System.err.println("Soundbank not supported by synthesizer!");
@@ -77,27 +88,40 @@ public class Midi2AudioRenderer {
     }
 
     /**
-     * creates an AudioInputStream based on the sequence
+     * creates an AudioInputStream based on the sequence and uses the standard soundbank for synthesis
      *
      * @param sequence
      * @throws MidiUnavailableException
      */
     public AudioInputStream renderMidi2Audio(Sequence sequence) throws MidiUnavailableException {
-        return this.renderMidi2Audio(sequence, 44100, 16, 2);
+        return this.renderMidi2Audio(sequence, null, 44100, 16, 2);
+    }
+
+    /**
+     * creates an AudioInputStream based on the sequence and uses the given soundbank for synthesis
+     *
+     * @param sequence
+     * @param soundbankFile
+     * @return
+     * @throws MidiUnavailableException
+     */
+    public AudioInputStream renderMidi2Audio(Sequence sequence, File soundbankFile) throws MidiUnavailableException {
+        return this.renderMidi2Audio(sequence, soundbankFile, 44100, 16, 2);
     }
 
     /**
      * creates an AudioInputStream based on the sequence
      *
      * @param sequence
+     * @param soundbankFile can be a valid URL or null
      * @param sampleRate
      * @param sampleSizeInBits
      * @param channels
      * @return
      * @throws MidiUnavailableException
      */
-    public AudioInputStream renderMidi2Audio(Sequence sequence, float sampleRate, int sampleSizeInBits, int channels) throws MidiUnavailableException {
-        Soundbank soundbank = loadSoundbank(getClass().getResource("/resources/soundfonts/SGM-V2.01.sf2"), this.synth);
+    public AudioInputStream renderMidi2Audio(Sequence sequence, File soundbankFile, float sampleRate, int sampleSizeInBits, int channels) throws MidiUnavailableException {
+        Soundbank soundbank = loadSoundbank(soundbankFile, this.synth);
 
         AudioSynthesizer synth = this.findAudioSynthesizer();
         if (synth == null) {

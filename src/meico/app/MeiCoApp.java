@@ -21,6 +21,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,19 +73,7 @@ public class MeiCoApp extends JFrame {
      * call this method to start the program in command line mode
      * it shows you all you need if you want to use meico in your application
      *
-     * @param args The following parameter strings are used
-     *             - "-?" or "--help": for this command line help text. If you use this, any other arguments are skipped.
-     *             - "-v" or "--validation": to activate validation of mei files loaded
-     *             - "-a" or "--add-ids": to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file
-     *             - "-r" or "--resolve-copy-ofs": mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file
-     *             - "-m" or "--msm": converts mei to msm; meico will write an msm file to the path of the mei
-     *             - "-i" or "--midi": converts mei to msm to midi; meico will output a midi file to the path of the mei
-     *             - "-w" or "--wav": converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei
-     *             - "-p" or "--no-program-changes" call this to suppress the generation of program change events in midi
-     *             - "-c" or "--dont-use-channel-10": the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
-     *             - "-d" or "--debug": to write debug versions of mei and msm
-     *             - "-t" or "--tempo" followed by the tempo in bpm: to set the tempo of the midi file; if this is not used the tempo is always 120 bpm
-     *             - Path tho the mei file (e.g., D:\Arbeit\Software\Java\MEI Converter\test files\Hummel_Concerto_for_trumpet.mei), this should always be the last parameter -  always in quotes!
+     * @param args see help output below
      */
     public static void commandLineMode(String[] args) {
         for (String arg : args) {
@@ -95,10 +85,11 @@ public class MeiCoApp extends JFrame {
                 System.out.println("[-r] or [--resolve-copy-ofs]        mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file");
                 System.out.println("[-m] or [--msm]                     converts mei to msm; meico will write an msm file to the path of the mei");
                 System.out.println("[-i] or [--midi]                    converts mei (to msm, internally) to midi; meico will output a midi file to the path of the mei");
-                System.out.println("[-w] or [--wav]                     converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei");
                 System.out.println("[-p] or [--no-program-changes]      call this to suppress the generation of program change events in midi");
                 System.out.println("[-c] or [--dont-use-channel-10]     the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on");
                 System.out.println("[-t argument] or [--tempo argument] this sets the tempo of the midi file; the argument must be a floating point number; if not used the tempo is always 120 bpm");
+                System.out.println("[-w] or [--wav]                     converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei");
+                System.out.println("[-s \"C:\\mySoundfonts\\mySoundfont.sf2\"] or [--soundbank \"C:\\mySoundfonts\\mySoundfont.sf2\"] choose a specific .sf2 or .dls file for higher quality sounds for wave export");
                 System.out.println("[-d] or [--debug]                   to write debug versions of the mei and msm files  to the path");
                 System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
                 return;
@@ -116,6 +107,7 @@ public class MeiCoApp extends JFrame {
         boolean dontUseChannel10 = false;
         boolean debug = false;
         double tempo = 120;
+        File soundbank = null;
         for (int i = 0; i < args.length-1; ++i) {
             if ((args[i].equals("-v")) || (args[i].equals("--validation"))) { validate = true; continue; }
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
@@ -127,6 +119,15 @@ public class MeiCoApp extends JFrame {
             if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
             if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; }
             if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[i+1]); }
+            if ((args[i].equals("-s")) || (args[i].equals("--soundbank"))) {
+                soundbank = new File(args[i+1]);
+                try {
+                    soundbank = new File(soundbank.getCanonicalPath());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    soundbank = null;
+                }
+            }
         }
 
         // load the file
@@ -212,7 +213,7 @@ public class MeiCoApp extends JFrame {
         if (wav) {
             System.out.println("Converting midi to wave and writing wav file to file system: ");
             for (meico.midi.Midi m : midis) {
-                Audio a = m.exportAudio();     // this generates an Audio object
+                Audio a = m.exportAudio(soundbank);     // this generates an Audio object
                 if (a == null)
                     continue;
                 audios.add(a);
@@ -1005,6 +1006,7 @@ public class MeiCoApp extends JFrame {
                 protected final JLabel[] panel;             // the actual gui extension
                 private Audio4Gui audio = null;
                 private MeiCoApp app;
+                private File soundfont = null;
 
                 /**
                  * constructor
@@ -1154,11 +1156,29 @@ public class MeiCoApp extends JFrame {
                             }
                         });
 
+                        JPopupMenu midi2audioPop = new JPopupMenu("Midi to audio conversion options");
+                        midi2audioPop.setEnabled(true);
+                        JMenuItem soundbank = new JMenuItem(new AbstractAction("Choose soundbank") {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                JFileChooser chooser = new JFileChooser();                              // open the fileopen dialog
+                                chooser.setAcceptAllFileFilterUsed(false);
+                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("all supported files (*.dls, *.sf2)", "dls", "sf2"));  // make only suitable file types choosable
+                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("SoundFont (*.sf2)", "sf2"));            // make only suitable file types choosable
+                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("Downloadable Sounds (*.dls)", "dls"));
+                                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {      // file open has been approved
+                                    soundfont = chooser.getSelectedFile();                              // set this soundfont for use during midi to audio conversion
+                                }
+                            }
+                        });
+                        midi2audioPop.add(soundbank);
+
                         final JLabel midi2audio = new JLabel(convertIcon, JLabel.CENTER);
                         midi2audio.setOpaque(true);
                         midi2audio.setBackground(Color.LIGHT_GRAY);
                         midi2audio.setForeground(Color.DARK_GRAY);
-                        midi2audio.setToolTipText("<html>LEFT CLICK: convert to audio</html>");
+                        midi2audio.setComponentPopupMenu(midi2audioPop);
+                        midi2audio.setToolTipText("<html>LEFT CLICK: convert to audio<br>RIGHT CLICK: conversion options</html>");
                         midi2audio.addMouseListener(new MouseAdapter() {
                             @Override
                             public void mouseEntered(MouseEvent e) {
@@ -1181,7 +1201,7 @@ public class MeiCoApp extends JFrame {
                                 if (SwingUtilities.isLeftMouseButton(e)) {
                                     if (midi2audio.contains(e.getPoint())) {
                                         try {
-                                            Audio a = exportAudio();
+                                            Audio a = exportAudio(soundfont);    // TODO: allow the user to specify a soundbank to use
                                             audio = new Audio4Gui(a, app);
                                         } catch (IOException e1) {
                                             e1.printStackTrace();

@@ -15,21 +15,21 @@ public class Midi {
 
     private File file = null;               // the midi file
     private Sequence sequence = null;       // the midi sequence
-    private Sequencer sequencer = null;     // a sequencer to play back midi sequences
+    private Sequencer sequencer = null;     // a sequencer to playback midi sequences
 
     /**
      * the most primitive constructor
      */
     public Midi() {
-        this.initSequencer();
+        this.initSequencer();   // initialize a sequencer
     }
 
     /**
      * constructor, creates an empty MidiOld instance
      */
     public Midi(int ppq) throws InvalidMidiDataException {
+        this();
         this.sequence = new Sequence(Sequence.PPQ, 720);
-        this.initSequencer();
     }
 
     /**
@@ -39,9 +39,9 @@ public class Midi {
      * @param midifile target midi file
      */
     public Midi(Sequence sequence, File midifile) {
+        this();
         this.sequence = sequence;
         this.file = midifile;
-        this.initSequencer();
     }
 
     /**
@@ -50,7 +50,7 @@ public class Midi {
      * @param sequence
      */
     public Midi(Sequence sequence) {
-        this.initSequencer();
+        this();
         this.sequence = sequence;
     }
 
@@ -61,8 +61,8 @@ public class Midi {
      * @throws IOException
      */
     public Midi(File midifile) throws InvalidMidiDataException, IOException {
+        this();
         this.readMidiFile(midifile);
-        this.initSequencer();
     }
 
     /**
@@ -72,12 +72,12 @@ public class Midi {
      * @return return true if successful, else false
      */
     public boolean initSequencer() {
-        if (this.sequencer != null)
-            return true;
+        if (this.sequencer != null)     // if it is already initialized
+            return true;                // we are done
 
         try {
             this.sequencer = MidiSystem.getSequencer();
-            this.sequencer.open();
+//            this.sequencer.open();
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
             return false;
@@ -138,6 +138,14 @@ public class Midi {
      */
     public Sequencer getSequencer() {
         return this.sequencer;
+    }
+
+    /**
+     * a sequencer setter
+     * @param sequencer
+     */
+    public void setSequencer(Sequencer sequencer) {
+        this.sequencer = sequencer;
     }
 
     /**
@@ -226,7 +234,14 @@ public class Midi {
             }
         }
         else                                            // otherwise there is a sequencer that may even play midi data at the moment
-            this.stop();                                // stop it
+            if (this.sequencer.isOpen()) this.stop();   // stop it
+
+        try {
+            this.sequencer.open();
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+            return;
+        }
 
         this.sequencer.setSequence(this.sequence);      // assign the midi sequence to the sequencer
         this.sequencer.start();                         // start playback
@@ -236,17 +251,27 @@ public class Midi {
      * stop midi playback
      */
     public void stop() {
-        if (this.sequencer != null) {
+        if ((this.sequencer != null) && (this.sequencer.isOpen())) {
             this.sequencer.stop();
             this.sequencer.setMicrosecondPosition(0);
+            this.sequencer.close();
         }
     }
 
     /**
-     * this is an audio file exporter
+     * this is an audio file exporter that uses the default soundbank for synthesis
      * @return
      */
     public Audio exportAudio() {
+        return this.exportAudio(null);
+    }
+
+    /**
+     * this is an audio exporter that uses the specified soundbank or, if null, the default soundbank for synthesis
+     * @param soundbankFile a valid soundbank file or null to use the default soundbank
+     * @return
+     */
+    public Audio exportAudio(File soundbankFile) {
         Midi2AudioRenderer renderer;                // an instance of the renderer
         try {
             renderer = new Midi2AudioRenderer();    // initialize the renderer
@@ -263,7 +288,7 @@ public class Midi {
 
         AudioInputStream stream = null;             // the stream that the renerer fills
         try {
-            stream = renderer.renderMidi2Audio(this.sequence);   // do rendering of midi sequence into audio stream
+            stream = renderer.renderMidi2Audio(this.sequence, soundbankFile);   // do rendering of midi sequence into audio stream
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
         }

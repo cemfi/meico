@@ -8,7 +8,7 @@ Meico is a converter framework for MEI files. Even though MEI is a quasi-standar
 
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq)
 - MSM to MIDI conversion
-- MIDI to audio conversion
+- MIDI to audio conversion (with freely choosable SoundFont and Downloadable Sounds)
 - MEI processing functions (validation, xml:id generation, resolution of elements with copyof attribute)
 - MSM processing functions (remove rest elements from the score)
 - an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers
@@ -19,9 +19,9 @@ There are several features open, though. Currently, meico ignores any MEI data t
 
 ###How to use meico?
 
-Meico can be used in several different ways. The jar file (see the GitHub release page) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.6 (or higher) Runtime Environment installed on your computer. 
+Meico can be used in several different ways. The jar file (see the GitHub release page) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.7 (or higher) Runtime Environment installed on your computer. 
 
-Starting the standalone jar without any command line options will start the windowed gui mode of meico. Simply drag your MEI, MSM, MIDI, and Wave files into the window. You can find context information on each interface element in the tooltips and statusbar. There are several additional functions accessible via right click. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement. Conversion from MIDI to audio may take some time when it is a long piece. We have not built in a progress display, so far. Just be patient until the conversion button changes its color back and the audio data appears.
+Starting the standalone jar without any command line options will start the windowed gui mode of meico. Simply drag your MEI, MSM, MIDI, and Wave files into the window. You can find context information on each interface element in the tooltips and statusbar. There are several additional functions accessible via right click. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement. Conversion from MIDI to audio may take some time when it is a long piece. We have not built in a progress display, so far. Just be patient until the conversion button changes its color back and the audio data appears. To get better quality sounds than Java's built-in default instruments (those used for the Midi playback function) we recommend downloading one of [these](https://sourceforge.net/projects/androidframe/files/soundfonts/) and using it via right clicking the Midi-to-audio conversion button, option "Choose soundbank". 
 
 ![A screenshot of the meico graphical user interface.](figures/meico-screenshot.png)
 
@@ -32,14 +32,15 @@ The command line mode expects the following command line options:
 - `[-r]` or `[--resolve-copy-ofs]`: mei elements with a `copyOf` attribute are resolved into selfcontained elements with an own `xml:id`; meico will output a revised mei file
 - `[-m]` or `[--msm]`: converts mei to msm; meico will write an msm file to the path of the mei
 - `[-i]` or `[--midi]`: converts mei to msm to midi; meico will output a midi file to the path of the mei
-- `[-w]` or `[--wav]`: converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei
 - `[-p]` or `[--no-program-changes]`: call this to suppress the generation of program change events in midi
 - `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on
 - `[-t argument]` or `[--tempo argument]`: this sets the tempo of the midi file; the argument must be a floating point number; if this is not used the tempo is always 120 bpm
+- `[-w]` or `[--wav]`: converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei
+- `[-s "C:\mySoundfonts\mySoundfont.sf2"]` or `[--soundbank "C:\mySoundfonts\mySoundfont.sf2"]` choose a specific `.sf2` or `.dls` file for higher quality sounds for the wave export
 - `[-d]` or `[--debug]`: to write debug versions of mei and msm
 - The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
-The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift.
+The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
 
 ###License information
 
