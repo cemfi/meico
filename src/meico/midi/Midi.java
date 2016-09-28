@@ -13,9 +13,9 @@ import java.io.IOException;
 
 public class Midi {
 
+    private File file = null;               // the midi file
     private Sequence sequence = null;       // the midi sequence
     private Sequencer sequencer = null;     // a sequencer to play back midi sequences
-    private File file = null;               // the midi file
 
     /**
      * the most primitive constructor
@@ -72,8 +72,6 @@ public class Midi {
      * @return return true if successful, else false
      */
     public boolean initSequencer() {
-        // TODO: load higher quality soundbank
-
         if (this.sequencer != null)
             return true;
 
@@ -249,9 +247,9 @@ public class Midi {
      * @return
      */
     public Audio exportAudio() {
-        Midi2AudioRenderer renderer;                  // an instance of the renderer
+        Midi2AudioRenderer renderer;                // an instance of the renderer
         try {
-            renderer = new Midi2AudioRenderer();      // initialize the renderer
+            renderer = new Midi2AudioRenderer();    // initialize the renderer
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
             return null;
@@ -263,14 +261,10 @@ public class Midi {
             return null;
         }
 
-        AudioInputStream stream = null;              // the stream that the renerer fills
+        AudioInputStream stream = null;             // the stream that the renerer fills
         try {
             stream = renderer.renderMidi2Audio(this.sequence);   // do rendering of midi sequence into audio stream
         } catch (MidiUnavailableException e) {
-            e.printStackTrace();
-        } catch (InvalidMidiDataException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
 

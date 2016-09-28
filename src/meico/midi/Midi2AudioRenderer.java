@@ -7,6 +7,9 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,44 +34,46 @@ public class Midi2AudioRenderer {
     }
 
     /**
-     * load a soundbank for midi playback and wave rendering
-     *
-     * @param soundbankFile
-     * @return
-     * @throws MidiUnavailableException
-     * @throws InvalidMidiDataException
-     * @throws IOException
+     * load a soundbank into a synthesizer for midi playback and audio rendering from a url
+     * @param soundbankUrl
+     * @param synth
+     * @return the soundbank from the url or (if something went wrong with it) the default soundbank
      */
-    private Soundbank loadSoundbank(File soundbankFile) throws MidiUnavailableException, InvalidMidiDataException, IOException, UnsupportedSoundbankException {
-        Soundbank soundbank = MidiSystem.getSoundbank(soundbankFile);
-        if (!this.synth.isSoundbankSupported(soundbank)) {
-            throw new UnsupportedSoundbankException("Soundbank not supported by synthesizer!");
+    public static Soundbank loadSoundbank(URL soundbankUrl, Synthesizer synth) {
+        File soundbankFile;  // get the file behind the url
+        try {
+            soundbankFile = new File(URLDecoder.decode(soundbankUrl.getFile(), "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return synth.getDefaultSoundbank();
         }
-        return soundbank;
+        return loadSoundbank(soundbankFile, synth);    // return the soundbank object
     }
 
     /**
-     * creates an AudioInputStream based on the sequence, using the sounds from the specified soundbank;
-     * to prevent memory problems, this method asks for an array of patches (instruments) to load.
+     * load a soundbank into a synthesizer for midi playback and audio rendering from a file
      *
      * @param soundbankFile
-     * @param patches an array of Patch objects, each specifying the bank index and program change number
-     * @param sequence
-     * @throws MidiUnavailableException
-     * @throws InvalidMidiDataException
-     * @throws IOException
+     * @param synth
+     * @return the soundbank from the file or (if something went wrong with it) the default soundbank
      */
-    public void renderMidi2Audio(File soundbankFile, int[] patches, Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException, UnsupportedSoundbankException {
-        Soundbank soundbank = this.loadSoundbank(soundbankFile);         // Load soundbank
-
-        // Open the Synthesizer and load the requested instruments
-        this.synth.open();
-        this.synth.unloadAllInstruments(soundbank);
-        for (int patch : patches) {
-            this.synth.loadInstrument(soundbank.getInstrument(new Patch(0, patch)));
+    public static Soundbank loadSoundbank(File soundbankFile, Synthesizer synth) {
+        Soundbank soundbank;
+        try {
+            soundbank = MidiSystem.getSoundbank(soundbankFile);
+        } catch (InvalidMidiDataException e) {
+            e.printStackTrace();
+            return synth.getDefaultSoundbank();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return synth.getDefaultSoundbank();
         }
-
-        renderMidi2Audio(sequence);
+        if (!synth.isSoundbankSupported(soundbank)) {
+//            throw new UnsupportedSoundbankException("Soundbank not supported by synthesizer!");
+            System.err.println("Soundbank not supported by synthesizer!");
+            return synth.getDefaultSoundbank();
+        }
+        return soundbank;
     }
 
     /**
@@ -76,10 +81,8 @@ public class Midi2AudioRenderer {
      *
      * @param sequence
      * @throws MidiUnavailableException
-     * @throws InvalidMidiDataException
-     * @throws IOException
      */
-    public AudioInputStream renderMidi2Audio(Sequence sequence) throws MidiUnavailableException, InvalidMidiDataException, IOException {
+    public AudioInputStream renderMidi2Audio(Sequence sequence) throws MidiUnavailableException {
         return this.renderMidi2Audio(sequence, 44100, 16, 2);
     }
 
@@ -92,10 +95,10 @@ public class Midi2AudioRenderer {
      * @param channels
      * @return
      * @throws MidiUnavailableException
-     * @throws InvalidMidiDataException
-     * @throws IOException
      */
-    public AudioInputStream renderMidi2Audio(Sequence sequence, float sampleRate, int sampleSizeInBits, int channels) throws MidiUnavailableException, InvalidMidiDataException, IOException {
+    public AudioInputStream renderMidi2Audio(Sequence sequence, float sampleRate, int sampleSizeInBits, int channels) throws MidiUnavailableException {
+        Soundbank soundbank = loadSoundbank(getClass().getResource("/resources/soundfonts/SGM-V2.01.sf2"), this.synth);
+
         AudioSynthesizer synth = this.findAudioSynthesizer();
         if (synth == null) {
             System.err.println("No AudioSynthesizer was found!");
@@ -107,6 +110,11 @@ public class Midi2AudioRenderer {
         p.put("interpolation", "sinc");
         p.put("max polyphony", "1024");
         AudioInputStream stream = synth.openStream(format, p);
+
+        if (soundbank != null) {
+            synth.unloadAllInstruments(synth.getDefaultSoundbank());
+            synth.loadAllInstruments(soundbank);
+        }
 
         // Play Sequence into AudioSynthesizer Receiver.
         double total = send(sequence, synth.getReceiver());
@@ -124,6 +132,8 @@ public class Midi2AudioRenderer {
 
     /**
      * Find available AudioSynthesizer.
+     * @return
+     * @throws MidiUnavailableException
      */
     private AudioSynthesizer findAudioSynthesizer() throws MidiUnavailableException {
         // First check if default synthesizer is AudioSynthesizer.
@@ -141,8 +151,7 @@ public class Midi2AudioRenderer {
             }
         }
 
-        // No AudioSynthesizer was found, return null.
-        return null;
+        return null;        // No AudioSynthesizer was found, return null.
     }
 
     /**

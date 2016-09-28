@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * This is only a rudimentary class that holds audio data. It will be elaborated further in the future.
+ * This class represents audio data.
  * Created by aberndt on 19.09.2016.
  */
 public class Audio {

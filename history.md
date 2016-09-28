@@ -1,6 +1,12 @@
 ###Version History
 
 
+####v0.2.3
+- Deleted method `Midi2AudioRenderer.renderMidi2Audio(File soundbankFile, int[] patches, Sequence sequence)`.
+- Added Ant build script `build.xml`, tanks to Simon Waloschek.
+- 
+
+
 ####v0.2.2
 - Fixed Midi-to-Audio conversion. Export of wave files works now.
 - Updated `README.md`.
