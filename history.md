@@ -11,6 +11,7 @@
 - Added Ant build script `build.xml`, thanks to Simon Waloschek.
 - Added Travis CI continuous integration system `.travic.yml`, thanks to Simon Waloschek.
 - Updated `README.md`.
+- Added `Violoncello` to the instruments dictionary.
 
 
 ####v0.2.2
