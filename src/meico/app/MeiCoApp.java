@@ -1236,6 +1236,7 @@ public class MeiCoApp extends JFrame {
                         this.getSequencer().addMetaEventListener(new MetaEventListener() {  // Add a listener for meta message events to detect when ...
                             public void meta(MetaMessage event) {
                                 if (event.getType() == 47) {                                // ... the sequencer is done playing
+//                                    stop();       // performing this, cuts the sound at the end
                                     panel[2].setText("\u25BA");
                                     panel[2].setBackground(Color.LIGHT_GRAY);
                                 }
