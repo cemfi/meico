@@ -275,13 +275,7 @@ public class Midi {
         Midi2AudioRenderer renderer;                // an instance of the renderer
         try {
             renderer = new Midi2AudioRenderer();    // initialize the renderer
-        } catch (MidiUnavailableException e) {
-            e.printStackTrace();
-            return null;
-        } catch (InvalidMidiDataException e) {
-            e.printStackTrace();
-            return null;
-        } catch (IOException e) {
+        } catch (MidiUnavailableException | InvalidMidiDataException | IOException e) {
             e.printStackTrace();
             return null;
         }

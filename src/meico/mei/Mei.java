@@ -115,10 +115,7 @@ public class Mei {
         file.getParentFile().mkdirs();                              // ensure that the directory exists
         try {
             file.createNewFile();                                   // create the file if it does not already exist
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        } catch (SecurityException e) {
+        } catch (IOException | SecurityException e) {
             e.printStackTrace();
             return false;
         }
@@ -127,13 +124,7 @@ public class Mei {
         FileOutputStream fileOutputStream = null;
         try {
             fileOutputStream = new FileOutputStream(file, false);   // open file: second parameter (append) is false because we want to overwrite the file if already existing
-        } catch (SecurityException e) {
-            e.printStackTrace();
-            return false;
-        } catch (FileNotFoundException  e) {
-            e.printStackTrace();
-            return false;
-        } catch (NullPointerException e) {
+        } catch (SecurityException | FileNotFoundException | NullPointerException e) {
             e.printStackTrace();
             return false;
         }
@@ -145,10 +136,7 @@ public class Mei {
             serializer = new Serializer(fileOutputStream, "UTF-8"); // connect serializer with FileOutputStream and specify encoding
             serializer.setIndent(4);                                // specify indents in xml code
             serializer.write(this.mei);                             // write data from mei to file
-        } catch (IOException e) {
-            e.printStackTrace();
-            returnValue = false;
-        } catch (NullPointerException e) {
+        } catch (IOException | NullPointerException e) {
             e.printStackTrace();
             returnValue = false;
         }
@@ -333,291 +321,409 @@ public class Mei {
             this.helper.checkEndid(e);                                          // check for pending elements with endid attributes to be finished when the element with this endid is found
 
             // process the element
-            if (e.getLocalName().equals("accid")) {                         // process accid elements that are not children of notes
-                this.processAccid(e);
-                continue;
-            } else if (e.getLocalName().equals("add")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("anchorText")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("annot")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("app")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("arpeg")) {
-                continue;                                                   // TODO: ignored at the moment but relevant for expressive performance later on
-            } else if (e.getLocalName().equals("artic")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("barline")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("beam")) {
-                // contains the notes to be beamed TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("beamSpan")) {
-                continue;                                                   // TODO: may be relavant for expressive phrasing
-            } else if (e.getLocalName().equals("beatRpt")) {
-                this.processBeatRpt(e);
-                continue;
-            } else if (e.getLocalName().equals("bend")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("breath")) {
-                continue;                                                   // TODO: relevant for expressive performance - cesura
-            } else if (e.getLocalName().equals("bTrem")) {
-                this.processChord(e);                                       // bTrems are treated as chords
-                continue;                                                   // continue with the next sibling
-            } else if (e.getLocalName().equals("choice")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("chord")) {
-                if (e.getAttribute("grace") != null)                        // TODO: at the moment we ignore grace notes and grace chords; later on, for expressive performances, we should handle these somehow
+            switch (e.getLocalName()) {
+                case "accid":                          // process accid elements that are not children of notes
+                    this.processAccid(e);
                     continue;
-                this.processChord(e);
-                continue;                                                       // continue with the next sibling
-            } else if (e.getLocalName().equals("chordTable")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("clef")) {
-                continue;                                                   // TODO: can this be ignored or is it of any relevance to pitch computation?
-            } else if (e.getLocalName().equals("clefGrp")) {
-                continue;                                                   // TODO: can this be ignored or is it of any relevance to pitch computation?
-            } else if (e.getLocalName().equals("corr")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("curve")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("custos")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("damage")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("del")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("dir")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("div")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("dot")) {
-                continue;                                                   // this element is proccessed as child of a note, rest etc., not here
-            } else if (e.getLocalName().equals("dynam")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("ending")) {// TODO: What can I do with this? Could be relevant for expressive performance (phrasing) na dto generate sectionStructure
 
-            } else if (e.getLocalName().equals("fermata")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("fTrem")) {
-                this.processChord(e);                                       // fTrems are treated as chords
-                continue;                                                   // continue with the next sibling
-            } else if (e.getLocalName().equals("gap")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("gliss")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("grpSym")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("hairpin")) {
-                continue;                                                   // TODO: relevant for expressive performance, cresc./decresc.
-            } else if (e.getLocalName().equals("halfmRpt")) {
-                this.processHalfmRpt(e);
-            } else if (e.getLocalName().equals("handShift")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("harm")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("harpPedal")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("incip")) {
+                case "add":
+                    continue;                                                   // TODO: ignore
+
+                case "anchorText":
+                    continue;                                                   // can be ignored
+
+                case "annot":
+                    continue;                                                   // TODO: ignore
+
+                case "app":
+                    continue;                                                   // TODO: ignore
+
+                case "arpeg":
+                    continue;                                                   // TODO: ignored at the moment but relevant for expressive performance later on
+
+                case "artic":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "barline":
+                    continue;                                                   // can be ignored
+
+                case "beam":
+                    // contains the notes to be beamed TODO: relevant for expressive performance
+                    break;
+
+                case "beamSpan":
+                    continue;                                                   // TODO: may be relavant for expressive phrasing
+
+                case "beatRpt":
+                    this.processBeatRpt(e);
+                    continue;
+
+                case "bend":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "breath":
+                    continue;                                                   // TODO: relevant for expressive performance - cesura
+
+                case "bTrem":
+                    this.processChord(e);                                       // bTrems are treated as chords
+                    continue;                                                   // continue with the next sibling
+
+                case "choice":
+                    continue;                                                   // TODO: ignore
+
+                case "chord":
+                    if (e.getAttribute("grace") != null)                        // TODO: at the moment we ignore grace notes and grace chords; later on, for expressive performances, we should handle these somehow
+                        continue;
+                    this.processChord(e);
+                    continue;                                                       // continue with the next sibling
+
+                case "chordTable":
+                    continue;                                                   // can be ignored
+
+                case "clef":
+                    continue;                                                   // TODO: can this be ignored or is it of any relevance to pitch computation?
+
+                case "clefGrp":
+                    continue;                                                   // TODO: can this be ignored or is it of any relevance to pitch computation?
+
+                case "corr":
+                    continue;                                                   // TODO: ignore
+
+                case "curve":
+                    continue;                                                   // can be ignored
+
+                case "custos":
+                    continue;                                                   // can be ignored
+
+                case "damage":
+                    continue;                                                   // TODO: ignore
+
+                case "del":
+                    continue;                                                   // TODO: ignore
+
+                case "dir":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "div":
+                    continue;                                                   // can be ignored
+
+                case "dot":
+                    continue;                                                   // this element is proccessed as child of a note, rest etc., not here
+
+                case "dynam":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "ending": // TODO: What can I do with this? Could be relevant for expressive performance (phrasing) na dto generate sectionStructure
+
+                    break;
+                case "fermata":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "fTrem":
+                    this.processChord(e);                                       // fTrems are treated as chords
+                    continue;                                                   // continue with the next sibling
+
+                case "gap":
+                    continue;                                                   // TODO: ignore
+
+                case "gliss":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "grpSym":
+                    continue;                                                   // can be ignored
+
+                case "hairpin":
+                    continue;                                                   // TODO: relevant for expressive performance, cresc./decresc.
+
+                case "halfmRpt":
+                    this.processHalfmRpt(e);
+                    break;
+
+                case "handShift":
+                    continue;                                                   // TODO: ignore
+
+                case "harm":
+                    continue;                                                   // can be ignored
+
+                case "harpPedal":
+                    continue;                                                   // can be ignored
+
+                case "incip":
                     continue;                                               // can be ignored
-            } else if (e.getLocalName().equals("ineume")) {
-                continue;                                                   // ignored, this implementation focusses on common modern notation
-            } else if (e.getLocalName().equals("instrDef")) {
-                continue;                                                   // ignore this tag as this converter handles midi stuff individually
-            } else if (e.getLocalName().equals("instrGrp")) {
-                continue;                                                   // ignore this tag as this converter handles midi stuff individually
-            } else if (e.getLocalName().equals("keyAccid")) {
-                continue;                                                   // this element is processed within a keySig; if it occurs outside of a keySig environment it is invalid, hence, ignored
-            } else if (e.getLocalName().equals("keySig")) {
-                this.processKeySig(e);
-            } else if (e.getLocalName().equals("label")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("layer")) {
-                String oldDate = this.helper.currentPart.getAttribute("currentDate").getValue();    // store currentDate in oldDate for later use
-                this.convert(e);                                            // process everything within this environment
-                e.addAttribute(new Attribute("currentDate", this.helper.currentPart.getAttribute("currentDate").getValue()));   // store the currentDate in the layer element to later determine the latest of these dates as the staff'spart's currentDate
-                this.helper.accid.clear();                                  // accidentals are valid only within one layer, so forget them
-                if (Helper.getNextSiblingElement("layer", e) != null)       // if there are more layers in this staff environment
-                    this.helper.currentPart.getAttribute("currentDate").setValue(oldDate); // set back to the old currentDate, because each layer is a parallel to the other layers
-                else {                                                      // no further layers in this staff environment, this was the last layer in this staff
-                    // take the latest layer-specific currentDate as THE currentDate of this part
-                    Elements layers = ((Element) e.getParent()).getChildElements("layer");   // get all layers in this staff
-                    double latestDate = Double.parseDouble(this.helper.currentPart.getAttribute("currentDate").getValue());
-                    for (int j = layers.size() - 1; j >= 0; --j) {
-                        double date = Double.parseDouble(layers.get(j).getAttributeValue("currentDate"));   // get the part's date
-                        if (latestDate < date)                                                              // if this part's date is later than latestDate so far
-                            latestDate = date;                                                              // set latestDate to date
+
+                case "ineume":
+                    continue;                                                   // ignored, this implementation focusses on common modern notation
+
+                case "instrDef":
+                    continue;                                                   // ignore this tag as this converter handles midi stuff individually
+
+                case "instrGrp":
+                    continue;                                                   // ignore this tag as this converter handles midi stuff individually
+
+                case "keyAccid":
+                    continue;                                                   // this element is processed within a keySig; if it occurs outside of a keySig environment it is invalid, hence, ignored
+
+                case "keySig":
+                    this.processKeySig(e);
+                    break;
+
+                case "label":
+                    continue;                                                   // can be ignored
+
+                case "layer":
+                    String oldDate = this.helper.currentPart.getAttribute("currentDate").getValue();    // store currentDate in oldDate for later use
+                    this.convert(e);                                            // process everything within this environment
+                    e.addAttribute(new Attribute("currentDate", this.helper.currentPart.getAttribute("currentDate").getValue()));   // store the currentDate in the layer element to later determine the latest of these dates as the staff'spart's currentDate
+                    this.helper.accid.clear();                                  // accidentals are valid only within one layer, so forget them
+                    if (Helper.getNextSiblingElement("layer", e) != null)       // if there are more layers in this staff environment
+                        this.helper.currentPart.getAttribute("currentDate").setValue(oldDate); // set back to the old currentDate, because each layer is a parallel to the other layers
+                    else {                                                      // no further layers in this staff environment, this was the last layer in this staff
+                        // take the latest layer-specific currentDate as THE currentDate of this part
+                        Elements layers = ((Element) e.getParent()).getChildElements("layer");   // get all layers in this staff
+                        double latestDate = Double.parseDouble(this.helper.currentPart.getAttribute("currentDate").getValue());
+                        for (int j = layers.size() - 1; j >= 0; --j) {
+                            double date = Double.parseDouble(layers.get(j).getAttributeValue("currentDate"));   // get the part's date
+                            if (latestDate < date)                                                              // if this part's date is later than latestDate so far
+                                latestDate = date;                                                              // set latestDate to date
+                        }
+                        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(latestDate));
                     }
-                    this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(latestDate));
-                }
-                continue;
-            } else if (e.getLocalName().equals("layerDef")) {
-                this.processLayerDef(e);
-
-            } else if (e.getLocalName().equals("lb")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("line")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("lyrics")) {// TODO: should I do anything more with it than just diving into it?
-
-            } else if (e.getLocalName().equals("mdiv")) {
-                if (this.makeMovement(e).isEmpty()) continue;               // create a new instance of Msm with a new Document and a unique id (size of the movements list so far), if something went wrong (I don't know how, just to be on the save side) stop diving into this subtree
-
-            } else if (e.getLocalName().equals("measure")) {
-                this.processMeasure(e);                                     // this creates the date and dur attribute and adds them to the measure
-                this.helper.currentMeasure = e;
-                this.convert(e);                                            // process everything within this environment
-                this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
-                // update the duration of the measure; if the measure is overful, take the respective duration; if underful, keep the defined duration in accordance to its time signature
-                Element cm = this.helper.currentMeasure;
-                this.helper.currentMeasure = null;                          // this has to be set null so that getMidiTime() does not return the measure's date
-                double dur1 = Double.parseDouble(cm.getAttributeValue("midi.dur"));                                  // duration of the measure
-                double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("midi.date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
-                cm.getAttribute("midi.dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
-                continue;
-            } else if (e.getLocalName().equals("mensur")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("meterSig")) {
-                this.processMeterSig(e);
-
-            } else if (e.getLocalName().equals("meterSigGrp")) {// TODO: I have no idea how to handle this, at the moment I go through it and process the contained meterSig elements as if they were standing alone
-
-            } else if (e.getLocalName().equals("midi")) {
-                continue;                                                   // ignore this tag as this converter handles midi stuff individually
-            } else if (e.getLocalName().equals("mordent")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("mRest")) {
-                this.processMeasureRest(e);
-
-            } else if (e.getLocalName().equals("mRpt")) {
-                this.processMRpt(e);
-
-            } else if (e.getLocalName().equals("mRpt2")) {
-                this.processMRpt2(e);
-
-            } else if (e.getLocalName().equals("mSpace")) {
-                this.processMeasureRest(e);                                    // interpret it as an mRest, i.e. measure rest
-
-            } else if (e.getLocalName().equals("multiRest")) {
-                this.processMultiRest(e);
-
-            } else if (e.getLocalName().equals("multiRpt")) {
-                this.processMultiRpt(e);
-
-            } else if (e.getLocalName().equals("note")) {
-                this.processNote(e);
-                continue;                                                   // no need to go deeper as any child of this tag is already processed
-            } else if (e.getLocalName().equals("octave")) {
-                this.processOctave(e);
-
-            } else if (e.getLocalName().equals("orig")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("ossia")) {
-                continue;                                                   // TODO: ignored for the moment but may be included later on
-            } else if (e.getLocalName().equals("parts")) {                  // just dive into it
-            } else if (e.getLocalName().equals("part")) {                   // just dive into it
-            } else if (e.getLocalName().equals("pb")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("pedal")) {
-                this.processPedal(e);
-
-            } else if (e.getLocalName().equals("pgFoot")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("pgFoot2")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("pgHead")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("pgHead2")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("phrase")) {// dive into it TODO: make an entry in the phraseStructure map
-
-            } else if (e.getLocalName().equals("proport")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("rdg")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("reg")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("reh")) {
-                this.processReh(e);// TODO: generate midi jump marks
-                continue;
-            } else if (e.getLocalName().equals("rend")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("rest")) {
-                this.processRest(e);
-
-            } else if (e.getLocalName().equals("restore")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("sb")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("scoreDef")) {
-                this.processScoreDef(e);
-
-            } else if (e.getLocalName().equals("score")) {// just dive into it
-
-            } else if (e.getLocalName().equals("section")) {// TODO: What can I do with this? I have to dive into it, as it may contain musical data. I might also use it to generate a sectionStructure map.
-
-            } else if (e.getLocalName().equals("sic")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("space")) {
-                this.processRest(e);                                        // handle it like a rest
-
-            } else if (e.getLocalName().equals("slur")) {
-                continue;                                                   // TODO: relevant for expressive performance; it indicates legato articulation
-            } else if (e.getLocalName().equals("stack")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("staff")) {
-                this.helper.currentPart = this.processStaff(e);             // everything within this tag is local to this part
-                this.convert(e);                                            // go on recursively with the processing
-                this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
-                this.helper.currentPart = null;                             // after this staff entry and its children are processed, set part to nullptr, because there can be global information between the staff entries in mei
-                continue;
-            } else if (e.getLocalName().equals("staffDef")) {
-                this.processStaffDef(e);
-
-            } else if (e.getLocalName().equals("staffGrp")) {// may contain staffDefs but needs no particular processing, attributes are ignored
-
-            } else if (e.getLocalName().equals("subst")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("supplied")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("syl")) {
-                continue;                                                   // TODO: can be included in MIDI, too; useful for choir synthesis
-            } else if (e.getLocalName().equals("syllable")) {
-                continue;                                                   // ignored, this implementation focusses on common modern notation
-            } else if (e.getLocalName().equals("symbol")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("symbolTable")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("tempo")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("tie")) {
-                continue;                                                   // tie are handled in the preprocessing, they can be ignored here
-            } else if (e.getLocalName().equals("timeline")) {
-                continue;                                                   // can be ignored
-            } else if (e.getLocalName().equals("trill")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("tuplet")) {
-                if (e.getAttribute("dur") != null) {
-                    double cd = Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate"));   // store the current date for use afterwards
-                    this.convert(e);                                        // process the child elements
-                    double dur = this.helper.computeDuration(e);
-                    this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(cd + dur));    // this compensates for numeric problems with the single note durations within the tuplet
                     continue;
-                }
 
-            } else if (e.getLocalName().equals("tupletSpan")) {
-                this.processTupletSpan(e);
-                continue;                                                   // TODO: how do I have to handle this?
-            } else if (e.getLocalName().equals("turn")) {
-                continue;                                                   // TODO: relevant for expressive performance
-            } else if (e.getLocalName().equals("unclear")) {
-                continue;                                                   // TODO: ignore
-            } else if (e.getLocalName().equals("uneume")) {
-                continue;                                                   // ignored, this implementation focusses on common modern notation
-            } else if (e.getLocalName().equals("verse")) {
-                continue;                                                   // TODO: ignored
-            } else {
-                continue;                                                   // ignore it and its children
+                case "layerDef":
+                    this.processLayerDef(e);
+
+                    break;
+                case "lb":
+                    continue;                                                   // can be ignored
+
+                case "line":
+                    continue;                                                   // can be ignored
+
+                case "lyrics": // TODO: should I do anything more with it than just diving into it?
+                    break;
+
+                case "mdiv":
+                    if (this.makeMovement(e).isEmpty()) continue;               // create a new instance of Msm with a new Document and a unique id (size of the movements list so far), if something went wrong (I don't know how, just to be on the save side) stop diving into this subtree
+                    break;
+
+                case "measure":
+                    this.processMeasure(e);                                     // this creates the date and dur attribute and adds them to the measure
+                    this.helper.currentMeasure = e;
+                    this.convert(e);                                            // process everything within this environment
+                    this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
+                    // update the duration of the measure; if the measure is overful, take the respective duration; if underful, keep the defined duration in accordance to its time signature
+                    Element cm = this.helper.currentMeasure;
+                    this.helper.currentMeasure = null;                          // this has to be set null so that getMidiTime() does not return the measure's date
+                    double dur1 = Double.parseDouble(cm.getAttributeValue("midi.dur"));                                  // duration of the measure
+                    double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("midi.date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
+                    cm.getAttribute("midi.dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
+                    continue;
+
+                case "mensur":
+                    continue;                                                   // TODO: ignore
+
+                case "meterSig":
+                    this.processMeterSig(e);
+                    break;
+
+                case "meterSigGrp": // TODO: I have no idea how to handle this, at the moment I go through it and process the contained meterSig elements as if they were standing alone
+                    break;
+
+                case "midi":
+                    continue;                                                   // ignore this tag as this converter handles midi stuff individually
+
+                case "mordent":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "mRest":
+                    this.processMeasureRest(e);
+                    break;
+
+                case "mRpt":
+                    this.processMRpt(e);
+                    break;
+
+                case "mRpt2":
+                    this.processMRpt2(e);
+                    break;
+
+                case "mSpace":
+                    this.processMeasureRest(e);                                    // interpret it as an mRest, i.e. measure rest
+                    break;
+
+                case "multiRest":
+                    this.processMultiRest(e);
+                    break;
+
+                case "multiRpt":
+                    this.processMultiRpt(e);
+                    break;
+
+                case "note":
+                    this.processNote(e);
+                    continue;                                                   // no need to go deeper as any child of this tag is already processed
+
+                case "octave":
+                    this.processOctave(e);
+                    break;
+
+                case "orig":
+                    continue;                                                   // TODO: ignore
+
+                case "ossia":
+                    continue;                                                   // TODO: ignored for the moment but may be included later on
+
+                case "parts":                   // just dive into it
+                    break;
+
+                case "part":                    // just dive into it
+                    break;
+
+                case "pb":
+                    continue;                                                   // can be ignored
+
+                case "pedal":
+                    this.processPedal(e);
+                    break;
+
+                case "pgFoot":
+                    continue;                                                   // can be ignored
+
+                case "pgFoot2":
+                    continue;                                                   // can be ignored
+
+                case "pgHead":
+                    continue;                                                   // can be ignored
+
+                case "pgHead2":
+                    continue;                                                   // can be ignored
+
+                case "phrase": // dive into it TODO: make an entry in the phraseStructure map
+                    break;
+
+                case "proport":
+                    continue;                                                   // TODO: ignore
+
+                case "rdg":
+                    continue;                                                   // TODO: ignore
+
+                case "reg":
+                    continue;                                                   // TODO: ignore
+
+                case "reh":
+                    this.processReh(e);// TODO: generate midi jump marks
+                    continue;
+
+                case "rend":
+                    continue;                                                   // can be ignored
+
+                case "rest":
+                    this.processRest(e);
+                    break;
+
+                case "restore":
+                    continue;                                                   // TODO: ignore
+
+                case "sb":
+                    continue;                                                   // can be ignored
+
+                case "scoreDef":
+                    this.processScoreDef(e);
+                    break;
+
+                case "score": // just dive into it
+                    break;
+
+                case "section": // TODO: What can I do with this? I have to dive into it, as it may contain musical data. I might also use it to generate a sectionStructure map.
+                    break;
+
+                case "sic":
+                    continue;                                                   // TODO: ignore
+
+                case "space":
+                    this.processRest(e);                                        // handle it like a rest
+                    break;
+
+                case "slur":
+                    continue;                                                   // TODO: relevant for expressive performance; it indicates legato articulation
+
+                case "stack":
+                    continue;                                                   // can be ignored
+
+                case "staff":
+                    this.helper.currentPart = this.processStaff(e);             // everything within this tag is local to this part
+                    this.convert(e);                                            // go on recursively with the processing
+                    this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
+                    this.helper.currentPart = null;                             // after this staff entry and its children are processed, set part to nullptr, because there can be global information between the staff entries in mei
+                    continue;
+
+                case "staffDef":
+                    this.processStaffDef(e);
+                    break;
+
+                case "staffGrp": // may contain staffDefs but needs no particular processing, attributes are ignored
+
+                    break;
+                case "subst":
+                    continue;                                                   // TODO: ignore
+
+                case "supplied":
+                    continue;                                                   // TODO: ignore
+
+                case "syl":
+                    continue;                                                   // TODO: can be included in MIDI, too; useful for choir synthesis
+
+                case "syllable":
+                    continue;                                                   // ignored, this implementation focusses on common modern notation
+
+                case "symbol":
+                    continue;                                                   // can be ignored
+
+                case "symbolTable":
+                    continue;                                                   // can be ignored
+
+                case "tempo":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "tie":
+                    continue;                                                   // tie are handled in the preprocessing, they can be ignored here
+
+                case "timeline":
+                    continue;                                                   // can be ignored
+
+                case "trill":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "tuplet":
+                    if (e.getAttribute("dur") != null) {
+                        double cd = Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate"));   // store the current date for use afterwards
+                        this.convert(e);                                        // process the child elements
+                        double dur = this.helper.computeDuration(e);
+                        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(cd + dur));    // this compensates for numeric problems with the single note durations within the tuplet
+                        continue;
+                    }
+                    break;
+
+                case "tupletSpan":
+                    this.processTupletSpan(e);
+                    continue;                                                   // TODO: how do I have to handle this?
+
+                case "turn":
+                    continue;                                                   // TODO: relevant for expressive performance
+
+                case "unclear":
+                    continue;                                                   // TODO: ignore
+
+                case "uneume":
+                    continue;                                                   // ignored, this implementation focusses on common modern notation
+
+                case "verse":
+                    continue;                                                   // TODO: ignored
+
+                default:
+                    continue;                                                   // ignore it and its children
+
             }
             this.convert(e);
         }
@@ -1487,18 +1593,13 @@ public class Mei {
 
         // compute the amount of transposition in semitones
         int result;
-        if (octave.getAttributeValue("dis").equals("8")) {
-            result = 12;
-
-        } else if (octave.getAttributeValue("dis").equals("15")) {
-            result = 24;
-
-        } else if (octave.getAttributeValue("dis").equals("22")) {
-            result = 36;
-
-        } else {
-            System.out.println("An invalid octave transposition occured (dis=" + octave.getAttributeValue("dis") + ").");
-            return;
+        switch (octave.getAttributeValue("dis")) {
+            case "8":  result = 12; break;
+            case "15": result = 24; break;
+            case "22": result = 36; break;
+            default:
+                System.out.println("An invalid octave transposition occured (dis=" + octave.getAttributeValue("dis") + ").");
+                return;
         }
 
         // direction of transposition
@@ -1736,15 +1837,7 @@ public class Mei {
                 try {
                     placeholder.getKey().getParent().replaceChild(placeholder.getKey(), copy);          // replace the placeholder by it
 //                System.out.println("replacing: " + placeholder.getKey().toXML() + "\nby\n" + copy.toXML() + "\n\n");
-                } catch (NoSuchChildException error) {                                                  // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
-                    error.printStackTrace();                                                            // print error
-                    notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
-                    continue;
-                } catch (NullPointerException error) {                                                  // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
-                    error.printStackTrace();                                                            // print error
-                    notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
-                    continue;
-                } catch (IllegalAddException error) {                                                   // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
+                } catch (NoSuchChildException | NullPointerException | IllegalAddException error) {     // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
                     error.printStackTrace();                                                            // print error
                     notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
                     continue;

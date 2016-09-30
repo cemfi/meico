@@ -500,14 +500,10 @@ public class Helper {
                 }
             }
 
-            if (sdur.equals("breve")) {
-                dur = 8.0 * this.ppq;
-
-            } else if (sdur.equals("long")) {
-                dur = 16.0 * this.ppq;
-
-            } else {
-                dur = (4.0 * this.ppq) / Integer.parseInt(sdur);                                // compute midi tick duration
+            switch (sdur) {
+                case "breve":  dur = 8.0 * this.ppq;  break;
+                case "long":   dur = 16.0 * this.ppq; break;
+                default:       dur = (4.0 * this.ppq) / Integer.parseInt(sdur);         // compute midi tick duration
             }
         }
 
@@ -566,34 +562,21 @@ public class Helper {
      * @return
      */
     public static double duration2decimal(String durString) {
-        if (durString.equals("long")) {
-            return 4.0;
-        } else if (durString.equals("breve")) {
-            return 2.0;
-        } else if (durString.equals("1")) {
-            return 1.0;
-        } else if (durString.equals("2")) {
-            return 0.5;
-        } else if (durString.equals("4")) {
-            return 0.25;
-        } else if (durString.equals("8")) {
-            return 0.125;
-        } else if (durString.equals("16")) {
-            return 0.0625;
-        } else if (durString.equals("32")) {
-            return 0.03125;
-        } else if (durString.equals("64")) {
-            return 0.015625;
-        } else if (durString.equals("128")) {
-            return 0.0078125;
-        } else if (durString.equals("256")) {
-            return 0.00390625;
-        } else if (durString.equals("512")) {
-            return 0.001953125;
-        } else if (durString.equals("1024")) {
-            return 0.0009765625;
-        } else if (durString.equals("2048")) {
-            return 0.00048828125;
+        switch (durString) {
+            case "long":  return 4.0;
+            case "breve": return 2.0;
+            case "1":     return 1.0;
+            case "2":     return 0.5;
+            case "4":     return 0.25;
+            case "8":     return 0.125;
+            case "16":    return 0.0625;
+            case "32":    return 0.03125;
+            case "64":    return 0.015625;
+            case "128":   return 0.0078125;
+            case "256":   return 0.00390625;
+            case "512":   return 0.001953125;
+            case "1024":  return 0.0009765625;
+            case "2048":  return 0.00048828125;
         }
         return 0.0;
     }
@@ -604,48 +587,29 @@ public class Helper {
      * @return the decimal value of the accidental
      */
     public static double accidString2decimal(String accid) {
-        double accidentals = 0;
-        if (accid.equals("s")) {
-            accidentals = 1;
-        } else if (accid.equals("f")) {
-            accidentals = -1;
-        } else if (accid.equals("ss")) {
-            accidentals = 2;
-        } else if (accid.equals("x")) {
-            accidentals = 2;
-        } else if (accid.equals("ff")) {
-            accidentals = -2;
-        } else if (accid.equals("xs")) {
-            accidentals = 3;
-        } else if (accid.equals("ts")) {
-            accidentals = 3;
-        } else if (accid.equals("tf")) {
-            accidentals = -3;
-        } else if (accid.equals("n")) {
-        } else if (accid.equals("nf")) {
-            accidentals = -1;
-        } else if (accid.equals("ns")) {
-            accidentals = 1;
-        } else if (accid.equals("su")) {
-            accidentals = 1.5;
-        } else if (accid.equals("sd")) {
-            accidentals = 0.5;
-        } else if (accid.equals("fu")) {
-            accidentals = -0.5;
-        } else if (accid.equals("fd")) {
-            accidentals = -1.5;
-        } else if (accid.equals("nu")) {
-            accidentals = 0.5;
-        } else if (accid.equals("nd")) {
-            accidentals = -0.5;
-        } else if (accid.equals("1qf")) {
-            accidentals = -0.5;
-        } else if (accid.equals("3qf")) {
-            accidentals = -1.5;
-        } else if (accid.equals("1qs")) {
-            accidentals = 0.5;
-        } else if (accid.equals("3qs")) {
-            accidentals = 1.5;
+        double accidentals = 0.0;
+        switch (accid) {
+            case "s":    accidentals = 1;    break;
+            case "f":    accidentals = -1;   break;
+            case "ss":   accidentals = 2;    break;
+            case "x":    accidentals = 2;    break;
+            case "ff":   accidentals = -2;   break;
+            case "xs":   accidentals = 3;    break;
+            case "ts":   accidentals = 3;    break;
+            case "tf":   accidentals = -3;   break;
+            case "n":    break;
+            case "nf":   accidentals = -1;   break;
+            case "ns":   accidentals = 1;    break;
+            case "su":   accidentals = 1.5;  break;
+            case "sd":   accidentals = 0.5;  break;
+            case "fu":   accidentals = -0.5; break;
+            case "fd":   accidentals = -1.5; break;
+            case "nu":   accidentals = 0.5;  break;
+            case "nd":   accidentals = -0.5; break;
+            case "1qf":  accidentals = -0.5; break;
+            case "3qf":  accidentals = -1.5; break;
+            case "1qs":  accidentals = 0.5;  break;
+            case "3qs":  accidentals = 1.5;  break;
         }
         return accidentals;
     }

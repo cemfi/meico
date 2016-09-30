@@ -1,6 +1,14 @@
 ###Version History
 
 
+####v0.2.4
+- Added audio playback methods `play()` and `stop()` to class `meico.audio.Audio`.
+- Added audio playback button to the window mode graphical user interface.
+    - Ensured that all playback is exclusive, i.e. starting one playback will stop any other currently running playback both for midi and audio.
+    - Ensured that the playback of a Midi or audio instance stops when the instance is deleted or overridden.
+- Java 7 conform code polishing.
+
+
 ####v0.2.3
 - Added Soundbank support for Midi-to-audio rendering. 
     - Instead of Java's default sounds the user can now freely choose a `.dls` or `.sf2` file from the file system and use this for the synthesis of audio files. 

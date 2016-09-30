@@ -14,6 +14,9 @@ import net.miginfocom.swing.MigLayout;
 import nu.xom.ParsingException;
 
 import javax.sound.midi.*;
+import javax.sound.sampled.LineEvent;
+import javax.sound.sampled.LineListener;
+import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -53,7 +56,7 @@ public class MeiCoApp extends JFrame {
     private final double iconScaleFactor = 0.85;
     private final ImageIcon saveIcon = new ImageIcon((new ImageIcon(getClass().getResource("/resources/graphics/save-gray.png")).getImage()).getScaledInstance((int)(25 * this.iconScaleFactor), (int)(26 * this.iconScaleFactor), Image.SCALE_AREA_AVERAGING));
     private final ImageIcon convertIcon = new ImageIcon((new ImageIcon(getClass().getResource("/resources/graphics/convert-gray.png")).getImage()).getScaledInstance((int)(25 * this.iconScaleFactor), (int)(18 * this.iconScaleFactor), Image.SCALE_AREA_AVERAGING));
-    private final double fileNameFieldWidtch = 16.5;  // in percent of the whole window width
+    private final double fileNameFieldWidtch = 15.5;  // in percent of the whole window width
     private final double iconFieldWidth = 3.5;       // in percent of the whole window width
 
 
@@ -80,18 +83,18 @@ public class MeiCoApp extends JFrame {
             if (arg.equals("-?") || arg.equals("--help")) {
                 System.out.println("Meico requires the following arguments:\n");
                 System.out.println("[-?] or [--help]                    for this command line help text. If you use this, any other arguments are skipped");
-                System.out.println("[-v] or [--validation]              to activate validation of mei files loaded");
-                System.out.println("[-a] or [--add-ids]                 to add xml:ids to note, rest and chord elements in mei, as far as they do not have an id; meico will output a revised mei file");
-                System.out.println("[-r] or [--resolve-copy-ofs]        mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised mei file");
-                System.out.println("[-m] or [--msm]                     converts mei to msm; meico will write an msm file to the path of the mei");
-                System.out.println("[-i] or [--midi]                    converts mei (to msm, internally) to midi; meico will output a midi file to the path of the mei");
-                System.out.println("[-p] or [--no-program-changes]      call this to suppress the generation of program change events in midi");
-                System.out.println("[-c] or [--dont-use-channel-10]     the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on");
-                System.out.println("[-t argument] or [--tempo argument] this sets the tempo of the midi file; the argument must be a floating point number; if not used the tempo is always 120 bpm");
-                System.out.println("[-w] or [--wav]                     converts mei (to midi, internally) to wav; meico will output a wave file to the path of the mei");
-                System.out.println("[-s \"C:\\mySoundfonts\\mySoundfont.sf2\"] or [--soundbank \"C:\\mySoundfonts\\mySoundfont.sf2\"] choose a specific .sf2 or .dls file for higher quality sounds for wave export");
-                System.out.println("[-d] or [--debug]                   to write debug versions of the mei and msm files  to the path");
-                System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
+                System.out.println("[-v] or [--validation]              to activate validation of MEI files loaded");
+                System.out.println("[-a] or [--add-ids]                 to add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
+                System.out.println("[-r] or [--resolve-copy-ofs]        mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised MEI file");
+                System.out.println("[-m] or [--msm]                     converts MEI to MSM; meico will write an MSM file to the path of the MEI");
+                System.out.println("[-i] or [--midi]                    converts MEI (to MSM, internally) to midi; meico will output a Midi file to the path of the MEI");
+                System.out.println("[-p] or [--no-program-changes]      call this to suppress the generation of program change events in Midi");
+                System.out.println("[-c] or [--dont-use-channel-10]     the flag says whether channel 10 (Midi drum channel) shall be used or not; it is already done at MEI-to-MSM convertion, because the MSM should align with the Midi file later on");
+                System.out.println("[-t argument] or [--tempo argument] this sets the tempo of the Midi file; the argument must be a floating point number; if not used the tempo is always 120 bpm");
+                System.out.println("[-w] or [--wav]                     converts MEI (to Midi, internally) to wav; meico will output a Wave file to the path of the MEI");
+                System.out.println("[-s \"C:\\mySoundfonts\\mySoundfont.sf2\"] or [--soundbank \"C:\\mySoundfonts\\mySoundfont.sf2\"] choose a specific .sf2 or .dls file for higher quality sounds for audio export");
+                System.out.println("[-d] or [--debug]                   to write debug versions of the MEI and MSM files to the path");
+                System.out.println("\nThe final argument should always be a path to a valid MEI file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
                 return;
             }
         }
@@ -137,20 +140,14 @@ public class MeiCoApp extends JFrame {
             meiFile = new File(args[args.length-1]);                    // load mei file
             meiFile = new File(meiFile.getCanonicalPath());             // ensure that the absolute path in the file object
 
-        } catch (NullPointerException error) {
-            error.printStackTrace();                                    // print error to console
-            return;
-        } catch (IOException error) {
+        } catch (NullPointerException | IOException error) {
             error.printStackTrace();                                    // print error to console
             return;
         }
         Mei mei = null;
         try {
             mei = new Mei(meiFile, validate);                           // read an mei file
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        } catch (ParsingException e) {
+        } catch (IOException | ParsingException e) {
             e.printStackTrace();
             return;
         }
@@ -161,11 +158,11 @@ public class MeiCoApp extends JFrame {
 
         // optional mei processing functions
         if (resolveCopyOfs) {
-            System.out.println("Processing mei: resolving copyOfs.");
+            System.out.println("Processing MEI: resolving copyOfs.");
             mei.resolveCopyofs();                       // this call is part of the exportMsm() method but can also be called alone to expand the mei source and write it to the file system
         }
         if (addIds) {
-            System.out.println("Processing mei: adding xml:ids.");
+            System.out.println("Processing MEI: adding xml:ids.");
             mei.addIds();                               // generate ids for note, rest, mRest, multiRest, and chord elements that have no xml:id attribute
         }
         if (resolveCopyOfs || addIds) {
@@ -175,7 +172,7 @@ public class MeiCoApp extends JFrame {
         if (!(msm || midi || wav)) return;             // if no conversion is required, we are done here
 
         // convert mei -> msm -> midi
-        System.out.println("Converting mei to msm.");
+        System.out.println("Converting MEI to MSM.");
         List<Msm> msms = mei.exportMsm(720, dontUseChannel10, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
         if (msms.isEmpty()) {
             System.out.println("No msm data created.");
@@ -187,7 +184,7 @@ public class MeiCoApp extends JFrame {
         }
 
         if (msm) {
-            System.out.println("Writing msm to file system: ");
+            System.out.println("Writing MSM to file system: ");
             for (Msm msm1 : msms) {
                 if (!debug) msm1.removeRests();  // purge the data (some applications may keep the rests from the mei; these should not call this function)
                 msm1.writeMsm();                 // write the msm file to the file system
@@ -197,7 +194,7 @@ public class MeiCoApp extends JFrame {
 
         List<meico.midi.Midi> midis = new ArrayList<Midi>();
         if (midi || wav) {                      // midi conversion is also required for wav export
-            System.out.println("Converting msm to midi and writing midi to file system: ");
+            System.out.println("Converting MSM to Midi and writing Midi to file system: ");
             for (int i = 0; i < msms.size(); ++i) {
                 midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
                 try {
@@ -211,7 +208,7 @@ public class MeiCoApp extends JFrame {
 
         List<meico.audio.Audio> audios = new ArrayList<Audio>();
         if (wav) {
-            System.out.println("Converting midi to wave and writing wav file to file system: ");
+            System.out.println("Converting Midi to audio and writing wav file to file system: ");
             for (meico.midi.Midi m : midis) {
                 Audio a = m.exportAudio(soundbank);     // this generates an Audio object
                 if (a == null)
@@ -321,11 +318,7 @@ public class MeiCoApp extends JFrame {
         try {
 //            this.music.add(new MeiCoMusicObject(file));
             this.music.add(new Mei4Gui(file, this));
-        } catch (InvalidFileTypeException e) {
-            this.setStatusMessage(e.toString());            // if it is neither of the above file formats, output a statusbar message
-        } catch (ParsingException e) {
-            this.setStatusMessage(e.toString());            // if it is neither of the above file formats, output a statusbar message
-        } catch (IOException e) {
+        } catch (InvalidFileTypeException | ParsingException | IOException e) {
             this.setStatusMessage(e.toString());            // if it is neither of the above file formats, output a statusbar message
         } catch (UnsupportedAudioFileException e) {
             e.printStackTrace();
@@ -405,7 +398,7 @@ public class MeiCoApp extends JFrame {
         this.closeAllIcon.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                stopAllMidiPlayback();
+                stopAllPlayback();
                 music.clear();
                 doRepaint();
             }
@@ -468,12 +461,29 @@ public class MeiCoApp extends JFrame {
         }
     }
 
+    private void stopAllPlayback() {
+        this.stopAllMidiPlayback();
+        this.stopAllAudioPlayback();
+    }
+
     private void stopAllMidiPlayback() {
         for (Mei4Gui mei : music) {
             for (Mei4Gui.Msm4Gui msm : mei.msm) {
                 if ((msm.midi == null) || msm.midi.isEmpty())
                     continue;
                 msm.midi.stop();
+            }
+        }
+    }
+
+    private void stopAllAudioPlayback() {
+        for (Mei4Gui mei : music) {
+            for (Mei4Gui.Msm4Gui msm : mei.msm) {
+                if (!((msm.midi == null) || msm.midi.isEmpty())) {
+                    if (!((msm.midi.audio == null) || (msm.midi.audio.isEmpty()))) {
+                        msm.midi.audio.stop();
+                    }
+                }
             }
         }
     }
@@ -519,7 +529,7 @@ public class MeiCoApp extends JFrame {
             // create the panel component and its content
             this.panel.removeAll();
             this.panel.setOpaque(false);
-            this.panel.setLayout(new MigLayout(/*Layout Constraints*/ "wrap 12", /*Column constraints*/ "[left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%]", /*Row constraints*/ ""));
+            this.panel.setLayout(new MigLayout(/*Layout Constraints*/ "wrap 13", /*Column constraints*/ "[left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][left, " + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%:" + fileNameFieldWidtch + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%][right, " + iconFieldWidth + "%:" + iconFieldWidth + "%:" + iconFieldWidth + "%]", /*Row constraints*/ ""));
 
             int skip = 0;
 
@@ -528,7 +538,7 @@ public class MeiCoApp extends JFrame {
                 skip = 3;
             }
             else {
-                JPopupMenu meiNamePop = new JPopupMenu("MEI Processing");
+                JPopupMenu meiNamePop = new JPopupMenu("MEI processing");
                 meiNamePop.setEnabled(true);
                 JMenuItem validate = new JMenuItem(new AbstractAction("Validate") {
                     @Override
@@ -548,7 +558,7 @@ public class MeiCoApp extends JFrame {
                 });
                 addIDs.setEnabled(!this.idsAdded);
 
-                JMenuItem resolveCopyofs = new JMenuItem(new AbstractAction("Resolve Copyofs") {
+                JMenuItem resolveCopyofs = new JMenuItem(new AbstractAction("Resolve copyofs") {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         resolveCopyofs();
@@ -558,15 +568,13 @@ public class MeiCoApp extends JFrame {
                 });
                 resolveCopyofs.setEnabled(!this.copyofsResolved);
 
-                JMenuItem reload = new JMenuItem(new AbstractAction("Reload Original MEI") {
+                JMenuItem reload = new JMenuItem(new AbstractAction("Reload original MEI") {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         msm = new ArrayList<Msm4Gui>();
                         try {
                             readMeiFile(getFile(), false);
-                        } catch (IOException err) {
-                            app.setStatusMessage(err.toString());
-                        } catch (ParsingException err) {
+                        } catch (IOException | ParsingException err) {
                             app.setStatusMessage(err.toString());
                         }
                         idsAdded = false;
@@ -667,15 +675,15 @@ public class MeiCoApp extends JFrame {
 
                 JLabel ppqLabel = new JLabel("ppq");
                 JPanel ppqPanel = new JPanel();
-                JLabel ppqSetup = new JLabel("Set Time Resolution");
-                JPopupMenu mei2msmPop = new JPopupMenu("Conversion Options");
+                JLabel ppqSetup = new JLabel("Set time resolution");
+                JPopupMenu mei2msmPop = new JPopupMenu("Conversion options");
                 mei2msmPop.setEnabled(true);
                 ppqPanel.add(ppqSetup);
                 ppqPanel.add(ppqField);
                 ppqPanel.add(ppqLabel);
                 mei2msmPop.add(ppqPanel);
 
-                final JCheckBoxMenuItem dontUseChannel10CheckBox = new JCheckBoxMenuItem("Do not use channel 10 (midi drum channel)", this.dontUseChannel10);
+                final JCheckBoxMenuItem dontUseChannel10CheckBox = new JCheckBoxMenuItem("Do not use channel 10 (Midi drum channel)", this.dontUseChannel10);
                 dontUseChannel10CheckBox.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseReleased(MouseEvent e) {
@@ -712,6 +720,16 @@ public class MeiCoApp extends JFrame {
                     public void mouseReleased(MouseEvent e) {
                         if (SwingUtilities.isLeftMouseButton(e)) {
                             if (mei2msm.contains(e.getPoint())) {
+                                for (Msm4Gui m : msm) {
+                                    if (m.midi != null) {
+                                        if (m.midi.getSequencer().isRunning()) {
+                                            m.midi.stop();
+                                        }
+                                        if ((m.midi.audio != null) && m.midi.audio.isPlaying()) {
+                                            m.midi.audio.stop();
+                                        }
+                                    }
+                                }
                                 msm.clear();
                                 for (Msm m : exportMsm(ppq, dontUseChannel10)) {
                                     msm.add(new Msm4Gui(m, app));
@@ -746,11 +764,11 @@ public class MeiCoApp extends JFrame {
 
                 // the midi components
                 if (m.midi == null) {
-                    skip = 9;       // skip the 4 midi cells and the 4 mei cells of the next line
+                    skip = 10;       // skip the 4 midi cells and the 4 mei cells of the next line
                 }
                 else {
                     if (m.midi.isEmpty()) {
-                        skip = 10;
+                        skip = 11;
                     }
                     else {
                         JLabel[] midiPanel = m.midi.getPanel();
@@ -762,12 +780,13 @@ public class MeiCoApp extends JFrame {
                     }
 
                     if ((m.midi.audio == null) || m.midi.audio.isEmpty()) {
-                        skip = 5;
+                        skip = 6;
                     }
                     else {
                         JLabel[] audioPanel = m.midi.audio.getPanel();
                         this.panel.add(audioPanel[0], "pushx, height 35px!, width " + fileNameFieldWidtch + "%!, skip " + skip);
                         this.panel.add(audioPanel[1], "pushx, height 35px!, width " + iconFieldWidth + "%!");
+                        this.panel.add(audioPanel[2], "pushx, height 35px!, width " + iconFieldWidth + "%!");
                         skip = 3;
                     }
                 }
@@ -980,6 +999,14 @@ public class MeiCoApp extends JFrame {
                         public void mouseReleased(MouseEvent e) {
                             if (SwingUtilities.isLeftMouseButton(e)) {
                                 if (msm2midi.contains(e.getPoint())) {
+                                    if (midi != null) {
+                                        if (midi.getSequencer().isRunning()) {
+                                            midi.stop();
+                                        }
+                                        if ((midi.audio != null) && midi.audio.isPlaying()) {
+                                            midi.audio.stop();
+                                        }
+                                    }
                                     midi = new Midi4Gui(exportMidi(bpm, generateProgramChanges), app);
                                     msm2midi.setBackground(new Color(232, 232, 232));
                                     app.doRepaint();
@@ -1016,9 +1043,7 @@ public class MeiCoApp extends JFrame {
                     if (file.getName().substring(file.getName().length()-4).equals(".mid")) {      // if it is not a midi file
                         try {
                             this.readMidiFile(file);
-                        } catch (InvalidMidiDataException e) {
-                            throw new InvalidFileTypeException(file.getName() + " invalid Midi file!");
-                        } catch (IOException e) {
+                        } catch (InvalidMidiDataException | IOException e) {
                             throw new InvalidFileTypeException(file.getName() + " invalid Midi file!");
                         }
                     }
@@ -1148,7 +1173,7 @@ public class MeiCoApp extends JFrame {
                                         stop();
                                         return;
                                     }
-                                    app.stopAllMidiPlayback();
+                                    app.stopAllPlayback();
                                     play();
                                 }
                                 else
@@ -1200,12 +1225,12 @@ public class MeiCoApp extends JFrame {
                             public void mouseReleased(MouseEvent e) {
                                 if (SwingUtilities.isLeftMouseButton(e)) {
                                     if (midi2audio.contains(e.getPoint())) {
+                                        if ((audio != null) && audio.isPlaying())
+                                            audio.stop();
                                         try {
-                                            Audio a = exportAudio(soundfont);    // TODO: allow the user to specify a soundbank to use
+                                            Audio a = exportAudio(soundfont);
                                             audio = new Audio4Gui(a, app);
-                                        } catch (IOException e1) {
-                                            e1.printStackTrace();
-                                        } catch (UnsupportedAudioFileException e1) {
+                                        } catch (IOException | UnsupportedAudioFileException e1) {
                                             e1.printStackTrace();
                                         }
                                         midi2audio.setBackground(new Color(232, 232, 232));
@@ -1272,7 +1297,7 @@ public class MeiCoApp extends JFrame {
                 }
 
                 private class Audio4Gui extends meico.audio.Audio {
-                    protected final JLabel[] panel;             // the actual gui extension
+                    protected final JLabel[] panel = new JLabel[3];             // the actual gui extension
                     private MeiCoApp app;
 
                     /**
@@ -1281,7 +1306,6 @@ public class MeiCoApp extends JFrame {
                      */
                     public Audio4Gui(Audio audio, MeiCoApp app) throws IOException, UnsupportedAudioFileException {
                         super(audio.getAudio(), audio.getFormat(), audio.getFile());
-                        this.panel = new JLabel[2];     // the name label, save label and play label
                         this.app = app;
                     }
 
@@ -1294,7 +1318,6 @@ public class MeiCoApp extends JFrame {
                      */
                     public Audio4Gui(File file, MeiCoApp app) throws IOException, UnsupportedAudioFileException {
                         super(file);
-                        this.panel = new JLabel[2];     // the name label, save label and play label
                         this.app = app;
                     }
 
@@ -1306,6 +1329,7 @@ public class MeiCoApp extends JFrame {
                         if (this.isEmpty()) {                   // if no msm data loaded
                             this.panel[0] = new JLabel();       // return
                             this.panel[1] = new JLabel();       // empty
+                            this.panel[2] = new JLabel();
                         }
                         else {
                             JLabel audioName = new JLabel(this.getFile().getName());
@@ -1374,12 +1398,87 @@ public class MeiCoApp extends JFrame {
                                 }
                             });
 
+                            final JLabel playAudio = new JLabel((this.isPlaying()) ? "\u25A0" : "\u25BA");
+                            playAudio.setFont(new Font(fontName, fontStyle, fontSize));
+                            playAudio.setHorizontalAlignment(JLabel.CENTER);
+                            playAudio.setOpaque(true);
+                            playAudio.setBackground(Color.LIGHT_GRAY);
+                            playAudio.setForeground(Color.DARK_GRAY);
+                            playAudio.setToolTipText("<html>play audio file</html>");
+                            playAudio.addMouseListener(new MouseAdapter() {
+                                @Override
+                                public void mouseEntered(MouseEvent e) {
+                                    playAudio.setBackground(new Color(232, 232, 232));
+                                    app.setStatusMessage("Play audio file");
+                                }
+                                @Override
+                                public void mouseExited(MouseEvent e) {
+                                    if (playAudio.getBackground() != Color.GRAY)
+                                        playAudio.setBackground(Color.LIGHT_GRAY);
+                                    app.setStatusMessage("");
+                                }
+                                @Override
+                                public void mousePressed(MouseEvent e) {
+                                    playAudio.setBackground(Color.GRAY);
+                                }
+                                @Override
+                                public void mouseReleased(MouseEvent e) {
+                                    if (playAudio.contains(e.getPoint())) {
+                                        if (isPlaying()) {
+                                            stop();
+                                            return;
+                                        }
+                                        app.stopAllPlayback();
+                                        play();
+                                    }
+                                    else
+                                        playAudio.setBackground(Color.LIGHT_GRAY);
+                                }
+                            });
+
+
                             this.panel[0] = audioName;
                             this.panel[1] = saveAudio;
+                            this.panel[2] = playAudio;
                         }
 
                         return this.panel;
                     }
+
+                    /**
+                     * playback start method extended by some gui stuff
+                     */
+                    @Override
+                    public void play() {
+                        try {
+                            super.play();
+                        } catch (LineUnavailableException | IOException e) {
+                            e.printStackTrace();
+                        }
+                        panel[2].setText("\u25A0");
+                        panel[2].setBackground(new Color(232, 232, 232));
+
+                        // listen to the audioClip and when it is finished playing, trigger the stop() method to clean up and reset the button
+                        LineListener listener = new LineListener() {
+                            public void update(LineEvent event) {
+                                if (event.getType() == LineEvent.Type.STOP) {
+                                    stop();
+                                }
+                            }
+                        };
+                        this.getAudioClip().addLineListener(listener);
+                    }
+
+                    /**
+                     * playback stop method extended by some gui stuff
+                     */
+                    @Override
+                    public void stop() {
+                        super.stop();
+                        panel[2].setText("\u25BA");
+                        panel[2].setBackground(Color.LIGHT_GRAY);
+                    }
+
                 }
             }
         }

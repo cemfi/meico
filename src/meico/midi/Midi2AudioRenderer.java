@@ -43,10 +43,7 @@ public class Midi2AudioRenderer {
         File soundbankFile;  // get the file behind the url
         try {
             soundbankFile = new File(URLDecoder.decode(soundbankUrl.getFile(), "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return synth.getDefaultSoundbank();
-        } catch (NullPointerException e) {
+        } catch (UnsupportedEncodingException | NullPointerException e) {
             e.printStackTrace();
             return synth.getDefaultSoundbank();
         }
@@ -68,13 +65,7 @@ public class Midi2AudioRenderer {
 
         try {
             soundbank = MidiSystem.getSoundbank(soundbankFile);
-        } catch (InvalidMidiDataException e) {
-            e.printStackTrace();
-            return synth.getDefaultSoundbank();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return synth.getDefaultSoundbank();
-        } catch (NullPointerException e) {
+        } catch (InvalidMidiDataException | IOException | NullPointerException e) {
             e.printStackTrace();
             return synth.getDefaultSoundbank();
         }

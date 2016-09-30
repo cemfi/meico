@@ -189,10 +189,7 @@ public class Msm {
         file.getParentFile().mkdirs();                              // ensure that the directory exists
         try {
             file.createNewFile();                                   // create the file if it does not already exist
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        } catch (SecurityException e) {
+        } catch (IOException | SecurityException e) {
             e.printStackTrace();
             return false;
         }
@@ -219,10 +216,7 @@ public class Msm {
             serializer = new Serializer(fileOutputStream, "UTF-8"); // connect serializer with FileOutputStream and specify encoding
             serializer.setIndent(4);                                // specify indents in xml code
             serializer.write(this.msm);                             // write data from msm to file
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-            returnValue = false;
-        } catch (IOException e) {
+        } catch (NullPointerException | IOException e) {
             e.printStackTrace();
             returnValue = false;
         }
@@ -341,9 +335,7 @@ public class Msm {
         // if there are global time signature information, take the denominator value as beatlength, otherwise default beatlength is 1/4
         try {
             beatlength = 1.0 / Integer.parseInt(this.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature").getAttributeValue("denominator"));
-        } catch (NumberFormatException e) {
-            beatlength = 0.25;
-        } catch (NullPointerException e) {
+        } catch (NumberFormatException | NullPointerException e) {
             beatlength = 0.25;
         }
         track.add(EventMaker.createTempo(0, bpm, beatlength));
@@ -453,9 +445,7 @@ public class Msm {
         for (Element e = part.getFirstChildElement("dated").getFirstChildElement("markerMap").getFirstChildElement("marker"); e != null; e = Helper.getNextSiblingElement("marker", e)) {
             try {
                 message = e.getAttributeValue("message");
-            } catch (NullPointerException error) {
-                message = "marker";
-            } catch (NumberFormatException error) {
+            } catch (NullPointerException | NumberFormatException error) {
                 message = "marker";
             }
             track.add(EventMaker.createMarker(Math.round(Double.parseDouble(e.getAttributeValue("midi.date"))), message));

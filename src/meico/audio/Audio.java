@@ -14,6 +14,10 @@ public class Audio {
     private byte[] audio;                           // the audio data
     private AudioFormat format = null;              // audio format data
 
+    // playback data used in methods play() and stop()
+    private Clip audioClip = null;
+    private AudioInputStream audioInputStream = null;
+
     /**
      * constructor, generates empty instance
      */
@@ -40,6 +44,7 @@ public class Audio {
         AudioInputStream stream = loadFileToAudioInputStream(file);
         this.audio = convertAudioInputStream2ByteArray(stream);
         this.format = stream.getFormat();
+        stream.close();
         this.file = file;
     }
 
@@ -199,6 +204,19 @@ public class Audio {
     }
 
     /**
+     * is the audioClip playing?
+     * @return
+     */
+    public boolean isPlaying() {
+        if (this.audioClip == null) return false;
+        return this.audioClip.isRunning();
+    }
+
+    public Clip getAudioClip() {
+        return this.audioClip;
+    }
+
+    /**
      * (over-)write the file with the data in audioStream
      * @throws IOException
      */
@@ -231,5 +249,42 @@ public class Audio {
 
         AudioInputStream ais = convertByteArray2AudioInputStream(this.audio, this.format);  // convert the audio byte array to an AudioInputStream
         AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);                            // write to file system
+    }
+
+    /**
+     * start playing back the audio data
+     *
+     * @throws LineUnavailableException
+     * @throws IOException
+     */
+    public void play() throws LineUnavailableException, IOException {
+        if (this.isEmpty()) return;
+        this.stop();
+
+        DataLine.Info info = new DataLine.Info(Clip.class, this.format);
+        this.audioClip = (Clip) AudioSystem.getLine(info);
+        this.audioInputStream = convertByteArray2AudioInputStream(this.audio, this.format);
+        this.audioClip.open(this.audioInputStream);
+        this.audioClip.start();
+    }
+
+    /**
+     * stop audio playback
+     */
+    public void stop() {
+        if (this.audioClip != null) {
+            if (this.audioClip.isRunning()) this.audioClip.stop();
+            if (this.audioClip.isOpen()) this.audioClip.close();
+            this.audioClip = null;
+        }
+
+        if (this.audioInputStream != null) {
+            try {
+                this.audioInputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            this.audioInputStream = null;
+        }
     }
 }
