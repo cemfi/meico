@@ -82,7 +82,7 @@
     <dirname property="module.meico.basedir" file="${ant.file}"/>
 
 
-    <property name="compiler.args.meico" value="-encoding UTF-8 -source 1.6 -target 1.6 ${compiler.args}"/>
+    <property name="compiler.args.meico" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
 
     <property name="meico.output.dir" value="${module.meico.basedir}/out/production/meico"/>
     <property name="meico.testoutput.dir" value="${module.meico.basedir}/out/test/meico"/>
