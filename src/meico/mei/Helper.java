@@ -620,24 +620,95 @@ public class Helper {
      * @return the midi pitch number in the first midi octave (one octave below the first MEI CMN octave)
      */
     public static double pname2midi(String pname) {
-        double pitch = -1.0;
-        switch (pname.charAt(0)) {      // get value of attribute (first character of the array, it hopefully has only one character!)
-            case 'c':
-            case 'C':   pitch = 0.0; break;
-            case 'd':
-            case 'D':   pitch = 2.0; break;
-            case 'e':
-            case 'E':   pitch = 4.0; break;
-            case 'f':
-            case 'F':   pitch = 5.0; break;
-            case 'g':
-            case 'G':   pitch = 7.0; break;
-            case 'a':
-            case 'A':   pitch = 9.0; break;
-            case 'b':
-            case 'B':   pitch = 11.0; break;
+        switch (pname) {      // get value of attribute (first character of the array, it hopefully has only one character!)
+            case "b#":
+            case "B#":
+            case "bs":
+            case "Bs":
+            case "c":
+            case "C":  return 0.0;
+            case "c#":
+            case "C#":
+            case "cs":
+            case "Cs":
+            case "db":
+            case "Db":
+            case "df":
+            case "Df": return 1.0;
+            case "d":
+            case "D":  return 2.0;
+            case "d#":
+            case "D#":
+            case "ds":
+            case "Ds":
+            case "eb":
+            case "Eb":
+            case "ef":
+            case "Ef": return 3.0;
+            case "fb":
+            case "Fb":
+            case "ff":
+            case "Ff":
+            case "e":
+            case "E":  return 4.0;
+            case "e#":
+            case "E#":
+            case "es":
+            case "Es":
+            case "f":
+            case "F":  return 5.0;
+            case "f#":
+            case "F#":
+            case "fs":
+            case "Fs":
+            case "gb":
+            case "Gb":
+            case "gf":
+            case "Gf": return 6.0;
+            case "g":
+            case "G":  return 7.0;
+            case "g#":
+            case "G#":
+            case "gs":
+            case "Gs":
+            case "ab":
+            case "Ab":
+            case "af":
+            case "Af": return 8.0;
+            case "a":
+            case "A":  return 9.0;
+            case "cb":
+            case "Cb":
+            case "cf":
+            case "Cf":
+            case "b":
+            case "B":  return 11.0;
+            default:   return -1.0;
         }
-        return pitch;
+    }
+
+    /**
+     * converts a midi pitch value to a pitch name string (which inclused enharmonic equivalents)
+     * @param midipitch the midi pitch value
+     * @return the pitch name string
+     */
+    public static String midi2pname(double midipitch) {
+        int pitchclass = (int)Math.round(midipitch % 12.0);
+        switch (pitchclass) {
+            case 0:  return "C";
+            case 1:  return "C# Db";
+            case 2:  return "D";
+            case 3:  return "D# Eb";
+            case 4:  return "E";
+            case 5:  return "F";
+            case 6:  return "F# Gb";
+            case 7:  return "G";
+            case 8:  return "G# Ab";
+            case 9:  return "A";
+            case 10: return "A# Bb";
+            case 11: return "B";
+            default: return "";
+        }
     }
 
     /** compute midi pitch of an mei note or return -1.0 if failed; the return is a double number that captures microtonality, too; 0.5 is a quarter tone
@@ -748,7 +819,13 @@ public class Helper {
                             Elements keySigAccids = keySig.getChildElements("accidental");                                              // get its accidentals
                             for (int i=0; i < keySigAccids.size(); ++i) {                                                               // check the accidentals for a matching pitch class
                                 Element a = keySigAccids.get(i);                                                                        // take an accidental
-                                double aPitch = Double.parseDouble(a.getAttributeValue("pitch"));                                       // get its pitch value
+                                double aPitch;
+                                if (a.getAttribute("midi.pitch") != null)                                                               // if it has a midi.pitch atrtibute
+                                    aPitch = Double.parseDouble(a.getAttributeValue("midi.pitch"));                                     // get its pitch value
+                                else if (a.getAttribute("pitchname") != null)                                                           // else if it has a pitchname attribute
+                                    aPitch = Helper.pname2midi(a.getAttributeValue("pitchname"));                                       // get its pitch value
+                                else                                                                                                    // without a midi.pitch and pitchname attribute the accidental is invalid
+                                    continue;                                                                                           // hence, continue with the next
                                 double pitchOfThis = Helper.pname2midi(pname) % 12;                                                     // get the current note's pitch as midi value modulo 12
                                 if (aPitch == pitchOfThis) {                                                                            // the accidental indeed affects the pitch ofThis
                                     accid = a.getAttributeValue("value");                                                               // get the accidental's value

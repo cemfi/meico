@@ -1193,7 +1193,8 @@ public class Mei {
                     continue;                                                                           // continue with the next keyAccid
                 }
                 Element accidental = new Element("accidental");                                                                                         // create an accidental element for the msm keySignature
-                accidental.addAttribute(new Attribute("pitch", Double.toString(pitch)));                                                                // add the pitch attribute that says which pitch class is affected by the accidental
+                accidental.addAttribute(new Attribute("midi.pitch", Double.toString(pitch)));                                                           // add the pitch attribute that says which pitch class is affected by the accidental
+                accidental.addAttribute(new Attribute("pitchname", accids.get(i).getAttributeValue("pname")));                                          // also store the pitch name, this is easier to read in the msm
                 accidental.addAttribute(new Attribute("value", Double.toString(Helper.accidString2decimal(accids.get(i).getAttributeValue("accid"))))); // add the decimal value of the accidental as attribute (+1=sharp, -1=flat, and so on)
                 accidentals.add(accidental);                                                                                                            // add it to the accidentals list
             }
@@ -1216,7 +1217,8 @@ public class Mei {
                         double accid = Helper.accidString2decimal(ac.substring(ac.length() - ((secondLastIsDigit) ? 1 : 2)));   // take the accid substring and convert it to decimal
 
                         Element accidental = new Element("accidental");                                 // create an accidental element for the msm keySignature
-                        accidental.addAttribute(new Attribute("pitch", Double.toString(pitch)));        // add the pitch attribute that says which pitch class is affected by the accidental
+                        accidental.addAttribute(new Attribute("midi.pitch", Double.toString(pitch)));   // add the pitch attribute that says which pitch class is affected by the accidental
+                        accidental.addAttribute(new Attribute("pitchname", ac.substring(0, 1)));        // also store the pitch name, this is easier to read in the msm
                         accidental.addAttribute(new Attribute("value", Double.toString(accid)));        // add the decimal value of the accidental as attribute (+1=sharp, -1=flat, and so on)
                         accidentals.add(accidental);                                                    // add it to the accidentals list
                     }
@@ -1241,9 +1243,11 @@ public class Mei {
                 }
                 // generate msm accidentals and add them to the accidentals list
                 String[] acs = (accidCount > 0) ? new String[]{"5.0", "0.0", "7.0", "2.0", "9.0", "4.0", "11.0"} : new String[]{"11.0", "4.0", "9.0", "2.0", "7.0", "0.0", "5.0"};  // the sequence of (midi) pitches to apply the accidentals
+                String[] acsn = (accidCount > 0) ? new String[]{"F", "C", "G", "D", "A", "E", "B"} : new String[]{"B", "E", "A", "D", "G", "C", "F"};                               // the sequence of pitches to apply the accidentals
                 for (int i=0; i < Math.abs(accidCount); ++i) {                                           // create the accidentals
                     Element accidental = new Element("accidental");                                      // create an accidental element for the msm keySignature
-                    accidental.addAttribute(new Attribute("pitch", acs[i]));                             // add the pitch attribute that says which pitch class is affected by the accidental
+                    accidental.addAttribute(new Attribute("midi.pitch", acs[i]));                        // add the pitch attribute that says which pitch class is affected by the accidental
+                    accidental.addAttribute(new Attribute("pitchname", acsn[i]));                        // also store the pitch name, this is easier to read in the msm
                     accidental.addAttribute(new Attribute("value", (accidCount > 0) ? "1.0" : "-1.0"));  // add the decimal value of the accidental as attribute (1=sharp, -1=flat)
                     accidentals.add(accidental);                                                         // add it to the accidentals list
                 }

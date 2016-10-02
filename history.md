@@ -1,6 +1,15 @@
 ###Version History
 
 
+####v0.2.5
+- Added method `Helper.midi2pname()`.
+- Extended method `Helper.pname2midi()`.
+- Changes to MSM accidental elements:
+    - Renamed attribute `pitch` into `midi.pitch`.
+    - Added attribute `pitchname` for better readability.
+    - Both attributes can be used equivalently. Method `Helper.computePitch()` checks for both, preferring `midi.pitch` over `pitchname`.
+
+
 ####v0.2.4
 - Added audio playback methods `play()` and `stop()` to class `meico.audio.Audio`.
 - Added audio playback button to the window mode graphical user interface.
