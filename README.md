@@ -1,5 +1,5 @@
 # meico: MEI Converter
-[![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg?maxAge=2592000)](https://github.com/cemfi/meico/releases/latest) [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg?maxAge=2592000)](https://github.com/cemfi/meico/blob/master/LICENSE) [![Java compatibility 1.7+](https://img.shields.io/badge/java-1.7%2B-blue.svg)](http://java.com)
+[![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg)](https://github.com/cemfi/meico/releases/latest) [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/master/LICENSE) [![Java compatibility 1.7+](https://img.shields.io/badge/java-1.7%2B-blue.svg)](http://java.com)
 
 Author: Axel Berndt<br>
 MEI support: Benjamin W. Bohl<br>
