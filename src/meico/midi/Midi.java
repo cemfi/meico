@@ -7,8 +7,6 @@ package meico.midi;
 import meico.audio.Audio;
 
 import javax.sound.midi.*;
-import javax.sound.midi.spi.MidiFileReader;
-import javax.sound.midi.spi.MidiFileWriter;
 import javax.sound.sampled.AudioInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -95,7 +93,8 @@ public class Midi {
      * @throws IOException
      */
     protected void readMidiFile(File file) throws InvalidMidiDataException, IOException {
-        this.sequence = (new MidiFileReader()).getSequence(file);
+    //    this.sequence = (new MidiFileReader()).getSequence(file);
+		this.sequence = MidiSystem.getSequence(file);
         this.file = file;
     }
 
@@ -221,7 +220,9 @@ public class Midi {
      * @return
      */
     public void writeMidi(File file) throws IOException {
-        (new MidiFileWriter()).write(this.getSequence(), 1, file);
+//        (new MidiFileWriter()).write(this.getSequence(), 1, file);
+        // TODO: store the midi sequence to the file system ... does the following line work? Test pending!
+        MidiSystem.write(this.sequence, 1, file);
     }
 
     /**

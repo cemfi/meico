@@ -5,8 +5,6 @@ package meico.midi.legacy;
  */
 
 import javax.sound.midi.*;
-import javax.sound.midi.spi.MidiFileReader;
-import javax.sound.midi.spi.MidiFileWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -35,7 +33,8 @@ public class MidiOld {
     public MidiOld(File midifile) {
         Sequence sequence;
         try {
-            sequence = (new MidiFileReader()).getSequence(midifile);
+//            sequence = (new MidiFileReader()).getSequence(midifile);
+              sequence = MidiSystem.getSequence(file);
         } catch (InvalidMidiDataException e) {
             e.printStackTrace();
             return;
@@ -160,13 +159,14 @@ public class MidiOld {
      * @return
      */
     public boolean writeMidi(File file) {
-        try {
-            (new MidiFileWriter()).write(this.getSequence(), 1, file);
-        } catch (IOException e) {
-            e.printStackTrace();
+		// the following code does not work without implementing the MidiFileWriter class
+//        try {
+//            (new MidiFileWriter()).write(this.getSequence(), 1, file);
+//        } catch (IOException e) {
+//            e.printStackTrace();
             return false;
-        }
-        return true;
+//        }
+//        return true;
     }
 
     /**
