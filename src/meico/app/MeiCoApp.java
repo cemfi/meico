@@ -93,14 +93,14 @@ public class MeiCoApp extends JFrame {
         options.addOption("?", "help",               false, "show this help text");
         options.addOption("v", "validate",           false, "validate loaded MEI file");
         options.addOption("a", "add-ids",            false, "add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
-        options.addOption("r", "resolve-copy-ofs",   false, "resolve elements with 'copyOf' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
+        options.addOption("r", "resolve-copyofs",   false, "resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
         options.addOption("m", "msm",                false, "convert to MSM");
         options.addOption("i", "midi",               false, "convert to MIDI (and internally to MSM)");
         options.addOption("p", "no-program-changes", false, "suppress program change events in MIDI");
         options.addOption("c", "no-channel-10",      false, "do not use channel 10 (drum channel) in MIDI");
         options.addOption("t", "tempo",               true, "set MIDI tempo (bpm)");
         options.addOption("w", "wav",                false, "convert to WAVE (and internally to MSM and MIDI)");
-        options.addOption("s", "soundfont",           true, "use a specific soundfont file (.sf2) for WAVE conversion");
+        options.addOption("s", "soundbank",           true, "use a specific sound bank file (.sf2, .dls) for Wave conversion");
         options.addOption("d", "debug",              false, "write additional debug file");
 
         CommandLine line = null;
@@ -122,9 +122,9 @@ public class MeiCoApp extends JFrame {
         if (line.hasOption("tempo"))
             tempo = Integer.parseInt(line.getOptionValue("tempo"));
 
-        File soundfont = null;
-        if (line.hasOption("soundfont")) {
-            soundfont = new File(line.getOptionValue("soundfont"));
+        File soundbank = null;
+        if (line.hasOption("soundbank")) {
+            soundbank = new File(line.getOptionValue("soundbank"));
             try {
                 soundfont = new File(soundfont.getCanonicalPath());
             } catch (IOException e) {
@@ -163,15 +163,15 @@ public class MeiCoApp extends JFrame {
         }
 
         // optional mei processing functions
-        if (line.hasOption("resolve-copy-ofs")) {
-            System.out.println("Processing MEI: resolving copyOfs.");
+        if (line.hasOption("resolve-copyofs")) {
+            System.out.println("Processing MEI: resolving copyofs.");
             mei.resolveCopyofs();                       // this call is part of the exportMsm() method but can also be called alone to expand the mei source and write it to the file system
         }
         if (line.hasOption("add-ids")) {
             System.out.println("Processing MEI: adding xml:ids.");
             mei.addIds();                               // generate ids for note, rest, mRest, multiRest, and chord elements that have no xml:id attribute
         }
-        if (line.hasOption("resolve-copy-ofs") || line.hasOption("add-ids")) {
+        if (line.hasOption("resolve-copyofs") || line.hasOption("add-ids")) {
             mei.writeMei();                             // this outputs an expanded mei file with more xml:id attributes and resolved copyof's
         }
 
@@ -217,7 +217,7 @@ public class MeiCoApp extends JFrame {
         if (line.hasOption("wav")) {
             System.out.println("Converting Midi to audio and writing wav file to file system: ");
             for (meico.midi.Midi m : midis) {
-                Audio a = m.exportAudio(soundfont);     // this generates an Audio object
+                Audio a = m.exportAudio(soundbank);     // this generates an Audio object
                 if (a == null)
                     continue;
                 audios.add(a);

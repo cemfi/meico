@@ -38,12 +38,12 @@ usage: java -jar meico.jar [OPTIONS]... FILE
  -i,--midi                 convert to MIDI (and internally to MSM)
  -m,--msm                  convert to MSM
  -p,--no-program-changes   suppress program change events in MIDI
- -r,--resolve-copy-ofs     resolve elements with 'copyOf' attributes into selfcontained elements with unique xml:id;
+ -r,--resolve-copyofs      resolve elements with 'copyof' attributes into selfcontained elements with unique xml:id;
                            meico will output a revised MEI file
- -s,--soundfont <arg>      use a specific soundfont file (.sf2) for WAVE conversion
+ -s,--soundbank <arg>      use a specific sound bank file (.sf2, .dls) for Wave conversion
  -t,--tempo <arg>          set MIDI tempo (bpm)
  -v,--validate             validate loaded MEI file
- -w,--wav                  convert to WAVE (and internally to MSM and MIDI)
+ -w,--wav                  convert to Wave (and internally to MSM and MIDI)
 ```
 
 The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
