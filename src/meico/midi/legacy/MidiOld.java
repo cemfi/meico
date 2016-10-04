@@ -5,6 +5,8 @@ package meico.midi.legacy;
  */
 
 import javax.sound.midi.*;
+import javax.sound.midi.spi.MidiFileReader;
+import javax.sound.midi.spi.MidiFileWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;

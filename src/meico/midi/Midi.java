@@ -7,6 +7,8 @@ package meico.midi;
 import meico.audio.Audio;
 
 import javax.sound.midi.*;
+import javax.sound.midi.spi.MidiFileReader;
+import javax.sound.midi.spi.MidiFileWriter;
 import javax.sound.sampled.AudioInputStream;
 import java.io.File;
 import java.io.IOException;
