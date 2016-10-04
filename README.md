@@ -4,7 +4,7 @@
 Author: Axel Berndt<br>
 MEI support: Benjamin W. Bohl<br>
 Contributor: Simon Waloschek<br>
-[Center of Music and Film Informatics](http://www.zemfi.de/), Detmold
+[Center of Music and Film Informatics](http://www.cemfi.de/), Detmold
 
 Meico is a converter framework for MEI files. Even though MEI is a quasi-standard for digital music editions, there is few software support for it. If you want to listen to the music in your MEI file, you need a MIDI or audio export. If you want to process the musical data (e.g., for Music Information Retrieval), there are many better suited formats and representations than MEI. With meico we address these issues. Meico implements methods to convert MEI data into the MSM (Musical Sequence Markup) format, an intermediate format that we defined for further use in other projects. From MSM, the MIDI export and audio rendering are quite straight forward. Currently, meico is a beta release. The following features are implemented:
 
