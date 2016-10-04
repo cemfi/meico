@@ -126,10 +126,10 @@ public class MeiCoApp extends JFrame {
         if (line.hasOption("soundbank")) {
             soundbank = new File(line.getOptionValue("soundbank"));
             try {
-                soundfont = new File(soundfont.getCanonicalPath());
+                soundbank = new File(soundbank.getCanonicalPath());
             } catch (IOException e) {
                 e.printStackTrace();
-                soundfont = null;
+                soundbank = null;
             }
         }
 
