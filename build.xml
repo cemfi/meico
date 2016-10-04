@@ -74,6 +74,10 @@
         <pathelement location="${basedir}/externals/xom-1.2.10.jar"/>
     </path>
 
+    <path id="library.commons-cli-1.3.1.classpath">
+        <pathelement location="${basedir}/externals/commons-cli-1.3.1.jar"/>
+    </path>
+
     <!-- Modules -->
 
 
@@ -96,6 +100,7 @@
         <path refid="library.java-string-similarity-0.13.classpath"/>
         <path refid="library.miglayout-4.0.classpath"/>
         <path refid="library.jing-20091111.classpath"/>
+        <path refid="library.commons-cli-1.3.1.classpath"/>
     </path>
 
     <path id="meico.runtime.production.module.classpath">
@@ -104,6 +109,7 @@
         <path refid="library.java-string-similarity-0.13.classpath"/>
         <path refid="library.miglayout-4.0.classpath"/>
         <path refid="library.jing-20091111.classpath"/>
+        <path refid="library.commons-cli-1.3.1.classpath"/>
     </path>
 
     <path id="meico.module.classpath">
@@ -112,6 +118,7 @@
         <path refid="library.java-string-similarity-0.13.classpath"/>
         <path refid="library.miglayout-4.0.classpath"/>
         <path refid="library.jing-20091111.classpath"/>
+        <path refid="library.commons-cli-1.3.1.classpath"/>
     </path>
 
     <path id="meico.runtime.module.classpath">
@@ -121,6 +128,7 @@
         <path refid="library.java-string-similarity-0.13.classpath"/>
         <path refid="library.miglayout-4.0.classpath"/>
         <path refid="library.jing-20091111.classpath"/>
+        <path refid="library.commons-cli-1.3.1.classpath"/>
     </path>
 
 
@@ -194,6 +202,7 @@
             <zipfileset src="${basedir}/externals/java-string-similarity-0.13.jar"/>
             <zipfileset src="${basedir}/externals/miglayout-4.0.jar"/>
             <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
+            <zipfileset src="${basedir}/externals/commons-cli-1.3.1.jar"/>
             <manifest>
                 <attribute name="Main-Class" value="meico.app.MeiCoApp"/>
             </manifest>
