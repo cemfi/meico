@@ -12,6 +12,7 @@ import meico.msm.Msm;
 
 import net.miginfocom.swing.MigLayout;
 import nu.xom.ParsingException;
+import org.apache.commons.cli.*;
 
 import javax.sound.midi.*;
 import javax.sound.sampled.LineEvent;
@@ -79,111 +80,117 @@ public class MeiCoApp extends JFrame {
      * @param args see help output below
      */
     public static void commandLineMode(String[] args) {
-        for (String arg : args) {
-            if (arg.equals("-?") || arg.equals("--help")) {
-                System.out.println("Meico requires the following arguments:\n");
-                System.out.println("[-?] or [--help]                    for this command line help text. If you use this, any other arguments are skipped");
-                System.out.println("[-v] or [--validation]              to activate validation of MEI files loaded");
-                System.out.println("[-a] or [--add-ids]                 to add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
-                System.out.println("[-r] or [--resolve-copy-ofs]        mei elements with a copyOf attribute are resolved into selfcontained elements with an own xml:id; meico will output a revised MEI file");
-                System.out.println("[-m] or [--msm]                     converts MEI to MSM; meico will write an MSM file to the path of the MEI");
-                System.out.println("[-i] or [--midi]                    converts MEI (to MSM, internally) to midi; meico will output a Midi file to the path of the MEI");
-                System.out.println("[-p] or [--no-program-changes]      call this to suppress the generation of program change events in Midi");
-                System.out.println("[-c] or [--dont-use-channel-10]     the flag says whether channel 10 (Midi drum channel) shall be used or not; it is already done at MEI-to-MSM convertion, because the MSM should align with the Midi file later on");
-                System.out.println("[-t argument] or [--tempo argument] this sets the tempo of the Midi file; the argument must be a floating point number; if not used the tempo is always 120 bpm");
-                System.out.println("[-w] or [--wav]                     converts MEI (to Midi, internally) to wav; meico will output a Wave file to the path of the MEI");
-                System.out.println("[-s \"C:\\mySoundfonts\\mySoundfont.sf2\"] or [--soundbank \"C:\\mySoundfonts\\mySoundfont.sf2\"] choose a specific .sf2 or .dls file for higher quality sounds for audio export");
-                System.out.println("[-d] or [--debug]                   to write debug versions of the MEI and MSM files to the path");
-                System.out.println("\nThe final argument should always be a path to a valid MEI file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
-                return;
+        String jarName = new java.io.File(MeiCoApp.class
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .getPath())
+                .getName();
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+
+        Options options = new Options();
+        options.addOption("?", "help",               false, "show this help text");
+        options.addOption("v", "validate",           false, "validate loaded MEI file");
+        options.addOption("a", "add-ids",            false, "add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
+        options.addOption("r", "resolve-copy-ofs",   false, "resolve elements with 'copyOf' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
+        options.addOption("m", "msm",                false, "convert to MSM");
+        options.addOption("i", "midi",               false, "convert to MIDI (and internally to MSM)");
+        options.addOption("p", "no-program-changes", false, "suppress program change events in MIDI");
+        options.addOption("c", "no-channel-10",      false, "do not use channel 10 (drum channel) in MIDI");
+        options.addOption("t", "tempo",               true, "set MIDI tempo (bpm)");
+        options.addOption("w", "wav",                false, "convert to WAVE (and internally to MSM and MIDI)");
+        options.addOption("s", "soundfont",           true, "use a specific soundfont file (.sf2) for WAVE conversion");
+        options.addOption("d", "debug",              false, "write additional debug file");
+
+        CommandLine line = null;
+        try {
+            line = parser.parse(options, args);
+        } catch (ParseException exp) {
+            // Wrong arguments
+            System.err.println("Error: Invalid arguments.");
+            formatter.printHelp("java -jar " + jarName + " [OPTIONS]... FILE", options);
+            System.exit(64);
+        }
+
+        if (line.hasOption("help")) {
+            formatter.printHelp("java -jar " + jarName + " [OPTIONS]... FILE", options);
+            System.exit(0);
+        }
+
+        double tempo = 120;
+        if (line.hasOption("tempo"))
+            tempo = Integer.parseInt(line.getOptionValue("tempo"));
+
+        File soundfont = null;
+        if (line.hasOption("soundfont")) {
+            soundfont = new File(line.getOptionValue("soundfont"));
+            try {
+                soundfont = new File(soundfont.getCanonicalPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+                soundfont = null;
             }
         }
 
-        // what does the user want meico to do with the file just loaded?
-        boolean validate = false;
-        boolean addIds = false;
-        boolean resolveCopyOfs = false;
-        boolean msm = false;
-        boolean midi = false;
-        boolean wav = false;
-        boolean generateProgramChanges = true;
-        boolean dontUseChannel10 = false;
-        boolean debug = false;
-        double tempo = 120;
-        File soundbank = null;
-        for (int i = 0; i < args.length-1; ++i) {
-            if ((args[i].equals("-v")) || (args[i].equals("--validation"))) { validate = true; continue; }
-            if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
-            if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
-            if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
-            if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
-            if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
-            if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
-            if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
-            if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; }
-            if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[i+1]); }
-            if ((args[i].equals("-s")) || (args[i].equals("--soundbank"))) {
-                soundbank = new File(args[i+1]);
-                try {
-                    soundbank = new File(soundbank.getCanonicalPath());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    soundbank = null;
-                }
-            }
-        }
+        boolean debug = line.hasOption("debug");
 
         // load the file
-        File meiFile;
+        File meiFile = null;
         try {
             System.out.println("Loading file: " + args[args.length-1]);
             meiFile = new File(args[args.length-1]);                    // load mei file
             meiFile = new File(meiFile.getCanonicalPath());             // ensure that the absolute path in the file object
-
         } catch (NullPointerException | IOException error) {
-            error.printStackTrace();                                    // print error to console
-            return;
+            if (debug)
+                error.printStackTrace();                                // print error to console
+            System.err.println("MEI file could not be loaded.");
+            System.exit(66);
         }
+
         Mei mei = null;
         try {
-            mei = new Mei(meiFile, validate);                           // read an mei file
+            mei = new Mei(meiFile, line.hasOption("validate"));         // read an mei file
         } catch (IOException | ParsingException e) {
-            e.printStackTrace();
-            return;
+            if (debug)
+                e.printStackTrace();
+            System.err.println("MEI file is not valid.");
+            System.exit(65);
         }
         if (mei.isEmpty()) {
-            System.out.println("Failed.");
-            return;
+            System.err.println("MEI file could not be loaded.");
+            System.exit(66);
         }
 
         // optional mei processing functions
-        if (resolveCopyOfs) {
+        if (line.hasOption("resolve-copy-ofs")) {
             System.out.println("Processing MEI: resolving copyOfs.");
             mei.resolveCopyofs();                       // this call is part of the exportMsm() method but can also be called alone to expand the mei source and write it to the file system
         }
-        if (addIds) {
+        if (line.hasOption("add-ids")) {
             System.out.println("Processing MEI: adding xml:ids.");
             mei.addIds();                               // generate ids for note, rest, mRest, multiRest, and chord elements that have no xml:id attribute
         }
-        if (resolveCopyOfs || addIds) {
+        if (line.hasOption("resolve-copy-ofs") || line.hasOption("add-ids")) {
             mei.writeMei();                             // this outputs an expanded mei file with more xml:id attributes and resolved copyof's
         }
 
-        if (!(msm || midi || wav)) return;             // if no conversion is required, we are done here
+        if (!(line.hasOption("msm") || line.hasOption("midi") || line.hasOption("wav")))
+            System.exit(0);             // if no conversion is required, we are done here
 
         // convert mei -> msm -> midi
         System.out.println("Converting MEI to MSM.");
-        List<Msm> msms = mei.exportMsm(720, dontUseChannel10, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
+        List<Msm> msms = mei.exportMsm(720, line.hasOption("no-channel-10"), !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
         if (msms.isEmpty()) {
-            System.out.println("No msm data created.");
-            return;
+            System.err.println("MSM data could not be created.");
+            System.exit(1);
         }
 
         if (debug) {
             mei.writeMei(mei.getFile().getPath().substring(0, mei.getFile().getPath().length() - 4) + "-debug.mei"); // After the msm export, there is some new stuff in the mei ... mainly the date and dur attribute at measure elements (handy to check for numeric problems that occured during conversion), some ids and expanded copyofs. This was required for the conversion and can be output with this function call. It is, however, mainly interesting for debugging.
         }
 
-        if (msm) {
+        if (line.hasOption("msm")) {
             System.out.println("Writing MSM to file system: ");
             for (Msm msm1 : msms) {
                 if (!debug) msm1.removeRests();  // purge the data (some applications may keep the rests from the mei; these should not call this function)
@@ -193,10 +200,10 @@ public class MeiCoApp extends JFrame {
         }
 
         List<meico.midi.Midi> midis = new ArrayList<Midi>();
-        if (midi || wav) {                      // midi conversion is also required for wav export
-            System.out.println("Converting MSM to Midi and writing Midi to file system: ");
+        if (line.hasOption("midi") || line.hasOption("wav")) {                       // midi conversion is also required for wav export
+            System.out.println("Converting MSM to MIDI and writing MIDI to file system: ");
             for (int i = 0; i < msms.size(); ++i) {
-                midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
+                midis.add(msms.get(i).exportMidi(tempo, line.hasOption("no-program-changes")));    // convert msm to midi
                 try {
                     midis.get(i).writeMidi();           // write midi file to the file system
                 } catch (IOException e) {
@@ -207,10 +214,10 @@ public class MeiCoApp extends JFrame {
         }
 
         List<meico.audio.Audio> audios = new ArrayList<Audio>();
-        if (wav) {
+        if (line.hasOption("wav")) {
             System.out.println("Converting Midi to audio and writing wav file to file system: ");
             for (meico.midi.Midi m : midis) {
-                Audio a = m.exportAudio(soundbank);     // this generates an Audio object
+                Audio a = m.exportAudio(soundfont);     // this generates an Audio object
                 if (a == null)
                     continue;
                 audios.add(a);

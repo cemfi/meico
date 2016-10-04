@@ -8,6 +8,9 @@
     - Renamed attribute `pitch` into `midi.pitch`.
     - Added attribute `pitchname` for better readability.
     - Both attributes can be used equivalently. Method `Helper.computePitch()` checks for both, preferring `midi.pitch` over `pitchname`.
+- Changed command line arguments and parsing to Apache Commans CLI.
+- Added exit codes for errors in command line mode.
+- Updated `README.md`.
 
 
 ####v0.2.4
