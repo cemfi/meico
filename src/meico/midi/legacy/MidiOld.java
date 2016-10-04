@@ -4,10 +4,9 @@ package meico.midi.legacy;
  * Created by Axel Berndt.
  */
 
-import meico.midi.MidiFileReader;
-import meico.midi.MidiFileWriter;
-
 import javax.sound.midi.*;
+import javax.sound.midi.spi.MidiFileReader;
+import javax.sound.midi.spi.MidiFileWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;

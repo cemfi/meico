@@ -54,7 +54,6 @@ Meico makes use of the following third party libraries:
 - XOM v1.2.10 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1.
 - Java-String-Similarity v0.13 by Thibault Debatty, MIT license.
 - MigLayout v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license.
-- parts of GNU Classpath by Free Software Foundation, Inc., GNU GPL license.
 - the FileDrop class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
 - Jing v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
 - MEI Common Music Notation Schema (`mei-CMN.rng`), Educational Community License (ECL) 2.0.

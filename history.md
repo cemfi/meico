@@ -8,6 +8,7 @@
     - Renamed attribute `pitch` into `midi.pitch`.
     - Added attribute `pitchname` for better readability.
     - Both attributes can be used equivalently. Method `Helper.computePitch()` checks for both, preferring `midi.pitch` over `pitchname`.
+- Removed files `MidiDataInputStream.java`, `MidiDataOutputStream.java`, `MidiFileReader.java`, `MidiFileWriter.java`, and `ExtendedMidiFileFormat.java` from package `meico.midi`. These were elements of the GNU Classpath project by Free Software Foundation. File `README.md` has been updated accordingly in section License information.
 - Changed command line arguments and parsing to Apache Commans CLI.
 - Added exit codes for errors in command line mode.
 - Updated `README.md`.
