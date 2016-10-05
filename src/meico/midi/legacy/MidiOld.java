@@ -160,13 +160,13 @@ public class MidiOld {
      */
     public boolean writeMidi(File file) {
 		// the following code does not work without implementing the MidiFileWriter class
-//        try {
-//            (new MidiFileWriter()).write(this.getSequence(), 1, file);
-//        } catch (IOException e) {
-//            e.printStackTrace();
+        try {
+        MidiSystem.write(this.getSequence(), 1, file);
+        } catch (IOException e) {
+            e.printStackTrace();
             return false;
-//        }
-//        return true;
+        }
+        return true;
     }
 
     /**
