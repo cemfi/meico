@@ -28,23 +28,21 @@ Starting the standalone jar without any command line options will start the wind
 ![A screenshot of the meico graphical user interface.](https://raw.githubusercontent.com/cemfi/meico/master/figures/meico-screenshot.png)
 
 The command line mode expects the following command line options:
-```
-usage: java -jar meico.jar [OPTIONS]... FILE
- -?,--help                 show this help text
- -a,--add-ids              add missing xml:ids to note, rest and chord elements in MEI;
-                           meico will output a revised MEI file
- -c,--no-channel-10        do not use channel 10 (drum channel) in MIDI
- -d,--debug                write additional debug file
- -i,--midi                 convert to MIDI (and internally to MSM)
- -m,--msm                  convert to MSM
- -p,--no-program-changes   suppress program change events in MIDI
- -r,--resolve-copyofs      resolve elements with 'copyof' attributes into selfcontained elements with unique xml:id;
-                           meico will output a revised MEI file
- -s,--soundbank <arg>      use a specific sound bank file (.sf2, .dls) for Wave conversion
- -t,--tempo <arg>          set MIDI tempo (bpm)
- -v,--validate             validate loaded MEI file
- -w,--wav                  convert to Wave (and internally to MSM and MIDI)
-```
+usage: `java -jar meico.jar [OPTIONS] FILE`
+
+- `-?`, `--help`: show this help text
+- `-v`, `--validate`: validate loaded MEI file
+- `-a`, `--add-ids`: add missing `xml:id`s to note, rest and chord elements in MEI; meico will output a revised MEI file
+- `-r`, `--resolve-copy-ofs`: resolve elements with `copyof` attributes into selfcontained elements with unique `xml:id`; meico will output a revised MEI file
+- `-m`, `--msm`: convert to MSM
+- `-i`, `--midi`: convert to MIDI (and internally to MSM)
+- `-p`, `--no-program-changes`: suppress program change events in MIDI
+- `-c`, `--dont-use-channel-10`: do not use channel 10 (drum channel) in MIDI
+- `-t argument`, `--tempo argument`: set MIDI tempo (bpm), default is 120 bpm
+- `-w`, `--wav`: convert to Wave (and internally to MSM and MIDI)
+- `-s argument`, `--soundbank argument` use a specific sound bank file (.sf2, .dls) for Wave conversion
+- `-d`, `--debug`: write additional debug versions of MEI and MSM
+- The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
 The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
 
@@ -58,7 +56,6 @@ Meico makes use of the following third party libraries:
 - Jing v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
 - MEI Common Music Notation Schema (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
 - parts of `MidiToWavRenderer.java`, an add-on to the JFugue library, LGPL license.
-- Apache Commons CLI by Apache Foundation, Apache 2.0 license.
 
 We publish meico under GNU LGPL version 3. Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
 If you use meico in your project make sure that you do not conflict with any of the above licenses.
