@@ -29,7 +29,7 @@ import java.util.List;
 
 public class MeiCoApp extends JFrame {
 
-    private List<Mei4Gui> music = new ArrayList<Mei4Gui>();
+    private List<Mei4Gui> music = new ArrayList<>();
 
     // some global interface elements
     private final JLabel statusMessage = new JLabel();             // the message component of the statusbar
@@ -146,7 +146,7 @@ public class MeiCoApp extends JFrame {
             System.err.println("MEI file could not be loaded.");
             return 66;
         }
-        Mei mei = null;
+        Mei mei;
         try {
             mei = new Mei(meiFile, validate);                           // read an mei file
         } catch (IOException | ParsingException e) {
@@ -161,11 +161,11 @@ public class MeiCoApp extends JFrame {
 
         // optional mei processing functions
         if (resolveCopyOfs) {
-            System.out.println("Processing mei: resolving copyOfs.");
+            System.out.println("Processing MEI: resolving copyofs.");
             mei.resolveCopyofs();                       // this call is part of the exportMsm() method but can also be called alone to expand the mei source and write it to the file system
         }
         if (addIds) {
-            System.out.println("Processing mei: adding xml:ids.");
+            System.out.println("Processing MEI: adding xml:ids.");
             mei.addIds();                               // generate ids for note, rest, mRest, multiRest, and chord elements that have no xml:id attribute
         }
         if (resolveCopyOfs || addIds) {
@@ -175,7 +175,7 @@ public class MeiCoApp extends JFrame {
         if (!(msm || midi || wav)) return 0;            // if no conversion is required, we are done here
 
         // convert mei -> msm -> midi
-        System.out.println("Converting mei to msm.");
+        System.out.println("Converting MEI to MSM.");
         List<Msm> msms = mei.exportMsm(720, dontUseChannel10, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
         if (msms.isEmpty()) {
             System.err.println("MSM data could not be created.");
@@ -187,7 +187,7 @@ public class MeiCoApp extends JFrame {
         }
 
         if (msm) {
-            System.out.println("Writing msm to file system: ");
+            System.out.println("Writing MSM to file system: ");
             for (Msm msm1 : msms) {
                 if (!debug) msm1.removeRests();  // purge the data (some applications may keep the rests from the mei; these should not call this function)
                 msm1.writeMsm();                 // write the msm file to the file system
@@ -195,9 +195,9 @@ public class MeiCoApp extends JFrame {
             }
         }
 
-        List<meico.midi.Midi> midis = new ArrayList<Midi>();
+        List<meico.midi.Midi> midis = new ArrayList<>();
         if (midi || wav) {                      // midi conversion is also required for wav export
-            System.out.println("Converting msm to midi and writing midi to file system: ");
+            System.out.println("Converting MSM to MIDI and writing MIDI to file system: ");
             for (int i = 0; i < msms.size(); ++i) {
                 midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
                 try {
@@ -209,9 +209,9 @@ public class MeiCoApp extends JFrame {
             }
         }
 
-        List<meico.audio.Audio> audios = new ArrayList<Audio>();
+        List<meico.audio.Audio> audios = new ArrayList<>();
         if (wav) {
-            System.out.println("Converting midi to wave and writing wav file to file system: ");
+            System.out.println("Converting MIDI to Wave and writing Wave file to file system: ");
             for (meico.midi.Midi m : midis) {
                 Audio a = m.exportAudio(soundbank);     // this generates an Audio object
                 if (a == null)
@@ -508,9 +508,10 @@ public class MeiCoApp extends JFrame {
         /**
          * constructor
          * @param file
+         * @param app
          */
         public Mei4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, ParsingException, UnsupportedAudioFileException {
-            this.msm = new ArrayList<Msm4Gui>();
+            this.msm = new ArrayList<>();
 
             if (file.getName().substring(file.getName().length()-4).equals(".mei")) {           // if it is an mei file
                 this.readMeiFile(file, false);                                                  // load it
@@ -528,7 +529,6 @@ public class MeiCoApp extends JFrame {
 
         /**
          * This method draws and returns the panel that the MeiCoApp displays.
-         * @return
          */
         public JPanel getPanel() {
             // create the panel component and its content
@@ -576,7 +576,7 @@ public class MeiCoApp extends JFrame {
                 JMenuItem reload = new JMenuItem(new AbstractAction("Reload original MEI") {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        msm = new ArrayList<Msm4Gui>();
+                        msm = new ArrayList<>();
                         try {
                             readMeiFile(getFile(), false);
                         } catch (IOException | ParsingException err) {
@@ -824,6 +824,7 @@ public class MeiCoApp extends JFrame {
             /**
              * constructor
              * @param file
+             * @param app
              */
             public Msm4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, ParsingException, UnsupportedAudioFileException {
                 this.midi = null;
