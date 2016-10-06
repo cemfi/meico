@@ -29,7 +29,7 @@ Starting the standalone jar without any command line options will start the wind
 
 The command line mode expects the following command line options:
 
-usage: `java -jar meico.jar [OPTIONS] FILE`
+Usage: `java -jar meico.jar [OPTIONS] FILE`
 
 - `-?`, `--help`: show this help text
 - `-v`, `--validate`: validate loaded MEI file
@@ -41,7 +41,7 @@ usage: `java -jar meico.jar [OPTIONS] FILE`
 - `-c`, `--dont-use-channel-10`: do not use channel 10 (drum channel) in MIDI
 - `-t argument`, `--tempo argument`: set MIDI tempo (bpm), default is 120 bpm
 - `-w`, `--wav`: convert to Wave (and internally to MSM and MIDI)
-- `-s argument`, `--soundbank argument` use a specific sound bank file (.sf2, .dls) for Wave conversion
+- `-s FILE`, `--soundbank FILE` use a specific sound bank file (.sf2, .dls) for Wave conversion
 - `-d`, `--debug`: write additional debug versions of MEI and MSM
 - The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
