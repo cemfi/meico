@@ -28,6 +28,7 @@ Starting the standalone jar without any command line options will start the wind
 ![A screenshot of the meico graphical user interface.](https://raw.githubusercontent.com/cemfi/meico/master/figures/meico-screenshot.png)
 
 The command line mode expects the following command line options:
+
 usage: `java -jar meico.jar [OPTIONS] FILE`
 
 - `-?`, `--help`: show this help text
