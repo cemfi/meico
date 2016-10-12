@@ -21,7 +21,7 @@ There are several features open, though. Currently, meico ignores any MEI data t
 
 ###How to use meico?
 
-Meico can be used in several different ways. The jar file (see the GitHub release page) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.7 (or higher) Runtime Environment installed on your computer. 
+Meico can be used in several different ways. The jar file (see the [GitHub release page](https://github.com/cemfi/meico/releases/latest)) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.7 (or higher) Runtime Environment installed on your computer. 
 
 Starting the standalone jar without any command line options will start the windowed gui mode of meico. Simply drag your MEI, MSM, MIDI, and Wave files into the window. You can find context information on each interface element in the tooltips and statusbar. There are several additional functions accessible via right click. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement. Conversion from MIDI to audio may take some time when it is a long piece. We have not built in a progress display yet. Just be patient until the conversion button changes its color back and the audio data appears. To get better quality sounds than Java's built-in default instruments (those used for the Midi playback function), we recommend downloading one of [these soundfonts](https://sourceforge.net/projects/androidframe/files/soundfonts/) and use it via right clicking the Midi-to-audio conversion button, option "Choose soundbank". 
 
