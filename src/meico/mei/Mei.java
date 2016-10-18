@@ -322,7 +322,7 @@ public class Mei {
 
             // process the element
             switch (e.getLocalName()) {
-                case "accid":                          // process accid elements that are not children of notes
+                case "accid":                                                   // process accid elements that are not children of notes
                     this.processAccid(e);
                     continue;
 
@@ -471,23 +471,7 @@ public class Mei {
                     continue;                                                   // can be ignored
 
                 case "layer":
-                    String oldDate = this.helper.currentPart.getAttribute("currentDate").getValue();    // store currentDate in oldDate for later use
-                    this.convert(e);                                            // process everything within this environment
-                    e.addAttribute(new Attribute("currentDate", this.helper.currentPart.getAttribute("currentDate").getValue()));   // store the currentDate in the layer element to later determine the latest of these dates as the staff'spart's currentDate
-                    this.helper.accid.clear();                                  // accidentals are valid only within one layer, so forget them
-                    if (Helper.getNextSiblingElement("layer", e) != null)       // if there are more layers in this staff environment
-                        this.helper.currentPart.getAttribute("currentDate").setValue(oldDate); // set back to the old currentDate, because each layer is a parallel to the other layers
-                    else {                                                      // no further layers in this staff environment, this was the last layer in this staff
-                        // take the latest layer-specific currentDate as THE currentDate of this part
-                        Elements layers = ((Element) e.getParent()).getChildElements("layer");   // get all layers in this staff
-                        double latestDate = Double.parseDouble(this.helper.currentPart.getAttribute("currentDate").getValue());
-                        for (int j = layers.size() - 1; j >= 0; --j) {
-                            double date = Double.parseDouble(layers.get(j).getAttributeValue("currentDate"));   // get the part's date
-                            if (latestDate < date)                                                              // if this part's date is later than latestDate so far
-                                latestDate = date;                                                              // set latestDate to date
-                        }
-                        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(latestDate));
-                    }
+                    this.processLayer(e);
                     continue;
 
                 case "layerDef":
@@ -509,15 +493,6 @@ public class Mei {
 
                 case "measure":
                     this.processMeasure(e);                                     // this creates the date and dur attribute and adds them to the measure
-                    this.helper.currentMeasure = e;
-                    this.convert(e);                                            // process everything within this environment
-                    this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
-                    // update the duration of the measure; if the measure is overful, take the respective duration; if underful, keep the defined duration in accordance to its time signature
-                    Element cm = this.helper.currentMeasure;
-                    this.helper.currentMeasure = null;                          // this has to be set null so that getMidiTime() does not return the measure's date
-                    double dur1 = Double.parseDouble(cm.getAttributeValue("midi.dur"));                                  // duration of the measure
-                    double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("midi.date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
-                    cm.getAttribute("midi.dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
                     continue;
 
                 case "mensur":
@@ -652,19 +627,16 @@ public class Mei {
                     continue;                                                   // can be ignored
 
                 case "staff":
-                    this.helper.currentPart = this.processStaff(e);             // everything within this tag is local to this part
-                    this.convert(e);                                            // go on recursively with the processing
-                    this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
-                    this.helper.currentPart = null;                             // after this staff entry and its children are processed, set part to nullptr, because there can be global information between the staff entries in mei
+                    this.processStaff(e);
                     continue;
 
                 case "staffDef":
                     this.processStaffDef(e);
-                    break;
+                    continue;
 
                 case "staffGrp": // may contain staffDefs but needs no particular processing, attributes are ignored
-
                     break;
+
                 case "subst":
                     continue;                                                   // TODO: ignore
 
@@ -696,13 +668,8 @@ public class Mei {
                     continue;                                                   // TODO: relevant for expressive performance
 
                 case "tuplet":
-                    if (e.getAttribute("dur") != null) {
-                        double cd = Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate"));   // store the current date for use afterwards
-                        this.convert(e);                                        // process the child elements
-                        double dur = this.helper.computeDuration(e);
-                        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(cd + dur));    // this compensates for numeric problems with the single note durations within the tuplet
+                    if (this.processTuplet(e))
                         continue;
-                    }
                     break;
 
                 case "tupletSpan":
@@ -841,20 +808,20 @@ public class Mei {
      * @param staffDef an mei staffDef element
      */
     private void processStaffDef(Element staffDef) {
-        Element part = this.makePart(staffDef);                                                             // create a part element in movement, or get Element pointer if this part exists already
+        this.helper.currentPart = this.makePart(staffDef);                                                  // create a part element in movement, or get Element pointer if this part exists already
 
         staffDef.addAttribute(new Attribute("midi.date", Double.toString(helper.getMidiTime())));
 
         // handle local time signature entry
         Element t = this.makeTimeSignature(staffDef);                                                       // create a time signature element, or null if there is no such data
         if (t != null) {                                                                                    // if succeeded
-            part.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").appendChild(t);     // insert it into the global time signature map
+            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").appendChild(t);  // insert it into the global time signature map
         }
 
         // handle local key signature entry
         t = this.makeKeySignature(staffDef);																// create a key signature element, or nullptr if there is no such data
         if (t != null) {                                                                                    // if succeeded
-            part.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").appendChild(t);      // insert it into the global key signature map
+            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").appendChild(t);   // insert it into the global key signature map
         }
 
         // store default values in miscMap
@@ -862,14 +829,14 @@ public class Mei {
             Element d = new Element("dur.default");                                                         // make an entry in the miscMap
             d.addAttribute(new Attribute("dur", staffDef.getAttributeValue("dur.default")));                // copy the value
             Helper.copyId(staffDef, d);                                                                     // copy the id
-            part.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);              // make an entry in the miscMap
+            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
         }
 
         if ((staffDef.getAttribute("octave.default", staffDef.getNamespaceURI()) != null)) {                // if there is a default duration defined
             Element d = new Element("oct.default");                                                         // make an entry in the miscMap
             d.addAttribute(new Attribute("oct", staffDef.getAttributeValue("octave.default")));             // copy the value
             Helper.copyId(staffDef, d);                                                                     // copy the id
-            part.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);              // make an entry in the miscMap
+            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
         }
 
 
@@ -878,16 +845,21 @@ public class Mei {
             trans = (staffDef.getAttribute("trans.semi") == null) ? 0 : Integer.parseInt(staffDef.getAttributeValue("trans.semi"));
             trans += Helper.processClefDis(staffDef);
             Element d = new Element("transposition");                                                       // create a transposition entry
-            d.addAttribute(new Attribute("semi", Integer.toString(trans)));  // copy the value or write "0" for no transposition (this is to cancel previous entries)
+            d.addAttribute(new Attribute("semi", Integer.toString(trans)));                                 // copy the value or write "0" for no transposition (this is to cancel previous entries)
             d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
             Helper.copyId(staffDef, d);                                                                     // copy the id
-            part.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);              // make an entry in the miscMap
+            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
         }
 
-        // attribute ppq is ignored ase the converter defines an own ppq resolution
+        // attribute ppq is ignored as the converter defines an own ppq resolution
         // TODO: tuning is defined by attributes tune.pname, tune.Hz and tune.temper; for the moment these are ignored
 
-        part.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(Helper.cloneElement(staffDef));    // make a copy of the element and put it into the global miscMap
+        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(Helper.cloneElement(staffDef));    // make a copy of the element and put it into the global miscMap
+
+        // process the child elements
+        this.convert(staffDef);                                     // process the staff's children
+        this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
+        this.helper.currentPart = null;                             // after this staff entry and its children are processed, set part to nullptr, because there can be global information between the staff entries in mei
     }
 
     /** process an mei staff element
@@ -895,7 +867,7 @@ public class Mei {
      * @param staff an mei staff element
      * @return an msm part element
      */
-    Element processStaff(Element staff) {
+    private void processStaff(Element staff) {
         Attribute ref = staff.getAttribute("def");                              // get the part entry, try the def attribute first
         if (ref == null) ref = staff.getAttribute("n");                         // otherwise the n attribute
         Element s = this.helper.getPart((ref == null) ? "" : ref.getValue());   // get the part
@@ -903,12 +875,17 @@ public class Mei {
         if (s != null) {
 //            s.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("midi.date") : "0.0"));  // set currentDate of processing
             s.addAttribute(new Attribute("currentDate", Double.toString(this.helper.getMidiTime())));  // set currentDate of processing
-            return s;                                                           // if that part entry was found, return it
+            this.helper.currentPart = s;                                                               // if that part entry was found, return it
+        }
+        else {            // the part was not found, create one
+            System.out.println("There is an undefined staff element in the score with no corresponding staffDef.\n" + staff.toXML() + "\nGenerating a new part for it.");  // output notification
+            this.helper.currentPart = this.makePart(staff);                                            // generate a part and return it
         }
 
-        // the part was not found, create one
-        System.out.println("There is an undefined staff element in the score with no corresponding staffDef.\n" + staff.toXML() + "\nGenerating a new part for it.");  // output notification
-        return this.makePart(staff);                                            // generate a part and return it
+        // everything within the staff will be treated as local to the corresponding part, thanks to helper.currentPart being != null
+        this.convert(staff);                                        // process the staff's children
+        this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
+        this.helper.currentPart = null;                             // after this staff entry and its children are processed, set part to nullptr, because there can be global information between the staff entries in mei
     }
 
     /** process an mei layerDef element
@@ -923,6 +900,7 @@ public class Mei {
             this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
             d.addAttribute(new Attribute("dur", layerDef.getAttributeValue("dur.default")));                        // copy the value
             Helper.copyId(layerDef, d);                                                                             // copy the id
+            this.helper.addLayerAttribute(d);                                                                       // add an attribute that indicates the layer
         }
 
         if (layerDef.getAttribute("octave.default") != null) {                                                      // if there is a default octave defined
@@ -930,6 +908,7 @@ public class Mei {
             this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
             d.addAttribute(new Attribute("oct", layerDef.getAttributeValue("octave.default")));                     // copy the value
             Helper.copyId(layerDef, d);                                                                             // copy the id
+            this.helper.addLayerAttribute(d);                                                                       // add an attribute that indicates the layer
         }
 
         if (this.helper.currentPart == null) {                                                                      // if the layer is globally defined
@@ -940,6 +919,32 @@ public class Mei {
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(Helper.cloneElement(layerDef));  // otherwise make a copy of the element and put it into the local miscMap
     }
 
+    /**
+     * process an mei layer element
+     * @param layer
+     */
+    private void processLayer(Element layer) {
+        this.helper.currentLayer = layer;                                                                               // keep track of this current layer as long as we process its children
+        String oldDate = this.helper.currentPart.getAttribute("currentDate").getValue();                                // store currentDate in oldDate for later use
+        this.convert(layer);                                                                                            // process everything within this environment
+        layer.addAttribute(new Attribute("currentDate", this.helper.currentPart.getAttribute("currentDate").getValue()));// store the currentDate in the layer element to later determine the latest of these dates as the staff's part's currentDate
+        this.helper.accid.clear();                                                                                      // accidentals are valid only within one layer, so forget them
+        this.helper.currentLayer = null;                                                                                // we are done processing this layer, set currentLayer to nullptr
+        if (Helper.getNextSiblingElement("layer", layer) != null)                                                       // if there are more layers in this staff environment
+            this.helper.currentPart.getAttribute("currentDate").setValue(oldDate);                                      // set back to the old currentDate, because each layer is a parallel to the other layers
+        else {                                                                                                          // no further layers in this staff environment, this was the last layer in this staff
+            // take the latest layer-specific currentDate as THE definitive currentDate of this part
+            Elements layers = ((Element) layer.getParent()).getChildElements("layer");                                  // get all layers in this staff
+            double latestDate = Double.parseDouble(this.helper.currentPart.getAttribute("currentDate").getValue());
+            for (int j = layers.size() - 1; j >= 0; --j) {
+                double date = Double.parseDouble(layers.get(j).getAttributeValue("currentDate"));                       // get the layer's date
+                if (latestDate < date)                                                                                  // if this layer's date is later than latestDate so far
+                    latestDate = date;                                                                                  // set latestDate to date
+            }
+            this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(latestDate));                  // write it to the part for later reference
+        }
+    }
+
     /** process an mei measure element
      *
      * @param measure an mei measure element
@@ -948,7 +953,7 @@ public class Mei {
         measure.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));    // set the measure's date
 
         // compute the duration of this measure
-        double dur = 0.0;                                               // its duration
+        double dur = 0.0;                                           // its duration
 
         if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null)) {    // if there is a local time signature map that is not empty
             Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
@@ -960,6 +965,17 @@ public class Mei {
         }
 
         measure.addAttribute(new Attribute("midi.dur", Double.toString(dur)));
+
+        this.helper.currentMeasure = measure;
+        this.convert(measure);                                      // process everything within this environment
+        this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
+        // update the duration of the measure; if the measure is overful, take the respective duration; if underful, keep the defined duration in accordance to its time signature
+        Element cm = this.helper.currentMeasure;
+        this.helper.currentMeasure = null;                          // this has to be set null so that getMidiTime() does not return the measure's date
+        double dur1 = Double.parseDouble(cm.getAttributeValue("midi.dur"));                                  // duration of the measure
+        double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("midi.date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
+        cm.getAttribute("midi.dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
+
     }
 
     /** process an mei meterSig element
@@ -1016,6 +1032,8 @@ public class Mei {
         accid.addAttribute(new Attribute("pname", accid.getAttributeValue("ploc")));    // store the ploc value in the pname attribute
         if (accid.getAttribute("oloc") != null)                                         // if there is the equivalent to the oct (octave transposition) attribute in notes
             accid.addAttribute(new Attribute("oct", accid.getAttributeValue("oloc")));  // store it in an attribute named oct
+
+        this.helper.addLayerAttribute(accid);                                           // add an attribute that indicates the layer
 
         this.helper.accid.add(accid);
     }
@@ -1117,8 +1135,8 @@ public class Mei {
             }
             result += (num.isEmpty()) ? 0.0 : Double.parseDouble(num);
             s.addAttribute(new Attribute("numerator", Double.toString(result)));               // store numerator
-
             s.addAttribute(new Attribute("denominator", (meiSource.getLocalName().equals("meterSig")) ? meiSource.getAttributeValue("unit") : meiSource.getAttributeValue("meter.unit")));        // store denominator
+            this.helper.addLayerAttribute(s);                                               // add an attribute that indicates the layer
             return s;
         }
         else {      // process meter.sym / sym
@@ -1127,10 +1145,12 @@ public class Mei {
                 if (str.equals("common")) {
                     s.addAttribute(new Attribute("numerator", "4"));                        // store numerator
                     s.addAttribute(new Attribute("denominator", "4"));                      // store denominator
+                    this.helper.addLayerAttribute(s);                                               // add an attribute that indicates the layer
                     return s;
                 } else if (str.equals("cut")) {
                     s.addAttribute(new Attribute("numerator", "2"));                        // store numerator
                     s.addAttribute(new Attribute("denominator", "2"));                      // store denominator
+                    this.helper.addLayerAttribute(s);                                               // add an attribute that indicates the layer
                     return s;
                 }
             }
@@ -1259,6 +1279,8 @@ public class Mei {
             s.appendChild(accidental);                                                                  // add to the msm keySignature
         }
 
+        this.helper.addLayerAttribute(s);                                                               // add an attribute that indicates the layer
+
         return s;                                                                                       // return the msm keySignature element
     }
 
@@ -1300,6 +1322,22 @@ public class Mei {
         }
     }
 
+    /**
+     * process an mei tuplet element (requires a dur attribute)
+     * @param tuplet
+     * @return true (tuplet has a dur attribute), else false
+     */
+    private boolean processTuplet(Element tuplet) {
+        if (tuplet.getAttribute("dur") != null) {
+            double cd = Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate"));   // store the current date for use afterwards
+            this.convert(tuplet);                                        // process the child elements
+            double dur = this.helper.computeDuration(tuplet);
+            this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(cd + dur));    // this compensates for numeric problems with the single note durations within the tuplet
+            return true;
+        }
+        return false;
+    }
+
     /** process an mei tupletSpan element; the element MUST be in a staff environment; this method does not process tstamp and tstamp2 or tstamp.ges or tstamp.real; there MUST be a dur, dur.ges or endid attribute
      *
      * @param tupletSpan an mei tupletSpan element
@@ -1323,6 +1361,8 @@ public class Mei {
             clone.addAttribute(new Attribute("end", Double.toString(this.helper.getMidiTime() + dur))); // compute end date of the transposition and store in attribute end
         }
 
+        this.helper.addLayerAttribute(clone);                                               // add an attribute that indicates the layer
+
         // add element to the local miscMap/tupletSpanMap; during duration computation (helper.computeDuration()) this map is scanned for applicable entries
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").appendChild(clone);
     }
@@ -1344,7 +1384,7 @@ public class Mei {
         Helper.copyId(reh, marker);                                                                     // copy a possibly present xml:id
         marker.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));    // store the date of the element
         marker.addAttribute(new Attribute("message", reh.getValue()));                                  // store its text or empty string
-        Helper.copyId(reh, marker);                                                                     // copy the id
+        this.helper.addLayerAttribute(marker);                                                          // add an attribute that indicates the layer
 
         markerMap.appendChild(marker);      // add to the markerMap
     }
@@ -1475,16 +1515,18 @@ public class Mei {
             return;                                                                                                                 // nothing to repeat, hence, cancel
         }
 
-        double currentDate = Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate"));
-        double datePrevBeat = currentDate - timeframe;
+        double currentDate = Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate"));                          // get the current date
+        double startDate = currentDate - timeframe;                                                                                 // compute the date of the beginning of the timeframe to be repeated
+        String layer = Helper.getLayerId(this.helper.currentLayer);                                                                 // get the id of the current layer
         Stack<Element> els = new Stack<Element>();
 
         // go back in the score map, copy all elements with date at and after the last beat, recalculate the date (date += beat value)
         for (Element e = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").getChildElements().get(this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").getChildElements().size()-1); e != null; e = Helper.getPreviousSiblingElement(e)) {
-            double date = Double.parseDouble(e.getAttributeValue("midi.date"));                                                          // get date of the element
-            if (date < datePrevBeat)                                                                                                // if all elements from the previous beat were collected
-                break;                                                                                                              // break the for loop
-            els.push(Helper.cloneElement(e)).getAttribute("midi.date").setValue(Double.toString(date + timeframe));                      // make a new element, push onto the els stack, and update its date value
+            double date = Double.parseDouble(e.getAttributeValue("midi.date"));                                                     // get date of the element
+            if (date < startDate) break;                                                                                            // if all elements from the previous beat were collected, break the for loop
+            if (layer.isEmpty() || ((e.getAttribute("layer") != null) && e.getAttributeValue("layer").equals(layer))) {             // if no need to consider layers or the layer of e matches the currentLayer
+                els.push(Helper.cloneElement(e)).getAttribute("midi.date").setValue(Double.toString(date + timeframe));             // make a new element, push onto the els stack, and update its date value
+            }
         }
 
         // append the elements in the els stack to the score map
@@ -1537,7 +1579,7 @@ public class Mei {
 
         rest.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));       // compute date
         rest.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                         // store in rest element
-
+        this.helper.addLayerAttribute(rest);                                                             // add an attribute that indicates the layer
         return rest;
     }
 
@@ -1573,7 +1615,8 @@ public class Mei {
         double dur = this.helper.computeDuration(rest);                                     // compute note duration in midi ticks
         if (dur == 0.0) return;                                                             // if failed, cancel
 
-        s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                    // else store attribute
+        s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                               // else store attribute
+        this.helper.addLayerAttribute(s);                                                                   // add an attribute that indicates the layer
         this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur)));    // update currentDate counter
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(s); // insert the new note into the part->dated->score
 
@@ -1630,6 +1673,8 @@ public class Mei {
             this.helper.endids.add(s);                                                      // and append element to the endids list
         }
 
+        this.helper.addLayerAttribute(s);                                                   // add an attribute that indicates the layer
+
         // insert in local or global miscMap
         if (this.helper.currentPart == null) {                                              // if global information
             this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(s);    // insert in global miscMap
@@ -1652,12 +1697,14 @@ public class Mei {
 
         Element s = new Element("pedal");                                                               // create pedal element
         Helper.copyId(pedal, s);                                                                        // copy the id
-        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));              // compute starting of the pedal
+        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // compute starting of the pedal
         s.addAttribute(new Attribute("state", pedal.getAttributeValue("dir")));                         // pedal state can be "down", "up", "half", and "bounce" (release then immediately depress the pedal)
 
         s.addAttribute(new Attribute("endid", pedal.getAttributeValue("endid")));                       // store endid for later reference
-        this.helper.endids.add(s);                                                                      // and append element to the endids list
 
+        this.helper.addLayerAttribute(s);                                                               // add an attribute that indicates the layer
+
+        this.helper.endids.add(s);                                                                      // and append element to the endids list
 
         // make an entry in the global or local miscMap from which later on midi ctrl events can be generated
         if (this.helper.currentPart == null) {                                                          // if global information
@@ -1737,6 +1784,8 @@ public class Mei {
                     }
                 }
         }
+
+        this.helper.addLayerAttribute(s);                                       // add an attribute that indicates the layer
 
         this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(s);     // insert the new note into the part->dated->score
     }

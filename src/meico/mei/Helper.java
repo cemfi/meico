@@ -20,13 +20,14 @@ import javax.xml.transform.stream.StreamSource;
 
 public class Helper {
 
-    protected int ppq = 720;                                        // default value for pulses per quarter
-    protected boolean dontUseChannel10 = true;                      // set this flag false if you allow to "misuse" the midi drum channel for other instruments; in standard midi output this produces weird results, but when you work with vst plugins etc. there is no reason to avoid channel 10
+    protected int ppq = 720;                                            // default value for pulses per quarter
+    protected boolean dontUseChannel10 = true;                          // set this flag false if you allow to "misuse" the midi drum channel for other instruments; in standard midi output this produces weird results, but when you work with vst plugins etc. there is no reason to avoid channel 10
     protected Element currentMovement = null;
-    protected Element currentPart = null;
+    protected Element currentPart = null;                               // this points to the current part element in the msm
+    protected Element currentLayer = null;                              // this points to the current layer element in the mei source
     protected Element currentMeasure = null;
     protected Element currentChord = null;
-    protected ArrayList<Element> accid = new ArrayList<Element>();        // holds accidentals that appear within measures to be considered during pitch computation
+    protected ArrayList<Element> accid = new ArrayList<Element>();      // holds accidentals that appear within measures to be considered during pitch computation
     protected ArrayList<Element> endids = new ArrayList<Element>();
     protected List<Msm> movements = new ArrayList<Msm>();
 
@@ -50,6 +51,7 @@ public class Helper {
     protected void reset() {
         this.currentMovement = null;
         this.currentPart = null;
+        this.currentLayer = null;
         this.currentMeasure = null;
         this.currentChord = null;
         this.accid.clear();
@@ -299,7 +301,7 @@ public class Helper {
         return a.getValue();
     }
 
-    /**
+    /**copies the id attribute ofThis into toThis
      *
      * @param ofThis
      * @param toThis
@@ -339,7 +341,7 @@ public class Helper {
         return null;
     }
 
-    /** return part entry in movement or null
+    /** return part entry in current movement or null
      *
      * @param id
      * @return
@@ -357,6 +359,53 @@ public class Helper {
         return null;                                                // nothing found, return nullptr
     }
 
+    /**
+     * returns the layer element in the mei tree of ofThis
+     * @param ofThis
+     * @return the layer element or null if ofThis is not in a layer
+     */
+    protected static Element getLayer(Element ofThis) {
+        for (Node e = ofThis.getParent(); e != ofThis.getDocument().getRootElement(); e = e.getParent()) {  // search for a layer element among the parents of ofThis
+            if ((e instanceof Element) && (((Element)e).getLocalName().equals("layer"))) {                  // found one
+                return (Element)e;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * returns the def or n attribute value of an mei layer element or empty string if it is no layer or both attributes are missing
+     * @param layer
+     * @return def, n or empty string
+     */
+    protected static String getLayerId(Element layer) {
+        if ((layer == null) || !layer.getLocalName().equals("layer"))   // if the element is null or no layer
+            return "";                                                  // return empty string
+        if (layer.getAttribute("def") != null)                          // check for the def attribute (preferred over n)
+            return layer.getAttributeValue("def");                      // return its string
+        if (layer.getAttribute("n") != null)                            // check for the n attribute
+            return layer.getAttributeValue("n");                        // return its string
+        return "";                                                      // no def or n attribute, hence, return empty string
+    }
+
+    /**
+     * this method writes the layer's ref or n id to a layer attribute and adds that to ofThis
+     * @param toThis an element that must be child of a layer element in mei
+     */
+    protected void addLayerAttribute(Element toThis) {
+        Element layer = this.currentLayer;              // get the current layer from the current mei processing
+//        if (layer == null) layer = getLayer(toThis);    // if no current layer, search the parents of toThis for a layer element
+        if (layer == null) return;                      // if still no layer found, we are done
+
+        // add the value of the layer's def or n attribute to toThis as attribute layer
+        if (layer.getAttribute("def") != null) {
+            toThis.addAttribute(new Attribute("layer", layer.getAttributeValue("def")));
+        }
+        else if (layer.getAttribute("n") != null) {
+            toThis.addAttribute(new Attribute("layer", layer.getAttributeValue("n")));
+        }
+    }
+
     /** cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects (miscMaps, currentDate and tie attributes)
      *
      * @param msms
@@ -367,13 +416,13 @@ public class Helper {
         }
     }
 
-    /** make the cleanup of one msm object; this removes all miscMaps, currentDate and tie attributes
+    /** make the cleanup of one msm object; this removes all miscMaps, currentDate, tie, and layer attributes
      *
      * @param msm
      */
     protected static void msmCleanup(Msm msm) {
         // delete all miscMaps
-        Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie");
+        Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie | descendant::*[attribute::layer]/attribute::layer");
         for (int i=0; i < n.size(); ++i) {
             if (n.get(i) instanceof Element)
                 n.get(i).getParent().removeChild(n.get(i));
@@ -386,12 +435,12 @@ public class Helper {
     /** return the first element in the endids list with an endid attribute value that equals id
      *
      * @param id
-     * @return
+     * @return the index in the endid list or -1 if not found
      */
     private int getEndid(String id) {
-        for (int i=0; i < this.endids.size(); ++i) {           // go through the list of pending elements to be ended
-            if (this.endids.get(i).getAttributeValue("endid").equals(id))
-                return i;
+        for (int i=0; i < this.endids.size(); ++i) {                        // go through the list of pending elements to be ended
+            if (this.endids.get(i).getAttributeValue("endid").equals(id))   // found
+                return i;                                                   // return it
         }
         return -1;
     }
@@ -401,8 +450,8 @@ public class Helper {
      * @param e
      */
     protected void checkEndid(Element e) {
-        String id = "#" + Helper.getAttributeValue("id", e);
-        for (int j = this.getEndid(id); j >= 0; j = this.getEndid(id)) {    // get id of the current element and find all pending elements in the endid list to be finished at this element
+        String id = "#" + Helper.getAttributeValue("id", e);                // get id of the current element
+        for (int j = this.getEndid(id); j >= 0; j = this.getEndid(id)) {    // find all pending elements in the endid list to be finished at this element
             this.endids.get(j).addAttribute(new Attribute("end", Double.toString(this.getMidiTime() + this.computeDuration(e))));     // finish corresponding element
             this.endids.remove(j);                                          // remove element from list, it is finished
         }
@@ -411,8 +460,8 @@ public class Helper {
     /**
      * This method interprets the clef.dis and clef.dis.place attribute as a transposition that is not encoded in the note elements.
      * In the mei sample set, however, this is not the case which leads to wrong octave transpositions of the respective notes.
-     * Hence, I insertes a return 0 at the beginning.
-     * If you want meico to feature the transponing behavior, remove the return 0 line and comment in the remaining code.
+     * Hence, I inserted a return 0 at the beginning.
+     * If you want meico to feature the transponing behavior, remove the return 0 line and uncomment the remaining code.
      * @param scoreStaffDef the scoreDef or staffDef element from mei
      * @return the octave transposition that derives from the clef.dis or clef.dis.place attribute
      */
@@ -473,7 +522,7 @@ public class Helper {
         Element focus = ofThis;                                                             // this will change to the chord environment, if there is one
 
         { // get basic duration (without dots, tuplets etc.)
-            String sdur;                                                                            // the dur string
+            String sdur = "";                                                                       // the dur string
 
             if (ofThis.getAttribute("dur") != null) {                                               // if there is a dur attribute
                 sdur = focus.getAttributeValue("dur");
@@ -483,19 +532,20 @@ public class Helper {
                     focus = this.currentChord;                                                      // from now on, look only in the chord environment for all further duration related attributes
                     sdur = focus.getAttributeValue("dur");                                          // take this
                 }
-                else {
-                    Elements durdefaults = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");
-                    if (durdefaults.size() > 0) {                                                   // search for a default duration in the local miscMap
-                        sdur = durdefaults.get(durdefaults.size()-1).getAttributeValue("dur");      // take this
+                else {                                                                              // check for local and global default durations with and without layer consideration
+                    String layerId = getLayerId(getLayer(ofThis));                                  // store the layer id
+                    Elements durdefaults = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");                              // get all local default durations
+                    if (durdefaults.size() == 0) {                                                                                                                                      // if there is none
+                        durdefaults = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");// get all global default durations
                     }
-                    else {
-                        durdefaults = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");
-                        if (durdefaults.size() > 0) {                                               // search for a default duration in the global miscMap
-                            sdur = durdefaults.get(durdefaults.size()-1).getAttributeValue("dur");  // take this
+                    for (int i=durdefaults.size()-1; i >= 0; --i) {                                                                                 // search from back to front
+                        if ((durdefaults.get(i).getAttribute("layer") == null) || durdefaults.get(i).getAttributeValue("layer").equals(layerId)) {  // for a default duration with no layer dependency or a matching layer
+                            sdur = durdefaults.get(i).getAttributeValue("dur");                                                                     // take this value
+                            break;                                                                                                                  // break the for loop
                         }
-                        else {                                                                      // nothing found
-                            return 0.0;                                                             // cancel
-                        }
+                    }
+                    if (sdur.isEmpty()) {                                                           // nothing found
+                        return 0.0;                                                                 // cancel
                     }
                 }
             }
@@ -548,6 +598,9 @@ public class Helper {
             }
             if ((Helper.getAttribute("endid", tps.get(i)) != null) && (Helper.getAttribute("id", ofThis) != null) && (Helper.getAttributeValue("endid", tps.get(i)).equals("#" + Helper.getAttributeValue("id", ofThis)))) {   // if the tupletSpan ends with ofThis
                 this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").removeChild(tps.get(i));   // remove this tupletSpan from the map, it is no longer needed
+            }
+            if ((tps.get(i).getAttribute("layer") != null) && !tps.get(i).getAttributeValue("layer").equals(Helper.getLayerId(this.currentLayer))) {            // if the tupletSpan is dedicated to a particular layer but the current layer is a different one
+                continue;                                                                                                                                       // don't use this tupletSpan here, continue with the next
             }
             dur *= Double.parseDouble(tps.get(i).getAttributeValue("numbase")) / Integer.parseInt(tps.get(i).getAttributeValue("num"));                         // scale dur: dur*numbase/num ... this loop does not break here, because of the possibility of tuplets within tuplets
             // This calculation can come with numeric error. That error is given across to the onset time of succeeding notes. We compensate this error by making a clean currentTime computation with each measure element, so the error does not propagate beyond barlines.
@@ -721,6 +774,7 @@ public class Helper {
     protected double computePitch(Element ofThis, ArrayList<String> pitchdata) {
         String pname;                                                   // the attribute strings
         String accid = "";                                              // the accidental string
+        String layerId = getLayerId(getLayer(ofThis));                  // get the current layer's id reference
         int oct = 0;                                                    // octave transposition value
         int trans = 0;                                                  // transposition
         boolean checkKeySign = false;                                   // is set true
@@ -750,17 +804,17 @@ public class Helper {
                 oct = Integer.parseInt(ofThis.getAttributeValue("oct"));
             }
             else {
-                Elements octs = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");
-                if (octs.size() != 0) {                                 // look for local default octave transposition
-                    oct = Integer.parseInt(octs.get(octs.size()-1).getAttributeValue("oct.default"));
+                Elements octs = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octave
+                if (octs.size() == 0) {                                                                                                                                      // if there is none
+                    octs = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octave
                 }
-                else {
-                    octs = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");
-                    if (octs.size() != 0) {                             // look for global default octave transposition
-                        oct = Integer.parseInt(octs.get(octs.size()-1).getAttributeValue("oct.default"));
+                for (int i=octs.size()-1; i >= 0; --i) {                                                                          // search from back to front
+                    if ((octs.get(i).getAttribute("layer") == null) || octs.get(i).getAttributeValue("layer").equals(layerId)) {  // for a default octave with no layer dependency or a matching layer
+                        oct = Integer.parseInt(octs.get(i).getAttributeValue("oct.default"));                                     // take this value
+                        break;                                                                                                    // break the for loop
                     }
                 }
-                ofThis.addAttribute(new Attribute("oct", Integer.toString(oct)));   // there was no oct attribute, so fill the gap with the computed value
+                ofThis.addAttribute(new Attribute("oct", Integer.toString(oct)));                                                 // there was no oct attribute, so fill the gap with the computed value
             }
         }
 
@@ -791,7 +845,7 @@ public class Helper {
                         }
                     }
                     if (!accid.isEmpty()) {
-                        this.accid.add(ofThis);                                                       // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
+                        this.accid.add(ofThis);                                                                         // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
                         checkKeySign = false;
                     }
                 }
@@ -807,7 +861,7 @@ public class Helper {
                             break;                                                                                      // stop the for loop
                         }
                     }
-                    if (checkKeySign) {                                                                                 // if the note's pitch was defined by a pname attribute and had no local accidentals, we must check the key signature for accidentals
+                    if (checkKeySign) {                                                                                                 // if the note's pitch was defined by a pname attribute and had no local accidentals, we must check the key signature for accidentals
                         // get the local or global key signature in the msm document and check its accidentals' pitch attribute if it is of the same pitch class as pname
                         Element keySigMap = this.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap");     // get the local key signature map from mpm
                         if ((keySigMap == null) || (keySigMap.getFirstChildElement("keySignature") == null)) {                          // if there is no local, non-empty key signature map
@@ -815,21 +869,29 @@ public class Helper {
                         }
                         if ((keySigMap != null) && (keySigMap.getFirstChildElement("keySignature") != null)) {                          // if we finally found a non-empty key signature map
                             Elements keySigs = keySigMap.getChildElements("keySignature");                                              // get its entries
-                            Element keySig = keySigs.get(keySigs.size()-1);                                                             // the the latest of these entries
-                            Elements keySigAccids = keySig.getChildElements("accidental");                                              // get its accidentals
-                            for (int i=0; i < keySigAccids.size(); ++i) {                                                               // check the accidentals for a matching pitch class
-                                Element a = keySigAccids.get(i);                                                                        // take an accidental
-                                double aPitch;
-                                if (a.getAttribute("midi.pitch") != null)                                                               // if it has a midi.pitch atrtibute
-                                    aPitch = Double.parseDouble(a.getAttributeValue("midi.pitch"));                                     // get its pitch value
-                                else if (a.getAttribute("pitchname") != null)                                                           // else if it has a pitchname attribute
-                                    aPitch = Helper.pname2midi(a.getAttributeValue("pitchname"));                                       // get its pitch value
-                                else                                                                                                    // without a midi.pitch and pitchname attribute the accidental is invalid
-                                    continue;                                                                                           // hence, continue with the next
-                                double pitchOfThis = Helper.pname2midi(pname) % 12;                                                     // get the current note's pitch as midi value modulo 12
-                                if (aPitch == pitchOfThis) {                                                                            // the accidental indeed affects the pitch ofThis
-                                    accid = a.getAttributeValue("value");                                                               // get the accidental's value
-                                    break;                                                                                              // done here, break the for loop
+                            Element keySig = null;
+                            for (int i=keySigs.size()-1; i >= 0; --i) {                                                                 // search for the last key signature that ...
+                                if ((keySigs.get(i).getAttribute("layer") == null) || keySigs.get(i).getAttributeValue("layer").equals(layerId)) {  // either has no layer dependency or has a matching layer attribute
+                                    keySig = keySigs.get(i);                                                                            // take this one
+                                    break;                                                                                              // break the for loop
+                                }
+                            }
+                            if (keySig != null) {                                                                                       // if we have a key signature
+                                Elements keySigAccids = keySig.getChildElements("accidental");                                          // get its accidentals
+                                for (int i = 0; i < keySigAccids.size(); ++i) {                                                         // check the accidentals for a matching pitch class
+                                    Element a = keySigAccids.get(i);                                                                    // take an accidental
+                                    double aPitch;
+                                    if (a.getAttribute("midi.pitch") != null)                                                           // if it has a midi.pitch atrtibute
+                                        aPitch = Double.parseDouble(a.getAttributeValue("midi.pitch"));                                 // get its pitch value
+                                    else if (a.getAttribute("pitchname") != null)                                                       // else if it has a pitchname attribute
+                                        aPitch = Helper.pname2midi(a.getAttributeValue("pitchname"));                                   // get its pitch value
+                                    else                                                                                                // without a midi.pitch and pitchname attribute the accidental is invalid
+                                        continue;                                                                                       // hence, continue with the next
+                                    double pitchOfThis = Helper.pname2midi(pname) % 12;                                                 // get the current note's pitch as midi value modulo 12
+                                    if (aPitch == pitchOfThis) {                                                                        // the accidental indeed affects the pitch ofThis
+                                        accid = a.getAttributeValue("value");                                                           // get the accidental's value
+                                        break;                                                                                          // done here, break the for loop
+                                    }
                                 }
                             }
                         }
@@ -841,15 +903,18 @@ public class Helper {
         // transpositions
         if ((ofThis.getAttribute("pname.ges") == null) || (ofThis.getAttribute("oct.ges") == null)) {                                                                   // if pname.ges or oct.ges are given, it already includes transpositions
             // transposition; check for global and local transposition and addTransposition elements in the miscMaps; global and local transpositions add up; so-called addTranspositions (e.g. octaves) also add to the usual transpositions
+            // go through all four lists and check for elements that apply here, global and local transpositions add up
             {
                 Elements globalTrans = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
-                // go through all four lists and check for elements that apply here, global and local transpositions add up
                 for (int i = globalTrans.size() - 1; i >= 0; --i) {                                                                                                     // go through the global transpositions
-                    if ((globalTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(globalTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {  // if ofThis is after this transposition element
-                        continue;
+                    if ((globalTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(globalTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {  // if this transposition element is after ofThis
+                        continue;                                                                                                                                       // continue searching
                     }
-                    if ((globalTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // but the end date of this transposition (if one is specified) is before oThis
-                        break;
+                    if ((globalTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                        break;                                                                                                                                          // done
+                    }
+                    if ((globalTrans.get(i).getAttribute("layer") != null) && !globalTrans.get(i).getAttributeValue("layer").equals(layerId)) {                         // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                        continue;                                                                                                                                       // continue searching
                     }
                     trans += Integer.parseInt(globalTrans.get(i).getAttributeValue("semi"));                                                                            // found a transposition that applies
                     break;                                                                                                                                              // done
@@ -858,11 +923,14 @@ public class Helper {
             {
                 Elements globalAddTrans = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
                 for (int i = globalAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
-                    if ((globalAddTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(globalAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {    // if ofThis is after this transposition element
+                    if ((globalAddTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(globalAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {    // if this transposition element is after ofThis
                         continue;
                     }
-                    if ((globalAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(globalAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // but the end date of this transposition (if one is specified) is before oThis
+                    if ((globalAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(globalAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
                         continue;
+                    }
+                    if ((globalAddTrans.get(i).getAttribute("layer") != null) && !globalAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                   // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                        continue;                                                                                                                                       // continue searching
                     }
                     trans += Integer.parseInt(globalAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
                 }
@@ -870,11 +938,14 @@ public class Helper {
             {
                 Elements localTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
                 for (int i = localTrans.size() - 1; i >= 0; --i) {                                                                                                      // go through the local transpositions
-                    if ((localTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(localTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {// if ofThis is after this transposition element
+                    if ((localTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(localTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {// if this transposition element is after ofThis
                         continue;
                     }
-                    if ((localTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {     // but the end date of this transposition (if one is specified) is before oThis
+                    if ((localTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {     // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
                         break;
+                    }
+                    if ((localTrans.get(i).getAttribute("layer") != null) && !localTrans.get(i).getAttributeValue("layer").equals(layerId)) {                           // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                        continue;                                                                                                                                       // continue searching
                     }
                     trans += Integer.parseInt(localTrans.get(i).getAttributeValue("semi"));                                                                             // found a transposition that applies
                     break;                                                                                                                                              // done
@@ -883,28 +954,31 @@ public class Helper {
             {
                 Elements localAddTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
                 for (int i = localAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
-                    if ((localAddTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(localAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {  // if ofThis is after this transposition element
+                    if ((localAddTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(localAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {  // if this transposition element is after ofThis
                         continue;
                     }
-                    if ((localAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // but the end date of this transposition (if one is specified) is before oThis
+                    if ((localAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
                         continue;
+                    }
+                    if ((localAddTrans.get(i).getAttribute("layer") != null) && !localAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                     // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                        continue;                                                                                                                                       // continue searching
                     }
                     trans += Integer.parseInt(localAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
                 }
             }
         }
 
-        double pitch = Helper.pname2midi(pname) + 12;            // here comes the result
+        double pitch = Helper.pname2midi(pname);            // here comes the result
         if (pitch == -1.0)                                  // if no valid pitch name found
             return -1.0;                                    // cancel
 
-        double initialPitch = pitch;    // need this to compute the untransposed pitchname for the pitchdata list
+        double initialPitch = pitch;                        // need this to compute the untransposed pitchname for the pitchdata list
 
         // octave transposition that is directly at the note as an attribute oct
-        pitch += 12 * oct;
+        pitch += 12 * (oct + 1);
 
         // accidentals
-        double accidentals = (checkKeySign) ? ((accid.isEmpty()) ? 0.0 : Double.parseDouble(accid)) : Helper.accidString2decimal(accid);    // if the accidental string was taken from the msm key signature it is already numeric, otherwise it is still an mei accidental string
+        double accidentals = (checkKeySign) ? ((accid.isEmpty()) ? 0.0 : Helper.accidString2decimal(accid)) : Helper.accidString2decimal(accid);    // if the accidental string was taken from the msm key signature it is already numeric, otherwise it is still an mei accidental string
         pitch += accidentals;
 
         // transposition

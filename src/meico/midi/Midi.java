@@ -77,7 +77,7 @@ public class Midi {
 
         try {
             this.sequencer = MidiSystem.getSequencer();
-//            this.sequencer.open();
+//            this.sequencer.open();      // it will be opened when playback is started
         } catch (MidiUnavailableException e) {
             e.printStackTrace();
             return false;
@@ -224,25 +224,21 @@ public class Midi {
 
     /**
      * start playing the midi sequence
-     * @throws InvalidMidiDataException
+     * @throws InvalidMidiDataException, MidiUnavailableException
      */
-    public void play() throws InvalidMidiDataException {
-        if (this.sequencer == null) {                   // if no sequencer created so far (should be done at initialization)
-            if (!this.initSequencer()) {                // try again, if it still fails
-                System.err.println("Midi playback failed: no Midi sequencer initialized."); // output error message
-                return;                                 // skip
-            }
+    public void play() throws InvalidMidiDataException, MidiUnavailableException {
+        if (!this.initSequencer()) {                    // if no sequencer is or could be initialized
+            System.err.println("Midi playback failed: no Midi sequencer initialized."); // output error message
+            return;                                     // skip
         }
-        else                                            // otherwise there is a sequencer that may even play midi data at the moment
-            if (this.sequencer.isOpen()) this.stop();   // stop it
-
-        try {
+        if (!this.sequencer.isOpen()) {
             this.sequencer.open();
-        } catch (MidiUnavailableException e) {
-            e.printStackTrace();
-            return;
         }
-
+        else {
+            if (this.sequencer.isRunning())
+                this.sequencer.stop();                  // stop it
+        }
+        this.sequencer.setMicrosecondPosition(0);       // start at the beginning of the sequence
         this.sequencer.setSequence(this.sequence);      // assign the midi sequence to the sequencer
         this.sequencer.start();                         // start playback
     }
@@ -253,8 +249,7 @@ public class Midi {
     public void stop() {
         if ((this.sequencer != null) && (this.sequencer.isOpen())) {
             this.sequencer.stop();
-            this.sequencer.setMicrosecondPosition(0);
-            this.sequencer.close();
+//            this.sequencer.close();
         }
     }
 

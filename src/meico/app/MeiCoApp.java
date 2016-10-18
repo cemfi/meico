@@ -1149,7 +1149,7 @@ public class MeiCoApp extends JFrame {
                             }
                         });
 
-                        final JLabel playMidi = new JLabel((this.getSequencer().isRunning()) ? "\u25A0" : "\u25BA");
+                        final JLabel playMidi = new JLabel(((this.getSequencer() != null) && this.getSequencer().isRunning()) ? "\u25A0" : "\u25BA");
                         playMidi.setFont(new Font(fontName, fontStyle, fontSize));
                         playMidi.setHorizontalAlignment(JLabel.CENTER);
                         playMidi.setOpaque(true);
@@ -1175,7 +1175,7 @@ public class MeiCoApp extends JFrame {
                             @Override
                             public void mouseReleased(MouseEvent e) {
                                 if (playMidi.contains(e.getPoint())) {
-                                    if ((getSequencer().isRunning())) {
+                                    if ((getSequencer() != null) && getSequencer().isRunning()) {
                                         stop();
                                         return;
                                     }
@@ -1285,7 +1285,8 @@ public class MeiCoApp extends JFrame {
                 public void play() {
                     try {
                         super.play();
-                    } catch (InvalidMidiDataException e) {
+                    } catch (InvalidMidiDataException | MidiUnavailableException e) {
+                        e.printStackTrace();
                         return;
                     }
                     panel[2].setText("\u25A0");

@@ -1,6 +1,17 @@
 ###Version History
 
 
+####v0.2.6
+- Slight enhancements of `Midi.play()` and `Midi.stop()`.
+- Some code polishing in classes `meico.mei.Mei` and `meico.mei.Helper`.
+- Better support of MEI `layer` elements during MEI-to-MSM conversion.
+    - New `Helper` methods: `getLayer()`, `getLayerId()`, and `addLayerAttribute()`.
+    - Affected methods have been revised. All MEI-to-MSM conversion methods that generate `note`, `rest`, `timeSignature`, `keySignature`, `transposition`, `dur.default`, and `oct.default` elements in MSM add a temporary layer attribute that is deleted during `Helper.msmCleanup()`.
+    - Method `Mei.processRepeat()` considers layers, i.e., if a repetition takes place within a `layer` environment (e.g., beatRpt), then only those elements are repeated that belong to this layer.
+    - Method `Mei.processStaffDef()` has been extended. So far, its child elements were ignored. Now, they are processed.
+- Bugfix in `Helper.computePitch()`. Partly (not always) wrong conversion of accidental string to numeric value has been fixed.
+
+
 ####v0.2.5
 - Added method `Helper.midi2pname()`.
 - Extended method `Helper.pname2midi()`.
