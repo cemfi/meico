@@ -293,7 +293,7 @@ public class Mei {
         }
         this.helper = null;                                                     // as this is a class variable it would remain in memory after this method, so it has to be nulled for garbage collection
 
-        if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
+//        if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
 
         // generate a dummy file name in the msm objects
         if (msms.size() == 1)                                                                                                       // if only one msm object (no numbering needed)
@@ -375,7 +375,7 @@ public class Mei {
                     if (e.getAttribute("grace") != null)                        // TODO: at the moment we ignore grace notes and grace chords; later on, for expressive performances, we should handle these somehow
                         continue;
                     this.processChord(e);
-                    continue;                                                       // continue with the next sibling
+                    continue;                                                   // continue with the next sibling
 
                 case "chordTable":
                     continue;                                                   // can be ignored
@@ -413,7 +413,7 @@ public class Mei {
                 case "dynam":
                     continue;                                                   // TODO: relevant for expressive performance
 
-                case "ending": // TODO: What can I do with this? Could be relevant for expressive performance (phrasing) na dto generate sectionStructure
+                case "ending":                                                  // TODO: What can I do with this? Could be relevant for expressive performance (phrasing) na dto generate sectionStructure
 
                     break;
                 case "fermata":
@@ -449,7 +449,7 @@ public class Mei {
                     continue;                                                   // can be ignored
 
                 case "incip":
-                    continue;                                               // can be ignored
+                    continue;                                                   // can be ignored
 
                 case "ineume":
                     continue;                                                   // ignored, this implementation focusses on common modern notation
@@ -484,7 +484,7 @@ public class Mei {
                 case "line":
                     continue;                                                   // can be ignored
 
-                case "lyrics": // TODO: should I do anything more with it than just diving into it?
+                case "lyrics":                                                  // TODO: should I do anything more with it than just diving into it?
                     break;
 
                 case "mdiv":
@@ -502,7 +502,7 @@ public class Mei {
                     this.processMeterSig(e);
                     break;
 
-                case "meterSigGrp": // TODO: I have no idea how to handle this, at the moment I go through it and process the contained meterSig elements as if they were standing alone
+                case "meterSigGrp":                                             // TODO: I have no idea how to handle this, at the moment I go through it and process the contained meterSig elements as if they were standing alone
                     break;
 
                 case "midi":
@@ -524,7 +524,7 @@ public class Mei {
                     break;
 
                 case "mSpace":
-                    this.processMeasureRest(e);                                    // interpret it as an mRest, i.e. measure rest
+                    this.processMeasureRest(e);                                 // interpret it as an mRest, i.e. measure rest
                     break;
 
                 case "multiRest":
@@ -549,10 +549,10 @@ public class Mei {
                 case "ossia":
                     continue;                                                   // TODO: ignored for the moment but may be included later on
 
-                case "parts":                   // just dive into it
+                case "parts":                                                   // just dive into it
                     break;
 
-                case "part":                    // just dive into it
+                case "part":                                                    // just dive into it
                     break;
 
                 case "pb":
@@ -574,7 +574,7 @@ public class Mei {
                 case "pgHead2":
                     continue;                                                   // can be ignored
 
-                case "phrase": // dive into it TODO: make an entry in the phraseStructure map
+                case "phrase":                                                  // dive into it TODO: make an entry in the phraseStructure map
                     break;
 
                 case "proport":
@@ -587,7 +587,7 @@ public class Mei {
                     continue;                                                   // TODO: ignore
 
                 case "reh":
-                    this.processReh(e);// TODO: generate midi jump marks
+                    this.processReh(e);                                         // TODO: generate midi jump marks
                     continue;
 
                 case "rend":
@@ -607,10 +607,10 @@ public class Mei {
                     this.processScoreDef(e);
                     break;
 
-                case "score": // just dive into it
+                case "score":                                                   // just dive into it
                     break;
 
-                case "section": // TODO: What can I do with this? I have to dive into it, as it may contain musical data. I might also use it to generate a sectionStructure map.
+                case "section":                                                 // TODO: What can I do with this? I have to dive into it, as it may contain musical data. I might also use it to generate a sectionStructure map.
                     break;
 
                 case "sic":
@@ -634,7 +634,7 @@ public class Mei {
                     this.processStaffDef(e);
                     continue;
 
-                case "staffGrp": // may contain staffDefs but needs no particular processing, attributes are ignored
+                case "staffGrp":                                                // may contain staffDefs but needs no particular processing, attributes are ignored
                     break;
 
                 case "subst":
@@ -761,28 +761,30 @@ public class Mei {
         // time signature
         s = this.makeTimeSignature(scoreDef);                                                       // create a time signature element, or null if there is no such data
         if (s != null) {                                                                            // if succeeded
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").appendChild(s);  // insert it into the global time signature map
+            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap"));  // insert it into the global time signature map
         }
 
         // key signature
         s = this.makeKeySignature(scoreDef);                                                        // create a key signature element, or null if there is no such data
         if (s != null) {                                                                            // if succeeded
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap").appendChild(s);   // insert it into the global key signature map
+            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap"));   // insert it into the global key signature map
         }
 
         // store default values in miscMap
         if ((scoreDef.getAttribute("dur.default") != null)) {                                       // if there is a default duration defined
             Element d = new Element("dur.default");                                                 // make an entry in the miscMap
+            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime()))); // add the current date
             d.addAttribute(new Attribute("dur", scoreDef.getAttributeValue("dur.default")));        // copy the value
             Helper.copyId(scoreDef, d);                                                             // copy the id
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
+            Helper.addToMap(d, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make an entry in the miscMap
         }
 
         if (scoreDef.getAttribute("octave.default") != null) {                                      // if there is a default octave defined
             Element d = new Element("oct.default");
+            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime()))); // add the current date
             d.addAttribute(new Attribute("oct", scoreDef.getAttributeValue("octave.default")));     // copy the value
             Helper.copyId(scoreDef, d);                                                             // copy the id
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
+            Helper.addToMap(d, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make an entry in the miscMap
         }
 
         {   // if there is a transposition (we only support the trans.semi attribute, not trans.diat)
@@ -790,17 +792,17 @@ public class Mei {
             trans = (scoreDef.getAttribute("trans.semi") == null) ? 0 : Integer.parseInt(scoreDef.getAttributeValue("trans.semi"));
             trans += Helper.processClefDis(scoreDef);
             Element d = new Element("transposition");                                               // create a transposition entry
-            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
+            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime()))); // add the current date
             d.addAttribute(new Attribute("semi", Integer.toString(trans)));                         // copy the value or write "0" for no transposition (this is to cancel previous entries)
             Helper.copyId(scoreDef, d);                                                             // copy the id
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);    // make an entry in the miscMap
+            Helper.addToMap(d, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make an entry in the miscMap
         }
 
         // MIDI channel and port information are ignored as these are assigned automatically by this converter
         // attribute ppq is ignored ase the converter defines an own ppq resolution
         // TODO: tuning is defined by attributes tune.pname, tune.Hz and tune.temper; for the moment these are ignored
 
-        this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(Helper.cloneElement(scoreDef));    // make a copy of the element and put it into the global miscMap
+        Helper.addToMap(Helper.cloneElement(scoreDef), this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make a flat copy of the element and put it into the global miscMap
     }
 
     /** process an mei staffDef element
@@ -815,28 +817,30 @@ public class Mei {
         // handle local time signature entry
         Element t = this.makeTimeSignature(staffDef);                                                       // create a time signature element, or null if there is no such data
         if (t != null) {                                                                                    // if succeeded
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").appendChild(t);  // insert it into the global time signature map
+            Helper.addToMap(t, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap")); // insert it into the global time signature map
         }
 
         // handle local key signature entry
         t = this.makeKeySignature(staffDef);																// create a key signature element, or nullptr if there is no such data
         if (t != null) {                                                                                    // if succeeded
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").appendChild(t);   // insert it into the global key signature map
+            Helper.addToMap(t, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap"));  // insert it into the global key signature map
         }
 
         // store default values in miscMap
         if ((staffDef.getAttribute("dur.default") != null)) {                                               // if there is a default duration defined
             Element d = new Element("dur.default");                                                         // make an entry in the miscMap
+            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // add the current date
             d.addAttribute(new Attribute("dur", staffDef.getAttributeValue("dur.default")));                // copy the value
             Helper.copyId(staffDef, d);                                                                     // copy the id
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
+            Helper.addToMap(d, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make an entry in the miscMap
         }
 
         if ((staffDef.getAttribute("octave.default", staffDef.getNamespaceURI()) != null)) {                // if there is a default duration defined
             Element d = new Element("oct.default");                                                         // make an entry in the miscMap
+            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // add the current date
             d.addAttribute(new Attribute("oct", staffDef.getAttributeValue("octave.default")));             // copy the value
             Helper.copyId(staffDef, d);                                                                     // copy the id
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
+            Helper.addToMap(d, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make an entry in the miscMap
         }
 
 
@@ -848,13 +852,13 @@ public class Mei {
             d.addAttribute(new Attribute("semi", Integer.toString(trans)));                                 // copy the value or write "0" for no transposition (this is to cancel previous entries)
             d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
             Helper.copyId(staffDef, d);                                                                     // copy the id
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(d);   // make an entry in the miscMap
+            Helper.addToMap(d, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make an entry in the miscMap
         }
 
         // attribute ppq is ignored as the converter defines an own ppq resolution
         // TODO: tuning is defined by attributes tune.pname, tune.Hz and tune.temper; for the moment these are ignored
 
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(Helper.cloneElement(staffDef));    // make a copy of the element and put it into the global miscMap
+        Helper.addToMap(Helper.cloneElement(staffDef), this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make a flat copy of the element and put it into the global miscMap
 
         // process the child elements
         this.convert(staffDef);                                     // process the staff's children
@@ -912,11 +916,11 @@ public class Mei {
         }
 
         if (this.helper.currentPart == null) {                                                                      // if the layer is globally defined
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(Helper.cloneElement(layerDef));   // make a copy of the element and put it into the global miscMap
+            Helper.addToMap(Helper.cloneElement(layerDef), this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make a copy of the element and put it into the global miscMap
             return;
         }
 
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(Helper.cloneElement(layerDef));  // otherwise make a copy of the element and put it into the local miscMap
+        Helper.addToMap(Helper.cloneElement(layerDef), this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // otherwise make a flat copy of the element and put it into the local miscMap
     }
 
     /**
@@ -967,11 +971,11 @@ public class Mei {
         measure.addAttribute(new Attribute("midi.dur", Double.toString(dur)));
 
         this.helper.currentMeasure = measure;
-        this.convert(measure);                                      // process everything within this environment
-        this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
+        this.convert(measure);                                                                               // process everything within this environment
+        this.helper.accid.clear();                                                                           // accidentals are valid within one measure, but not in the succeeding measures, so forget them
         // update the duration of the measure; if the measure is overful, take the respective duration; if underful, keep the defined duration in accordance to its time signature
         Element cm = this.helper.currentMeasure;
-        this.helper.currentMeasure = null;                          // this has to be set null so that getMidiTime() does not return the measure's date
+        this.helper.currentMeasure = null;                                                                   // this has to be set null so that getMidiTime() does not return the measure's date
         double dur1 = Double.parseDouble(cm.getAttributeValue("midi.dur"));                                  // duration of the measure
         double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("midi.date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
         cm.getAttribute("midi.dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
@@ -989,10 +993,10 @@ public class Mei {
 
         // insert in time signature map
         if (this.helper.currentPart != null) {          // local entry
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").appendChild(s);  // insert it into the local time signature map
+            Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap")); // insert it into the local time signature map
         }
         else {                                          // global entry
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").appendChild(s);   // insert it into the global time signature map
+            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap"));  // insert it into the global time signature map
         }
     }
 
@@ -1007,10 +1011,10 @@ public class Mei {
 
         // insert in key signature map
         if (this.helper.currentPart != null) {          // local entry
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").appendChild(s);   // insert it into the local key signature map
+            Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap"));  // insert it into the local key signature map
         }
         else {                                          // global entry
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap").appendChild(s);    // insert it into the global key signature map
+            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap"));   // insert it into the global key signature map
         }
     }
 
@@ -1113,7 +1117,7 @@ public class Mei {
      */
     private Element makeTimeSignature(Element meiSource) {
         Element s = new Element("timeSignature");                                                 // create an element
-        Helper.copyId(meiSource, s);                                                        // copy the id
+        Helper.copyId(meiSource, s);                                                              // copy the id
 
         // date of the element
         s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));  // compute the date
@@ -1171,8 +1175,6 @@ public class Mei {
         LinkedList<Element> accidentals = new LinkedList<Element>();                                    // create an empty list which will be filled with the accidentals of this key signature
 
         String sig = "";                                                                                // indicates where the key lies in the circle of fifths, can also be "mixed"
-//        String accid = "";                                                                              // one single accidental
-//        String pname = "";                                                                              // a pitch name
         String mixed = "";                                                                              // the string value of a sig.mixed or key.sig.mixed attribute
 
         if (meiSource.getLocalName().equals("scoreDef") || meiSource.getLocalName().equals("staffDef")) {   // if meiSource is a scoreDef or staffDef
@@ -1181,10 +1183,6 @@ public class Mei {
             if (meiSource.getAttribute("key.sig") != null)
                 sig = meiSource.getAttributeValue("key.sig");
             else return null;                                                                           // no key.sig attribut means no key signature change, hence, skip
-//            if (meiSource.getAttribute("key.accid") != null)
-//                accid = meiSource.getAttributeValue("key.accid");
-//            if (meiSource.getAttribute("key.pname") != null)
-//                pname = meiSource.getAttributeValue("key.pname");
             if (meiSource.getAttribute("key.sig.mixed") != null)
                 mixed = meiSource.getAttributeValue("key.sig.mixed");
         }
@@ -1192,10 +1190,6 @@ public class Mei {
             // read the key signature related attributes
             if (meiSource.getAttribute("sig") != null)                                                  // if this attribute is not present meico interprets it as C major and does not skip as it does above (for scoreDefs and staffDefs); and there may of course be some keyAccid children
                 sig = meiSource.getAttributeValue("sig");
-//            if (meiSource.getAttribute("accid") != null)
-//                accid = meiSource.getAttributeValue("accid");
-//            if (meiSource.getAttribute("pname") != null)
-//                pname = meiSource.getAttributeValue("pname");
             if (meiSource.getAttribute("sig.mixed") != null)
                 mixed = meiSource.getAttributeValue("sig.mixed");
 
@@ -1364,7 +1358,7 @@ public class Mei {
         this.helper.addLayerAttribute(clone);                                               // add an attribute that indicates the layer
 
         // add element to the local miscMap/tupletSpanMap; during duration computation (helper.computeDuration()) this map is scanned for applicable entries
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").appendChild(clone);
+        Helper.addToMap(clone, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap"));
     }
 
     /** process an mei reh element (rehearsal mark)
@@ -1386,7 +1380,7 @@ public class Mei {
         marker.addAttribute(new Attribute("message", reh.getValue()));                                  // store its text or empty string
         this.helper.addLayerAttribute(marker);                                                          // add an attribute that indicates the layer
 
-        markerMap.appendChild(marker);      // add to the markerMap
+        Helper.addToMap(marker, markerMap);     // add to the markerMap
     }
 
     /** process an mei beatRpt element
@@ -1448,8 +1442,8 @@ public class Mei {
                 second.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // update date of second time signature element
 
                 // add both instructions to the timeSignatureMap
-                es.get(0).getParent().appendChild(first);
-                es.get(0).getParent().appendChild(second);
+                Helper.addToMap(first, (Element)es.get(0).getParent());
+                Helper.addToMap(second, (Element)es.get(0).getParent());
 
                 timeframe += timeframe2;
             }
@@ -1463,34 +1457,34 @@ public class Mei {
      * @param multiRpt an mei multiRpt element
      */
     private void processMultiRpt(Element multiRpt) {
-        double timeframe = 0;                                                                   // here comes the length of the timeframe to be repeated
+        double timeframe = 0;                                                                                                                                                           // here comes the length of the timeframe to be repeated
         double currentDate = this.helper.getMidiTime();
-        double measureLength = currentDate - this.helper.getOneMeasureLength();                 // length of one measure in ticks
+        double measureLength = currentDate - this.helper.getOneMeasureLength();                                                                                                         // length of one measure in ticks
 
         // get time signature element
         Elements ts = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
-        if (ts.size() == 0)                                                                                                                                                         // if local map empty
-            ts = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");     // get global entries
-        int timesign = ts.size() - 1;                                                                                                                                               // get index of the last element in ts
-        double tsdate = (timesign > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                      // get the date of the current time signature
+        if (ts.size() == 0)                                                                                                                                                             // if local map empty
+            ts = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");   // get global entries
+        int timesign = ts.size() - 1;                                                                                                                                                   // get index of the last element in ts
+        double tsdate = (timesign > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                     // get the date of the current time signature
 
-        // go back measure-wise, check for time signature changes, sum up the measure lengths to variable timeframe
-        for (int measureCount = (multiRpt.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRpt.getAttributeValue("num")); measureCount > 0; --measureCount) {        // for each measure
-            timeframe += measureLength;                                                                                         // add its length to the timeframe for repetition
-            while (tsdate >= (currentDate - timeframe)) {                                                                       // if we pass the date of the current time signature (and maybe others, too)
-                --timesign;                                                                                                     // choose predecessor in the ts list
-                tsdate = ((timesign) > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;               // get its date
+        // go back measure-wise, check for time signature changes, sum up the measure lengths into the timeframe variable
+        for (int measureCount = (multiRpt.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRpt.getAttributeValue("num")); measureCount > 0; --measureCount) {                   // for each measure
+            timeframe += measureLength;                                                                                                                                                 // add its length to the timeframe for repetition
+            while (tsdate >= (currentDate - timeframe)) {                                                                                                                               // if we pass the date of the current time signature (and maybe others, too)
+                --timesign;                                                                                                                                                             // choose predecessor in the ts list
+                tsdate = ((timesign) > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                  // get its date
                 measureLength = ((timesign) > 0) ? this.helper.computeMeasureLength(Integer.parseInt(ts.get(timesign).getAttributeValue("numerator")), Integer.parseInt(ts.get(timesign).getAttributeValue("denominator"))) : this.helper.computeMeasureLength(4, 4);   // update measureLength
             }
         }
 
         // copy the time signature elements we just passed and append them to the timeSignatureMap
         if (ts.size() != 0) {
-            Element tsMap = (Element)ts.get(0).getParent();                                     // get the map
-            for(++timesign; timesign < ts.size(); ++timesign) {                                 // go through all time signature elements we just passed
-                Element clone = Helper.cloneElement(ts.get(timesign));                          // clone the element
-                clone.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(clone.getAttributeValue("midi.date")) + timeframe));  // update its date
-                tsMap.appendChild(clone);
+            Element tsMap = (Element)ts.get(0).getParent();                                                                                         // get the map
+            for(++timesign; timesign < ts.size(); ++timesign) {                                                                                     // go through all time signature elements we just passed
+                Element clone = Helper.cloneElement(ts.get(timesign));                                                                              // clone the element
+                clone.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(clone.getAttributeValue("midi.date")) + timeframe));    // update its date
+                Helper.addToMap(clone, tsMap);
             }
         }
 
@@ -1531,7 +1525,7 @@ public class Mei {
 
         // append the elements in the els stack to the score map
         for (; !els.empty(); els.pop()) {
-            this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(els.peek());            // append element to score and pop from stack
+            Helper.addToMap(els.peek(), this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));       // append element to score and pop from stack
         }
 
         this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(currentDate + timeframe));                     // update currentDate counter
@@ -1550,7 +1544,7 @@ public class Mei {
         if (rest == null)                                                                               // if failed
             return;
 
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(rest);                          // insert in movement
+        Helper.addToMap(rest, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));                     // insert in movement
         this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))));  // update currentDate
     }
 
@@ -1594,7 +1588,7 @@ public class Mei {
         if (rest == null) return;                                                           // if failed to create a rest, cancel
 
         rest.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));   // compute date
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(rest);  // insert the rest into the score
+        Helper.addToMap(rest, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score")); // insert the rest into the score
 
         int num = (multiRest.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRest.getAttributeValue("num"));
         if (num > 1)                                                                        // if multiple measures (more than 1)
@@ -1618,7 +1612,7 @@ public class Mei {
         s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                               // else store attribute
         this.helper.addLayerAttribute(s);                                                                   // add an attribute that indicates the layer
         this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur)));    // update currentDate counter
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(s); // insert the new note into the part->dated->score
+        Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));    // insert the new note into the part->dated->score
 
         // this is just for the debugging in mei
         rest.addAttribute(new Attribute("midi.date", s.getAttributeValue("midi.date")));
@@ -1677,10 +1671,10 @@ public class Mei {
 
         // insert in local or global miscMap
         if (this.helper.currentPart == null) {                                              // if global information
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(s);    // insert in global miscMap
+            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // insert in global miscMap
             return;
         }
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(s);   // otherwise local information: insert in the part's miscMap
+        Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // otherwise local information: insert in the part's miscMap
     }
 
     /** process an mei pedal element
@@ -1708,10 +1702,10 @@ public class Mei {
 
         // make an entry in the global or local miscMap from which later on midi ctrl events can be generated
         if (this.helper.currentPart == null) {                                                          // if global information
-            this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(s);    // insert in global miscMap
+            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // insert in global miscMap
             return;
         }
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").appendChild(s);   // otherwise local information: insert in the part's miscMap
+        Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // otherwise local information: insert in the part's miscMap
     }
 
     /** process an mei note element
@@ -1787,7 +1781,7 @@ public class Mei {
 
         this.helper.addLayerAttribute(s);                                       // add an attribute that indicates the layer
 
-        this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score").appendChild(s);     // insert the new note into the part->dated->score
+        Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));    // insert the new note into the part->dated->score
     }
 
     /** this function can be used by the application to determine the minimal time resolution (pulses per quarternote) required to represent the shortest note value (found in mei, can go down to 2048) in midi; tuplets are not considered

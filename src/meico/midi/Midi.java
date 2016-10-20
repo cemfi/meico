@@ -93,7 +93,7 @@ public class Midi {
      * @throws IOException
      */
     protected void readMidiFile(File file) throws InvalidMidiDataException, IOException {
-		this.sequence = MidiSystem.getSequence(file);
+        this.sequence = MidiSystem.getSequence(file);
         this.file = file;
     }
 
