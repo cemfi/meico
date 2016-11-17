@@ -11,7 +11,7 @@
         | `message=`           | description                                                                                       |
         |----------------------|---------------------------------------------------------------------------------------------------|
         | `"fine"`             | the end mark of the piece;<br> it is generated from MEI `measure`attributes `left/right="end"`    |
-        | `"repetition start"` | indicates a possible jump target;<br> it is generated from MEI `measure`attributes `left/right="rptstart"` or `left/right="rptboth"` |
+        | `"repetition start"` | indicates a possible jump target; it is generated from MEI `measure`attributes `left/right="rptstart"` or `left/right="rptboth"` |
      
     - If an MEI `measure`'s attribute `left`or `right` has the value `"rptend"` or `"rptboth"`, an MSM `goto` element is generated and added to the `sequencingMap`. Theformat of the `goto` element is as follows<br> `<goto midi.date="..." target.date="..." target.id="..." activity="..."/>`
         
@@ -20,7 +20,7 @@
         | `midi.date`   | the position of the jump mark on the midi ticks timeline                                          |
         | `target.date` | the midi ticks position to jump to                                                                |
         | `target.id`   | the `xml:id` of the marker to jump to (the marker's `midi.date` should be equal to `target.date`) |
-        | `activity`    | documents in a bit sequence when the `goto` is active and when it is inactive;<br> e.g., `"1001"` would mean that the first time the playback reaches the `goto` it is active (do the jump),<br> the next two times inactive (ignore it), then once more active, and from then on always inactive;<br> for standard repetitions in music `activity="1"`;<br> the attribute is optional; if it is missing it is assumed as `activity="1"` by default |
+        | `activity`    | documents in a bit sequence when the `goto` is active and when it is inactive; e.g., `"1001"` would mean that the first time the playback reaches the `goto` it is active (do the jump), the next two times inactive (ignore it), then once more active, and from then on always inactive; for standard repetitions in music `activity="1"`; the attribute is optional; if it is missing it is assumed as `activity="1"` by default |
 
     - Class `meico.msm.Msm` implements method `resolveSequencingMaps()` which the user can call to expand all other maps and the parts' scores according to the global and sequencing information (in case of a local `sequencingMap` a part ignores the global one). This will delete all `sequencingMap`s from the MSM as they no longer apply to the data.
         - Private method `Msm.applySequencingMapToMap()` has been added.
