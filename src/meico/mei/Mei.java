@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+import meico.msm.Goto;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
@@ -262,7 +263,7 @@ public class Mei {
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv, ppq (pulses per quarter) sets the time resolution
      *
      * @param ppq the ppq resolution for the conversion; this is counterchecked with the minimal required resolution to capture the shortest duration in the mei data; if a higher resolution is necessary, this input parameter is overridden
-     * @param  dontUseChannel10 the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
+     * @param dontUseChannel10 the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
      * @param msmCleanup set true to return a clean msm file or false to keep all the crap from the conversion
      * @return the list of msm documents (movements) created
      */
@@ -293,7 +294,7 @@ public class Mei {
         }
         this.helper = null;                                                     // as this is a class variable it would remain in memory after this method, so it has to be nulled for garbage collection
 
-//        if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
+        if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
 
         // generate a dummy file name in the msm objects
         if (msms.size() == 1)                                                                                                       // if only one msm object (no numbering needed)
@@ -347,8 +348,7 @@ public class Mei {
                 case "barline":
                     continue;                                                   // can be ignored
 
-                case "beam":
-                    // contains the notes to be beamed TODO: relevant for expressive performance
+                case "beam":                                                    // contains the notes to be beamed TODO: relevant for expressive performance
                     break;
 
                 case "beamSpan":
@@ -413,9 +413,9 @@ public class Mei {
                 case "dynam":
                     continue;                                                   // TODO: relevant for expressive performance
 
-                case "ending":                                                  // TODO: What can I do with this? Could be relevant for expressive performance (phrasing) na dto generate sectionStructure
-
-                    break;
+                case "ending":                                                  // relevant in the context of repetitions
+                    this.processEnding(e);
+                    continue;
                 case "fermata":
                     continue;                                                   // TODO: relevant for expressive performance
 
@@ -726,10 +726,11 @@ public class Mei {
         ppq.addAttribute(new Attribute("ppq", Integer.toString(this.helper.ppq)));    // a default ppq value
 
         header.appendChild(ppq);
-        dated.appendChild(new Element("timeSignatureMap"));
-        dated.appendChild(new Element("keySignatureMap"));
-        dated.appendChild(new Element("miscMap"));
-        dated.appendChild(new Element("markerMap"));
+        dated.appendChild(new Element("timeSignatureMap"));                         // global time signatures
+        dated.appendChild(new Element("keySignatureMap"));                          // global key signatures
+        dated.appendChild(new Element("markerMap"));                                // global rehearsal marks
+        dated.appendChild(new Element("sequencingMap"));                            // global sequencing instructions (repetition, jump etc.)
+        dated.appendChild(new Element("miscMap"));                                  // a temporal map that is filled with content that may be useful during processing but will be deleted in the final msm
 
         global.appendChild(header);
         global.appendChild(dated);
@@ -930,7 +931,9 @@ public class Mei {
     private void processLayer(Element layer) {
         this.helper.currentLayer = layer;                                                                               // keep track of this current layer as long as we process its children
         String oldDate = this.helper.currentPart.getAttribute("currentDate").getValue();                                // store currentDate in oldDate for later use
+
         this.convert(layer);                                                                                            // process everything within this environment
+
         layer.addAttribute(new Attribute("currentDate", this.helper.currentPart.getAttribute("currentDate").getValue()));// store the currentDate in the layer element to later determine the latest of these dates as the staff's part's currentDate
         this.helper.accid.clear();                                                                                      // accidentals are valid only within one layer, so forget them
         this.helper.currentLayer = null;                                                                                // we are done processing this layer, set currentLayer to nullptr
@@ -949,37 +952,160 @@ public class Mei {
         }
     }
 
+    /**
+     * process an mei ending element, it basically creates entries in the global msm sequencingMap
+     * @param ending
+     */
+    private void processEnding(Element ending) {
+        double startDate = this.helper.getMidiTime();                                                                               // get the time at the beginning of the ending
+        int endingCount = this.helper.endingCounter++;                                                                              // get the ending count and increase the counter afterwards
+        Element sequencingMap = helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap");  // the sequencingMap
+
+        // get the number of the ending, if given, otherwise n will be MIN_VALUE
+        int n = Integer.MIN_VALUE;                                                                                                  // this is the number of the ending, the stupid MIN_VALUE will be replaced by a meaningful value during the following lines; if not, there is no numbering
+        if (ending.getAttribute("n") != null) {
+            if (ending.getAttributeValue("n").toLowerCase().contains("fine")) n = Integer.MAX_VALUE;                                // if it is a fine ending, give it the max integer value
+            else {                                                                                                                  // otherwise
+                ArrayList<Integer> endingNumbers = Helper.extractAllIntegersFromString(ending.getAttributeValue("n"));              // search the string for integers
+                if (!endingNumbers.isEmpty()) n = endingNumbers.get(0);                                                             // if there are one or more, take the first
+            }
+        }
+
+        // generate an id for the marker that is generated to indicate the start of this ending in the msm sequencingMap
+        Attribute endingLabel = ending.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+        String markerId = "endingMarker_" + ((endingLabel == null) ? UUID.randomUUID().toString() : endingLabel.getValue());        // if the ending has an id, use it, otherwise create a new one
+
+        // create an ending marker
+        Element marker = new Element("marker");                                                                                     // create the marker
+        marker.addAttribute(new Attribute("midi.date", Double.toString(startDate)));                                                // give it the startDate of the ending
+        marker.addAttribute(new Attribute("message", "ending" + ((ending.getAttribute("n") == null) ? ((ending.getAttribute("label") == null) ? (": " + ending.getAttributeValue("label")) : endingCount) : (" " + ending.getAttributeValue("n")))));   // create the message from either the n attribute, the label attribute or the endingCount
+        Attribute id = new Attribute("id", markerId);                                                                               // give it the markerId
+        id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");                                                             // set its namespace to xml
+        marker.addAttribute(id);                                                                                                    // add the id attribute to the marker
+        Helper.addToMap(marker, sequencingMap);                                                                                     // add it to the global sequencingMap
+
+        // create goto and add to map
+        // find the last repetition start marker before or at the date of this
+        Nodes ns = sequencingMap.query("descendant::*[local-name()='marker' and attribute::message='repetition start']");           // get all repetition start markers
+        Element repetitionStartMarker = null;                                                                                       // here comes the one we are looking for
+        for (int i=ns.size()-1; i >= 0; --i) {                                                                                      // search all the repetition start markers from back to front so we find the last marker that matches our condition
+            Element e = (Element)ns.get(i);                                                                                         // make it an element
+            if ((e.getAttribute("midi.date") != null) && (Double.parseDouble(e.getAttributeValue("midi.date")) <= startDate)) {     // does it have a date and is that date before the ending's startDate
+                repetitionStartMarker = e;                                                                                          // this is the one we are looking for
+                break;                                                                                                              // done
+            }
+        }
+        // find the first ending marker after the repetition start marker
+        boolean noPreviousEndings = false;                                                                                          // this will be set true if this is the first ending (requires a special treatment later on)
+        double find1stEndingMarkerAfterThisDate = (repetitionStartMarker == null) ? 0.0 : Double.parseDouble(repetitionStartMarker.getAttributeValue("midi.date")); // if we found a repetition start marker get its date, otherwise the date is 0.0
+        Nodes ends = sequencingMap.query("descendant::*[local-name()='marker' and contains(attribute::message, 'ending')]");        // get all ending markers
+        double dateOfGoto = Double.MAX_VALUE;                                                                                       // this will be filled with something meaningfull throughout the following lines
+        for (int i=0; i < ends.size(); ++i) {                                                                                       // go through all ending markers
+            Element end = (Element)ends.get(i);                                                                                     // make it an element
+            if (((repetitionStartMarker != null) && (end.getParent().indexOf(end) < end.getParent().indexOf(repetitionStartMarker)))// if the ending marker is before the repetition start marker, it cannot be the one we are looking for
+                    || (end.getAttribute("midi.date") == null)) {                                                                   // or if the element has no date, it is ignored
+                continue;                                                                                                           // so continue with the next
+            }
+            if (end == marker) {                                                                                                    // if we found the marker that we just created some lines above, this is the first ending
+                noPreviousEndings = true;                                                                                           // set the respective flag
+                dateOfGoto = startDate;                                                                                             // set the date to the startDate of the ending
+                break;                                                                                                              // we are done here
+            }
+            double firstEndingMarkerDate = Double.parseDouble(end.getAttributeValue("midi.date"));                                  // get the ending's date
+            if (firstEndingMarkerDate >= find1stEndingMarkerAfterThisDate) {                                                        // if the ending marker's date is at or after the repetition start marker, we found it
+                dateOfGoto = firstEndingMarkerDate;                                                                                 // put the date of the ending marker into variable dateOfGoto
+                break;                                                                                                              // done
+            }
+        }
+        // generate the goto element
+        Goto gotoObj = new Goto(dateOfGoto, startDate, markerId, "01", null);                                                       // create a Goto object
+        Element gt = gotoObj.toXML();                                                                                               // make an XML element from it
+        gt.addAttribute(new Attribute("n", Integer.toString(n)));                                                                   // add the numbering ()temporary, will be deleted during msmCleanup)
+
+        // add the goto to the global sequencingMap and try to take care of the order according to the numbering of the endings (on the basis of mei attribute n)
+        if (n == Integer.MIN_VALUE)                                                                                                 // if no meaningful ending number was found
+            Helper.addToMap(gt, sequencingMap);                                                                                     // simply add it to the global sequencingMap after other gotos that might be there at the same date
+        else {                                                                                                                      // otherwise there is a meaningful numbering and we try to insert the goto
+            Nodes gotosAtSameDate = sequencingMap.query("descendant::*[local-name()='goto' and attribute::midi.date='" + gotoObj.date + "']");  // get all gotos at the same date as the new goto
+            if (gotosAtSameDate.size() == 0) {                                                                                      // if it is the first ending
+                gt.addAttribute(new Attribute("first", "true"));                                                                    // this temporary attribute indicates that this goto is from the first ending and should be deleted if other endings follow
+                gt.getAttribute("target.id").setValue("");                                                                          // there is no marker at the end of this ending and the targetDate will be known after the children of this ending are processed
+                Helper.addToMap(gt, sequencingMap);                                                                                 // simply add to the map, it is the first element, so no order to take care of
+            }
+            else {                                                                                                                  // there are already other gotos
+                int index;
+                for (index=0; index < gotosAtSameDate.size(); ++index) {                                                            // go through all the gotos at the same date
+                    Element gtast = (Element)gotosAtSameDate.get(index);                                                            // make it an Element
+                    if (gtast.getAttribute("n") == null) continue;                                                                  // continue if it has no n attribute
+                    if (Integer.parseInt(gtast.getAttributeValue("n")) > n) break;                                                  // if the goto's n i larger than the new goto's number, we found the one in front of which we add the new goto
+                }
+                if (index == 0) gt.getAttribute("activity").setValue("1");                                                          // if the insertion would be before the first goto, this goto is immediately active
+                Element firstGoto = (Element)gotosAtSameDate.get(0);                                                                // get the first goto
+                if (index >= gotosAtSameDate.size()) Helper.addToMap(gt, sequencingMap);                                            // if the index is after the last goto at the dame date, we cann simply add the new goto at the end
+                else sequencingMap.insertChild(gt, sequencingMap.indexOf((gotosAtSameDate.size() == 0) ? marker : gotosAtSameDate.get(index)));  // otherwise insert the new goto at its respective position inbetween
+                if (firstGoto.getAttribute("first") != null) sequencingMap.removeChild(firstGoto);                                  // in any case, if the first goto is a first ending's goto, remove it
+
+            }
+        }
+
+        this.convert(ending);   // process everything within the ending
+
+        if (noPreviousEndings)  // if this was the first ending, it might be that no further ending will follow; however, this first ending should be left out at repetition; so we create a preliminary goto that does exactly this and should be removed if other endings follow later on
+            gt.getAttribute("target.date").setValue(Double.toString(this.helper.getMidiTime()));
+    }
+
     /** process an mei measure element
      *
      * @param measure an mei measure element
      */
     private void processMeasure(Element measure) {
-        measure.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));    // set the measure's date
+        double startDate = this.helper.getMidiTime();                                                           // get the date at the beginning of the measure
+        measure.addAttribute(new Attribute("midi.date", Double.toString(startDate)));                           // set the measure's date in attribute midi.date
 
         // compute the duration of this measure
-        double dur = 0.0;                                           // its duration
+        double dur1 = 0.0;                                                                                      // this will hold the duration of the measure according to the underlying time signature
 
         if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null)) {    // if there is a local time signature map that is not empty
-            Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
-            dur = this.helper.computeMeasureLength(Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));
+            Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");                                           // get the timeSignature elements
+            dur1 = this.helper.computeMeasureLength(Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));    // compute the measure's (preliminary) length from the time signature
         }
         else if (this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null) {   // if there is a global time signature map
-            Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
-            dur = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));
+            Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");        // get the timeSignature elements
+            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));  // compute the measure's (preliminary) length from the time signature
         }
 
-        measure.addAttribute(new Attribute("midi.dur", Double.toString(dur)));
+        measure.addAttribute(new Attribute("midi.dur", Double.toString(dur1)));                                 // add attribute midi.dur and store the official (time signature defined) duration in it (this will be adapted some lines below if necessary)
 
-        this.helper.currentMeasure = measure;
-        this.convert(measure);                                                                               // process everything within this environment
-        this.helper.accid.clear();                                                                           // accidentals are valid within one measure, but not in the succeeding measures, so forget them
-        // update the duration of the measure; if the measure is overful, take the respective duration; if underful, keep the defined duration in accordance to its time signature
-        Element cm = this.helper.currentMeasure;
-        this.helper.currentMeasure = null;                                                                   // this has to be set null so that getMidiTime() does not return the measure's date
-        double dur1 = Double.parseDouble(cm.getAttributeValue("midi.dur"));                                  // duration of the measure
-        double dur2 = this.helper.getMidiTime() - Double.parseDouble(cm.getAttributeValue("midi.date"));     // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
-        cm.getAttribute("midi.dur").setValue(Double.toString((dur1 >= dur2) ? dur1 : dur2));                 // take the longer duration as the measure's definite duration
+        this.helper.currentMeasure = measure;                                                                   // set the state variable currentMeasure to this measure
+        this.convert(measure);                                                                                  // process everything within the measure
+        this.helper.accid.clear();                                                                              // accidentals are valid within one measure, but not in the subsequent measures, so forget them
 
+        // update the duration of the measure
+        this.helper.currentMeasure = null;                                                                      // this has to be set null so that getMidiTime() does not return the measure's date
+        double endDate = this.helper.getMidiTime();                                                             // get the current date
+        double dur2 = endDate - startDate;                                                                      // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
+        if (dur1 >= dur2) {                                                                                     // if the measure us underfull or properly filled
+            if ((measure.getAttribute("metcon") != null) && (measure.getAttributeValue("metcon").equals("false"))) {    // if the measure's length does not have to correspond with the time signature
+                measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                               // take the duration from the fill state of the measure
+            }
+            else {                                                                                              // if the measure has to follow the time signature
+                // keep the measures official (time signature defined) length as set some lines above
+                endDate = startDate + dur1;                                                                     // in case it is underfull this ensures that the endDate of the measure is in accordance with the time signature and filled up with rests if necessary
+            }
+        }
+        else {                                                                                                  // if the measure is overfull
+            measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                                   // take this longer duration as the measure's length
+        }
+        // go through all msm parts and set the currentDate attribute to endDate
+        Elements parts = this.helper.currentMovement.getChildElements("part");                                  // get all parts
+        for (int i=0; i < parts.size(); ++i)                                                                    // go through all the parts
+            parts.get(i).getAttribute("currentDate").setValue(Double.toString(endDate));                        // set their currentDate attribute
+
+        // process barlines (end mark, repetition)
+        if (measure.getAttribute("left") != null)                                                               // if the measure has a "left" attribute
+            this.helper.barline2SequencingCommand(measure.getAttributeValue("left"), startDate, helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap"));   // create an msm sequencingCommand from this add it to the global sequencingMap
+        if (measure.getAttribute("right") != null)                                                              // if the measure has a "right" attribute
+            this.helper.barline2SequencingCommand(measure.getAttributeValue("right"), endDate, helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap"));  // create an msm sequencingCommand from this add it to the global sequencingMap
     }
 
     /** process an mei meterSig element
@@ -988,7 +1114,6 @@ public class Mei {
      */
     private void processMeterSig(Element meterSig) {
         Element s = this.makeTimeSignature(meterSig);   // create a time signature element, or nullptr if there is no sufficient data
-
         if (s == null) return;                          // if failed, cancel
 
         // insert in time signature map
@@ -1097,6 +1222,7 @@ public class Mei {
         dated.appendChild(new Element("timeSignatureMap"));
         dated.appendChild(new Element("keySignatureMap"));
         dated.appendChild(new Element("markerMap"));
+        dated.appendChild(new Element("sequencingMap"));
         Element miscMap = new Element("miscMap");
         miscMap.appendChild(new Element("tupletSpanMap"));
         dated.appendChild(miscMap);
@@ -1545,7 +1671,7 @@ public class Mei {
             return;
 
         Helper.addToMap(rest, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));                     // insert in movement
-        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))));  // update currentDate
+        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration"))));  // update currentDate
     }
 
     /** make a rest that lasts a complete measure
@@ -1594,7 +1720,7 @@ public class Mei {
         if (num > 1)                                                                        // if multiple measures (more than 1)
             rest.getAttribute("midi.duration").setValue(Double.toString(Double.parseDouble(rest.getAttributeValue("midi.duration")) * num));    // rest duration of one measure times the number of measures
 
-        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))));  // update currentDate counter
+        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))); // update currentDate counter
     }
 
     /** process an mei rest element
@@ -1611,7 +1737,7 @@ public class Mei {
 
         s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                               // else store attribute
         this.helper.addLayerAttribute(s);                                                                   // add an attribute that indicates the layer
-        this.helper.currentPart.addAttribute(new Attribute("currentDate", Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur)));    // update currentDate counter
+        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur));  // update currentDate counter
         Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));    // insert the new note into the part->dated->score
 
         // this is just for the debugging in mei
@@ -2079,7 +2205,7 @@ public class Mei {
 
         Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest' or local-name()='mRest' or local-name()='multiRest' or local-name()='chord' or local-name()='tuplet' or local-name()='mdiv' or local-name()='reh') and not(@xml:id)]");
         for (int i = 0; i < e.size(); ++i) {                                    // go through all the nodes
-            String uuid = "meico_" + UUID.randomUUID().toString();                         // generate new ids for them
+            String uuid = "meico_" + UUID.randomUUID().toString();              // generate new ids for them
             Attribute a = new Attribute("id", uuid);                            // create an attribute
             a.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");      // set its namespace to xml
             ((Element) e.get(i)).addAttribute(a);                               // add attribute to the node

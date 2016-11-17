@@ -182,6 +182,11 @@ public class MeiCoApp extends JFrame {
             return 1;
         }
 
+        // instead of using sequencingMaps (which encode repetitions, dacapi etc.) in the msm objects we resolve them and, hence, expand all scores and maps according to the sequencing information
+        for (int i=0; i < msms.size(); ++i) {           // we do this in all msm objects just exported from mei
+            msms.get(i).resolveSequencingMaps();        // this is the function call to do it (be aware: the sequencingMaps are deleted because they no longer apply)
+        }
+
         if (debug) {
             mei.writeMei(mei.getFile().getPath().substring(0, mei.getFile().getPath().length() - 4) + "-debug.mei"); // After the msm export, there is some new stuff in the mei ... mainly the date and dur attribute at measure elements (handy to check for numeric problems that occured during conversion), some ids and expanded copyofs. This was required for the conversion and can be output with this function call. It is, however, mainly interesting for debugging.
         }
@@ -805,20 +810,18 @@ public class MeiCoApp extends JFrame {
          */
         private class Msm4Gui extends Msm {
             private final JLabel[] panel;             // the actual gui extension
-            private Midi4Gui midi;
+            private Midi4Gui midi = null;
             private MeiCoApp app;
-            private boolean restsRemoved;
-            private double bpm;
+            private boolean restsRemoved = false;
+            private boolean sequencingMapsResolved = false;
+            private double bpm = 120.0;
             private boolean generateProgramChanges = true;
 
             public Msm4Gui(Msm msm, MeiCoApp app) {
                 this.setFile(msm.getFile().getPath());
                 this.setDocument(msm.getDocument());
                 this.panel = new JLabel[3];         // the name label, save label and msm2midi label
-                this.midi = null;
                 this.app = app;
-                this.restsRemoved = false;
-                this.bpm = 120.0;
             }
 
             /**
@@ -827,8 +830,6 @@ public class MeiCoApp extends JFrame {
              * @param app
              */
             public Msm4Gui(File file, MeiCoApp app) throws InvalidFileTypeException, IOException, ParsingException, UnsupportedAudioFileException {
-                this.midi = null;
-
                 if (file.getName().substring(file.getName().length()-4).equals(".msm")) {       // if it is an msm file
                     this.readMsmFile(file, false);                                              // load it
                 }
@@ -838,8 +839,6 @@ public class MeiCoApp extends JFrame {
 
                 this.panel = new JLabel[3];     // the name label, save label and msm2midi label
                 this.app = app;
-                this.restsRemoved = false;
-                this.bpm = 120.0;
             }
 
             /**
@@ -864,7 +863,19 @@ public class MeiCoApp extends JFrame {
                         }
                     });
                     removeRests.setEnabled(!this.restsRemoved);
+
+                    JMenuItem resolveSequencingMaps = new JMenuItem(new AbstractAction("Expand Repetitions") {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            resolveSequencingMaps();
+                            sequencingMapsResolved = true;
+                            this.setEnabled(false);
+                        }
+                    });
+                    resolveSequencingMaps.setEnabled(!this.sequencingMapsResolved);
+
                     msmNamePop.add(removeRests);
+                    msmNamePop.add(resolveSequencingMaps);
 
 
                     JLabel msmName = new JLabel(this.getFile().getName());

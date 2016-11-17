@@ -8,19 +8,20 @@ package meico.mei;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.thaiopensource.relaxng.jaxp.XMLSyntaxSchemaFactory;
 import meico.msm.Msm;
 import nu.xom.*;
 import org.xml.sax.SAXException;
-
 import javax.xml.transform.stream.StreamSource;
 
 public class Helper {
 
     protected int ppq = 720;                                            // default value for pulses per quarter
+    protected int endingCounter = 0;                                    // a counter of ending elements in the mei source
     protected boolean dontUseChannel10 = true;                          // set this flag false if you allow to "misuse" the midi drum channel for other instruments; in standard midi output this produces weird results, but when you work with vst plugins etc. there is no reason to avoid channel 10
     protected Element currentMovement = null;
     protected Element currentPart = null;                               // this points to the current part element in the msm
@@ -49,6 +50,7 @@ public class Helper {
      *
      */
     protected void reset() {
+        this.endingCounter = 0;
         this.currentMovement = null;
         this.currentPart = null;
         this.currentLayer = null;
@@ -242,7 +244,7 @@ public class Helper {
             return Double.parseDouble(this.currentPart.getAttributeValue("currentDate"));   // we have a more precise date somewhere within a measure
 
         if (this.currentMeasure != null)                                                    // if we are within a measure
-            return Double.parseDouble(this.currentMeasure.getAttributeValue("midi.date"));       // take its take
+            return Double.parseDouble(this.currentMeasure.getAttributeValue("midi.date"));  // take its take
 
         if (this.currentMovement == null)                                                   // if we are outside of any movement
             return 0.0;                                                                     // return 0.0
@@ -256,6 +258,21 @@ public class Helper {
                 latestDate = date;                                                          // set latestDate to date
         }
         return latestDate;                                                                  // return the latest date of all parts
+    }
+
+    /**
+     * this method parses an input string, extracts all integer substrings and returns them as a list of integers
+     * @param string
+     * @return
+     */
+    public static ArrayList<Integer> extractAllIntegersFromString(String string) {
+        ArrayList<Integer> results = new ArrayList<>();
+        Pattern p = Pattern.compile("-?\\d+");
+        Matcher m = p.matcher(string);
+        while (m.find()) {
+            results.add(Integer.parseInt(m.group()));
+        }
+        return results;                                         // return the resulting list of integers
     }
 
     /** compute the length of one measure in midi ticks at the currentDate in the currentPart of the currentMovement; if no time signature information available it returns the length of a 4/4 measure
@@ -277,7 +294,7 @@ public class Helper {
 
     }
 
-    /** compute the length of one measure with specified numerator and denominator values
+    /** compute the length of one measure with specified numerator and denominator values (the underlying time signature)
      *
      * @param numerator
      * @param denominator
@@ -466,6 +483,7 @@ public class Helper {
             if (n.get(i) instanceof Attribute)
                 ((Element) n.get(i).getParent()).removeAttribute((Attribute) n.get(i));
         }
+        msm.deleteEmptyMaps();
     }
 
     /** return the first element in the endids list with an endid attribute value that equals id
@@ -490,6 +508,66 @@ public class Helper {
         for (int j = this.getEndid(id); j >= 0; j = this.getEndid(id)) {    // find all pending elements in the endid list to be finished at this element
             this.endids.get(j).addAttribute(new Attribute("end", Double.toString(this.getMidiTime() + this.computeDuration(e))));     // finish corresponding element
             this.endids.remove(j);                                          // remove element from list, it is finished
+        }
+    }
+
+    /**
+     * this method converts the string of a barline (MEI element measure in attributes left and right) to an msm sequencing command (marker and/or goto element) and adds it to the global sequencingMap
+     * @param barline the string that can be read in MEI measure attributes "left" and "right"
+     * @param date the midi date
+     * @param sequencingMap the sequencingMap to add the elements to
+     */
+    protected void barline2SequencingCommand(String barline, double date, Element sequencingMap) {
+        String markerMessage = null;
+        boolean makeGoto = false;
+
+        // what does the barline say?
+        switch (barline) {
+            case "end":                                                             // it is an end line
+                markerMessage = "fine";                                             // set a marker message (actually unneccessary at the end of the score nut requires for dacapo-al-fine situations)
+                break;
+            case "rptstart":                                                        // it is a repetition start point
+                markerMessage = "repetition start";                                 // set marker message
+                break;
+            case "rptboth":                                                         // it is a repetition start and end point
+                markerMessage = "repetition start";                                 // set marker message
+                makeGoto = true;                                                    // trigger generation of a goto element in the sequencingMap
+                break;
+            case "rptend":                                                          // a repetition end point
+                makeGoto = true;                                                    // trigger generation of a goto element in the sequencingMap
+                break;
+            default:                                                                // all other types of barlines
+                return;                                                             // are irrelevant for the sequencing
+        }
+
+        // create a goto element and insert it into the sequencingMap
+        if (makeGoto) {                                                             // if a goto element has to be generated
+            Element gt = new Element("goto");                                       // make it
+            gt.addAttribute(new Attribute("midi.date", Double.toString(date)));     // give it the date
+            gt.addAttribute(new Attribute("activity", "1"));                        // process this goto at the first time, later on ignore it
+            gt.addAttribute(new Attribute("target.date", "0"));                     // add the target.date attribute by default initialized with "0" (which means to start from the beginning)
+            gt.addAttribute(new Attribute("target.id", ""));                        // add an empty target.id attribute (which means to start from the beginning)
+            int index = Helper.addToMap(gt, sequencingMap);                         // insert the goto into the sequencingMap and store its index because we need to find the marker to jump to
+            Nodes ns = sequencingMap.query("descendant::*[local-name()='marker' and attribute::message='repetition start']");       // get all the markers that are repetition start points
+            for (int i = ns.size()-1; i >= 0; --i) {                                                                                // check them from back to front and find
+                Element n = (Element)ns.get(i);                                                                                     // the element
+                if (Double.parseDouble(n.getAttributeValue("midi.date")) < date) {                                                  // that has a midi.date right before the goto's midi.date
+                    gt.getAttribute("target.date").setValue(n.getAttributeValue("midi.date"));                                      // take this as jump's target date
+                    gt.getAttribute("target.id").setValue("#" + n.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace")); // take this as the jump's target marker
+                    break;                                                                                                          // done
+                }
+            }                                                                                                                       // if nothing was found in this for loop, target.date and target.id remain as initialized
+        }
+
+        // generate a marker (potential jump target) and insert it into the sequencingMap
+        if (markerMessage != null) {                                                // if a marker should be generated
+            Element marker = new Element("marker");                                 // do so
+            marker.addAttribute(new Attribute("midi.date", Double.toString(date))); // give it a midi.date
+            marker.addAttribute(new Attribute("message", markerMessage));           // set its message
+            Attribute id = new Attribute("id", UUID.randomUUID().toString());       // give it a UUID
+            id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");         // set its namespace to xml
+            marker.addAttribute(id);                                                // add the id attribute to the marker
+            Helper.addToMap(marker, sequencingMap);                                 // add the marker to the sequencingMap
         }
     }
 

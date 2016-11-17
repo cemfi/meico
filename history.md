@@ -1,6 +1,41 @@
 ###Version History
 
 
+####v0.2.8
+- Added method `Msm.deleteEmptyMaps()`. It removes all empty maps, i.e. all elements with a substring `"Map"` in the local-name (`timeSignatureMap`, `keySignatureMap`, `markerMap`, `sequencingMap` etc.), from the XML tree. This is to make the MSM file a bit smaller and less cluttered.
+- Added methods `getElementAtAfter()` and `getElementBeforeAt()` to class `Msm`, helper methods for navigation within maps.
+- Repetition support implemented in meico, see the following lines for details.
+- Added local and global `sequencingMap`s to MSM. These hold information about the arrangement, i.e. repetitions, jumps etc. These will be encoded with elements `marker` (same as in the `markerMap` but with a UUID) and `goto` (uses the `marker`s' UUID to indicate jump target).
+    - The `marker`s' `message` attributes describe the meaning of the marker: `<marker midi.date="..." message="..." xml:id="..."/>`
+        
+        | `message=`           | description                                                                                       |
+        |----------------------|---------------------------------------------------------------------------------------------------|
+        | `"fine"`             | the end mark of the piece;<br> it is generated from MEI `measure`attributes `left/right="end"`    |
+        | `"repetition start"` | indicates a possible jump target;<br> it is generated from MEI `measure`attributes `left/right="rptstart"` or `left/right="rptboth"` |
+     
+    - If an MEI `measure`'s attribute `left`or `right` has the value `"rptend"` or `"rptboth"`, an MSM `goto` element is generated and added to the `sequencingMap`. Theformat of the `goto` element is as follows<br> `<goto midi.date="..." target.date="..." target.id="..." activity="..."/>`
+        
+        | Attribute     | Description                                                                                       |
+        |---------------|---------------------------------------------------------------------------------------------------|
+        | `midi.date`   | the position of the jump mark on the midi ticks timeline                                          |
+        | `target.date` | the midi ticks position to jump to                                                                |
+        | `target.id`   | the `xml:id` of the marker to jump to (the marker's `midi.date` should be equal to `target.date`) |
+        | `activity`    | documents in a bit sequence when the `goto` is active and when it is inactive;<br> e.g., `"1001"` would mean that the first time the playback reaches the `goto` it is active (do the jump),<br> the next two times inactive (ignore it), then once more active, and from then on always inactive;<br> for standard repetitions in music `activity="1"`;<br> the attribute is optional; if it is missing it is assumed as `activity="1"` by default |
+
+    - Class `meico.msm.Msm` implements method `resolveSequencingMaps()` which the user can call to expand all other maps and the parts' scores according to the global and sequencing information (in case of a local `sequencingMap` a part ignores the global one). This will delete all `sequencingMap`s from the MSM as they no longer apply to the data.
+        - Private method `Msm.applySequencingMapToMap()` has been added.
+        - Class `meico.msm.Goto` has been added to represent `goto` elements from the `sequencingMap` and make processing more convenient.
+    - MSM tool to resolve `sequencingMap`s has been added to the window mode (MSM option "Expand Repetitions") and command line mode (here, it is done automatically).
+    - If elements are repeated/copied that have an `xml:id`, the id is changed to `[original id] + "_repetition"`.
+- Extended processing of MEI `measure` elements in method `Mei.processMeasure()`.
+    - Attribute `metcon` is now taken into account if a measure is underfull. If `metcon == "false"`, the measure can be shorter than what is defined by the time signature. An underfull measure with no `metcon` attribute or `metcon != "false"` will be filled up with rests. Overfull measures, however, will always be extended.
+    - Barlines of measures are encoded in attributes `left`and `right`. If these have sequencing-related information (`rptstart`, `rptend`, `rptboth`, or `end`) the respective information in the global MSM `sequencingMap` are generated. Therefor, the new method `Helper.barline2SequencingCommand()` has been added which is called from `Mei.processMeasure()`.
+- Processing of MEI `ending` elements added via method `Mei.processEnding()`.
+    - If there is only one ending, playback will skip it at repetition by default.
+    - Meico tries to realize the order of the endings according to the numbering in the MEI `n` attributes. These attribute should contain an integer substring (e.g., `"1"`, `"1."`, `"2nd"`, `"Play this at the 3rd time!"`, but not `"first"` or `"Play this at the third time!"`). (Sub-)String `"fine"`/`"Fine"`/`"FINE"` will also be recognized. Strings such as `"1-3"` will be recognized as `"1"`, this means that more complex instructions will not be recognized correctly due to the lack of unambiguous, binding formalization (meico is no "guessing machine"). If meico fails to find an `n` attribute or extract a meaningful numbering from it, the endings are played in order of appearance in the MEI source. Meico does not analyse attribute `label`; so the editor should always encode the numbering in attribute `n`.
+    - We tried to cover a variety of repetition and ending constellations but it is virtually impossible to cover all the crude situations that MEI allows (e.g., nested repetitions, repetitions within endings). So be not disappointed if some unorthodox situation from your special music encoding project does not work as expected.
+
+
 ####v0.2.7
 - In MEI, global (score-wise) and local (staff-wise and layer-wise) key signatures can be mixed. Rule of thumb is, the latest key signature before a `note` is the one that has to be considered. So far, meico ignored global data if there was a local entry once. This lead to some wrong results if global entries come after local (e.g., at the beginning it may be encoded in `staffDef` elements but later in `scoreDef` elements; see, for instance, `Hummel_Concerto_for_trumpet.mei` in the sample encodings). This issue is now fixed. If local and global key signature information deviate from each other meico trys to add global data to the local `keySignatureMap` in MPM where necessary. However, this is done ad hoc in method `Helper.computePitch()` in a very local context. Hence, it is not 100% perfect. This means, if the necessity for local copies occurs somewhere within the piece, past `keySignature` elements will be missing until this point.
 - New method `Helper.addToMap()`. This is from now on used to insert new child elements into maps (sequential lists with elements that have an attribute `midi.date`) and ensure the timely order of the elements. All relevant methods in classes `Helper`and `Mei` have been adapted accordingly.

@@ -11,19 +11,19 @@ Meico is a converter framework for MEI files. Even though MEI is a quasi-standar
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq)
 - MSM to MIDI conversion
 - MIDI to audio conversion (with freely choosable SoundFont and Downloadable Sounds)
-- MEI processing functions (validation, xml:id generation, resolution of elements with copyof attribute)
-- MSM processing functions (remove rest elements from the score)
+- MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute)
+- MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`)
 - an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers
 - basic MIDI and audio playback
 - two standalone modes (command line mode, window mode).
 
-There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). Repetitions are not resolved. Several MEI elements and attributes are not supported so far (e.g. meterSigGrp, uneume, lyrics). The MEI file must be unambiguous, i.e., it should not contain any variants (app, choice etc.). A tool to resolve ambiguity is under construction and will soon be published. We are also developing a schematron rule set to give detailed feedback on the supported and unsupported MEI elements when an MEI file is loaded into meico.
+There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). Several MEI elements and attributes are not supported so far (e.g. `meterSigGrp`, `uneume`, `lyrics`). The MEI file must be unambiguous, i.e., it should not contain any variants (`app`, `choice` etc.). A tool to resolve ambiguity is under construction and will soon be published. We are also developing a schematron rule set to give detailed feedback on the supported and unsupported MEI elements when an MEI file is loaded into meico.
 
 ###How to use meico?
 
 Meico can be used in several different ways. The jar file (see the [latest release](https://github.com/cemfi/meico/releases/latest)) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.7 (or higher) Runtime Environment installed on your computer. 
 
-Starting the standalone jar without any command line options will start the windowed gui mode of meico. Simply drag your MEI, MSM, MIDI, and Wave files into the window. You can find context information on each interface element in the tooltips and statusbar. There are several additional functions accessible via right click. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement. Conversion from MIDI to audio may take some time when it is a long piece. We have not built in a progress display yet. Just be patient until the conversion button changes its color back and the audio data appears. To get better quality sounds than Java's built-in default instruments (those used for the Midi playback function), we recommend downloading one of [these soundfonts](https://sourceforge.net/projects/androidframe/files/soundfonts/) and use it via right clicking the Midi-to-audio conversion button, option "Choose soundbank". 
+Starting the standalone jar without any command line options will start the window mode of meico. Simply drag your MEI, MSM, MIDI, and Wave files into the window. You can find context information on each interface element in the tooltips and statusbar. There are several additional functions accessible via right click. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement. Conversion from MIDI to audio may take some time when it is a long piece. We have not built in a progress display yet. Just be patient until the conversion button changes its color back and the audio data appears. To get better quality sounds than Java's built-in default instruments (those used for the Midi playback function), we recommend downloading one of [these soundfonts](https://sourceforge.net/projects/androidframe/files/soundfonts/) and use it via right clicking the Midi-to-audio conversion button, option "Choose soundbank". 
 
 ![A screenshot of the meico graphical user interface.](https://raw.githubusercontent.com/cemfi/meico/master/figures/meico-screenshot.png)
 
