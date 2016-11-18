@@ -266,9 +266,12 @@ public class Helper {
      * @return
      */
     public static ArrayList<Integer> extractAllIntegersFromString(String string) {
-        ArrayList<Integer> results = new ArrayList<>();
+        string.replaceAll(" bis ", " -");
+        string.replaceAll(" to ", " -");
         Pattern p = Pattern.compile("-?\\d+");
         Matcher m = p.matcher(string);
+
+        ArrayList<Integer> results = new ArrayList<>();
         while (m.find()) {
             results.add(Integer.parseInt(m.group()));
         }
@@ -475,7 +478,7 @@ public class Helper {
      */
     protected static void msmCleanup(Msm msm) {
         // delete all miscMaps
-        Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie | descendant::*[attribute::layer]/attribute::layer");
+        Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie | descendant::*[attribute::layer]/attribute::layer | descendant::*[local-name()='goto' and attribute::n]/attribute::n");
         for (int i=0; i < n.size(); ++i) {
             if (n.get(i) instanceof Element)
                 n.get(i).getParent().removeChild(n.get(i));

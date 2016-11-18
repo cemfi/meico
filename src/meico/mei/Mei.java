@@ -962,12 +962,18 @@ public class Mei {
         Element sequencingMap = helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap");  // the sequencingMap
 
         // get the number of the ending, if given, otherwise n will be MIN_VALUE
+        String endingText = "";                                                                                                     // this will get the text of attribute n or label
+        ArrayList<Integer> endingNumbers;                                                                                           // this will hold all integers that can be extracted from the ending text (attribute n or label)
+        String activity = "1";                                                                                                      // this ending will be played at least once (the first time if it is ending 1, the second time if it is a later ending, in that case a preceding "0" will be added later on)
         int n = Integer.MIN_VALUE;                                                                                                  // this is the number of the ending, the stupid MIN_VALUE will be replaced by a meaningful value during the following lines; if not, there is no numbering
-        if (ending.getAttribute("n") != null) {
-            if (ending.getAttributeValue("n").toLowerCase().contains("fine")) n = Integer.MAX_VALUE;                                // if it is a fine ending, give it the max integer value
-            else {                                                                                                                  // otherwise
-                ArrayList<Integer> endingNumbers = Helper.extractAllIntegersFromString(ending.getAttributeValue("n"));              // search the string for integers
-                if (!endingNumbers.isEmpty()) n = endingNumbers.get(0);                                                             // if there are one or more, take the first
+        if (ending.getAttribute("n") != null) endingText = ending.getAttributeValue("n");                                           // if we have an attribute n, take this as ending text
+        else if (ending.getAttribute("label") != null) endingText = ending.getAttributeValue("label");                              // otherwise, if there is an attribute label, take that
+        if (endingText.toLowerCase().contains("fine"))                                                                              // if the ending text says fine
+            n = Integer.MAX_VALUE;                                                                                                  // set n to the max integer value
+        else {                                                                                                                      // otherwise
+            endingNumbers = Helper.extractAllIntegersFromString(endingText);                                                        // search the ending text for integers
+            if (!endingNumbers.isEmpty()) {                                                                                         // if there is at least one int in the ending text
+                n = endingNumbers.get(0);                                                                                           // take the first as ending number
             }
         }
 
@@ -1018,7 +1024,7 @@ public class Mei {
             }
         }
         // generate the goto element
-        Goto gotoObj = new Goto(dateOfGoto, startDate, markerId, "01", null);                                                       // create a Goto object
+        Goto gotoObj = new Goto(dateOfGoto, startDate, markerId, "0"+activity, null);                                               // create a Goto object
         Element gt = gotoObj.toXML();                                                                                               // make an XML element from it
         gt.addAttribute(new Attribute("n", Integer.toString(n)));                                                                   // add the numbering ()temporary, will be deleted during msmCleanup)
 
@@ -1039,7 +1045,7 @@ public class Mei {
                     if (gtast.getAttribute("n") == null) continue;                                                                  // continue if it has no n attribute
                     if (Integer.parseInt(gtast.getAttributeValue("n")) > n) break;                                                  // if the goto's n i larger than the new goto's number, we found the one in front of which we add the new goto
                 }
-                if (index == 0) gt.getAttribute("activity").setValue("1");                                                          // if the insertion would be before the first goto, this goto is immediately active
+                if (index == 0) gt.getAttribute("activity").setValue(activity);                                                     // if the insertion would be before the first goto, this goto is immediately active
                 Element firstGoto = (Element)gotosAtSameDate.get(0);                                                                // get the first goto
                 if (index >= gotosAtSameDate.size()) Helper.addToMap(gt, sequencingMap);                                            // if the index is after the last goto at the dame date, we cann simply add the new goto at the end
                 else sequencingMap.insertChild(gt, sequencingMap.indexOf((gotosAtSameDate.size() == 0) ? marker : gotosAtSameDate.get(index)));  // otherwise insert the new goto at its respective position inbetween
