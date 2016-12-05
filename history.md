@@ -1,6 +1,10 @@
 ###Version History
 
 
+####v0.2.10
+- Some adds to the instruments dictionary.
+
+
 ####v0.2.9
 - When creating MSM `goto` elements from endings, the elements get a temporal attribute `n` (derives from the respective MEI `ending` element which also has an `n` attribute). In MSM this attribute is only required for the conversion and should not be present in the final output MSM. Method `Helper.msmCleanup()` has been extended accordingly.
 - If an MEI `ending` has no attribute `n`, meico now checks for attribute `label` and takes this to search for numbering information. However, in case that both attributes are present, attribute `n` is preferred.
