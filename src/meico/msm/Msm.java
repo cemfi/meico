@@ -239,7 +239,7 @@ public class Msm {
             }
 
             // go through the score and all maps (except the sequencingMap) and apply the sequencingMap to them
-            Nodes maps = part.query("descendant::*[local-name()='score' or (contains(local-name(), 'Map') and not(local-name()='sequencingMap'))]");    // get the score and all maps
+            Nodes maps = part.query("descendant::*[local-name()='score' or (contains(local-name(), 'Map') and not((local-name()='sequencingMap') or (local-name()='miscMap')))]");    // get the score and all maps
             for (int j=0; j < maps.size(); ++j) {                                                                   // go through them all
                 Element map = (Element)maps.get(j);                                                                 // one map
                 if (map.getChildCount() == 0) continue;                                                             // if it is empty, continue with the next map

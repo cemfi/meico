@@ -89,9 +89,9 @@ public class MeiCoApp extends JFrame {
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
                 System.out.println("[-c] or [--dont-use-channel-10]         do not use channel 10 (drum channel) in MIDI");
                 System.out.println("[-t argument] or [--tempo argument]     set MIDI tempo (bpm), default is 120 bpm");
-                System.out.println("[-w] or [--wav]                         convert to WAVE (and internally to MSM and MIDI)");
+                System.out.println("[-w] or [--wav]                         convert to Wave (and internally to MSM and MIDI)");
                 System.out.println("[-s argument] or [--soundbank argument] use a specific sound bank file (.sf2, .dls) for Wave conversion");
-                System.out.println("[-d] or [--debug]                       write additional debug versiond of MEI and MSM");
+                System.out.println("[-d] or [--debug]                       write additional debug version of MEI and MSM");
                 System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
 //                System.exit(0);
             }

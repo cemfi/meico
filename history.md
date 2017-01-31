@@ -1,6 +1,11 @@
 ###Version History
 
 
+####v0.2.11
+- Bugfix in `meico.msm.Msm.resolveSequencingMaps()`.
+- Added meicoPy, a Python demo script. This demonstrates the usage of meico within Python. It is a reimplementation of meico's command line mode in Python.
+
+
 ####v0.2.10
 - Some adds to the instruments dictionary.
 
