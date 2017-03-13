@@ -16,7 +16,7 @@ Meico is a converter framework for MEI files. Even though MEI is a quasi-standar
 - an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers,
 - basic MIDI and audio playback,
 - two standalone modes (command line mode, window mode),
-- further output formats are MusicXML, MARC, MODS, MUP (these are based on the Music Encoding Initiative's XSLT stylesheets from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools), slow and buggy),
+- further output formats are MusicXML, MARC, MODS, MUP (these are based on the Music Encoding Initiative's XSLT stylesheets from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools)).
 
 There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). Several MEI elements and attributes are not supported so far (e.g. `meterSigGrp`, `uneume`, `lyrics`). The MEI file must be unambiguous, i.e., it should not contain any variants (`app`, `choice` etc.). A tool to resolve ambiguity is under construction and will soon be published. We are also developing a schematron rule set to give detailed feedback on the supported and unsupported MEI elements when an MEI file is loaded into meico.
 
