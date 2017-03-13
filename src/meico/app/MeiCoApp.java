@@ -6,8 +6,8 @@ package meico.app;
  */
 
 import meico.audio.Audio;
+import meico.mei.Helper;
 import meico.mei.Mei;
-import meico.midi.Midi;
 import meico.msm.Msm;
 
 import net.miginfocom.swing.MigLayout;
@@ -63,11 +63,11 @@ public class MeiCoApp extends JFrame {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        if (args.length == 0) {                 // if meico.jar is called without command line arguments
-            new MeiCoApp("meico - MEI Converter", true);                 // start meico in window mode
+        if (args.length == 0) {                         // if meico.jar is called without command line arguments
+            new MeiCoApp("meico - MEI Converter", true);// start meico in window mode
         }
-        else                                    // in case of command line arguments
-            System.exit(commandLineMode(args));          // run the command line mode
+        else                                            // in case of command line arguments
+            System.exit(commandLineMode(args));         // run the command line mode
     }
 
     /**
@@ -81,9 +81,13 @@ public class MeiCoApp extends JFrame {
             if (arg.equals("-?") || arg.equals("--help")) {
                 System.out.println("Meico requires the following arguments:\n");
                 System.out.println("[-?] or [--help]                        show this help text");
-                System.out.println("[-v] or [--validation]                  validate loaded MEI file");
+                System.out.println("[-v] or [--validate]                    validate loaded MEI file");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
+                System.out.println("[-x] or [--musicxml]                    convert to MusicXml");
+                System.out.println("[-k] or [--marc]                        convert to MARC");
+                System.out.println("[-o] or [--mods]                        convert to MODS");
+                System.out.println("[-u] or [--mup]                         convert to MUP");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
                 System.out.println("[-i] or [--midi]                        convert to MIDI (and internally to MSM)");
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
@@ -101,6 +105,10 @@ public class MeiCoApp extends JFrame {
         boolean validate = false;
         boolean addIds = false;
         boolean resolveCopyOfs = false;
+        boolean musicxml = false;
+        boolean marc = false;
+        boolean mods = false;
+        boolean mup = false;
         boolean msm = false;
         boolean midi = false;
         boolean wav = false;
@@ -110,18 +118,22 @@ public class MeiCoApp extends JFrame {
         double tempo = 120;
         File soundbank = null;
         for (int i = 0; i < args.length-1; ++i) {
-            if ((args[i].equals("-v")) || (args[i].equals("--validation"))) { validate = true; continue; }
+            if ((args[i].equals("-v")) || (args[i].equals("--validate"))) { validate = true; continue; }
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
+            if ((args[i].equals("-x")) || (args[i].equals("--musicxml"))) { musicxml = true; continue; }
+            if ((args[i].equals("-k")) || (args[i].equals("--marc"))) { marc = true; continue; }
+            if ((args[i].equals("-o")) || (args[i].equals("--mods"))) { mods = true; continue; }
+            if ((args[i].equals("-u")) || (args[i].equals("--mup"))) { mup = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
             if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
             if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
             if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
             if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; continue; }
-            if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[i+1]); continue; }
+            if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[++i]); continue; }
             if ((args[i].equals("-s")) || (args[i].equals("--soundbank"))) {
-                soundbank = new File(args[i+1]);
+                soundbank = new File(args[++i]);
                 try {
                     soundbank = new File(soundbank.getCanonicalPath());
                 } catch (IOException e) {
@@ -159,6 +171,30 @@ public class MeiCoApp extends JFrame {
             return 66;
         }
 
+        // convert mei -> musicxml
+        if (musicxml) {
+            System.out.println("Converting MEI to MusicXML.");
+            mei.exportMusicXml().writeMusicXml();
+        }
+
+        // convert mei -> marc
+        if (marc) {
+            System.out.println("Converting MEI to MARC.");
+            mei.exportMarc().writeMarc();
+        }
+
+        // convert mei -> mods
+        if (mods) {
+            System.out.println("Converting MEI to MODS.");
+            mei.exportMods().writeMods();
+        }
+
+        // convert mei -> mup
+        if (mup) {
+            System.out.println("Converting MEI to MusicXml.");
+            mei.exportMup().writeMup();
+        }
+
         // optional mei processing functions
         if (resolveCopyOfs) {
             System.out.println("Processing MEI: resolving copyofs.");
@@ -188,7 +224,7 @@ public class MeiCoApp extends JFrame {
         }
 
         if (debug) {
-            mei.writeMei(mei.getFile().getPath().substring(0, mei.getFile().getPath().length() - 4) + "-debug.mei"); // After the msm export, there is some new stuff in the mei ... mainly the date and dur attribute at measure elements (handy to check for numeric problems that occured during conversion), some ids and expanded copyofs. This was required for the conversion and can be output with this function call. It is, however, mainly interesting for debugging.
+            mei.writeMei(Helper.getFilenameWithoutExtension(mei.getFile().getPath()) + "-debug.mei"); // After the msm export, there is some new stuff in the mei ... mainly the date and dur attribute at measure elements (handy to check for numeric problems that occured during conversion), some ids and expanded copyofs. This was required for the conversion and can be output with this function call. It is, however, mainly interesting for debugging.
         }
 
         if (msm) {

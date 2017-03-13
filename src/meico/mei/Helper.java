@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 import com.thaiopensource.relaxng.jaxp.XMLSyntaxSchemaFactory;
 import meico.msm.Msm;
 import nu.xom.*;
+import nu.xom.xslt.XSLException;
+import nu.xom.xslt.XSLTransform;
 import org.xml.sax.SAXException;
 import javax.xml.transform.stream.StreamSource;
 
@@ -1183,5 +1185,74 @@ public class Helper {
         pitchdata.add(Integer.toString(outputOct));
 
         return pitch;
+    }
+
+    /**
+     * just a little helper method to separate the filename from the extension
+     * @param filename filename string incl. extension (may include the complete path)
+     * @return filename/path without extension
+     */
+    public static String getFilenameWithoutExtension(String filename){
+        int i = filename.lastIndexOf('.');
+
+        if (i == 0)
+            return filename;
+
+        return filename.substring(0, i);
+    }
+
+    /**
+     * a helper method to perform XSL transforms
+     * @param input the in input xml document
+     * @param stylesheet the XSLT stylesheet
+     * @return the output Document of the transform or null if output not contains a single root or stylesheet error occurs
+     */
+    public static Document xslTransformToDocument(Document input, Document stylesheet) {
+        Builder builder = new Builder();
+        try {
+            XSLTransform transform = new XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
+            Nodes output = transform.transform(input);              // do the transform
+            return XSLTransform.toDocument(output);                 // create a Document instance from the output
+        }
+        catch (XMLException ex) {
+            System.err.println("Result did not contain a single root.");
+            return null;
+        }
+        catch (XSLException ex) {
+            System.err.println("Stylesheet error.");
+            return null;
+        }
+    }
+
+    /**
+     * a helper method to perform XSL transforms
+     * @param input the in input xml document
+     * @param stylesheet the XSLT stylesheet
+     * @return the output string
+     */
+    public static String xslTransformToString(Document input, Document stylesheet) {
+        String result = "";
+        Nodes output = null;
+        Builder builder = new Builder();
+
+        try {
+            XSLTransform transform = new XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
+            output = transform.transform(input);                    // do the transform
+        }
+        catch (XMLException ex) {
+            System.err.println("Result did not contain a single root.");
+            return "";
+        }
+        catch (XSLException ex) {
+            System.err.println("Stylesheet error.");
+            return "";
+        }
+
+        // compile output string
+        for (int i = 0; i < output.size(); i++) {
+            result += output.get(i).toXML();
+        }
+
+        return result;
     }
 }

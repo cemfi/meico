@@ -8,14 +8,15 @@ Contributor: [Simon Waloschek](https://github.com/sonovice)<br>
 
 Meico is a converter framework for MEI files. Even though MEI is a quasi-standard for digital music editions, there is few software support for it. If you want to listen to the music in your MEI file, you need a MIDI or audio export. If you want to process the musical data (e.g., for Music Information Retrieval), there are many better suited formats and representations than MEI. With meico we address these issues. Meico implements methods to convert MEI data into the MSM (Musical Sequence Markup) format, an intermediate format that we defined for further use in other projects. From MSM, the MIDI export and audio rendering are quite straight forward. Currently, meico is a beta release. The following features are implemented:
 
-- MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq)
-- MSM to MIDI conversion
-- MIDI to audio conversion (with freely choosable SoundFont and Downloadable Sounds)
-- MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute)
-- MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`)
-- an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers
-- basic MIDI and audio playback
-- two standalone modes (command line mode, window mode).
+- MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq),
+- MSM to MIDI conversion,
+- MIDI to audio conversion (with freely choosable SoundFont and Downloadable Sounds),
+- MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute),
+- MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`),
+- an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers,
+- basic MIDI and audio playback,
+- two standalone modes (command line mode, window mode),
+- further output formats are MusicXML, MARC, MODS, MUP (these are based on the Music Encoding Initiative's XSLT stylesheets from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools), slow and buggy),
 
 There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). Several MEI elements and attributes are not supported so far (e.g. `meterSigGrp`, `uneume`, `lyrics`). The MEI file must be unambiguous, i.e., it should not contain any variants (`app`, `choice` etc.). A tool to resolve ambiguity is under construction and will soon be published. We are also developing a schematron rule set to give detailed feedback on the supported and unsupported MEI elements when an MEI file is loaded into meico.
 
@@ -31,25 +32,29 @@ The command line mode expects the following command line options:
 
 Usage: `java -jar meico.jar [OPTIONS] FILE`
 
-| Option                            | Description                                                                                                                      |
-|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| `-?`, `--help`                    | show this help text                                                                                                              |
-| `-v`, `--validate`                | validate loaded MEI file                                                                                                         |
+| Option                            | Description                                                                                                                         |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `-?`, `--help`                    | show this help text                                                                                                                 |
+| `-v`, `--validate`                | validate loaded MEI file                                                                                                            |
 | `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
-| `-m`, `--msm`                     | convert to MSM                                                                                                                   |
-| `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                          |
-| `-p`, `--no-program-changes`      | suppress program change events in MIDI                                                                                           |
-| `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                     |
-| `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                         |
-| `-w`, `--wav`                     | convert to Wave (and internally to MSM and MIDI)                                                                                 |
-| `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                  |
-| `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                   |
+| `-x`, `--musicxml`                | convert to MusicXML                                                                                                                 |
+| `-k`, `--marc`                    | convert to MARC                                                                                                                     |
+| `-o`, `--mods`                    | convert to MODS                                                                                                                     |
+| `-u`, `--mup`                     | convert to MUP                                                                                                                      |
+| `-m`, `--msm`                     | convert to MSM                                                                                                                      |
+| `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                             |
+| `-p`, `--no-program-changes`      | suppress program change events in MIDI                                                                                              |
+| `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                        |
+| `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                            |
+| `-w`, `--wav`                     | convert to Wave (and internally to MSM and MIDI)                                                                                    |
+| `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                     |
+| `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                      |
 
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
-The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). With `meicoPy.py` we have also a demo script that shows the usage of meico in Python. Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
+The third way of using meico is as a Java programming library. Its `Mei`, `MusicXml`, `Marc`, `Mods`, `Mup`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). With `meicoPy.py` we have also a demo script that shows the usage of meico in Python. Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
 
 ###License information
 
@@ -59,6 +64,7 @@ Meico makes use of the following third party libraries:
 - MigLayout v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license.
 - the FileDrop class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
 - Jing v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
+- Saxon v9.7.0.15 HE by James Clark (Thai Open Source Software Center Ltd, Mozilla Public License Version 2.0).
 - MEI Common Music Notation Schema (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
 - parts of `MidiToWavRenderer.java`, an add-on to the JFugue library, LGPL license.
 

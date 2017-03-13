@@ -1,6 +1,27 @@
 ###Version History
 
 
+####v0.2.12
+- Bugfix in commandline mode.
+- Reworked filename generation.
+- Added Saxon v9.7.0.15 HE to the externals to process XSLT Stylesheets from the Music Encoding Initiative.
+- Added further conversions. These are using the Music Encoding Initiative's XSLT stylesheets from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools) page. However, they are a bit buggy sometimes ... and slow!
+
+    | Conversion               | implemented in method                 | comment                                           |
+    |--------------------------|---------------------------------------|---------------------------------------------------|
+    | MEI to MusicXML          | `meico.mei.Mei.exportMusicXml()`      | buggy                                             |
+    | MusicXML to MEI (v3.0.0) | `meico.musicxml.MusicXml.exportMei()` | not functional, yet, because of XSLT syntax error |
+    | MEI to MARC              | `meico.mei.Mei.exportMarc()`          | requires more testing                             |
+    | MEI to MODS              | `meico.mei.Mei.exportMods()`          | requires more testing                             |
+    | MEI to MUP (v1.0.3)      | `meico.mei.Mei.exportMup()`           | requires more testing                             |
+
+- A series of new Classes has been added accordingly: `meico.musicxml.MusicXml`, `meico.marc.Marc`, `meico.mods.Mods`, and `meico.mup.Mup`.
+- Two new helper methods have been added to `meico.mei.helper`:
+    - `public static Document xslTransformToDocument(Document input, Document stylesheet)` and
+    - `public static String xslTransformToString(Document input, Document stylesheet)`.
+- These adds are not part of the window mode and meicoPy, yet, butt will be integrated in a future update.
+
+
 ####v0.2.11
 - Bugfix in `meico.msm.Msm.resolveSequencingMaps()`.
 - Added meicoPy, a Python demo script. This demonstrates the usage of meico within Python. It is a reimplementation of meico's command line mode in Python.

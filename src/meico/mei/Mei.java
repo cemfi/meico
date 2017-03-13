@@ -5,13 +5,14 @@ package meico.mei;
  * @author Axel Berndt.
  */
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
+import meico.marc.Marc;
+import meico.mods.Mods;
 import meico.msm.Goto;
+import meico.mup.Mup;
+import meico.musicxml.MusicXml;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
@@ -27,6 +28,17 @@ public class Mei {
      * a default constructor that creates an empty Mei instance
      */
     public Mei() {
+    }
+
+    /**
+     * constructor
+     *
+     * @param mei the mei document of which to instantiate the MEI object
+     */
+    public Mei(Document mei) {
+        this.file = null;
+        this.mei = mei;
+        this.validMei = false;
     }
 
     /** constructor; reads the mei file without validation
@@ -55,6 +67,7 @@ public class Mei {
         this.file = file;
 
         if (!file.exists()) {
+            this.mei = null;
             this.validMei = false;
             System.out.println("No such file or directory: " + file.getPath());
             return;
@@ -94,13 +107,21 @@ public class Mei {
         this.file = file;
     }
 
+    /**
+     * with this setter a new filename can be set
+     *
+     * @param filename the filename including the full path and .mei extension
+     */
+    public void setFile(String filename) {
+        this.file = new File(filename);
+    }
     /** writes the mei document to a ...-meico.mei file at the same location as the original mei file; this method is mainly relevant for debug output after calling exportMsm()
      *
      * @return true if success, false if an error occured
      */
     public boolean writeMei() {
         String filename = this.file.getPath();
-        filename = filename.substring(0, filename.length()-4) + "-meico.mei";   // replace the file extension ".mei" by "-meico.mei"
+        filename = Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-meico.mei";   // replace the file extension ".mei" by "-meico.mei"
         return this.writeMei(filename);
     }
 
@@ -233,6 +254,94 @@ public class Mei {
         return e;
     }
 
+    /**
+     * convert MEI to MusicXml
+     * @return the MusicXml instance, in case of errors the MusicXml instance is empty, applications should check before they continue working with it
+     */
+    public MusicXml exportMusicXml() {
+        Document stylesheet = null;
+        try {
+            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2musicxml.xsl"));    //read the XSLT stylesheet  mei2musicxml.xsl
+        }
+        catch (ParsingException ex) {
+            System.err.println("Well-formedness error in " + ex.getURI() + ".");
+        }
+        catch (IOException ex) {
+            System.err.println("I/O error while reading input document or stylesheet.");
+        }
+
+        Document result = Helper.xslTransformToDocument(this.mei, stylesheet);                              // do the transform (result can be null!)
+        MusicXml musicXml = new MusicXml(result);                                                           // create MusicXml instance from result Document (if result==null then musicXml.isEmpty()==true)
+        musicXml.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".musicxml");       // replace the file extension mei with musicXml and make this the filename
+        return musicXml;                                                                                    // return the MusicXml instance
+    }
+
+    /**
+     * convert MEI to MARC
+     * @return the MARC code
+     */
+    public Marc exportMarc() {
+        Document stylesheet = null;
+        try {
+            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2marc.xsl"));
+        }
+        catch (ParsingException ex) {
+            System.err.println("Well-formedness error in " + ex.getURI() + ".");
+        }
+        catch (IOException ex) {
+            System.err.println("I/O error while reading input document or stylesheet.");
+        }
+
+        Document result = Helper.xslTransformToDocument(this.mei, stylesheet);                  // do the transform (result can be null!)
+        Marc marc = new Marc(result);                                                           // create Marc instance from result Document (if result==null then marc.isEmpty()==true)
+        marc.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".marc");   // replace the file extension mei with marc and make this the filename
+        return marc;                                                                            // return the Marc instance
+    }
+
+    /**
+     * convert MEI to MODS
+     * @return the MODS code
+     */
+    public Mods exportMods() {
+        Document stylesheet = null;
+        try {
+            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2mods.xsl"));
+        }
+        catch (ParsingException ex) {
+            System.err.println("Well-formedness error in " + ex.getURI() + ".");
+        }
+        catch (IOException ex) {
+            System.err.println("I/O error while reading input document or stylesheet.");
+        }
+
+        Document result = Helper.xslTransformToDocument(this.mei, stylesheet);                  // do the transform (result can be null!)
+        Mods mods = new Mods(result);                                                           // create Mods instance from result Document (if result==null then marc.isEmpty()==true)
+        mods.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mods");   // replace the file extension mei with mods and make this the filename
+        return mods;                                                                            // return the Mods instance
+    }
+
+    /**
+     * convert MEI to MUP
+     * @return the MUP code
+     */
+    public Mup exportMup() {
+        Document stylesheet = null;
+        try {
+            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2mup-1.0.3.xsl"));
+        }
+        catch (ParsingException ex) {
+            System.err.println("Well-formedness error in " + ex.getURI() + ".");
+        }
+        catch (IOException ex) {
+            System.err.println("I/O error while reading input document or stylesheet.");
+        }
+
+        Mup mup = new Mup(Helper.xslTransformToString(this.mei, stylesheet));
+        mup.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mup");   // replace the file extension mei with mup and make this the filename
+        return mup;
+
+    }
+
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv; the thime resolution (pulses per quarter note) is 720 by default or more if required (for very short note durations)
      *
      * @return the list of msm documents (movements) created
@@ -297,11 +406,11 @@ public class Mei {
         if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
 
         // generate a dummy file name in the msm objects
-        if (msms.size() == 1)                                                                                                       // if only one msm object (no numbering needed)
-            msms.get(0).setFile(this.getFile().getPath().substring(0, this.getFile().getPath().length()-3) + "msm");                // replace the file extension mei with msm and make this the filename
-        else {                                                                                                                      // multiple msm objects created (or none)
-            for (int i=0; i < msms.size(); ++i) {                                                                                   // for each msm object
-                msms.get(i).setFile(this.getFile().getPath().substring(0, this.getFile().getPath().length()-4) + "-" + i + ".msm"); // replace the extension by the number and the .msm extension
+        if (msms.size() == 1)                                                                                           // if only one msm object (no numbering needed)
+            msms.get(0).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".msm");                 // replace the file extension mei with msm and make this the filename
+        else {                                                                                                          // multiple msm objects created (or none)
+            for (int i=0; i < msms.size(); ++i) {                                                                       // for each msm object
+                msms.get(i).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-" + i + ".msm");   // replace the extension by the number and the .msm extension
             }
         }
 
@@ -2201,7 +2310,7 @@ public class Mei {
         return notResolved;
     }
 
-    /** this method adds ids to note, rest and chord elements in mei, as far as they do not have an id
+    /** this method adds ids to note, rest, ... and chord elements in mei, as far as they do not have an id
      *
      * @return the generated ids count
      */

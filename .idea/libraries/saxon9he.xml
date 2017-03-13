@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="saxon9he">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/externals/saxon9he.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

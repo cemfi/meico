@@ -65,9 +65,9 @@ public class Msm {
             return;
         }
 
-        // read file into the mei instance of Document
-        Builder builder = new Builder(false);                       // if the validate argument in the Builder constructor is true, the msm should be valid
-        this.msmValidation = true;                                  // the mei code is valid until validation fails (ValidityException)
+        // read file into the msm instance of Document
+        Builder builder = new Builder(validation);                  // if the validate argument in the Builder constructor is true, the msm should be valid
+        this.msmValidation = true;                                  // the musicXml code is valid until validation fails (ValidityException)
         try {
             this.msm = builder.build(file);
         } catch (ValidityException e) {                             // in case of a ValidityException (no valid msm code)
@@ -444,13 +444,7 @@ public class Msm {
         FileOutputStream fileOutputStream = null;
         try {
             fileOutputStream = new FileOutputStream(file, false);   // open file: second parameter (append) is false because we want to overwrite the file if already existing
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return false;
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-            return false;
-        } catch (SecurityException e) {
+        } catch (FileNotFoundException | NullPointerException | SecurityException e) {
             e.printStackTrace();
             return false;
         }
@@ -565,7 +559,7 @@ public class Msm {
         if (this.getFile() == null)                                                                             // if this instance of msm has no file information
             return new Midi(seq);                                                                               // create the Midi instance only with the sequence (the midi file data are initialized as null) and return it
 
-        File midiFile = new File(this.getFile().getPath().substring(0, this.getFile().getPath().length() - 3) + "mid"); // set the filename extension of the Midi object to "mid"
+        File midiFile = new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mid"); // set the filename extension of the Midi object to "mid"
         return new Midi(seq, midiFile);                                                                         // create and return the Midi object
     }
 

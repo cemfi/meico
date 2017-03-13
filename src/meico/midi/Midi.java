@@ -5,6 +5,7 @@ package meico.midi;
  */
 
 import meico.audio.Audio;
+import meico.mei.Helper;
 
 import javax.sound.midi.*;
 import javax.sound.sampled.AudioInputStream;
@@ -287,7 +288,7 @@ public class Midi {
 
         Audio audio;                                // create Audio object
         if (this.file != null) {
-            audio = new Audio(stream, new File(this.file.getPath().substring(0, this.file.getPath().length() - 3) + "wav"));  // set its file name, derived from this name but with different file type extension
+            audio = new Audio(stream, new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".wav"));  // set its file name, derived from this name but with different file type extension
         }
         else {
             audio = new Audio(stream);
