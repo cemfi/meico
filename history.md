@@ -3,7 +3,7 @@
 
 ####v0.2.12
 - Bugfix in commandline mode.
-- Reworked filename generation.
+- Reworked filename generation. New method `meico.mei.Helper.getFilenameWithoutExtension(String filename)`.
 - Added Saxon v9.7.0.15 HE to the externals to process XSLT Stylesheets from the Music Encoding Initiative.
 - Added further conversions. These are using the Music Encoding Initiative's XSLT stylesheets from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools) page. However, they are a bit buggy sometimes ... and slow!
 
