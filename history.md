@@ -16,7 +16,7 @@
     | MEI to MUP (v1.0.3)      | `meico.mei.Mei.exportMup()`           | requires more testing                             |
 
 - A series of new Classes has been added accordingly: `meico.musicxml.MusicXml`, `meico.marc.Marc`, `meico.mods.Mods`, and `meico.mup.Mup`.
-- Two new helper methods have been added to `meico.mei.helper`:
+- Two new helper methods have been added to `meico.mei.Helper`:
     - `public static Document xslTransformToDocument(Document input, Document stylesheet)` and
     - `public static String xslTransformToString(Document input, Document stylesheet)`.
 - These adds are not part of the window mode and meicoPy, yet, butt will be integrated in a future update.
