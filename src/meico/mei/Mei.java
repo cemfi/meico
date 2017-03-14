@@ -255,7 +255,7 @@ public class Mei {
      * @param xslt
      * @return result of the transform as XOM Document instance
      */
-    public Document xsltTransformToDocument(File xslt) {
+    public Document xslTransformToDocument(File xslt) {
         return Helper.xslTransformToDocument(this.mei, xslt);
     }
 
