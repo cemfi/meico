@@ -8,11 +8,7 @@ package meico.mei;
 import java.io.*;
 import java.util.*;
 
-import meico.marc.Marc;
-import meico.mods.Mods;
 import meico.msm.Goto;
-import meico.mup.Mup;
-import meico.musicxml.MusicXml;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
@@ -255,91 +251,21 @@ public class Mei {
     }
 
     /**
-     * convert MEI to MusicXml
-     * @return the MusicXml instance, in case of errors the MusicXml instance is empty, applications should check before they continue working with it
+     * transform this MEI via the given xsl file
+     * @param xslt
+     * @return result of the transform as XOM Document instance
      */
-    public MusicXml exportMusicXml() {
-        Document stylesheet = null;
-        try {
-            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2musicxml.xsl"));    //read the XSLT stylesheet  mei2musicxml.xsl
-        }
-        catch (ParsingException ex) {
-            System.err.println("Well-formedness error in " + ex.getURI() + ".");
-        }
-        catch (IOException ex) {
-            System.err.println("I/O error while reading input document or stylesheet.");
-        }
-
-        Document result = Helper.xslTransformToDocument(this.mei, stylesheet);                              // do the transform (result can be null!)
-        MusicXml musicXml = new MusicXml(result);                                                           // create MusicXml instance from result Document (if result==null then musicXml.isEmpty()==true)
-        musicXml.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".musicxml");       // replace the file extension mei with musicXml and make this the filename
-        return musicXml;                                                                                    // return the MusicXml instance
+    public Document xsltTransformToDocument(File xslt) {
+        return Helper.xslTransformToDocument(this.mei, xslt);
     }
 
     /**
-     * convert MEI to MARC
-     * @return the MARC code
+     * transform this MEI via the given xsl file
+     * @param xslt
+     * @return result of the transform as String instance
      */
-    public Marc exportMarc() {
-        Document stylesheet = null;
-        try {
-            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2marc.xsl"));
-        }
-        catch (ParsingException ex) {
-            System.err.println("Well-formedness error in " + ex.getURI() + ".");
-        }
-        catch (IOException ex) {
-            System.err.println("I/O error while reading input document or stylesheet.");
-        }
-
-        Document result = Helper.xslTransformToDocument(this.mei, stylesheet);                  // do the transform (result can be null!)
-        Marc marc = new Marc(result);                                                           // create Marc instance from result Document (if result==null then marc.isEmpty()==true)
-        marc.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".marc");   // replace the file extension mei with marc and make this the filename
-        return marc;                                                                            // return the Marc instance
-    }
-
-    /**
-     * convert MEI to MODS
-     * @return the MODS code
-     */
-    public Mods exportMods() {
-        Document stylesheet = null;
-        try {
-            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2mods.xsl"));
-        }
-        catch (ParsingException ex) {
-            System.err.println("Well-formedness error in " + ex.getURI() + ".");
-        }
-        catch (IOException ex) {
-            System.err.println("I/O error while reading input document or stylesheet.");
-        }
-
-        Document result = Helper.xslTransformToDocument(this.mei, stylesheet);                  // do the transform (result can be null!)
-        Mods mods = new Mods(result);                                                           // create Mods instance from result Document (if result==null then marc.isEmpty()==true)
-        mods.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mods");   // replace the file extension mei with mods and make this the filename
-        return mods;                                                                            // return the Mods instance
-    }
-
-    /**
-     * convert MEI to MUP
-     * @return the MUP code
-     */
-    public Mup exportMup() {
-        Document stylesheet = null;
-        try {
-            stylesheet = (new Builder()).build(this.getClass().getResourceAsStream("/resources/xslt/mei2mup-1.0.3.xsl"));
-        }
-        catch (ParsingException ex) {
-            System.err.println("Well-formedness error in " + ex.getURI() + ".");
-        }
-        catch (IOException ex) {
-            System.err.println("I/O error while reading input document or stylesheet.");
-        }
-
-        Mup mup = new Mup(Helper.xslTransformToString(this.mei, stylesheet));
-        mup.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mup");   // replace the file extension mei with mup and make this the filename
-        return mup;
-
+    public String xslTransformToString(File xslt) {
+        return Helper.xslTransformToString(this.mei, xslt);
     }
 
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv; the thime resolution (pulses per quarter note) is 720 by default or more if required (for very short note durations)

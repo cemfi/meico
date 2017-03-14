@@ -16,7 +16,7 @@ Meico is a converter framework for MEI files. Even though MEI is a quasi-standar
 - an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers,
 - basic MIDI and audio playback,
 - two standalone modes (command line mode, window mode),
-- further output formats are MusicXML, MARC, MODS, MUP (these are based on the Music Encoding Initiative's XSLT stylesheets from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools)).
+- processing of XML sources with XSLT stylesheets, e.g. to convert MEI to MusicXML using the Music Encoding Initiative's `mei2musicxml.xsl` stylesheet from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools).
 
 There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). Several MEI elements and attributes are not supported so far (e.g. `meterSigGrp`, `uneume`, `lyrics`). The MEI file must be unambiguous, i.e., it should not contain any variants (`app`, `choice` etc.). A tool to resolve ambiguity is under construction and will soon be published. We are also developing a schematron rule set to give detailed feedback on the supported and unsupported MEI elements when an MEI file is loaded into meico.
 
@@ -38,10 +38,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | `-v`, `--validate`                | validate loaded MEI file                                                                                                            |
 | `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
-| `-x`, `--musicxml`                | convert to MusicXML                                                                                                                 |
-| `-k`, `--marc`                    | convert to MARC                                                                                                                     |
-| `-o`, `--mods`                    | convert to MODS                                                                                                                     |
-| `-u`, `--mup`                     | convert to MUP                                                                                                                      |
+| `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                      |
 | `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                             |
 | `-p`, `--no-program-changes`      | suppress program change events in MIDI                                                                                              |
@@ -54,7 +51,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
-The third way of using meico is as a Java programming library. Its `Mei`, `MusicXml`, `Marc`, `Mods`, `Mup`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). With `meicoPy.py` we have also a demo script that shows the usage of meico in Python. Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
+The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). With `meicoPy.py` we have also a demo script that shows the usage of meico in Python. Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
 
 ###License information
 

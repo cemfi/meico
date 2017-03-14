@@ -84,10 +84,7 @@ public class MeiCoApp extends JFrame {
                 System.out.println("[-v] or [--validate]                    validate loaded MEI file");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
-                System.out.println("[-x] or [--musicxml]                    convert to MusicXml");
-                System.out.println("[-k] or [--marc]                        convert to MARC");
-                System.out.println("[-o] or [--mods]                        convert to MODS");
-                System.out.println("[-u] or [--mup]                         convert to MUP");
+                System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
                 System.out.println("[-i] or [--midi]                        convert to MIDI (and internally to MSM)");
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
@@ -105,10 +102,8 @@ public class MeiCoApp extends JFrame {
         boolean validate = false;
         boolean addIds = false;
         boolean resolveCopyOfs = false;
-        boolean musicxml = false;
-        boolean marc = false;
-        boolean mods = false;
-        boolean mup = false;
+        File xslt = null;
+        String xsltOutputExtension = "";
         boolean msm = false;
         boolean midi = false;
         boolean wav = false;
@@ -121,10 +116,6 @@ public class MeiCoApp extends JFrame {
             if ((args[i].equals("-v")) || (args[i].equals("--validate"))) { validate = true; continue; }
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
-            if ((args[i].equals("-x")) || (args[i].equals("--musicxml"))) { musicxml = true; continue; }
-            if ((args[i].equals("-k")) || (args[i].equals("--marc"))) { marc = true; continue; }
-            if ((args[i].equals("-o")) || (args[i].equals("--mods"))) { mods = true; continue; }
-            if ((args[i].equals("-u")) || (args[i].equals("--mup"))) { mup = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
             if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
@@ -132,6 +123,17 @@ public class MeiCoApp extends JFrame {
             if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
             if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; continue; }
             if ((args[i].equals("-t")) || (args[i].equals("--tempo"))) { tempo = Integer.parseInt(args[++i]); continue; }
+            if ((args[i].equals("-x")) || (args[i].equals("--xslt"))) {
+                xslt = new File(args[++i]);
+                try {
+                    xslt = new File(xslt.getCanonicalPath());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    xslt = null;
+                }
+                xsltOutputExtension = args[++i];
+                continue;
+            }
             if ((args[i].equals("-s")) || (args[i].equals("--soundbank"))) {
                 soundbank = new File(args[++i]);
                 try {
@@ -171,28 +173,11 @@ public class MeiCoApp extends JFrame {
             return 66;
         }
 
-        // convert mei -> musicxml
-        if (musicxml) {
-            System.out.println("Converting MEI to MusicXML.");
-            mei.exportMusicXml().writeMusicXml();
-        }
-
-        // convert mei -> marc
-        if (marc) {
-            System.out.println("Converting MEI to MARC.");
-            mei.exportMarc().writeMarc();
-        }
-
-        // convert mei -> mods
-        if (mods) {
-            System.out.println("Converting MEI to MODS.");
-            mei.exportMods().writeMods();
-        }
-
-        // convert mei -> mup
-        if (mup) {
-            System.out.println("Converting MEI to MusicXml.");
-            mei.exportMup().writeMup();
+        // xsl transform
+        if (xslt != null) {
+            System.out.println("Performing XSL transform.");
+            String xsltOutput = mei.xslTransformToString(xslt);
+            Helper.writeStringToFile(xsltOutput, Helper.getFilenameWithoutExtension(mei.getFile().getPath()) + "." + xsltOutputExtension);
         }
 
         // optional mei processing functions

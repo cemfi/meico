@@ -6,7 +6,9 @@ package meico.mei;
  */
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -1202,17 +1204,61 @@ public class Helper {
     }
 
     /**
+     * writes the mup document to a file (filename should include the path and the extension .mup)
+     *
+     * @param filename the filename string; it should include the path and the extension .mup
+     * @return true if success, false if an error occured
+     */
+    public static boolean writeStringToFile(String string, String filename) {
+        if (string == null) {
+            System.err.println("String undefined!");
+            return false;
+        }
+
+        if (filename == null) {
+            System.err.println("Filename undefined!");
+            return false;
+        }
+
+        // create the file in the file system
+        File file = new File(filename);
+        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        try {
+            file.createNewFile();                                   // create the file if it does not already exist
+        } catch (IOException | SecurityException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        try( PrintWriter out = new PrintWriter(filename)  ){
+            out.println(string);
+            return true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
      * a helper method to perform XSL transforms
      * @param input the in input xml document
-     * @param stylesheet the XSLT stylesheet
+     * @param xslt the XSLT stylesheet
      * @return the output Document of the transform or null if output not contains a single root or stylesheet error occurs
      */
-    public static Document xslTransformToDocument(Document input, Document stylesheet) {
-        Builder builder = new Builder();
+    public static Document xslTransformToDocument(Document input, File xslt) {
         try {
+            Document stylesheet = (new Builder()).build(xslt);      //read the XSLT stylesheet
             XSLTransform transform = new XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
             Nodes output = transform.transform(input);              // do the transform
             return XSLTransform.toDocument(output);                 // create a Document instance from the output
+        }
+        catch (ParsingException ex) {
+            System.err.println("Well-formedness error in " + ex.getURI() + ".");
+            return null;
+        }
+        catch (IOException ex) {
+            System.err.println("I/O error while reading input document or stylesheet.");
+            return null;
         }
         catch (XMLException ex) {
             System.err.println("Result did not contain a single root.");
@@ -1227,25 +1273,33 @@ public class Helper {
     /**
      * a helper method to perform XSL transforms
      * @param input the in input xml document
-     * @param stylesheet the XSLT stylesheet
-     * @return the output string
+     * @param xslt the XSLT stylesheet
+     * @return the output string (null in case of an error)
      */
-    public static String xslTransformToString(Document input, Document stylesheet) {
+    public static String xslTransformToString(Document input, File xslt) {
         String result = "";
-        Nodes output = null;
-        Builder builder = new Builder();
+        Nodes output;
 
         try {
+            Document stylesheet = (new Builder()).build(xslt);      //read the XSLT stylesheet  mei2musicxml.xsl
             XSLTransform transform = new XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
             output = transform.transform(input);                    // do the transform
         }
+        catch (ParsingException ex) {
+            System.err.println("Well-formedness error in " + ex.getURI() + ".");
+            return null;
+        }
+        catch (IOException ex) {
+            System.err.println("I/O error while reading input document or stylesheet.");
+            return null;
+        }
         catch (XMLException ex) {
             System.err.println("Result did not contain a single root.");
-            return "";
+            return null;
         }
         catch (XSLException ex) {
             System.err.println("Stylesheet error.");
-            return "";
+            return null;
         }
 
         // compile output string

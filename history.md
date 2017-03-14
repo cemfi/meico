@@ -1,6 +1,14 @@
 ###Version History
 
 
+####v0.2.13
+- The XSLT-based new conversions from v0.2.12 were redone and generalized for several reasons.
+    - Licensing for the stylesheets is unclear/undefined. So they were removed from this repository. They can be obtained from the official [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools) page.
+    - Packages `musicxml`, `mods`, `marc`, and `mup` where removed from this repository including all contained classes.
+    - The new export methods from v0.2.12 (see table) were replaced by two new, more generic methods in `meico.mei.Mei`: `public Document xsltTransformToDocument(File xslt)` and `public String xsltTransformToString(File xslt)`. This allows users to apply any XSLT stylesheets and obtain the result either as XOM Document instance or Java String. This should be a more flexible, less restrictive solution. For conversion of an Mei instance `myMei` to MusicXML, the user obtains the file `mei2musicxml.xsl` and calls `myMei.xsltTransformToDocument("path\\to\\mei2musicxml.xsl")`. This returns the resulting Document that can be processed further or written to the file system.
+- New method `writeStringToFile(String string, String filename)` in `meico.mei.Helper`.
+
+
 ####v0.2.12
 - Bugfix in commandline mode.
 - Reworked filename generation. New method `meico.mei.Helper.getFilenameWithoutExtension(String filename)`.
