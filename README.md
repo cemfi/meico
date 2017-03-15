@@ -53,7 +53,7 @@ The final argument should always be a path to a valid MEI file (e.g., `"C:\myMei
 
 The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). With `meicoPy.py` we have also a demo script that shows the usage of meico in Python. Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
 
-###License information
+### License information
 
 Meico makes use of the following third party libraries:
 - XOM v1.2.10 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1.

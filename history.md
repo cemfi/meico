@@ -1,4 +1,4 @@
-###Version History
+### Version History
 
 
 #### v0.2.13
@@ -9,7 +9,7 @@
 - New method `writeStringToFile(String string, String filename)` in `meico.mei.Helper`.
 
 
-####v0.2.12
+#### v0.2.12
 - Bugfix in commandline mode.
 - Reworked filename generation. New method `meico.mei.Helper.getFilenameWithoutExtension(String filename)`.
 - Added Saxon v9.7.0.15 HE to the externals to process XSLT Stylesheets from the Music Encoding Initiative.
@@ -30,21 +30,21 @@
 - These adds are not part of the window mode and meicoPy, yet, butt will be integrated in a future update.
 
 
-####v0.2.11
+#### v0.2.11
 - Bugfix in `meico.msm.Msm.resolveSequencingMaps()`.
 - Added meicoPy, a Python demo script. This demonstrates the usage of meico within Python. It is a reimplementation of meico's command line mode in Python.
 
 
-####v0.2.10
+#### v0.2.10
 - Some adds to the instruments dictionary.
 
 
-####v0.2.9
+#### v0.2.9
 - When creating MSM `goto` elements from endings, the elements get a temporal attribute `n` (derives from the respective MEI `ending` element which also has an `n` attribute). In MSM this attribute is only required for the conversion and should not be present in the final output MSM. Method `Helper.msmCleanup()` has been extended accordingly.
 - If an MEI `ending` has no attribute `n`, meico now checks for attribute `label` and takes this to search for numbering information. However, in case that both attributes are present, attribute `n` is preferred.
 
 
-####v0.2.8
+#### v0.2.8
 - Added method `Msm.deleteEmptyMaps()`. It removes all empty maps, i.e. all elements with a substring `"Map"` in the local-name (`timeSignatureMap`, `keySignatureMap`, `markerMap`, `sequencingMap` etc.), from the XML tree. This is to make the MSM file a bit smaller and less cluttered.
 - Added methods `getElementAtAfter()` and `getElementBeforeAt()` to class `Msm`, helper methods for navigation within maps.
 - Repetition support implemented in meico, see the following lines for details.
@@ -80,12 +80,12 @@
     - We tried to cover a variety of repetition and ending constellations but it is virtually impossible to cover all the crude situations that MEI allows (e.g., nested repetitions, repetitions within endings). So be not disappointed if some unorthodox situation from your special music encoding project does not work as expected.
 
 
-####v0.2.7
+#### v0.2.7
 - In MEI, global (score-wise) and local (staff-wise and layer-wise) key signatures can be mixed. Rule of thumb is, the latest key signature before a `note` is the one that has to be considered. So far, meico ignored global data if there was a local entry once. This lead to some wrong results if global entries come after local (e.g., at the beginning it may be encoded in `staffDef` elements but later in `scoreDef` elements; see, for instance, `Hummel_Concerto_for_trumpet.mei` in the sample encodings). This issue is now fixed. If local and global key signature information deviate from each other meico trys to add global data to the local `keySignatureMap` in MPM where necessary. However, this is done ad hoc in method `Helper.computePitch()` in a very local context. Hence, it is not 100% perfect. This means, if the necessity for local copies occurs somewhere within the piece, past `keySignature` elements will be missing until this point.
 - New method `Helper.addToMap()`. This is from now on used to insert new child elements into maps (sequential lists with elements that have an attribute `midi.date`) and ensure the timely order of the elements. All relevant methods in classes `Helper`and `Mei` have been adapted accordingly.
 
 
-####v0.2.6
+#### v0.2.6
 - Slight enhancements of `Midi.play()` and `Midi.stop()`.
 - Some code polishing in classes `meico.mei.Mei` and `meico.mei.Helper`.
 - Better support of MEI `layer` elements during MEI-to-MSM conversion.
@@ -96,7 +96,7 @@
 - Bugfix in `Helper.computePitch()`. Partly (not always) wrong conversion of accidental string to numeric value has been fixed.
 
 
-####v0.2.5
+#### v0.2.5
 - Added method `Helper.midi2pname()`.
 - Extended method `Helper.pname2midi()`.
 - Changes to MSM accidental elements:
@@ -108,7 +108,7 @@
 - Updated `README.md`.
 
 
-####v0.2.4
+#### v0.2.4
 - Added audio playback methods `play()` and `stop()` to class `meico.audio.Audio`.
 - Added audio playback button to the window mode graphical user interface.
     - Ensured that all playback is exclusive, i.e. starting one playback will stop any other currently running playback both for midi and audio.
@@ -116,7 +116,7 @@
 - Java 7 conform code polishing.
 
 
-####v0.2.3
+#### v0.2.3
 - Added Soundbank support for Midi-to-audio rendering. 
     - Instead of Java's default sounds the user can now freely choose a `.dls` or `.sf2` file from the file system and use this for the synthesis of audio files. 
     - A corresponding conversion option has been added to the window mode. Just right click the Midi-to-audio conversion button and click the `Choose soundbank` option, then select a corresponding file from the file system. I recommend testing [these](https://sourceforge.net/projects/androidframe/files/soundfonts/) SoundFonts.
@@ -129,12 +129,12 @@
 - Added `Violoncello` to the instruments dictionary.
 
 
-####v0.2.2
+#### v0.2.2
 - Fixed Midi-to-Audio conversion. Export of wave files works now.
 - Updated `README.md`.
 
 
-####v0.2.1
+#### v0.2.1
 - Fixed delay and "hiccup" in Midi playback when initializing and starting a sequencer of a `Midi` object for the first time.
 - Added content to method `Audio.writeAudio(File file)` (so far it was empty).
 - Added format data to class `Audio`. New getter methods have been added.
@@ -144,7 +144,7 @@
 - Updated `README.md`.
 
 
-####v0.2.0
+#### v0.2.0
 - Added subpackage `graphics` to `resources` and moved all graphics resources into it.
 - Added audio export in Wave format.
     - Added new command line options (`[-w]` or `[--wav]`) to trigger wave export in command line mode.
@@ -158,13 +158,13 @@
 - Introduced some layouting variables in class `meico.app.MeiCoApp` for better editing of the window mode graphical user interface via global variables.
 
 
-####v0.1.4
+#### v0.1.4
 - Added basic audio export to midi package (`meico.midi.Midi2AudioRenderer.java`).
 - Added `UnsupportedSoundbankException.java` to package `meico.midi`.
 - Added test audio output to command line mode.
 
 
-####v0.1.3
+#### v0.1.3
 - Renamed the `element` elements in the MSM format. In the `timeSignatureMap` they are called `timeSignature`, in `keySignatureMap` they are called `keySignature` and in the `markerMap`they are now called `marker`.
 - Method `Helper.computePitchOld()` deleted.
 - Added method `Mei.processAccid()`, so `accid` elements are now processed not only as children of `note` elements (as until now) but also when they are siblings to `note` elements and the like. However, the attributes `ploc` and `oloc` are required to associate the accidental with a pitch.
@@ -186,14 +186,14 @@
 - Minor corrections in `MeiCoApp.commandLineMode()`.
 
 
-####v0.1.2
+#### v0.1.2
 - Bugfix in command line mode: missing path when writing `"-debug.mei"` and the file has been loaded via relative path.
 - Added `S.`, `A.`, `T.`, `B.` to the instrument dictionary for ChoirOhs.
 - Method `InstrumentsDictionary.getProgramChange()` outputs its string matching results to the command line or log file, resp.
 - Missing `accid.ges` attribute processing in `Helper.computePitch()` added.
 
 
-####v0.1.1
+#### v0.1.1
 - Renamed the `dur` attribute in MSM notes and rests into `midi.duration`.
 - Further renamings: `date` into `midi.date`, `pitch` into `midi.pitch`, `channel.midi` into `midi.channel`, and `port.midi` into `midi.port`.
 - Added `Bassus`, `Cantus`, `Singstimme`, `Singstimmen`, `Pianoforte`, `Trumpet in`, `Trompete in` to the instruments dictionary.
@@ -204,7 +204,7 @@
 - Method `Mei.reorderElements()` (part of the MEI preprocessing) has been rewritter and is much faster now.
 
 
-####v0.1.0 (beta release)<br>
+#### v0.1.0 (beta release)
 - Moved unused code in the `meico.midi` package into the `legacy` sub-package.
 - Added validation of MEI files against `mei-CMN.rng` version 3.0.0 (August 2016).
     - The file `mei-CMN.rng` from [MEI GitHub repository](https://github.com/music-encoding/music-encoding/blob/develop/schemata/mei-CMN.rng) was added to the resources. 
@@ -218,7 +218,7 @@
 - Replaced the `:` in the id generation for copyOf resolution into `_`.
 
 
-####v0.0.7<br>
+#### v0.0.7
 - Added flag to the mei-to-msm conversion to avoid the midi drum channel, added it to the window mode and command line options
 	- `[-c]` or `[--dont-use-channel-10]`: the flag says whether channel 10 (midi drum channel) shall be used or not; it is already done at mei-to-msm convertion, because the msm should align with the midi file later on
 - Changed id generation for copyOf resolution into a combined id: `source id + ":" + generated id`; hence, applications can now trace them back to the source element
@@ -228,7 +228,7 @@
 - Also a `pnum` is added to the mei `note` elements in the debug version which holds the calculated midi pitch value.
 
 
-####v0.0.6<br>
+#### v0.0.6
 - Added `Canto`, `Quinto` and `Tenore` to the `VoiceOhs` in the instruments dictionary.
 - In `MeiCoApp`'s `commandLineMode()` a relative path can be used; the absolute path is derived automatically. Hence, users do not have to write down whole paths in the command line from now on.
 - Fixed bug in the processing of note accidentals when `accid` elements are used instead of `accid` attributes.
@@ -246,18 +246,18 @@
 	- `[-d]` or `[--debug]`: to write debug versions of mei and msm
 	- Path tho the mei file (e.g., `"D:\Arbeit\Software\Java\MEI Converter\test files\Hummel_Concerto_for_trumpet.mei"`), this should always be the last parameter -  always in quotes!
 
-####v0.0.5<br>
+#### v0.0.5
 Bugs fixed in `Mei.java` that were introduced by rewriting `convert()` for Java 1.6 compatibility.
 
-####v0.0.4<br>
-Java 1.6+ compatibility<br>
+#### v0.0.4
+Java 1.6+ compatibility
 instrument dictionary extended (`church organ`: `upper`, `lower`, `pedal`)
 
-####v0.0.3<br>
+#### v0.0.3
 So far, msm part names were the `staffDef` labels. Now, they are created from an eventually existing parent `staffGrp` label and the `staffDef` label (`"staffGrp label" + " " + "staffDef label"`).
 
-####v0.0.2<br>
+#### v0.0.2
 Java 7+ compatibility
 
-####v0.0.1<br>
+#### v0.0.1
 first release (requires Java 8+)
