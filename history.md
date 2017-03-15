@@ -1,7 +1,7 @@
 ###Version History
 
 
-####v0.2.13
+#### v0.2.13
 - The XSLT-based new conversions from v0.2.12 were redone and generalized for several reasons.
     - Licensing for the stylesheets is unclear/undefined. So they were removed from this repository. They can be obtained from the official [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools) page.
     - Packages `musicxml`, `mods`, `marc`, and `mup` where removed from this repository including all contained classes.

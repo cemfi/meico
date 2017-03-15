@@ -20,7 +20,7 @@ Meico is a converter framework for MEI files. Even though MEI is a quasi-standar
 
 There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). Several MEI elements and attributes are not supported so far (e.g. `meterSigGrp`, `uneume`, `lyrics`). The MEI file must be unambiguous, i.e., it should not contain any variants (`app`, `choice` etc.). A tool to resolve ambiguity is under construction and will soon be published. We are also developing a schematron rule set to give detailed feedback on the supported and unsupported MEI elements when an MEI file is loaded into meico.
 
-###How to use meico?
+### How to use meico?
 
 Meico can be used in several different ways. The jar file (see the [latest release](https://github.com/cemfi/meico/releases/latest)) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.7 (or higher) Runtime Environment installed on your computer. 
 
