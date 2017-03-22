@@ -55,7 +55,13 @@ The third way of using meico is as a Java programming library. Its `Mei`, `Msm`,
 
 ### Build Instructions
 
-Meico can quickly be built using [Ant](http://ant.apache.org/), just go to your meico directory and enter `ant`.
+Meico can quickly be built using [Ant](http://ant.apache.org/):
+```bash
+$ git clone https://github.com/cemfi/meico.git
+$ cd meico
+$ ant
+```
+The resulting `meico.jar` can be found in `out/artifacts/meico`.
 
 ### License information
 
