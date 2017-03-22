@@ -51,7 +51,11 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
-The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). With `meicoPy.py` we have also a demo script that shows the usage of meico in Python. Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift. Meico can quickly be built using Ant, just go to your meico directory and enter `ant`.
+The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Midi`, and `Audio` classes are the most important to work with. Class `meico.app.MeiCoApp` demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). With `meicoPy.py` we have also a demo script that shows the usage of meico in Python. Unfortunately, we have no API documentation, yet. But the source files are extensively commented and should suffice as makeshift.
+
+### Build Instructions
+
+Meico can quickly be built using [Ant](http://ant.apache.org/), just go to your meico directory and enter `ant`.
 
 ### License information
 
