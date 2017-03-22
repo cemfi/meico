@@ -571,7 +571,7 @@ public class Helper {
             Element marker = new Element("marker");                                 // do so
             marker.addAttribute(new Attribute("midi.date", Double.toString(date))); // give it a midi.date
             marker.addAttribute(new Attribute("message", markerMessage));           // set its message
-            Attribute id = new Attribute("id", UUID.randomUUID().toString());       // give it a UUID
+            Attribute id = new Attribute("id", "meico_" + UUID.randomUUID().toString());       // give it a UUID
             id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");         // set its namespace to xml
             marker.addAttribute(id);                                                // add the id attribute to the marker
             Helper.addToMap(marker, sequencingMap);                                 // add the marker to the sequencingMap

@@ -476,6 +476,24 @@ public class Msm {
     }
 
     /**
+     * transform this MSM via the given xsl file
+     * @param xslt
+     * @return result of the transform as XOM Document instance
+     */
+    public Document xslTransformToDocument(File xslt) {
+        return Helper.xslTransformToDocument(this.msm, xslt);
+    }
+
+    /**
+     * transform this MSM via the given xsl file
+     * @param xslt
+     * @return result of the transform as String instance
+     */
+    public String xslTransformToString(File xslt) {
+        return Helper.xslTransformToString(this.msm, xslt);
+    }
+
+    /**
      * converts the msm data into a midi sequence and create a meico.Midi object from it; the tempo is 120bpm by default
      *
      * @return the midi object created or null if this msm object is empty or something else wnet wrong
