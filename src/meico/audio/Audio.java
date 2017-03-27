@@ -14,7 +14,7 @@ import java.nio.file.Files;
 
 /**
  * This class represents audio data.
- * Created by aberndt on 19.09.2016.
+ * @author Axel Berndt.
  */
 public class Audio {
     private File file = null;                       // the audio file

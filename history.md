@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.2.16
+- In preparation of further application modes for meico package `meico.app` has been restructured.
+    - Entry point is class `meico.app.Main` method `main()`. The class also implements the commandline mode.
+    - The window mode (GUI) is implemented in class `meico.app.MeicoApp`. Note the slight change from `MeiCoApp` to `MeicoApp`!
+    - `MANIFEST.MF` was updated accordingly.
+
+
 #### v0.2.15
 - Added MP3 export of PCM encoded audio data.
     - Added [Java LAME](https://github.com/nwaldispuehl/java-lame) sources to package `meico.audio`. Version is 3.98.4. License is LGPL 3.0.
@@ -158,7 +165,7 @@
 - Fixed delay and "hiccup" in Midi playback when initializing and starting a sequencer of a `Midi` object for the first time.
 - Added content to method `Audio.writeAudio(File file)` (so far it was empty).
 - Added format data to class `Audio`. New getter methods have been added.
-- In class `Audio` audio data are no longer represented as `AudioInputStream` but as byte array. Constructors have been adapted. Class `MeiCoApp` has also been adapted in subclass `Audio4Gui`.
+- In class `Audio` audio data are no longer represented as `AudioInputStream` but as byte array. Constructors have been adapted. Class `MeicoApp` has also been adapted in subclass `Audio4Gui`.
 - Deactivated methods `Audio.writeAudio()` until byte-array-to-AudioInputStream conversion works properly.
 - Fixed issues with the playback buttons in window mode.
 - Updated `README.md`.
@@ -173,9 +180,9 @@
     - Modified method `meico.midi.Midi2AudioRenderer`. Its rendering methods return an `AudioInputStream` object instead of directly writing a file into the file system.
     - Extended the window mode graphical user interface to include the new functionalities.
     - Updated `README.md`.
-- Instead of using one global midi sequencer for Midi playback in class `meico.app.MeiCoApp` (window mode) I switched to the built-in local sequencers in class `meico.midi.Midi`.
+- Instead of using one global midi sequencer for Midi playback in class `meico.app.MeicoApp` (window mode) I switched to the built-in local sequencers in class `meico.midi.Midi`.
 - Added tooltips in window mode for better user guidance.
-- Introduced some layouting variables in class `meico.app.MeiCoApp` for better editing of the window mode graphical user interface via global variables.
+- Introduced some layouting variables in class `meico.app.MeicoApp` for better editing of the window mode graphical user interface via global variables.
 
 
 #### v0.1.4
@@ -203,7 +210,7 @@
 - The processing of `chord` elements (`bTrem` and `fTrem` are processed similarly) has been redone. If a `chord` element has no duration data in its attributes (`dur`, `dots`) and does not inherit it from a parent element, its duration is now specified by the longest child element.
 - Added `Prinzipal`, `Soprano`, `Baritone`, `Euphonium`, `Chant` to the instruments dictionary.
 - Bugfix in `Mei.reorderElements()`, relevant in the case that a `startid` attribute refers to an element within the element.
-- Minor corrections in `MeiCoApp.commandLineMode()`.
+- Minor corrections in `MeicoApp.commandLineMode()`.
 
 
 #### v0.1.2
@@ -217,7 +224,7 @@
 - Renamed the `dur` attribute in MSM notes and rests into `midi.duration`.
 - Further renamings: `date` into `midi.date`, `pitch` into `midi.pitch`, `channel.midi` into `midi.channel`, and `port.midi` into `midi.port`.
 - Added `Bassus`, `Cantus`, `Singstimme`, `Singstimmen`, `Pianoforte`, `Trumpet in`, `Trompete in` to the instruments dictionary.
-- Added a flag to the window mode constructor method `MeiCoApp(String title, boolean makeLogFile)`. The redirection of console output into a log file is done only when `makeLogFile` is set true.
+- Added a flag to the window mode constructor method `MeicoApp(String title, boolean makeLogFile)`. The redirection of console output into a log file is done only when `makeLogFile` is set true.
 - Bugfixing in `Mei.processStaff()` and `Helper.getPart()`.
 - `tie` elements are now processed (new method `Mei.resolveTieElements()`); they are resolved into `tie` attributes of `note` elements during the preprocessing. Hence, meico now supports the use of `tie`elements and is no longer restricted to `tie` attributes only. However, users should not mix `tie` and `slur` elements; the latter are not and will not be processed as ties!
 - Method `Mei.resolveCopyOfs()` rewritten. It is not only faster now. It might happen (and does happen in the MEI sample library) that a placeholder element (the one with the `copyof` attribute) copies elements that again contain placeholders; it requires multiple runs to resolve this. The new implementation can handle circular referencing (cannot be resolved and would otherwise lead to infinite loops). Furthermore, if the placeholder element has an `xml:id` this id is no longer overwritten by the newly generated ids.
@@ -250,7 +257,7 @@
 
 #### v0.0.6
 - Added `Canto`, `Quinto` and `Tenore` to the `VoiceOhs` in the instruments dictionary.
-- In `MeiCoApp`'s `commandLineMode()` a relative path can be used; the absolute path is derived automatically. Hence, users do not have to write down whole paths in the command line from now on.
+- In `MeicoApp`'s `commandLineMode()` a relative path can be used; the absolute path is derived automatically. Hence, users do not have to write down whole paths in the command line from now on.
 - Fixed bug in the processing of note accidentals when `accid` elements are used instead of `accid` attributes.
 - Fixed bug in `Helper.getNextSiblingElement(Element ofThis)`.
 - Method `exportMidi()` in `Msm.java` now has a flag to suppress the generation of program change events (useful in some applications). The flag is also supported in command line mode (add `[--no-program-changes]` to your call) and window mode (right click on the msm to midi conversion button).

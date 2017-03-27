@@ -1,7 +1,8 @@
 package meico.msm;
 
 /**
- * Created by aberndt on 09.11.2016.
+ * This is a helper class for processing MSM sequencingMaps.
+ * @author Axel Berndt.
  */
 
 import nu.xom.Attribute;

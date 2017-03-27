@@ -198,7 +198,7 @@
       <zipfileset src="${basedir}/externals/java-string-similarity-0.13.jar"/>
       <zipfileset src="${basedir}/externals/xom-1.2.10.jar"/>
       <manifest>
-        <attribute name="Main-Class" value="meico.app.MeiCoApp"/>
+        <attribute name="Main-Class" value="meico.app.MeicoApp"/>
       </manifest>
     </jar>
     <copy file="${temp.jar.path.meico.jar}" tofile="${artifact.temp.output.meico}/meico.jar"/>

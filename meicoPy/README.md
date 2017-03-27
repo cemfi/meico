@@ -3,7 +3,7 @@
 Author: [Axel Berndt](https://github.com/axelberndt)<br>
 [Center of Music and Film Informatics](http://www.cemfi.de/), Detmold
 
-This Python script demonstrates the usage of meico in Python. It resembles meico's native command line mode as implemented in `meico.app.MeiCoApp.java`. It requires the package [JPype](https://github.com/originell/jpype) to be installed (`pip install JPype1-py3`) to run Java code in Python. A further prerequisite is to download the latest `meico.jar` from the [release page](https://github.com/cemfi/meico/releases/latest) into the same folder as `meicoPy.py` so it can be found by the script. And, of course, there has to be a Java Virtual Machine installed on the system.
+This Python script demonstrates the usage of meico in Python. It resembles meico's native command line mode as implemented in `meico.app.MeicoApp.java`. It requires the package [JPype](https://github.com/originell/jpype) to be installed (`pip install JPype1-py3`) to run Java code in Python. A further prerequisite is to download the latest `meico.jar` from the [release page](https://github.com/cemfi/meico/releases/latest) into the same folder as `meicoPy.py` so it can be found by the script. And, of course, there has to be a Java Virtual Machine installed on the system.
 
 Usage: `python3 meicoPy.py [OPTIONS] FILE`
 
