@@ -1,9 +1,16 @@
 package meico.audio;
 
+import meico.audio.lame.lowlevel.LameEncoder;
+import meico.audio.lame.mp3.Lame;
+import meico.audio.lame.mp3.MPEGMode;
+import meico.mei.Helper;
+
 import javax.sound.sampled.*;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * This class represents audio data.
@@ -109,6 +116,39 @@ public class Audio {
         ByteArrayInputStream bis = new ByteArrayInputStream(array);             // byte array to ByteArrayInputStream
         AudioInputStream ais = new AudioInputStream(bis, format, array.length); // byteArrayInputStream to AudioInputStream
         return ais;                                                             // return it
+    }
+
+    /**
+     * convert PCM encoded audio to MP3 encoding
+     * @param pcm PCM data as byte array
+     * @param format audio format of PCM data
+     * @return mp3 data as byte array
+     */
+    public byte[] encodePcmToMp3(byte[] pcm, AudioFormat format) {
+        LameEncoder encoder = new LameEncoder(format, 256, MPEGMode.STEREO, Lame.QUALITY_HIGHEST, false);   // bitrate is 256; in this case VBR (=variable bitrate) is false
+
+        ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
+        byte[] buffer = new byte[encoder.getPCMBufferSize()];
+
+        int bytesToTransfer = Math.min(buffer.length, pcm.length);
+        int bytesWritten;
+        int currentPcmPosition = 0;
+        while (0 < (bytesWritten = encoder.encodeBuffer(pcm, currentPcmPosition, bytesToTransfer, buffer))) {
+            currentPcmPosition += bytesToTransfer;
+            bytesToTransfer = Math.min(buffer.length, pcm.length - currentPcmPosition);
+            mp3.write(buffer, 0, bytesWritten);
+        }
+
+        encoder.close();
+        return mp3.toByteArray();
+    }
+
+    /**
+     * returns audio data of this object as byte array MP3 encoded
+     * @return byte array of MP3 encoded audio data
+     */
+    public byte[] getAudioAsMp3() {
+        return this.encodePcmToMp3(this.audio, this.format);
     }
 
     /**
@@ -249,6 +289,38 @@ public class Audio {
 
         AudioInputStream ais = convertByteArray2AudioInputStream(this.audio, this.format);  // convert the audio byte array to an AudioInputStream
         AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);                            // write to file system
+    }
+
+    /**
+     * write audio data as MP3 to the file system
+     * @throws IOException
+     */
+    public void writeMp3() throws IOException {
+        this.writeMp3(Helper.getFilenameWithoutExtension(this.file.getAbsolutePath()) + ".mp3");
+    }
+
+    /**
+     * write audio data as MP3 to the file system with specified filename
+     * @param filename
+     */
+    public void writeMp3(String filename) throws IOException {
+        File file = new File(filename);     // create the file with this filename
+        this.writeMp3(file);                // write into it
+    }
+
+    /**
+     * write audio data as MP3 to the file system to specified file
+     * @param file
+     * @throws IOException
+     */
+    public void writeMp3(File file) throws IOException {
+        if (file == null) {                                                 // if no valid file
+            System.err.println("No file specified to write audio data.");   // print error message
+            return;                                                         // cancel
+        }
+
+        byte[] mp3 = this.getAudioAsMp3();                                  // convert PCM encoded audio to MP3 encoding
+        Files.write(file.toPath(), mp3);
     }
 
     /**

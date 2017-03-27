@@ -1,9 +1,23 @@
 ### Version History
 
 
+#### v0.2.15
+- Added MP3 export of PCM encoded audio data.
+    - Added [Java LAME](https://github.com/nwaldispuehl/java-lame) sources to package `meico.audio`. Version is 3.98.4. License is LGPL 3.0.
+    - Added new methods to class `meico.audio.Audio`:
+        - `public byte[] encodePcmToMp3(byte[] pcm, AudioFormat format)`,
+        - `public byte[] getAudioAsMp3()`,
+        - `public void writeMp3()`, `public void writeMp3(String filename)`, and `public void writeMp3(File file)`.
+    - Commandline mode has been extended accordingly. The new option is `-3` or `--mp3` to get audio export as MP3.
+    - Window mode has been extended, too. Left click on the audio save button will output an MP3 file. Via right click, the user can specify an arbitrary filename. If the extension is `.mp3` or `.wav`, audio will be stored in the corresponding format. In all other cases, the output is a Wave file, by default, but with the specified extension.
+- Method `meico.msm.Goto.toXML()` has been renamed to `toElement()` as it returns a XOM Element instance.
+
+
 #### v0.2.14
 - The generated ids in method `meico.mei.Helper.barline2SequencingCommand()` could start numerical which is not XML conform. This is fixed.
-- Added methods `xslTransformToDocument()` and `xslTransformToString()` to class `meico.msm.Msm`.
+- Added methods to class `meico.msm.Msm`:
+    - `public Document xslTransformToDocument(File xslt)`
+    - `public String xslTransformToString(File xslt)`
 - Updated Ant build script.
 
 

@@ -1060,7 +1060,7 @@ public class Mei {
         }
         // generate the goto element
         Goto gotoObj = new Goto(dateOfGoto, startDate, markerId, "0"+activity, null);                                               // create a Goto object
-        Element gt = gotoObj.toXML();                                                                                               // make an XML element from it
+        Element gt = gotoObj.toElement();                                                                                           // make an XML element from it
         gt.addAttribute(new Attribute("n", Integer.toString(n)));                                                                   // add the numbering ()temporary, will be deleted during msmCleanup)
 
         // add the goto to the global sequencingMap and try to take care of the order according to the numbering of the endings (on the basis of mei attribute n)
@@ -2050,7 +2050,7 @@ public class Mei {
 
                 try {
                     placeholder.getKey().getParent().replaceChild(placeholder.getKey(), copy);          // replace the placeholder by it
-//                System.out.println("replacing: " + placeholder.getKey().toXML() + "\nby\n" + copy.toXML() + "\n\n");
+//                System.out.println("replacing: " + placeholder.getKey().toElement() + "\nby\n" + copy.toElement() + "\n\n");
                 } catch (NoSuchChildException | NullPointerException | IllegalAddException error) {     // if something went wrong, I don't know why as none of these exceptions should occur, just to be sure
                     error.printStackTrace();                                                            // print error
                     notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list

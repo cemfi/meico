@@ -40,7 +40,7 @@ public class Goto {
      * creates and returns an XML element of the goto
      * @return
      */
-    public Element toXML() {
+    public Element toElement() {
         Element gt = new Element("goto");                                           // make a goto element
         gt.addAttribute(new Attribute("midi.date", Double.toString(date)));         // give it the date
         gt.addAttribute(new Attribute("activity", activity));                       // process this goto at the second time, later on ignore it

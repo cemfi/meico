@@ -10,7 +10,7 @@ Meico is a converter framework for MEI files. Even though MEI is a quasi-standar
 
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq),
 - MSM to MIDI conversion,
-- MIDI to audio conversion (with freely choosable SoundFont and Downloadable Sounds),
+- MIDI to audio PCM and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
 - MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute),
 - MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`),
 - an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers,
@@ -45,6 +45,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                        |
 | `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                            |
 | `-w`, `--wav`                     | convert to Wave (and internally to MSM and MIDI)                                                                                    |
+| `-3`, `--mp3`                     | convert to MP3 (and internally to MSM and MIDI)                                                                                     |
 | `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                     |
 | `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                      |
 
@@ -55,7 +56,13 @@ The third way of using meico is as a Java programming library. Its `Mei`, `Msm`,
 
 ### Build Instructions
 
-Meico can quickly be built using [Ant](http://ant.apache.org/), just go to your meico directory and enter `ant`.
+Meico can quickly be built using [Ant](http://ant.apache.org/):
+```bash
+$ git clone https://github.com/cemfi/meico.git
+$ cd meico
+$ ant
+```
+The resulting `meico.jar` can be found in `out/artifacts/meico`.
 
 ### License information
 
@@ -65,10 +72,11 @@ Meico makes use of the following third party libraries:
 - MigLayout v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license.
 - the FileDrop class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
 - Jing v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
-- Saxon v9.7.0.15 HE by James Clark (Thai Open Source Software Center Ltd, Mozilla Public License Version 2.0).
+- Saxon v9.7.0.15 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License Version 2.0.
+- Java LAME v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
 - MEI Common Music Notation Schema (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
 - parts of `MidiToWavRenderer.java`, an add-on to the JFugue library, LGPL license.
 
-We publish meico under GNU LGPL version 3. Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
+We publish meico under GNU LGPL version 3.0 Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
 If you use meico in your project make sure that you do not conflict with any of the above licenses.
 

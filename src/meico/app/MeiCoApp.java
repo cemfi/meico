@@ -91,6 +91,7 @@ public class MeiCoApp extends JFrame {
                 System.out.println("[-c] or [--dont-use-channel-10]         do not use channel 10 (drum channel) in MIDI");
                 System.out.println("[-t argument] or [--tempo argument]     set MIDI tempo (bpm), default is 120 bpm");
                 System.out.println("[-w] or [--wav]                         convert to Wave (and internally to MSM and MIDI)");
+                System.out.println("[-3] or [--mp3]                         convert to MP3");
                 System.out.println("[-s argument] or [--soundbank argument] use a specific sound bank file (.sf2, .dls) for Wave conversion");
                 System.out.println("[-d] or [--debug]                       write additional debug version of MEI and MSM");
                 System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
@@ -107,6 +108,7 @@ public class MeiCoApp extends JFrame {
         boolean msm = false;
         boolean midi = false;
         boolean wav = false;
+        boolean mp3 = false;
         boolean generateProgramChanges = true;
         boolean dontUseChannel10 = false;
         boolean debug = false;
@@ -119,6 +121,7 @@ public class MeiCoApp extends JFrame {
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
             if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
+            if ((args[i].equals("-3")) || (args[i].equals("--mp3"))) { mp3 = true; continue; }
             if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
             if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
             if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; continue; }
@@ -193,7 +196,7 @@ public class MeiCoApp extends JFrame {
             mei.writeMei();                             // this outputs an expanded mei file with more xml:id attributes and resolved copyof's
         }
 
-        if (!(msm || midi || wav)) return 0;            // if no conversion is required, we are done here
+        if (!(msm || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
 
         // convert mei -> msm -> midi
         System.out.println("Converting MEI to MSM.");
@@ -221,13 +224,19 @@ public class MeiCoApp extends JFrame {
             }
         }
 
+        if (!(midi || wav || mp3)) return 0;     // if no further conversion is required, we are done here
+
         List<meico.midi.Midi> midis = new ArrayList<>();
-        if (midi || wav) {                      // midi conversion is also required for wav export
-            System.out.println("Converting MSM to MIDI and writing MIDI to file system: ");
-            for (int i = 0; i < msms.size(); ++i) {
-                midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
+        System.out.println("Converting MSM to MIDI.");
+        for (int i = 0; i < msms.size(); ++i) {
+            midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
+        }
+
+        if (midi) {
+            System.out.println("Writing MIDI to file system: ");
+            for (int i = 0; i < midis.size(); ++i) {
                 try {
-                    midis.get(i).writeMidi();           // write midi file to the file system
+                    midis.get(i).writeMidi();    // write midi file to the file system
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -235,21 +244,38 @@ public class MeiCoApp extends JFrame {
             }
         }
 
+        if (!(wav || mp3)) return 0;            // if no further conversion is required, we are done here
+
         List<meico.audio.Audio> audios = new ArrayList<>();
+        System.out.println("Converting MIDI to Audio.");
+        for (int i = 0; i < midis.size(); ++i) {
+            Audio a = midis.get(i).exportAudio(soundbank);     // this generates an Audio object
+            if (a == null)
+                continue;
+            audios.add(a);
+        }
+
         if (wav) {
-            System.out.println("Converting MIDI to Wave and writing Wave file to file system: ");
-            for (meico.midi.Midi m : midis) {
-                Audio a = m.exportAudio(soundbank);     // this generates an Audio object
-                if (a == null)
-                    continue;
-                audios.add(a);
+            System.out.println("Writing Wave to file system: ");
+            for (int i = 0; i < audios.size(); ++i) {
                 try {
-                    a.writeAudio();
+                    audios.get(i).writeAudio();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                System.out.println("\t" + a.getFile().getPath());
+                System.out.println("\t" + audios.get(i).getFile().getPath());
+            }
+        }
 
+        if (mp3) {
+            System.out.println("Writing MP3 to file system: ");
+            for (int i = 0; i < audios.size(); ++i) {
+                try {
+                    audios.get(i).writeMp3();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("\t" + Helper.getFilenameWithoutExtension(audios.get(i).getFile().getPath()) + ".mp3");
             }
         }
 
@@ -1415,16 +1441,30 @@ public class MeiCoApp extends JFrame {
                                     if (saveAudio.contains(e.getPoint())) {
                                         if (SwingUtilities.isLeftMouseButton(e)) {                                  // quick save with default filename with left mouse button
                                             try {
-                                                writeAudio();
+                                                writeMp3();
                                             } catch (IOException err) {
                                                 app.setStatusMessage(err.toString());
                                             }
                                         }
                                         else {                                                                      // svae dialog with right mouse button
                                             JFileChooser chooser = new JFileChooser();                              // open the fileopen dialog
+                                            chooser.addChoosableFileFilter(new FileNameExtensionFilter("Wave (*.wav)", "wav"));
+                                            chooser.addChoosableFileFilter(new FileNameExtensionFilter("MP3 (*.mp3)", "mp3"));
                                             if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {      // file save has been approved
+                                                String path = chooser.getSelectedFile().getAbsolutePath();
+                                                String type = path.substring(path.lastIndexOf("."), path.length()).toLowerCase();
+                                                System.out.println(type);
                                                 try {
-                                                    writeAudio(chooser.getSelectedFile().getAbsolutePath());        // save it
+                                                    switch (type) {
+                                                        case ".wav":
+                                                            writeAudio(path);       // save it as Wave file
+                                                            break;
+                                                        case ".mp3":
+                                                            writeMp3(path);         // save it as MP3 file
+                                                            break;
+                                                        default:
+                                                            writeAudio(path);       // save it as Wave file but with an arbitrary filename (not necessarily wit wav extension)
+                                                    }
                                                 } catch (IOException err) {
                                                     app.setStatusMessage(err.toString());
                                                 }
