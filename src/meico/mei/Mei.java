@@ -6,6 +6,7 @@ package meico.mei;
  */
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import meico.msm.Goto;
@@ -52,6 +53,32 @@ public class Mei {
      */
     public Mei(File file, boolean validate) throws IOException, ParsingException {
         this.readMeiFile(file, validate);
+    }
+
+    /**
+     * constructor
+     * @param xml xml code as UTF8 String
+     */
+    public Mei(String xml) {
+        this(xml, false);
+    }
+
+    /**
+     * constructor
+     * @param xml xml code as UTF8 String
+     * @param validate validate the code?
+     */
+    public Mei(String xml, boolean validate) {
+        if (validate)                                               // if the mei file should be validated
+            this.validate();                                        // do so, the result is stored in this.validMei
+        Builder builder = new Builder(false);                    // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
+        try {
+            this.mei = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
+            this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
+        } catch (ParsingException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /** read an mei file
@@ -214,12 +241,28 @@ public class Mei {
     }
 
     /**
+     * @return String with the XML code
+     */
+    public String toXML() {
+        return this.mei.toXML();
+    }
+
+    /**
+     * @return the mei XOM Document instance
+     */
+    public Document getDocument() {
+        if (this.isEmpty())
+            return null;
+        return this.mei;
+    }
+
+    /**
      * @return root element of the mei document or null
      */
     public Element getRootElement() {
         if (this.isEmpty())
             return null;
-        return mei.getRootElement();
+        return this.mei.getRootElement();
     }
 
     /**
@@ -332,11 +375,13 @@ public class Mei {
         if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
 
         // generate a dummy file name in the msm objects
-        if (msms.size() == 1)                                                                                           // if only one msm object (no numbering needed)
-            msms.get(0).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".msm");                 // replace the file extension mei with msm and make this the filename
-        else {                                                                                                          // multiple msm objects created (or none)
-            for (int i=0; i < msms.size(); ++i) {                                                                       // for each msm object
-                msms.get(i).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-" + i + ".msm");   // replace the extension by the number and the .msm extension
+        if (this.file != null) {
+            if (msms.size() == 1)                                                                                           // if only one msm object (no numbering needed)
+                msms.get(0).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".msm");                 // replace the file extension mei with msm and make this the filename
+            else {                                                                                                          // multiple msm objects created (or none)
+                for (int i = 0; i < msms.size(); ++i) {                                                                       // for each msm object
+                    msms.get(i).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-" + i + ".msm");   // replace the extension by the number and the .msm extension
+                }
             }
         }
 

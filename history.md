@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.2.17
+- Added method `getDocument()` to class `meico.mei.Mei` and `toXML()` to classes `meico.mei.Mei` and `meico.msm.Msm`.
+- Bugfix in methods `meico.mei.Mei.exportMsm()` and `meico.msm.Msm.exportMidi()`: create filname only if source file name is given, otherwise create export object with null as filename.
+- Added new constructors to classes `meico.mei.Mei` and `meico.msm.Msm` that take the input code as Java String.
+
+
 #### v0.2.16
 - In preparation of further application modes for meico package `meico.app` has been restructured.
     - Entry point is class `meico.app.Main` method `main()`. The class also implements the commandline mode.

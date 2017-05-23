@@ -13,6 +13,7 @@ import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class Msm {
@@ -48,6 +49,30 @@ public class Msm {
      */
     public Msm(File file) throws IOException, ParsingException {
         this.readMsmFile(file, false);
+    }
+
+    /**
+     * constructor
+     * @param xml xml code as UTF8 String
+     */
+    public Msm(String xml) {
+        this(xml, false);
+    }
+
+    /**
+     * constructor
+     * @param xml xml code as UTF8 String
+     * @param validate validate the code?
+     */
+    public Msm(String xml, boolean validate) {
+        Builder builder = new Builder(validate);                    // if the validate argument in the Builder constructor is true, the msm should be valid
+        try {
+            this.msm = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
+            this.msm = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
+        } catch (ParsingException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -96,6 +121,13 @@ public class Msm {
      */
     public boolean isEmpty() {
         return (this.msm == null);
+    }
+
+    /**
+     * @return String with the XML code
+     */
+    public String toXML() {
+        return this.msm.toXML();
     }
 
     /**
@@ -577,8 +609,13 @@ public class Msm {
         if (this.getFile() == null)                                                                             // if this instance of msm has no file information
             return new Midi(seq);                                                                               // create the Midi instance only with the sequence (the midi file data are initialized as null) and return it
 
-        File midiFile = new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mid"); // set the filename extension of the Midi object to "mid"
-        return new Midi(seq, midiFile);                                                                         // create and return the Midi object
+        if (this.file != null) {
+            File midiFile = new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mid"); // set the filename extension of the Midi object to "mid"
+            return new Midi(seq, midiFile);                                                                         // create and return the Midi object
+        }
+        else {
+            return new Midi(seq);
+        }
     }
 
     /**
