@@ -5,6 +5,7 @@
 - Added method `getDocument()` to class `meico.mei.Mei` and `toXML()` to classes `meico.mei.Mei` and `meico.msm.Msm`.
 - Bugfix in methods `meico.mei.Mei.exportMsm()` and `meico.msm.Msm.exportMidi()`: create filname only if source file name is given, otherwise create export object with null as filename.
 - Added new constructors to classes `meico.mei.Mei` and `meico.msm.Msm` that take the input code as Java String.
+- Added `openjdk8` to the TravisCI tests.
 
 
 #### v0.2.16
