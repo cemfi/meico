@@ -1,9 +1,14 @@
 ### Version History
 
 
+#### v0.2.18
+- Added MP3 export to `meicoPy.py`.
+- Added more constructor methods in `meico.mei.Mei` and `meico.msm.Msm` to instantiate also from a Java InputStream.
+
+
 #### v0.2.17
 - Added method `getDocument()` to class `meico.mei.Mei` and `toXML()` to classes `meico.mei.Mei` and `meico.msm.Msm`.
-- Bugfix in methods `meico.mei.Mei.exportMsm()` and `meico.msm.Msm.exportMidi()`: create filname only if source file name is given, otherwise create export object with null as filename.
+- Bugfix in methods `meico.mei.Mei.exportMei()`, `meico.mei.Mei.exportMsm()` and `meico.msm.Msm.exportMidi()`: create filname only if source file name is given, otherwise create export object with `null` as filename.
 - Added new constructors to classes `meico.mei.Mei` and `meico.msm.Msm` that take the input code as Java String.
 - Added `openjdk8`, `openjdk7`, and `oraclejdk9` to the TravisCI tests.
 

@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 import jpype    # this package (JPype1-py3) enables Java integration in Python
 
 
-def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm=False, export_midi=False, no_program_changes=False, dont_use_channel_10=False, tempo=100, export_wav=False, soundbank=None, debug=False, mei_file=None):
+def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm=False, export_midi=False, no_program_changes=False, dont_use_channel_10=False, tempo=100, export_wav=False, export_mp3=False, soundbank=None, debug=False, mei_file=None):
     """
     This function processes and converts the input file (mei_file) according to the flags and parameters set.
     :param validate: set True to validate the MEI source against MEI schema
@@ -22,6 +22,7 @@ def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm
     :param dont_use_channel_10: set True to suppress the use of MIDI channel 10 (drum channel)
     :param tempo: set the tempo of the MIDI and audio file (im beats per minute, bpm)
     :param export_wav: set True to export audio/Wave
+    :param export_mp3: set True to export audio in MP3 format
     :param soundbank: path to a sound bank (.sf2 or .dls file) to be used for MIDI-to-audio conversion
     :param debug: set True to write additional debug versions of MEI and MSM
     :param mei_file: the path to the MEI source file
@@ -100,7 +101,7 @@ def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm
             print('Writing MSM to file system.')
             msm.writeMsm()                                      # write the MSM file to the file system
 
-        if export_midi or export_wav:
+        if export_midi or export_wav or export_mp3:
             print('Converting MSM to MIDI.')
             midi = msm.exportMidi(float(tempo), not no_program_changes) # do the conversion to MIDI
 
@@ -111,7 +112,7 @@ def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm
                 except jpype.JException(jpype.java.lang.IOException) as e:  # in case of a Java IOException
                     print(e.message, file=sys.stderr)           # print exception message
 
-            if export_wav:
+            if export_wav or export_mp3:
                 print('Converting MIDI to Audio.')
                 soundbank = os.path.realpath(soundbank)         # get absolute path (just to be sure)
                 if os.path.isfile(soundbank):                   # if sound bank file does exist
@@ -119,11 +120,19 @@ def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm
                 else:                                           # if no soundbank
                     audio = midi.exportAudio()                  # do the MIDI-to-audio rendering with Java's built-in soundfont
 
-                print('Writing Wave file to file system: ' + audio.getFile().getPath())
-                try:
-                    audio.writeAudio()                          # write the Wave file
-                except jpype.JException(jpype.java.lang.IOException) as e:  # in case of a Java IOException
-                    print(e.message, file=sys.stderr)           # print exception message
+                if export_wav:
+                    print('Writing Wave file to file system: ' + audio.getFile().getPath())
+                    try:
+                        audio.writeAudio()                          # write the Wave file
+                    except jpype.JException(jpype.java.lang.IOException) as e:  # in case of a Java IOException
+                        print(e.message, file=sys.stderr)           # print exception message
+
+                if export_mp3:
+                    print('Writing MP3 file to file system: ' + audio.getFile().getPath())
+                    try:
+                        audio.writeMp3()                            # write the MP3 file
+                    except jpype.JException(jpype.java.lang.IOException) as e:  # in case of a Java IOException
+                        print(e.message, file=sys.stderr)           # print exception message
 
     jpype.shutdownJVM()                                         # stop the JavaVM
     return 0
@@ -149,6 +158,7 @@ def main(arguments, mei_file):
     parser.add_argument('-c', '--dont-use-channel-10', action='store_true', default=False, help='Do not use channel 10 (drum channel) in MIDI.')
     parser.add_argument('-t', '--tempo', action='store', default=100, help='Set MIDI tempo (bpm), default is 120 bpm.')
     parser.add_argument('-w', '--wav', action='store_true', default=False, help='Convert to Wave (and internally to MSM and MIDI).')
+    parser.add_argument('-3', '--mp3', action='store_true', default=False, help='Convert to MP3 (and internally to MSM and MIDI).')
     parser.add_argument('-s', '--soundbank', action='store', default=None, help='Use a specific sound bank file (.sf2, .dls) for Wave conversion.')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='Write additional debug version of MEI and MSM.')
 
@@ -166,6 +176,7 @@ def main(arguments, mei_file):
                        dont_use_channel_10 = args.dont_use_channel_10,
                        tempo = args.tempo,
                        export_wav= args.wav,
+                       export_mp3=args.mp3,
                        soundbank = args.soundbank,
                        debug = args.debug,
                        mei_file = mei_file)

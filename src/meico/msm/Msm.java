@@ -46,16 +46,31 @@ public class Msm {
      * constructor
      *
      * @param file the msm file to be read
+     * @throws IOException
+     * @throws ParsingException
      */
     public Msm(File file) throws IOException, ParsingException {
-        this.readMsmFile(file, false);
+        this(file, false);
+    }
+
+    /**
+     * constructor
+     * @param file
+     * @param validate
+     * @throws IOException
+     * @throws ParsingException
+     */
+    public Msm(File file, boolean validate) throws IOException, ParsingException {
+        this.readMsmFile(file, validate);
     }
 
     /**
      * constructor
      * @param xml xml code as UTF8 String
+     * @throws IOException
+     * @throws ParsingException
      */
-    public Msm(String xml) {
+    public Msm(String xml) throws IOException, ParsingException {
         this(xml, false);
     }
 
@@ -63,24 +78,52 @@ public class Msm {
      * constructor
      * @param xml xml code as UTF8 String
      * @param validate validate the code?
+     * @throws IOException
+     * @throws ParsingException
      */
-    public Msm(String xml, boolean validate) {
+    public Msm(String xml, boolean validate) throws IOException, ParsingException {
         Builder builder = new Builder(validate);                    // if the validate argument in the Builder constructor is true, the msm should be valid
         try {
             this.msm = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
         } catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
             this.msm = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        } catch (ParsingException | IOException e) {
-            e.printStackTrace();
         }
     }
 
     /**
-     * read an msm file
-     * @param file
-     * @param validation
+     * constructor
+     * @param inputStream read from this input stream
+     * @throws IOException
+     * @throws ParsingException
      */
-    protected void readMsmFile(File file, boolean validation) throws IOException, ParsingException {
+    public Msm(InputStream inputStream) throws IOException, ParsingException {
+        this(inputStream, false);
+    }
+
+    /**
+     * constructor
+     * @param inputStream read from this input stream
+     * @param validate
+     * @throws IOException
+     * @throws ParsingException
+     */
+    public Msm(InputStream inputStream, boolean validate) throws IOException, ParsingException {
+        Builder builder = new Builder(validate);                    // if the validate argument in the Builder constructor is true, the msm should be valid
+        try {
+            this.msm = builder.build(inputStream);
+        } catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
+            this.msm = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
+        }
+    }
+
+    /**
+     * reads the data from an MSM file into this object
+     * @param file
+     * @param validate
+     * @throws IOException
+     * @throws ParsingException
+     */
+    protected void readMsmFile(File file, boolean validate) throws IOException, ParsingException {
         this.file = file;
 
         if (!file.exists()) {
@@ -91,7 +134,7 @@ public class Msm {
         }
 
         // read file into the msm instance of Document
-        Builder builder = new Builder(validation);                  // if the validate argument in the Builder constructor is true, the msm should be valid
+        Builder builder = new Builder(validate);                  // if the validate argument in the Builder constructor is true, the msm should be valid
         this.msmValidation = true;                                  // the musicXml code is valid until validation fails (ValidityException)
         try {
             this.msm = builder.build(file);

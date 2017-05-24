@@ -33,23 +33,25 @@ public class Mei {
      * @param mei the mei document of which to instantiate the MEI object
      */
     public Mei(Document mei) {
-        this.file = null;
         this.mei = mei;
-        this.validMei = false;
     }
 
     /** constructor; reads the mei file without validation
      *
      * @param file a File object
+     * @throws IOException
+     * @throws ParsingException
      */
     public Mei(File file) throws IOException, ParsingException {
-        this.readMeiFile(file, false);
+        this(file, false);
     }
 
     /** constructor
      *
      * @param file a File object
      * @param validate set true to activate validation of the mei document, else false
+     * @throws IOException
+     * @throws ParsingException
      */
     public Mei(File file, boolean validate) throws IOException, ParsingException {
         this.readMeiFile(file, validate);
@@ -58,8 +60,10 @@ public class Mei {
     /**
      * constructor
      * @param xml xml code as UTF8 String
+     * @throws IOException
+     * @throws ParsingException
      */
-    public Mei(String xml) {
+    public Mei(String xml) throws IOException, ParsingException {
         this(xml, false);
     }
 
@@ -67,24 +71,54 @@ public class Mei {
      * constructor
      * @param xml xml code as UTF8 String
      * @param validate validate the code?
+     * @throws IOException
+     * @throws ParsingException
      */
-    public Mei(String xml, boolean validate) {
+    public Mei(String xml, boolean validate) throws IOException, ParsingException {
         if (validate)                                               // if the mei file should be validated
             this.validate();                                        // do so, the result is stored in this.validMei
-        Builder builder = new Builder(false);                    // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
+        Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
         try {
             this.mei = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
-        } catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
+        } catch (ValidityException e) {                             // in case of a ValidityException (no valid mei code)
             this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        } catch (ParsingException | IOException e) {
-            e.printStackTrace();
         }
     }
 
-    /** read an mei file
-     *
-     * @param file a File object
-     * @param validate set true to activate validation of the mei document, else false
+    /**
+     * constructor
+     * @param inputStream read xml code from this input stream
+     * @throws IOException
+     * @throws ParsingException
+     */
+    public Mei(InputStream inputStream) throws IOException, ParsingException {
+        this(inputStream, false);
+    }
+
+    /**
+     * constructor
+     * @param inputStream read xml code from this input stream
+     * @param validate
+     * @throws IOException
+     * @throws ParsingException
+     */
+    public Mei(InputStream inputStream, boolean validate) throws IOException, ParsingException {
+        if (validate)                                               // if the mei file should be validated
+            this.validate();                                        // do so, the result is stored in this.validMei
+        Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
+        try {
+            this.mei = builder.build(inputStream);
+        } catch (ValidityException e) {                             // in case of a ValidityException (no valid mei code)
+            this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
+        }
+    }
+
+    /**
+     * reads the data from an MEI file into this object
+     * @param file
+     * @param validate
+     * @throws IOException
+     * @throws ParsingException
      */
     protected void readMeiFile(File file, boolean validate) throws IOException, ParsingException {
         this.file = file;

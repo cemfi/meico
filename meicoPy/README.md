@@ -19,6 +19,7 @@ Usage: `python3 meicoPy.py [OPTIONS] FILE`
 | `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                     |
 | `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                         |
 | `-w`, `--wav`                     | convert to Wave (and internally to MSM and MIDI)                                                                                 |
+| `-3`, `--mp3`                     | convert to MP3 (and internally to MSM and MIDI)                                                                                 |
 | `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                  |
 | `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                   |
 
