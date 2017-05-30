@@ -1,8 +1,8 @@
 # meico REST API
+meico REST API is a thin REST-like wrapper around meico.
 
 Author: [Simon Waloschek](https://github.com/sonovice)
 
-meico REST API is a thin REST-like wrapper around meico.
 ### Starting
 The API is designed to be executed in a docker container. A minimal `Dockerfile` is provided.
 
