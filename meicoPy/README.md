@@ -15,11 +15,11 @@ Usage: `python3 meicoPy.py [OPTIONS] FILE`
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                   |
 | `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                          |
-| `-p`, `--no-program-changes`      | suppress program change events in MIDI                                                                                           |
+| `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                        |
 | `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                     |
 | `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                         |
 | `-w`, `--wav`                     | convert to Wave (and internally to MSM and MIDI)                                                                                 |
-| `-3`, `--mp3`                     | convert to MP3 (and internally to MSM and MIDI)                                                                                 |
+| `-3`, `--mp3`                     | convert to MP3 (and internally to MSM and MIDI)                                                                                  |
 | `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                  |
 | `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                   |
 

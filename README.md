@@ -41,7 +41,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                      |
 | `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                             |
-| `-p`, `--no-program-changes`      | suppress program change events in MIDI                                                                                              |
+| `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                           |
 | `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                        |
 | `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                            |
 | `-w`, `--wav`                     | convert to Wave (and internally to MSM and MIDI)                                                                                    |

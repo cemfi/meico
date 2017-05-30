@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.2.19
+- Changed MP3 encoding in method `meico.audio.Audio.encodePcmToMp3()` so it uses variable bitrate.
+- Little additions to both `README.md` files (the main one and the meicoPy).
+
+
 #### v0.2.18
 - Added MP3 export to `meicoPy.py`.
 - Added more constructor methods in `meico.mei.Mei` and `meico.msm.Msm` to instantiate also from a Java InputStream.
