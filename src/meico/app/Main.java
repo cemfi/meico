@@ -193,11 +193,7 @@ public class Main {
         if (midi) {
             System.out.println("Writing MIDI to file system: ");
             for (int i = 0; i < midis.size(); ++i) {
-                try {
-                    midis.get(i).writeMidi();    // write midi file to the file system
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                midis.get(i).writeMidi();    // write midi file to the file system
                 System.out.println("\t" + midis.get(i).getFile().getPath());
             }
         }
@@ -216,11 +212,7 @@ public class Main {
         if (wav) {
             System.out.println("Writing Wave to file system: ");
             for (int i = 0; i < audios.size(); ++i) {
-                try {
-                    audios.get(i).writeAudio();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                audios.get(i).writeAudio();
                 System.out.println("\t" + audios.get(i).getFile().getPath());
             }
         }
@@ -228,11 +220,7 @@ public class Main {
         if (mp3) {
             System.out.println("Writing MP3 to file system: ");
             for (int i = 0; i < audios.size(); ++i) {
-                try {
-                    audios.get(i).writeMp3();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                audios.get(i).writeMp3();
                 System.out.println("\t" + Helper.getFilenameWithoutExtension(audios.get(i).getFile().getPath()) + ".mp3");
             }
         }

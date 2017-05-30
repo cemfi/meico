@@ -206,21 +206,40 @@ public class Midi {
      *
      * @return true if success, false if an error occurred
      */
-    public void writeMidi() throws IOException {
+    public boolean writeMidi() {
         if (this.file == null) {
             System.out.println("Cannot write to the file system. Path and filename required.");
-            return;
+            return false;
         }
 
-        this.writeMidi(this.file);
+        return this.writeMidi(this.file);
     }
 
     /**
+     * write the sequence to a midi file with the specified path and filename
+     * @param filename
+     */
+    public boolean writeMidi(String filename) {
+        File file = new File(filename);     // create the file with this filename
+        file.getParentFile().mkdirs();      // ensure that the directory exists
+        return this.writeMidi(file);
+    }
+
+    /**
+     * write the sequence to a midi file
      * @param file
      * @return
      */
-    public void writeMidi(File file) throws IOException {
-        MidiSystem.write(this.sequence, 1, file);
+    public boolean writeMidi(File file) {
+        try {
+            file.createNewFile();                                   // create the file if it does not already exist
+            MidiSystem.write(this.sequence, 1, file);
+        } catch (IOException | SecurityException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -292,6 +311,12 @@ public class Midi {
         }
         else {
             audio = new Audio(stream);
+        }
+
+        try {
+            stream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         return audio;                   // return the Audio object

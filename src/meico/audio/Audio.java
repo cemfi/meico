@@ -258,69 +258,93 @@ public class Audio {
 
     /**
      * (over-)write the file with the data in audioStream
-     * @throws IOException
      */
-    public void writeAudio() throws IOException {
-        this.writeAudio(this.file);
+    public boolean writeAudio() {
+        return this.writeAudio(this.file);
     }
 
     /**
      * writes the audioStream into a file
      * @param filename
      */
-    public void writeAudio(String filename) throws IOException {
+    public boolean writeAudio(String filename) {
         File file = new File(filename);     // create the file with this filename
-        this.writeAudio(file);              // write into it
+        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        return this.writeAudio(file);              // write into it
     }
 
     /**
      * write the audio data to the file system
      * @param file
-     * @throws IOException
      */
-    public void writeAudio(File file) throws IOException {
+    public boolean writeAudio(File file) {
         if (file == null) {                                                 // if no valid file
             System.err.println("No file specified to write audio data.");   // print error message
-            return;                                                         // cancel
+            return false;                                                         // cancel
         }
 
         if (this.file == null)                                              // if no file has been specified, yet
             this.file = file;                                               // take this
 
+        try {
+            file.createNewFile();                                           // create the file if it does not already exist
+        } catch (IOException | SecurityException e) {
+            e.printStackTrace();
+            return false;
+        }
         AudioInputStream ais = convertByteArray2AudioInputStream(this.audio, this.format);  // convert the audio byte array to an AudioInputStream
-        AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);                            // write to file system
+        try {
+            AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);                            // write to file system
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     /**
      * write audio data as MP3 to the file system
-     * @throws IOException
      */
-    public void writeMp3() throws IOException {
-        this.writeMp3(Helper.getFilenameWithoutExtension(this.file.getAbsolutePath()) + ".mp3");
+    public boolean writeMp3() {
+        return this.writeMp3(Helper.getFilenameWithoutExtension(this.file.getAbsolutePath()) + ".mp3");
     }
 
     /**
      * write audio data as MP3 to the file system with specified filename
      * @param filename
      */
-    public void writeMp3(String filename) throws IOException {
+    public boolean writeMp3(String filename) {
         File file = new File(filename);     // create the file with this filename
-        this.writeMp3(file);                // write into it
+        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        return this.writeMp3(file);                // write into it
     }
 
     /**
      * write audio data as MP3 to the file system to specified file
      * @param file
-     * @throws IOException
      */
-    public void writeMp3(File file) throws IOException {
+    public boolean writeMp3(File file) {
         if (file == null) {                                                 // if no valid file
             System.err.println("No file specified to write audio data.");   // print error message
-            return;                                                         // cancel
+            return false;                                                         // cancel
+        }
+
+        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        try {
+            file.createNewFile();                                   // create the file if it does not already exist
+        } catch (IOException | SecurityException e) {
+            e.printStackTrace();
+            return false;
         }
 
         byte[] mp3 = this.getAudioAsMp3();                                  // convert PCM encoded audio to MP3 encoding
-        Files.write(file.toPath(), mp3);
+        try {
+            Files.write(file.toPath(), mp3);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     /**

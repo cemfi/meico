@@ -959,20 +959,12 @@ public class MeicoApp extends JFrame {
                             public void mouseReleased(MouseEvent e) {
                                 if (saveMidi.contains(e.getPoint())) {
                                     if (SwingUtilities.isLeftMouseButton(e)) {                                  // quick save with default filename with left mouse button
-                                        try {
-                                            writeMidi();
-                                        } catch (IOException err) {
-                                            app.setStatusMessage(err.toString());
-                                        }
+                                        writeMidi();
                                     }
                                     else {                                                                      // svae dialog with right mouse button
                                         JFileChooser chooser = new JFileChooser();                              // open the fileopen dialog
                                         if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {      // file save has been approved
-                                            try {
-                                                writeMidi(chooser.getSelectedFile());                               // save it
-                                            } catch (IOException err) {
-                                                app.setStatusMessage(err.toString());
-                                            }
+                                            writeMidi(chooser.getSelectedFile());                               // save it
                                         }
                                     }
                                     saveMidi.setBackground(new Color(232, 232, 232));
@@ -1215,11 +1207,7 @@ public class MeicoApp extends JFrame {
                                 public void mouseReleased(MouseEvent e) {
                                     if (saveAudio.contains(e.getPoint())) {
                                         if (SwingUtilities.isLeftMouseButton(e)) {                                  // quick save with default filename with left mouse button
-                                            try {
-                                                writeMp3();
-                                            } catch (IOException err) {
-                                                app.setStatusMessage(err.toString());
-                                            }
+                                            writeMp3();
                                         }
                                         else {                                                                      // svae dialog with right mouse button
                                             JFileChooser chooser = new JFileChooser();                              // open the fileopen dialog
@@ -1229,19 +1217,15 @@ public class MeicoApp extends JFrame {
                                                 String path = chooser.getSelectedFile().getAbsolutePath();
                                                 String type = path.substring(path.lastIndexOf("."), path.length()).toLowerCase();
                                                 System.out.println(type);
-                                                try {
-                                                    switch (type) {
-                                                        case ".wav":
-                                                            writeAudio(path);       // save it as Wave file
-                                                            break;
-                                                        case ".mp3":
-                                                            writeMp3(path);         // save it as MP3 file
-                                                            break;
-                                                        default:
-                                                            writeAudio(path);       // save it as Wave file but with an arbitrary filename (not necessarily wit wav extension)
-                                                    }
-                                                } catch (IOException err) {
-                                                    app.setStatusMessage(err.toString());
+                                                switch (type) {
+                                                    case ".wav":
+                                                        writeAudio(path);       // save it as Wave file
+                                                        break;
+                                                    case ".mp3":
+                                                        writeMp3(path);         // save it as MP3 file
+                                                        break;
+                                                    default:
+                                                        writeAudio(path);       // save it as Wave file but with an arbitrary filename (not necessarily wit wav extension)
                                                 }
                                             }
                                         }
