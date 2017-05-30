@@ -2,7 +2,7 @@
 
 
 #### v0.2.19
-- Changed MP3 encoding in method `meico.audio.Audio.encodePcmToMp3()` so it uses variable bitrate.
+- Changed MP3 encoding in method `meico.audio.Audio.encodePcmToMp3()` to `Lame.QUALITY_HIGH`.
 - Little additions to both `README.md` files (the main one and the meicoPy).
 
 

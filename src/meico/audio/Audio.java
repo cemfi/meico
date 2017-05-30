@@ -125,7 +125,7 @@ public class Audio {
      * @return mp3 data as byte array
      */
     public byte[] encodePcmToMp3(byte[] pcm, AudioFormat format) {
-        LameEncoder encoder = new LameEncoder(format, 256, MPEGMode.STEREO, Lame.QUALITY_HIGHEST, true);   // bitrate is 256; in this case VBR (=variable bitrate) is true
+        LameEncoder encoder = new LameEncoder(format, 256, MPEGMode.STEREO, Lame.QUALITY_HIGH, true);   // bitrate is 256; in this case VBR (=variable bitrate) is true
 
         ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
         byte[] buffer = new byte[encoder.getPCMBufferSize()];
