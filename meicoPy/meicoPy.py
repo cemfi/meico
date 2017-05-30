@@ -107,10 +107,8 @@ def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm
 
             if export_midi:
                 print('Writing MIDI to file system: ' + midi.getFile().getPath())
-                try:
-                    midi.writeMidi()                            # write midi file to the file system
-                except jpype.JException(jpype.java.lang.IOException) as e:  # in case of a Java IOException
-                    print(e.message, file=sys.stderr)           # print exception message
+                if not midi.writeMidi():                        # write midi file to the file system
+                    return
 
             if export_wav or export_mp3:
                 print('Converting MIDI to Audio.')
@@ -122,17 +120,11 @@ def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm
 
                 if export_wav:
                     print('Writing Wave file to file system: ' + audio.getFile().getPath())
-                    try:
-                        audio.writeAudio()                          # write the Wave file
-                    except jpype.JException(jpype.java.lang.IOException) as e:  # in case of a Java IOException
-                        print(e.message, file=sys.stderr)           # print exception message
+                    audio.writeAudio()                          # write the Wave file
 
                 if export_mp3:
                     print('Writing MP3 file to file system: ' + audio.getFile().getPath())
-                    try:
-                        audio.writeMp3()                            # write the MP3 file
-                    except jpype.JException(jpype.java.lang.IOException) as e:  # in case of a Java IOException
-                        print(e.message, file=sys.stderr)           # print exception message
+                    audio.writeMp3()                            # write the MP3 file
 
     jpype.shutdownJVM()                                         # stop the JavaVM
     return 0
