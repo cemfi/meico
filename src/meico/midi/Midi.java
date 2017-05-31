@@ -218,6 +218,7 @@ public class Midi {
     /**
      * write the sequence to a midi file with the specified path and filename
      * @param filename
+     * @return true if success, false if an error occurred
      */
     public boolean writeMidi(String filename) {
         File file = new File(filename);     // create the file with this filename
@@ -228,7 +229,7 @@ public class Midi {
     /**
      * write the sequence to a midi file
      * @param file
-     * @return
+     * @return true if success, false if an error occurred
      */
     public boolean writeMidi(File file) {
         try {

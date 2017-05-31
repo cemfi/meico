@@ -3,10 +3,12 @@
 
 #### v0.2.19
 - Changed MP3 encoding in method `meico.audio.Audio.encodePcmToMp3()` to `Lame.QUALITY_HIGH`.
-- Little additions to both `README.md` files (the main one and the meicoPy).
+- Little additions to all `README.md` files.
 - Added method `meico.midi.Midi.writeMidi(String filename)`.
 - The `write...` methods in classes `meico.midi.Midi` and `meico.audio.Audio` did not ensure that the file actually exists in the file system or is created if not. This has been fixed.
 - All `write...` methods in classes `meico.midi.Midi` and `meico.audio.Audio` return a `boolean` on the success of the file writing. Exception throwing has been removed. Classes `meico.app.Main`, `meico.app.MeicoApp` and `meicoPy.py` have been adapted accordingly.
+- Added a REST interface implementation (to be found in directory `rest`). Corresponding startup and usage documentation can be found in the `README.md` file at this directory.
+- Added `requirements.txt` to meicoPy.
 
 
 #### v0.2.18

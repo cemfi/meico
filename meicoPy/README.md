@@ -25,3 +25,7 @@ Usage: `python3 meicoPy.py [OPTIONS] FILE`
 
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
+
+### License information
+Meico REST API utilizes the following third-party libraries:
+- [JPype](https://pypi.python.org/pypi/JPype1) v1 0.6.2, Apache License V2.0.

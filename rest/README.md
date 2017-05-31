@@ -1,14 +1,10 @@
 # meico REST API
-meico REST API is a thin REST-like wrapper around meico.
-
 Author: [Simon Waloschek](https://github.com/sonovice)
 
-### Starting
-The API is designed to be executed in a docker container. A minimal `Dockerfile` is provided.
+Meico REST API is a thin REST-like wrapper around meico.
 
-For developers, the `app.py` can be started without docker via python 3 after installing a Java Runtime
-Environment (JRE) and the requirements from `requirements.txt`. **Be aware that the development server should
-never be used in a production environment!**
+### Starting
+The API is designed to be executed in a Docker container. A minimal `Dockerfile` is provided. For developers, the `app.py` can be started without Docker (in this case `meico.jar` has to be added manually to the `api` folder) via Python3 after installing a Java Runtime Environment (JRE) and the requirements from `requirements.txt`. Be aware that the development server should never be used in a production environment!
 
 ### API Endpoint Description
 The endpoint is named `meico`, therefore all calls to the API have to address `host:8001/meico`.
@@ -32,11 +28,7 @@ $ curl -F "mei=MyComposition.mei" host:8001/meico?output=msm&movement=1&add_ids=
 ```
 
 ### Add Soundbanks
-In order to add soundbanks to the API, the corresponding files (.sf2 or .dls) have to be
-copied into the `api\soundbanks` folder. Furthermore, the list of all banks inside the
-`app.py` has to be modified accordingly. The key of each dictionary entry specifies the
-name used to select a specific soundbank when querying the API, the value has to match
-the filename of the soundbank.
+We do not provide any soundbanks here. In order to add soundbanks to the API, the corresponding files (`.sf2` or `.dls`) have to be copied into the `api\soundbanks` folder. Furthermore, the list of all banks inside the `app.py` has to be modified accordingly. The key of each dictionary entry specifies the name used to select a specific soundbank when querying the API, the value has to match the filename of the soundbank.
 
 Example:
 ```python
@@ -54,3 +46,7 @@ SB_FILES = {
 }
 ```
 
+### License information
+Meico REST API utilizes the following third-party libraries:
+- [hug](http://www.hug.rest/) v2.3.0, MIT license,
+- [JPype](https://pypi.python.org/pypi/JPype1) v1 0.6.2, Apache License V2.0.

@@ -258,6 +258,7 @@ public class Audio {
 
     /**
      * (over-)write the file with the data in audioStream
+     * @return true if success, false if an error occurred
      */
     public boolean writeAudio() {
         return this.writeAudio(this.file);
@@ -266,6 +267,7 @@ public class Audio {
     /**
      * writes the audioStream into a file
      * @param filename
+     * @return true if success, false if an error occurred
      */
     public boolean writeAudio(String filename) {
         File file = new File(filename);     // create the file with this filename
@@ -276,6 +278,7 @@ public class Audio {
     /**
      * write the audio data to the file system
      * @param file
+     * @return true if success, false if an error occurred
      */
     public boolean writeAudio(File file) {
         if (file == null) {                                                 // if no valid file
@@ -304,6 +307,7 @@ public class Audio {
 
     /**
      * write audio data as MP3 to the file system
+     * @return true if success, false if an error occurred
      */
     public boolean writeMp3() {
         return this.writeMp3(Helper.getFilenameWithoutExtension(this.file.getAbsolutePath()) + ".mp3");
@@ -312,6 +316,7 @@ public class Audio {
     /**
      * write audio data as MP3 to the file system with specified filename
      * @param filename
+     * @return true if success, false if an error occurred
      */
     public boolean writeMp3(String filename) {
         File file = new File(filename);     // create the file with this filename
@@ -322,6 +327,7 @@ public class Audio {
     /**
      * write audio data as MP3 to the file system to specified file
      * @param file
+     * @return true if success, false if an error occurred
      */
     public boolean writeMp3(File file) {
         if (file == null) {                                                 // if no valid file
