@@ -10,6 +10,7 @@ RUN apt-get update --fix-missing && \
         libglib2.0-0 libxext6 libsm6 libxrender1 \
         git mercurial subversion \
         wget \
+        curl \
         openjdk-8-jre
 
 # Install conda
@@ -28,6 +29,12 @@ RUN mkdir /api
 WORKDIR /api
 COPY api /api
 COPY environment.yml /api/
+# Download latest meico.jar
+RUN curl -s https://api.github.com/repos/cemfi/meico/releases/latest \
+| grep "browser_download_url.*jar" \
+| cut -d : -f 2,3 \
+| tr -d \" \
+| wget -qi -
 RUN conda env create
 
 EXPOSE 8000
