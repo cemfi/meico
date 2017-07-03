@@ -38,4 +38,4 @@ RUN curl -s https://api.github.com/repos/cemfi/meico/releases/latest \
 RUN conda env create
 
 EXPOSE 8000
-CMD ["source activate meico && exec gunicorn --bind=0.0.0.0:8001 --timeout 300 app:__hug_wsgi__"]
+CMD ["source activate meico && exec gunicorn --bind=0.0.0.0:8000 --timeout 300 app:__hug_wsgi__"]
