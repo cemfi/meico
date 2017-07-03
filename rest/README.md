@@ -7,7 +7,7 @@ Meico REST API is a thin REST-like wrapper around meico.
 The API is designed to be executed in a Docker container. A minimal `Dockerfile` is provided. For developers, the `app.py` can be started without Docker (in this case `meico.jar` has to be added manually to the `api` folder) via Python3 after installing a Java Runtime Environment (JRE) and the requirements from `requirements.txt`. Be aware that the development server should never be used in a production environment!
 
 ### API Endpoint Description
-The endpoint is named `meico`, therefore all calls to the API have to address `host:8001/meico`.
+The endpoint is named `meico`, therefore all calls to the API have to address `host:8000/meico`.
 
 | Option                | Description                                                                                                                         |
 |-----------------------|----------------------------------------------------------------------------------|
@@ -23,8 +23,8 @@ The endpoint is named `meico`, therefore all calls to the API have to address `h
 
 Example Queries (using cURL):
 ```bash
-$ curl -F "mei=Beethoven.mei" host:8001/meico?output=mp3&tempo=115.5&soundbank=smg --output Beethoven.mp3
-$ curl -F "mei=MyComposition.mei" host:8001/meico?output=msm&movement=1&add_ids=true --output MyComposition.msm
+$ curl -F "mei=Beethoven.mei" host:8000/meico?output=mp3&tempo=115.5&soundbank=smg --output Beethoven.mp3
+$ curl -F "mei=MyComposition.mei" host:8000/meico?output=msm&movement=1&add_ids=true --output MyComposition.msm
 ```
 
 ### Add Soundbanks
