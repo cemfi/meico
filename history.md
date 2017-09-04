@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.2.20
+- Some adds to the instruments dictionary.
+
+
 #### v0.2.19
 - Changed MP3 encoding in method `meico.audio.Audio.encodePcmToMp3()` to `Lame.QUALITY_HIGH`.
 - Little additions to all `README.md` files.
