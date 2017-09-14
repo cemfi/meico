@@ -1,15 +1,13 @@
 package meico.audio;
 
+import meico.audio.lame.lowlevel.LameDecoder;
 import meico.audio.lame.lowlevel.LameEncoder;
 import meico.audio.lame.mp3.Lame;
 import meico.audio.lame.mp3.MPEGMode;
 import meico.mei.Helper;
 
 import javax.sound.sampled.*;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 
 /**
@@ -43,20 +41,42 @@ public class Audio {
     }
 
     /**
-     * constructor
+     * constructor; use this one to load and decode MP3 files
      *
      * @param file
      */
     public Audio(File file) throws IOException, UnsupportedAudioFileException {
-        AudioInputStream stream = loadFileToAudioInputStream(file);
-        this.audio = convertAudioInputStream2ByteArray(stream);
-        this.format = stream.getFormat();
-        stream.close();
+        String fileExtension = file.getName().substring(file.getName().lastIndexOf("."));   // get the file extension
+
+        switch (fileExtension.toLowerCase()) {                                              // depending on the file extension the file has to be loaded in a different way
+            case ".wav":                                                                    // this is for wav files
+                AudioInputStream stream = loadWavFileToAudioInputStream(file);
+                this.audio = convertAudioInputStream2ByteArray(stream);
+                this.format = stream.getFormat();
+                stream.close();
+                break;
+            case ".mp3":                                                                    // this is for mp3 files
+                LameDecoder decoder = new LameDecoder(file.getCanonicalPath());
+                throw new UnsupportedAudioFileException(file.getName().substring(file.getName().lastIndexOf(".")) + " import is not yet supported.");
+//                InputStream inStream = new FileInputStream(file);
+//                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                byte[] buffer = new byte[8192];
+//                int bytesRead;
+//                while ((bytesRead = inStream.read(buffer)) > 0) {
+//                    baos.write(buffer, 0, bytesRead);
+//                }
+//                this.audio = baos.toByteArray();
+//                inStream.close();
+//                break;
+            default:                                                                        // this is for unsupported file formats/extensions
+                throw new UnsupportedAudioFileException(file.getName().substring(file.getName().lastIndexOf(".")) + " is not supported.");
+        }
+
         this.file = file;
     }
 
     /**
-     * this constructor reades audio data from the AudioInputStream and associates the file with it;
+     * this constructor reads audio data from the AudioInputStream and associates the file with it;
      * the file may differ from the input stream
      * @param inputStream
      * @param file
@@ -85,7 +105,7 @@ public class Audio {
      * @throws IOException
      * @throws UnsupportedAudioFileException
      */
-    public static AudioInputStream loadFileToAudioInputStream(File file) throws IOException, UnsupportedAudioFileException {
+    public static AudioInputStream loadWavFileToAudioInputStream(File file) throws IOException, UnsupportedAudioFileException {
         return AudioSystem.getAudioInputStream(file);
     }
 

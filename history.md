@@ -3,6 +3,13 @@
 
 #### v0.2.20
 - Some adds to the instruments dictionary.
+- Bugfix in `Msm.applySequencingMapToMap()`.
+    - Only the first repetition was rendered correctly. Now also the later repetitions are correclty processed.
+    - Issue with duplicate `xml:id`'s is solved.
+- Optimizations in `Msm.resolveSequencingMaps()`.
+- Bugfix in GUI layout when loading a `wav` file.
+- The library Java-String-Similarity has been updated to v1.0.0.
+    - Updated Ant script `build.xml` accordingly.
 
 
 #### v0.2.19

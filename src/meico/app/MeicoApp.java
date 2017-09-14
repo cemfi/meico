@@ -6,6 +6,7 @@ package meico.app;
  */
 
 import meico.audio.Audio;
+import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
 
@@ -340,7 +341,7 @@ public class MeicoApp extends JFrame {
         public Mei4Gui(File file, MeicoApp app) throws InvalidFileTypeException, IOException, ParsingException, UnsupportedAudioFileException {
             this.msm = new ArrayList<>();
 
-            if (file.getName().substring(file.getName().length()-4).equals(".mei")) {           // if it is an mei file
+            if (file.getName().substring(file.getName().lastIndexOf(".")).toLowerCase().equals(".mei")) {           // if it is an mei file
                 this.readMeiFile(file, false);                                                  // load it
             }
             else {                                                                              // otherwise try loading it as an msm (or midi) object
@@ -600,7 +601,7 @@ public class MeicoApp extends JFrame {
                 }
                 else {
                     if (m.midi.isEmpty()) {
-                        skip = 11;
+                        skip = 10;
                     }
                     else {
                         JLabel[] midiPanel = m.midi.getPanel();
@@ -652,7 +653,7 @@ public class MeicoApp extends JFrame {
              * @param app
              */
             public Msm4Gui(File file, MeicoApp app) throws InvalidFileTypeException, IOException, ParsingException, UnsupportedAudioFileException {
-                if (file.getName().substring(file.getName().length()-4).equals(".msm")) {       // if it is an msm file
+                if (file.getName().substring(file.getName().lastIndexOf(".")).toLowerCase().equals(".msm")) {       // if it is an msm file
                     this.readMsmFile(file, false);                                              // load it
                 }
                 else {                                                                          // otherwise try loading it as a midi file
@@ -879,7 +880,7 @@ public class MeicoApp extends JFrame {
                  * @param file
                  */
                 public Midi4Gui(File file, MeicoApp app) throws InvalidFileTypeException, IOException, UnsupportedAudioFileException {
-                    if (file.getName().substring(file.getName().length()-4).equals(".mid")) {      // if it is not a midi file
+                    if (file.getName().substring(file.getName().lastIndexOf(".")).toLowerCase().equals(".mid")) {      // if it is not a midi file
                         try {
                             this.readMidiFile(file);
                         } catch (InvalidMidiDataException | IOException e) {

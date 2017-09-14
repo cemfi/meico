@@ -298,35 +298,33 @@ public class Msm {
         if (this.isEmpty()) return;
 
         Element globalSequencingMap = this.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap"); // get the global sequencingMap (or null if there is none)
-        if ((globalSequencingMap != null) && (globalSequencingMap.getChildCount() == 0))                            // if the global sequencingMap is empty
-            globalSequencingMap = null;                                                                             // set it null
-        Elements parts = this.getRootElement().getChildElements("part");                                            // get all the parts
-        Element part, localSequencingMap, sequencingMap;                                                            // these elements are used in the for loop that comes next
+        Elements parts = this.getRootElement().getChildElements("part");                                // get all the parts
+        Element part, sequencingMap;                                                                    // these elements are used in the for loop that comes next
 
         // go through all parts and expand their maps according to the underlying sequencingMaps
-        for (int i=0; i < parts.size(); ++i) {                                                                      // for each part
-            part = parts.get(i);                                                                                    // get it as element
-            localSequencingMap = part.getFirstChildElement("dated").getFirstChildElement("sequencingMap");          // get the part's local sequencingMap if there is one
-            sequencingMap = localSequencingMap;                                                                     // set the definitive sequencingMap to work with (next we check if this is the right one)
-            if ((sequencingMap == null) || (sequencingMap.getChildCount() == 0)) {                                  // if no local sequencingMap or it is empty
-                sequencingMap = globalSequencingMap;                                                                // use the global sequencingMap
-                if (sequencingMap == null) continue;                                                                // if the global sequencingMap is also null, nothing to do with this part, continue with the next part
+        for (int i=0; i < parts.size(); ++i) {                                                          // for each part
+            sequencingMap = globalSequencingMap;
+            part = parts.get(i);                                                                        // get it as element
+            Element localSequencingMap = part.getFirstChildElement("dated").getFirstChildElement("sequencingMap");   // get the part's local sequencingMap if there is one
+            if (localSequencingMap != null) sequencingMap = localSequencingMap;                         // if there is a local sequencingMap use it as definitive sequencingMap in this part
+            else if (sequencingMap == null) continue;                                                   // otherwise the global sequencingMap is used, but in case there is none, we can continue with the next part
+            if (sequencingMap.getChildCount() == 0) continue;                                           // if the sequencingMap is empty, we can continue with the nex part
+
+            // go through the score and all maps (except the sequencingMap itself) and apply the sequencingMap to them
+            Nodes maps = part.query("descendant::*[local-name()='score' or (contains(local-name(), 'Map') and not((local-name()='sequencingMap') or (local-name()='miscMap')))]");    // get the score and all maps
+            for (int j=0; j < maps.size(); ++j) {                                                       // go through all maps
+                Element map = (Element)maps.get(j);                                                     // one map
+                if (map.getChildCount() == 0) continue;                                                 // if it is empty, continue with the next map
+                Element newMap = this.applySequencingMapToMap(sequencingMap, map);                      // apply the sequencingMap to it
+                if (newMap != null) map.getParent().replaceChild(map, newMap);                          // replace the old map by the new one
             }
 
-            // go through the score and all maps (except the sequencingMap) and apply the sequencingMap to them
-            Nodes maps = part.query("descendant::*[local-name()='score' or (contains(local-name(), 'Map') and not((local-name()='sequencingMap') or (local-name()='miscMap')))]");    // get the score and all maps
-            for (int j=0; j < maps.size(); ++j) {                                                                   // go through them all
-                Element map = (Element)maps.get(j);                                                                 // one map
-                if (map.getChildCount() == 0) continue;                                                             // if it is empty, continue with the next map
-                Element newMap = this.applySequencingMapToMap(sequencingMap, map);                                  // apply the sequencingMap to it
-                map.getParent().replaceChild(map, newMap);                                                          // replace the old map by the new one
-            }
             // delete the localSequencingMap (because it does not apply anymore)
             if (localSequencingMap != null)
                 part.getFirstChildElement("dated").removeChild(localSequencingMap);
         }
 
-        // delete the global sequencingMap
+        // delete the global sequencingMap (because it does not apply anymore)
         if (globalSequencingMap != null)
             this.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").removeChild(globalSequencingMap);
     }
@@ -335,14 +333,15 @@ public class Msm {
      * apply the sequencingMap to the map; this expands the map
      * @param sequencingMap
      * @param map
+     * @return the expanded map (to replace the old map) or null (to keep the old map)
      */
     private Element applySequencingMapToMap(Element sequencingMap, Element map) {
 //        assert sequencingMap != null : "SequencingMap is null!";
 //        assert map != null : "Map is null!";
 
         // build a marker hashmap and a goto treemap (date, ArrayList<Goto>), the List holds all gotos at the given date
-        HashMap<String, Element> markerMap = new HashMap<String, Element>();
-        NavigableMap<Double, List<Goto>> gotoMap = new TreeMap<Double, List<Goto>>();   // the goto treemap
+        HashMap<String, Element> markerMap = new HashMap<String, Element>();            // the hashmap of markers
+        NavigableMap<Double, ArrayList<Goto>> gotoMap = new TreeMap<Double, ArrayList<Goto>>(); // the goto treemap
         for (int i=0; i < sequencingMap.getChildCount(); ++i) {                         // search all sequencingMap entries for goto elements
             Element e = (Element)sequencingMap.getChild(i);                             // an element
             if (e.getLocalName().equals("marker")) {                                    // if it is a marker
@@ -350,29 +349,27 @@ public class Msm {
                 continue;
             }
             if (e.getLocalName().equals("goto")) {                                      // if it is a goto
-                Double date = Double.parseDouble(e.getAttributeValue("midi.date"));     // get its date
-                Goto gt = new Goto(date, Double.parseDouble(e.getAttributeValue("target.date")), (e.getAttributeValue("target.id").isEmpty()) ? "" : e.getAttributeValue("target.id").substring(1), (e.getAttribute("activity") == null) ? "1" : e.getAttributeValue("activity"), e);   // create a Goto object from it
-                List<Goto> gotoList = gotoMap.get(date);                                // find a possibly preexistent entry in the treemap at that date
+                Goto gt = new Goto(Double.parseDouble(e.getAttributeValue("midi.date")), Double.parseDouble(e.getAttributeValue("target.date")), (e.getAttributeValue("target.id").isEmpty()) ? "" : e.getAttributeValue("target.id").substring(1), (e.getAttribute("activity") == null) ? "1" : e.getAttributeValue("activity"), e);   // create a Goto object from it
+                ArrayList<Goto> gotoList = gotoMap.get(gt.date);                        // find a possibly preexistent entry in the treemap at that date
                 if (gotoList == null) {                                                 // if there was no previous entry on this date
-                    gotoList = new ArrayList<>();                                       // create a new List
-                    gotoMap.put(date, gotoList);                                        // add it to the treemap
+                    gotoList = new ArrayList<Goto>();                                   // create a new List
+                    gotoMap.put(gt.date, gotoList);                                     // add it to the treemap
                 }
                 gotoList.add(gt);                                                       // add the Goto object to the list
             }
         }
 
-        if (gotoMap.isEmpty())                                                          // if there are no gotos in the sequencingMap
-            return (Element)map.copy();                                                 // return a deep copy of the map and done
+        if (gotoMap.isEmpty()) return null;                                             // if there are no gotos in the sequencingMap, i.e. nothing to expand, return null
 
         // build a treemap of elements in the map to be expanded
         Elements es = map.getChildElements();                                           // all elements of the map
-        NavigableMap<Double, List<Element>> mapHash = new TreeMap<Double, List<Element>>();  // a treemap for all map elements
+        NavigableMap<Double, ArrayList<Element>> mapHash = new TreeMap<Double, ArrayList<Element>>();  // a treemap for all map elements
         for (int i=0; i < es.size(); ++i) {                                             // go through the map elements
             Element e = es.get(i);                                                      // the element
             Double date = Double.parseDouble(e.getAttributeValue("midi.date"));         // its date
-            List<Element> eList = mapHash.get(date);                                    // find a possibly preexistent entry in the treemap
+            ArrayList<Element> eList = mapHash.get(date);                               // find a possibly preexistent entry in the treemap on that date
             if (eList == null) {                                                        // if there was no previous entry on this date
-                eList = new ArrayList<>();                                              // create a new List
+                eList = new ArrayList<Element>();                                       // create a new List
                 mapHash.put(date, eList);                                               // add it to the treemap
             }
             eList.add(e);                                                               // add the element to the list
@@ -380,7 +377,7 @@ public class Msm {
 
         // find the first active goto
         Goto gt = null;                                                                 // we want to start with the first active goto
-        for(Map.Entry<Double, List<Goto>> entry : gotoMap.entrySet()) {                 // find the first active goto by going through the lists of gotos
+        for(Map.Entry<Double, ArrayList<Goto>> entry : gotoMap.entrySet()) {            // find the first active goto by going through the lists of gotos
             for (Goto gtEntry : entry.getValue()) {                                     // for each list entry
                 if (gtEntry.activity.startsWith("1")) {                                 // found an active goto
                     gt = gtEntry;                                                       // set variable gt
@@ -392,29 +389,38 @@ public class Msm {
         }
 
         // fill the newMap
-        Element newMap = Helper.cloneElement(map);                                                  // make a flat copy of the map to refill it according to the sequencingMap
+        Element newMap = Helper.cloneElement(map);                                                  // make a flat copy of the map (no children so far) to refill it according to the sequencingMap
         double dateOffset = 0.0;                                                                    // this sums up the offsets that derive from inserting repetitions
         int j=0;                                                                                    // the index of map elements
+
         while (gt != null) {                                                                        // while there is still a goto to process
             // process all map elements up to the current goto
             for (; j < map.getChildCount(); ++j) {                                                  // go through the map elements until either the end or the date of the current goto and insert them in newMap
+                // create a copy of the element
                 Element e = (Element)map.getChild(j);                                               // get the current element in the map
                 double curDate = Double.parseDouble(e.getAttributeValue("midi.date"));              // get its midi.date
-                if (curDate >= gt.date) break;                                                      // if we did reach the next goto,
-                Element copy = (Element)e.copy();                                                   // make a copy
+                if (curDate >= gt.date) break;                                                      // if we did reach the next goto, break
+                Element copy = (Element)e.copy();                                                   // make a (deep) copy
                 copy.getAttribute("midi.date").setValue(Double.toString(curDate + dateOffset));     // add the offset to the date and update the midi.date
-                if (gt.counter > 0) {                                                               // if this is not the first time we go through these note
-                    Attribute id = copy.getAttribute("id", "http://www.w3.org/XML/1998/namespace"); // get the id of the copy or null if it has none
-                    if (id != null) {                                                               // if it has an xml:id, it would appear twice now (this is not valid), so we have to make a new id
-                        id.setValue(id.getValue() + "_repetition");
-                    }
+
+                // keep track of repetitions and id generation for this element
+                Attribute repetitionCounter = e.getAttribute("repetitionCounter");                  // get the counter of how often we have already repeated this element
+                if (repetitionCounter == null) {                                                    // if we pass this element the first time
+                    e.addAttribute(new Attribute("repetitionCounter", "0"));                        // add an attribute to count the repetitions
                 }
+                else {                                                                              // this is not the first time we process this element
+                    int reps = 1 + Integer.parseInt(e.getAttributeValue("repetitionCounter"));      // increase repetition counter
+                    e.getAttribute("repetitionCounter").setValue(Integer.toString(reps));           // write it to the attribute
+                    Attribute id = copy.getAttribute("id", "http://www.w3.org/XML/1998/namespace"); // get the id of the copy or null if it has none
+                    if (id != null) id.setValue(id.getValue() + "_repetition_" + reps);             // if it has an xml:id, it would appear twice now (this is not valid), so we have to make a new id
+                }
+
                 newMap.appendChild(copy);       /*alternative: Helper.addToMap(copy, newMap);*/     // add it to the newMap
             }
 
             // update some important variables
             dateOffset += gt.date - gt.targetDate;                                                  // update dateOffset
-            Map.Entry<Double, List<Element>> ceilingMapEntry = mapHash.ceilingEntry(gt.targetDate); // find map element index j (the first at or after targetDate)
+            Map.Entry<Double, ArrayList<Element>> ceilingMapEntry = mapHash.ceilingEntry(gt.targetDate); // find map element index j (the first at or after targetDate)
             j = (ceilingMapEntry == null) ? (map.getChildCount() + 1) : map.indexOf(mapHash.ceilingEntry(gt.targetDate).getValue().get(0)); // get the j index if there are map entries at or after targetDate, otherwise set j to one after the end of the map
             gt.counter++;                                                                           // increase the counter that says how often we already passed this goto
 
@@ -422,9 +428,9 @@ public class Msm {
             double targetDate = gt.targetDate;                                                      // from this date on we search
             Element targetMarker = markerMap.get(gt.targetId);                                      // find the target marker to ensure that we jump to the right index in the sequencingMap, without possibly preceding elements (gotos) at the same date
             gt = null;                                                                              // if this does not get a non-null value during the following for loop, we are done, no gotos left to process
-            for (Map.Entry<Double, List<Goto>> entry = gotoMap.ceilingEntry(targetDate); (entry != null) && (gt == null); entry = gotoMap.higherEntry(entry.getValue().get(0).date)) {    // from targetDate on search the gotos for an active one
+            for (Map.Entry<Double, ArrayList<Goto>> entry = gotoMap.ceilingEntry(targetDate); (entry != null) && (gt == null); entry = gotoMap.higherEntry(entry.getValue().get(0).date)) {    // from targetDate on search the gotos for an active one
                 for (Goto gtEntry : entry.getValue()) {                                             // search the list of gotos under this treemap entry
-                    if ((targetMarker == null) || (sequencingMap.indexOf(targetMarker) > sequencingMap.indexOf(gtEntry.source))) {  // check if this goto is before the targetId element
+                    if ((targetMarker != null) && (sequencingMap.indexOf(targetMarker) > sequencingMap.indexOf(gtEntry.source))) {  // check if this goto is before the targetId element
                         continue;
                     }
                     if ((gtEntry.counter >= gtEntry.activity.length()) || (gtEntry.activity.charAt(gtEntry.counter) != '1')) {  // if the counter is beyond the length of the string the character is assumed as '0'; anything other than '1' is also assumed as '0'; so, if the goto is inactive
@@ -443,13 +449,36 @@ public class Msm {
         for (; j < map.getChildCount(); ++j) {                                                  // go through the map elements until the end marker
             Element e = (Element)map.getChild(j);                                               // get the current element in the map
             double curDate = Double.parseDouble(e.getAttributeValue("midi.date"));              // get its midi.date
-            if (curDate < endDate) {                                                            // if we did not reach the next goto we can simply copy it and add it to the newMap
-                Element copy = (Element)e.copy();                                               // make a copy
-                copy.getAttribute("midi.date").setValue(Double.toString(curDate + dateOffset)); // add the offset to the date and update the midi.date
-                newMap.appendChild(copy);       /*alternative: Helper.addToMap(copy, newMap);*/ // add it to the newMap
-                continue;                                                                       // go on with the next element in the map
+            if (curDate >= endDate)                                                             // if we reach fine
+                break;                                                                          // we are done
+
+            Element copy = (Element)e.copy();                                                   // make a copy
+            copy.getAttribute("midi.date").setValue(Double.toString(curDate + dateOffset));     // add the offset to the date and update the midi.date
+
+            // ensure non-duplicate id's
+            Attribute repetitionCounter = e.getAttribute("repetitionCounter");                  // get the counter of how often we have already repeated this element
+            if (repetitionCounter != null) {                                                    // if we pass this element the first time, we don't care about it, but in the other case we have to adapt its id to avoid double occurences
+                int reps = 1 + Integer.parseInt(e.getAttributeValue("repetitionCounter"));      // increase repetition counter
+                e.getAttribute("repetitionCounter").setValue(Integer.toString(reps));           // write it to the attribute
+                Attribute id = copy.getAttribute("id", "http://www.w3.org/XML/1998/namespace"); // get the id of the copy or null if it has none
+                if (id != null) id.setValue(id.getValue() + "_repetition_" + reps);             // if it has an xml:id, it would appear twice now (this is not valid), so we have to make a new id
             }
-            break;
+
+            newMap.appendChild(copy);       /*alternative: Helper.addToMap(copy, newMap);*/ // add it to the newMap
+        }
+
+        // delete all repetitionCounter attributes from all map and newMap elements
+        for (int i=0; i < map.getChildCount(); ++i) {
+            Element e = (Element)map.getChild(i);
+            Attribute rc = e.getAttribute("repetitionCounter");
+            if (rc != null)
+                e.removeAttribute(rc);
+        }
+        for (int i=0; i < newMap.getChildCount(); ++i) {
+            Element e = (Element)newMap.getChild(i);
+            Attribute rc = e.getAttribute("repetitionCounter");
+            if (rc != null)
+                e.removeAttribute(rc);
         }
 
         return newMap;

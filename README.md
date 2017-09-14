@@ -69,15 +69,15 @@ The resulting `meico.jar` can be found in `out/artifacts/meico`.
 ### License information
 
 Meico makes use of the following third party libraries:
-- XOM v1.2.10 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1.
-- Java-String-Similarity v0.13 by Thibault Debatty, MIT license.
-- MigLayout v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license.
-- the FileDrop class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
-- Jing v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
-- Saxon v9.7.0.15 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License Version 2.0.
-- Java LAME v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
-- MEI Common Music Notation Schema (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
-- parts of `MidiToWavRenderer.java`, an add-on to the JFugue library, LGPL license.
+- [XOM](http://www.xom.nu/) v1.2.10 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1.
+- [Java-String-Similarity](https://github.com/tdebatty/java-string-similarity) v1.0.0 by Thibault Debatty, MIT license.
+- [MigLayout](http://www.miglayout.com/) v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license.
+- the [FileDrop](https://sourceforge.net/projects/iharder/files/filedrop/1.1/FileDrop-v1.1.1.zip/download) class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
+- [Jing](http://www.thaiopensource.com/relaxng/jing.html) v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
+- [Saxon](http://saxon.sourceforge.net/) v9.7.0.15 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License Version 2.0.
+- [Java LAME](https://github.com/nwaldispuehl/java-lame) v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
+- [MEI Common Music Notation Schema](https://github.com/music-encoding/music-encoding) (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
+- parts of `MidiToWavRenderer.java`, an add-on to the [JFugue](http://www.jfugue.org/download.html) library, LGPL license.
 
 We publish meico under GNU LGPL version 3.0 Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
 If you use meico in your project make sure that you do not conflict with any of the above licenses.
