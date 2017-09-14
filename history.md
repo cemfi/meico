@@ -10,6 +10,7 @@
 - Bugfix in GUI layout when loading a `wav` file.
 - The library Java-String-Similarity has been updated to v1.0.0.
     - Updated Ant script `build.xml` accordingly.
+- Removed OracleJDK 7 from Travis CI builds `.travis.yml` as it is no longer supported by Travis CI. Java 7 compatibility can still be checked with OpenJDK 7.
 
 
 #### v0.2.19
