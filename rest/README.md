@@ -23,7 +23,7 @@ The endpoint is named `meico`, therefore all calls to the API have to address `h
 
 Example Queries (using cURL):
 ```bash
-$ curl -F "mei=Beethoven.mei" host:8000/meico?output=mp3&tempo=115.5&soundbank=smg --output Beethoven.mp3
+$ curl -F "mei=Beethoven.mei" host:8000/meico?output=mp3&tempo=115.5&soundbank=sgm --output Beethoven.mp3
 $ curl -F "mei=MyComposition.mei" host:8000/meico?output=msm&movement=1&add_ids=true --output MyComposition.msm
 ```
 
