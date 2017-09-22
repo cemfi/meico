@@ -1,6 +1,18 @@
 ### Version History
 
 
+#### v0.2.21
+- Added support for critical apparatus, i.e. the elements `app`, `lem` and `rdg`.
+    - This is part of the MEI-to-MSM conversion process in `meico.Mei.convert()` and is implemented in function `meico.Mei.processApp()`.
+    - If an `app` element occurs, meico chooses the first (and hopefully only) `lem` element to process. All other child elements are ignored. If no `lem` is in `app`, meico chooses the first `rdg` element.
+    - If any other choice is desired, the user has to resolve this manually. A tool for generating "variant-free", unambiguous MEI code is the [MEI Sequence Editor](http://nashira.uni-paderborn.de:5555/seditor). This tool goes through all variants and lets the user make the decision. It then outputs the corresponding MEI file.
+- Added editorial element support, i.e. all the elements that can occur in the `choice` and `subst` environment.
+    - The elements `sic` and `corr` are processed in both cases of occurence, as "standalone" (always processed) and in the `choice` environment as `sic`-`corr` pair (`corr` is chosen).
+    - The same for `orig` and `reg`. In the `choice` environment `reg` is favored.
+- Added also the elements `add`, `expan`, `supplied`, `unclear` to the supported elements in MEI-to-MSM conversion. The `del` element is also processed now, but basically ignored.
+- The `cert` attribute (certainty) is not taken into account so far. And also the `restore` environment is not processed, yet.
+
+
 #### v0.2.20
 - Some adds to the instruments dictionary.
 - Bugfix in `Msm.applySequencingMapToMap()`.

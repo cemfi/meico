@@ -437,12 +437,15 @@ public class Mei {
 
             // process the element
             switch (e.getLocalName()) {
+                case "abbr":                                                    // abbreviation
+                    continue;                                                   // TODO: What to do with this? Can be child of choice and is handled in this.processChoice(). However, it is basically ignored.
+
                 case "accid":                                                   // process accid elements that are not children of notes
                     this.processAccid(e);
                     continue;
 
-                case "add":
-                    continue;                                                   // TODO: ignore
+                case "add":                                                     // marks an addition to the text
+                    break;                                                      // process the contents
 
                 case "anchorText":
                     continue;                                                   // can be ignored
@@ -450,8 +453,9 @@ public class Mei {
                 case "annot":
                     continue;                                                   // TODO: ignore
 
-                case "app":
-                    continue;                                                   // TODO: ignore
+                case "app":                                                     // critical apparatus, may contain lem and rdg elements
+                    this.processApp(e);
+                    continue;
 
                 case "arpeg":
                     continue;                                                   // TODO: ignored at the moment but relevant for expressive performance later on
@@ -482,8 +486,9 @@ public class Mei {
                     this.processChord(e);                                       // bTrems are treated as chords
                     continue;                                                   // continue with the next sibling
 
-                case "choice":
-                    continue;                                                   // TODO: ignore
+                case "choice":                                                  // the children of a choice element are alternatives of which meico has to choose one
+                    this.processChoice(e);
+                    continue;
 
                 case "chord":
                     if (e.getAttribute("grace") != null)                        // TODO: at the moment we ignore grace notes and grace chords; later on, for expressive performances, we should handle these somehow
@@ -500,8 +505,8 @@ public class Mei {
                 case "clefGrp":
                     continue;                                                   // TODO: can this be ignored or is it of any relevance to pitch computation?
 
-                case "corr":
-                    continue;                                                   // TODO: ignore
+                case "corr":                                                    // a correction, cann occur as "standalone" or in the choice environment, usually paired with the sic element
+                    break;                                                      // nothing special about this element to process, just process its subtree
 
                 case "curve":
                     continue;                                                   // can be ignored
@@ -512,8 +517,8 @@ public class Mei {
                 case "damage":
                     continue;                                                   // TODO: ignore
 
-                case "del":
-                    continue;                                                   // TODO: ignore
+                case "del":                                                     // contains information deleted, marked as deleted, or otherwise indicated as superfluous or spurious in the copy text by an author, scribe, annotator, or corrector
+                    continue;                                                   // can be ignored
 
                 case "dir":
                     continue;                                                   // TODO: relevant for expressive performance
@@ -530,6 +535,10 @@ public class Mei {
                 case "ending":                                                  // relevant in the context of repetitions
                     this.processEnding(e);
                     continue;
+
+                case "expan":                                                   // the expansion of an abbreviation
+                    break;                                                      // nothing special about this element to process, but dive into it and process its children
+
                 case "fermata":
                     continue;                                                   // TODO: relevant for expressive performance
 
@@ -538,7 +547,7 @@ public class Mei {
                     continue;                                                   // continue with the next sibling
 
                 case "gap":
-                    continue;                                                   // TODO: ignore
+                    continue;                                                   // TODO: What to do with this?
 
                 case "gliss":
                     continue;                                                   // TODO: relevant for expressive performance
@@ -554,7 +563,7 @@ public class Mei {
                     break;
 
                 case "handShift":
-                    continue;                                                   // TODO: ignore
+                    continue;                                                   // TODO: What to do with this?
 
                 case "harm":
                     continue;                                                   // can be ignored
@@ -594,6 +603,9 @@ public class Mei {
                     break;
                 case "lb":
                     continue;                                                   // can be ignored
+
+                case "lem":                                                     // this element is part of the critical apparatus (child of app)
+                    continue;                                                   // it is processed by this.processApp()
 
                 case "line":
                     continue;                                                   // can be ignored
@@ -657,8 +669,8 @@ public class Mei {
                     this.processOctave(e);
                     break;
 
-                case "orig":
-                    continue;                                                   // TODO: ignore
+                case "orig":                                                    // contains material which is marked as following the original, rather than being normalized or corrected
+                    break;                                                      // when it does not appear in a choice environment as member of an orig-reg pair it has to be processed
 
                 case "ossia":
                     continue;                                                   // TODO: ignored for the moment but may be included later on
@@ -694,11 +706,11 @@ public class Mei {
                 case "proport":
                     continue;                                                   // TODO: ignore
 
-                case "rdg":
-                    continue;                                                   // TODO: ignore
+                case "rdg":                                                     // this element is part of the critical apparatus (child of app)
+                    continue;                                                   // it is processed by this.processApp()
 
-                case "reg":
-                    continue;                                                   // TODO: ignore
+                case "reg":                                                     // contains material which has been regularized or normalized in some sense
+                    break;                                                      // process its content
 
                 case "reh":
                     this.processReh(e);                                         // TODO: generate midi jump marks
@@ -711,8 +723,9 @@ public class Mei {
                     this.processRest(e);
                     break;
 
-                case "restore":
-                    continue;                                                   // TODO: ignore
+                case "restore":                                                 // indicates restoration of material to an earlier state by cancellation of an editorial or authorial marking or instruction
+                    this.processRestore(e);
+                    continue;
 
                 case "sb":
                     continue;                                                   // can be ignored
@@ -727,8 +740,8 @@ public class Mei {
                 case "section":                                                 // TODO: What can I do with this? I have to dive into it, as it may contain musical data. I might also use it to generate a sectionStructure map.
                     break;
 
-                case "sic":
-                    continue;                                                   // TODO: ignore
+                case "sic":                                                     // indicates an apparent error, usually paired with the corr element, but if not, its content should be processed
+                    break;
 
                 case "space":
                     this.processRest(e);                                        // handle it like a rest
@@ -751,11 +764,11 @@ public class Mei {
                 case "staffGrp":                                                // may contain staffDefs but needs no particular processing, attributes are ignored
                     break;
 
-                case "subst":
-                    continue;                                                   // TODO: ignore
+                case "subst":                                                   // groups transcriptional elements when the combination is to be regarded as a single intervention in the text
+                    break;                                                      // process its contents
 
-                case "supplied":
-                    continue;                                                   // TODO: ignore
+                case "supplied":                                                // contains material supplied by the transcriber or editor in place of text which cannot be read, either because of physical damage or loss in the original or because it is illegible for any reason
+                    break;                                                      // process its content
 
                 case "syl":
                     continue;                                                   // TODO: can be included in MIDI, too; useful for choir synthesis
@@ -793,8 +806,8 @@ public class Mei {
                 case "turn":
                     continue;                                                   // TODO: relevant for expressive performance
 
-                case "unclear":
-                    continue;                                                   // TODO: ignore
+                case "unclear":                                                 // contains material that cannot be transcribed with certainty because it is illegible or inaudible in the source
+                    break;                                                      // process the contents
 
                 case "uneume":
                     continue;                                                   // ignored, this implementation focusses on common modern notation
@@ -1064,6 +1077,50 @@ public class Mei {
             }
             this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(latestDate));                  // write it to the part for later reference
         }
+    }
+
+    /**
+     * process an mei app element (critical apparatus),
+     * in this run the method also processes lem and rdg elements (the two kinds of child elements of app)
+     * @param e
+     */
+    private void processApp(Element e) {
+        Element takeThisReading = e.getFirstChildElement("lem");    // get the first (and hopefully only) lem element, this is the desired reading
+
+        if (takeThisReading == null)                                // if there is no lem element
+            takeThisReading = e.getFirstChildElement("rdg");        // choose the first rdg element (they are all of equal value)
+
+        this.convert(takeThisReading);                              // process the chosen reading
+    }
+
+    /**
+     * process an mei choice element,
+     * it has to choose one the alternative subtrees to process further,
+     * in here we can find the elements abbr, choice, corr, expan, orig, reg, sic, subst, unclear,
+     * TODO: this implementation does not take the cert attribute (certainty rating) into account
+     * @param e
+     */
+    private void processChoice(Element e) {
+        String[] prefOrder = {"corr", "reg", "expan", "subst", "choice", "orig", "unclear", "sic", "abbr"};   // define the order of preference of elements to choose in this environment
+
+        // make the choice
+        Element c = null;                                               // this will hold the chosen element for processing
+        for (int i=0; (c == null) && (i < prefOrder.length); ++i) {     // search for the preferred types of elements in order of preference
+            c = e.getFirstChildElement(prefOrder[i]);
+        }
+        if (c == null)                                                  // nothing found
+            c = e.getChildElements().get(0);                            // then take the first child whatever it is
+
+        if (c != null)                                                  // if the choice element was not empty and we have finally made a choice
+            this.convert(c);                                            // process it
+    }
+
+    /**
+     * process an mei restore element
+     * @param e
+     */
+    private void processRestore(Element e) {
+        // TODO: it may contain anything. Most significant: a del element must not be ignored as it is done in all other contexts.
     }
 
     /**
