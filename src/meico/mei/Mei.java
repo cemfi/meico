@@ -518,6 +518,7 @@ public class Mei {
                     continue;                                                   // TODO: ignore
 
                 case "del":                                                     // contains information deleted, marked as deleted, or otherwise indicated as superfluous or spurious in the copy text by an author, scribe, annotator, or corrector
+                    this.processDel(e);
                     continue;                                                   // can be ignored
 
                 case "dir":
@@ -724,8 +725,8 @@ public class Mei {
                     break;
 
                 case "restore":                                                 // indicates restoration of material to an earlier state by cancellation of an editorial or authorial marking or instruction
-                    this.processRestore(e);
-                    continue;
+                    this.processRestore(e);                                     // set all del elements in this restore to restore-meico="true"
+                    break;                                                      // process its contents
 
                 case "sb":
                     continue;                                                   // can be ignored
@@ -1068,10 +1069,10 @@ public class Mei {
             this.helper.currentPart.getAttribute("currentDate").setValue(oldDate);                                      // set back to the old currentDate, because each layer is a parallel to the other layers
         else {                                                                                                          // no further layers in this staff environment, this was the last layer in this staff
             // take the latest layer-specific currentDate as THE definitive currentDate of this part
-            Elements layers = ((Element) layer.getParent()).getChildElements("layer");                                  // get all layers in this staff
+            Nodes layers = layer.getParent().query("child::*[local-name()='layer']");
             double latestDate = Double.parseDouble(this.helper.currentPart.getAttribute("currentDate").getValue());
             for (int j = layers.size() - 1; j >= 0; --j) {
-                double date = Double.parseDouble(layers.get(j).getAttributeValue("currentDate"));                       // get the layer's date
+                double date = Double.parseDouble(((Element)layers.get(j)).getAttributeValue("currentDate"));            // get the layer's date
                 if (latestDate < date)                                                                                  // if this layer's date is later than latestDate so far
                     latestDate = date;                                                                                  // set latestDate to date
             }
@@ -1082,15 +1083,19 @@ public class Mei {
     /**
      * process an mei app element (critical apparatus),
      * in this run the method also processes lem and rdg elements (the two kinds of child elements of app)
-     * @param e
+     * @param app
      */
-    private void processApp(Element e) {
-        Element takeThisReading = e.getFirstChildElement("lem");    // get the first (and hopefully only) lem element, this is the desired reading
+    private void processApp(Element app) {
+        Element takeThisReading = Helper.getFirstChildElement(app, "lem");  // get the first (and hopefully only) lem element, this is the desired reading
 
-        if (takeThisReading == null)                                // if there is no lem element
-            takeThisReading = e.getFirstChildElement("rdg");        // choose the first rdg element (they are all of equal value)
+        if (takeThisReading == null) {                                      // if there is no lem element
+            takeThisReading = Helper.getFirstChildElement(app, "rdg");      // choose the first rdg element (they are all of equal value)
+            if (takeThisReading == null) {                                  // if there is no reading
+                return;                                                     // nothing to do, return
+            }
+        }
 
-        this.convert(takeThisReading);                              // process the chosen reading
+        this.convert(takeThisReading);                                      // process the chosen reading
     }
 
     /**
@@ -1098,29 +1103,55 @@ public class Mei {
      * it has to choose one the alternative subtrees to process further,
      * in here we can find the elements abbr, choice, corr, expan, orig, reg, sic, subst, unclear,
      * TODO: this implementation does not take the cert attribute (certainty rating) into account
-     * @param e
+     * @param choice
      */
-    private void processChoice(Element e) {
+    private void processChoice(Element choice) {
         String[] prefOrder = {"corr", "reg", "expan", "subst", "choice", "orig", "unclear", "sic", "abbr"};   // define the order of preference of elements to choose in this environment
 
         // make the choice
-        Element c = null;                                               // this will hold the chosen element for processing
-        for (int i=0; (c == null) && (i < prefOrder.length); ++i) {     // search for the preferred types of elements in order of preference
-            c = e.getFirstChildElement(prefOrder[i]);
+        Element c = null;                                           // this will hold the chosen element for processing
+        for (int i=0; (c == null) && (i < prefOrder.length); ++i) { // search for the preferred types of elements in order of preference
+            c = Helper.getFirstChildElement(choice, prefOrder[i]);
         }
-        if (c == null)                                                  // nothing found
-            c = e.getChildElements().get(0);                            // then take the first child whatever it is
 
-        if (c != null)                                                  // if the choice element was not empty and we have finally made a choice
-            this.convert(c);                                            // process it
+        if (c != null) {
+            if (c.getLocalName().equals("choice"))                  // if we chose a choice
+                this.processChoice(c);                              // process it recursively
+            else
+                this.convert(c);                                    // process it
+            return;                                                 // done
+        }
+
+        // nothing found
+        c = choice.getChildElements().get(0);                       // then take the first child whatever it is
+        if (c != null)                                              // if the choice element was not empty and we finally made a decision
+            this.convert(c);                                        // process it
     }
 
     /**
-     * process an mei restore element
-     * @param e
+     * Process an mei restore element.
+     * However, there is an ambiguity in the MEI definition: Restore negates del in both cases, when the del is parent of restore and when when del is child of restore.
+     * Whith this implementation we follow the latter interpretation, i.e. restore negates all del children (all, not only the first generation of dels!).
+     * @param restore
      */
-    private void processRestore(Element e) {
-        // TODO: it may contain anything. Most significant: a del element must not be ignored as it is done in all other contexts.
+    private void processRestore(Element restore) {
+        Nodes dels = restore.query("descendant::*[local-name()='del']");// get all del children
+
+        for (int i=0; i < dels.size(); ++i) {                           // for each del
+            Element d = (Element) dels.get(i);                          // get it as Element
+            d.addAttribute(new Attribute("restored-meico", "true"));    // add an attribute which indicates that this del is restored; this will be recognized by method processDel()
+        }
+    }
+
+    /**
+     * process an mei del element,
+     * this method basically checks if this del is restored and, thus, has to be processed or not
+     * @param del
+     */
+    private void processDel(Element del) {
+        Attribute restored = del.getAttribute("restored-meico");        // does this del have a meico-generated restore attribute?
+        if ((restored != null) && (restored.getValue().equals("true"))) // and is it true?
+            this.convert(del);                                          // then process the contents of this del element
     }
 
     /**

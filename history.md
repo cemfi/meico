@@ -1,9 +1,20 @@
 ### Version History
 
 
+#### v0.2.22
+- Bugfix in `meico.mei.Mei.processApp()`.
+- Bugfix in `meico.mei.Mei.processLayer()`.
+- Added method `meico.mei.Helper.getFirstChildElement(Element ofThis, String localname)`. It is a workaround for the XMO method `getFirstChildElement(String name)` which sometimes does not seem to work properly.
+- Enhancements in the processing of `choice` elements.
+- Added support for `restore` elements.
+    - It negates all `del` children (by adding an Attribute `restore-meico="true"`). So the deletions will be considered during conversion.
+    - The processing of `del` elements has been enhanced, accordingly.
+    - But be aware, in our implementation a `restore` does not overrule a parent `del` element! Hence, putting a `del` around a `restore` effectively deletes the restoration.
+
+
 #### v0.2.21
 - Added support for critical apparatus, i.e. the elements `app`, `lem` and `rdg`.
-    - This is part of the MEI-to-MSM conversion process in `meico.Mei.convert()` and is implemented in function `meico.Mei.processApp()`.
+    - This is part of the MEI-to-MSM conversion process in `meico.mei.Mei.convert()` and is implemented in function `meico.mei.Mei.processApp()`.
     - If an `app` element occurs, meico chooses the first (and hopefully only) `lem` element to process. All other child elements are ignored. If no `lem` is in `app`, meico chooses the first `rdg` element.
     - If any other choice is desired, the user has to resolve this manually. A tool for generating "variant-free", unambiguous MEI code is the [MEI Sequence Editor](http://nashira.uni-paderborn.de:5555/seditor). This tool goes through all variants and lets the user make the decision. It then outputs the corresponding MEI file.
 - Added editorial element support, i.e. all the elements that can occur in the `choice` and `subst` environment.

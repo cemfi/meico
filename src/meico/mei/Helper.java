@@ -90,6 +90,19 @@ public class Helper {
         return es.get(0);
     }
 
+    /**
+     * XOM's method getFirstChild(String) sometimes doesn't seem to work even though an XPath query finds something. For these situations this method can be used as workaround.
+     * @param ofThis
+     * @param localname
+     * @return
+     */
+    public static Element getFirstChildElement(Element ofThis, String localname) {
+        if ((ofThis == null) || localname.isEmpty()) return null;
+        Nodes e = ofThis.query("child::*[local-name()='" + localname + "']");   // find the elements with the localname by an XPath query
+        if (e.size() == 0) return null;                                         // if nothing found, return null
+        return (Element)e.get(0);                                               // else return the first element
+    }
+
     /** get the next sibling element of ofThis irrespective of its name
      *
      * @param ofThis
