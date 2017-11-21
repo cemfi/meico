@@ -835,14 +835,20 @@ public class Mei {
         Element movement = new Element("meta");
 
         // store the same id at the mei source and the msm, maybe it is needed later on
+        String movementId;
         Attribute id = Helper.getAttribute("id", mdiv);
-        if (id != null) {                                                           // if mdiv has an id
-            movement.addAttribute(new Attribute("id", id.getValue()));              // reuse it
+        if (id != null) {                                                           // if mdiv has an id, reuse it
+            movementId = id.getValue();                                             // get its value
+            Attribute movementIdAttribute = new Attribute("id", movementId);        // make new Attribute
+            movementIdAttribute.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+            movement.addAttribute(movementIdAttribute);                             // add it to the movement element
         }
         else {                                                                      // otherwise generate a unique id
-            String uuid = "meico_" + UUID.randomUUID().toString();
-            mdiv.addAttribute(new Attribute("id", uuid));
-            movement.addAttribute(new Attribute("id", uuid));
+            movementId = "meico_" + UUID.randomUUID().toString();                   // generate id string
+            Attribute movementIdAttribute = new Attribute("id", movementId);        // make new Attribute
+            movementIdAttribute.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+            mdiv.addAttribute(new Attribute("id", movementId));                     // add it to the MEI mdiv
+            movement.addAttribute(movementIdAttribute);                             // and to the MSM movement element
         }
 
         // create global containers
@@ -857,12 +863,23 @@ public class Mei {
         dated.appendChild(new Element("timeSignatureMap"));                         // global time signatures
         dated.appendChild(new Element("keySignatureMap"));                          // global key signatures
         dated.appendChild(new Element("markerMap"));                                // global rehearsal marks
-        dated.appendChild(new Element("sequencingMap"));                            // global sequencing instructions (repetition, jump etc.)
         dated.appendChild(new Element("miscMap"));                                  // a temporal map that is filled with content that may be useful during processing but will be deleted in the final msm
+
+        // generate global sequencingMap with a repetition start marker at the beginning
+        Element sequencingMap = new Element("sequencingMap");                       // create the sequencingMap
+        dated.appendChild(sequencingMap);                                           // add it to global.dated
+//        Element marker = new Element("marker");                                     // create a "repetition start" marker
+//        marker.addAttribute(new Attribute("midi.date", "0"));                       // at the beginning of the movement
+//        marker.addAttribute(new Attribute("message", "repetition start"));          // its a repetition start (if there are no repetition ends, it will be ignored)
+//        Attribute markerId = new Attribute("id", "meico_" + movementId + "_generated_form_mdiv");   // create an attribute with xml:id, reuse the movement id (for cross reference)
+//        markerId.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");       // set its namespace to xml
+//        marker.addAttribute(markerId);                                              // add attribute to the marker
+//        sequencingMap.appendChild(new Element("marker"));                           // add the marker to the sequencingMap
 
         global.appendChild(header);
         global.appendChild(dated);
         movement.appendChild(global);
+
 
         Msm msm = new Msm(new Document(movement));                                  // create the Msm object
         this.helper.movements.add(msm);                                             // add it to the movements list

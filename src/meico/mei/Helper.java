@@ -568,7 +568,7 @@ public class Helper {
             gt.addAttribute(new Attribute("target.date", "0"));                     // add the target.date attribute by default initialized with "0" (which means to start from the beginning)
             gt.addAttribute(new Attribute("target.id", ""));                        // add an empty target.id attribute (which means to start from the beginning)
             int index = Helper.addToMap(gt, sequencingMap);                         // insert the goto into the sequencingMap and store its index because we need to find the marker to jump to
-            Nodes ns = sequencingMap.query("descendant::*[local-name()='marker' and attribute::message='repetition start']");       // get all the markers that are repetition start points
+            Nodes ns = sequencingMap.query("descendant::*[local-name()='marker' and (@message='repetition start' or @message='fine')]");  // get all the markers that are repetition start points or fines
             for (int i = ns.size()-1; i >= 0; --i) {                                                                                // check them from back to front and find
                 Element n = (Element)ns.get(i);                                                                                     // the element
                 if (Double.parseDouble(n.getAttributeValue("midi.date")) < date) {                                                  // that has a midi.date right before the goto's midi.date

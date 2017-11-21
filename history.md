@@ -1,10 +1,15 @@
 ### Version History
 
 
+#### v0.2.23
+- MSM `movement` ids had no namespace. Now they are in the xml namespace.
+- Repetitions started always at an `rptstart` or the beginning of the piece. End barlines where ignored, so far. Meico now interprets `<measure right="end">` as a potential repetition start.
+
+
 #### v0.2.22
 - Bugfix in `meico.mei.Mei.processApp()`.
 - Bugfix in `meico.mei.Mei.processLayer()`.
-- Added method `meico.mei.Helper.getFirstChildElement(Element ofThis, String localname)`. It is a workaround for the XMO method `getFirstChildElement(String name)` which sometimes does not seem to work properly.
+- Added method `meico.mei.Helper.getFirstChildElement(Element ofThis, String localname)`. It is a workaround for the XOM method `getFirstChildElement(String name)` which sometimes does not seem to work properly.
 - Enhancements in the processing of `choice` elements.
 - Added support for `restore` elements.
     - It negates all `del` children (by adding an Attribute `restore-meico="true"`). So the deletions will be considered during conversion.
