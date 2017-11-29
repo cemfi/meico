@@ -600,8 +600,8 @@ public class Mei {
 
                 case "layerDef":
                     this.processLayerDef(e);
-
                     break;
+
                 case "lb":
                     continue;                                                   // can be ignored
 
@@ -738,7 +738,8 @@ public class Mei {
                 case "score":                                                   // just dive into it
                     break;
 
-                case "section":                                                 // TODO: What can I do with this? I have to dive into it, as it may contain musical data. I might also use it to generate a sectionStructure map.
+                case "section":                                                 // Segment of music data.
+                    this.processSection(e);
                     break;
 
                 case "sic":                                                     // indicates an apparent error, usually paired with the corr element, but if not, its content should be processed
@@ -1277,6 +1278,30 @@ public class Mei {
 
         if (noPreviousEndings)  // if this was the first ending, it might be that no further ending will follow; however, this first ending should be left out at repetition; so we create a preliminary goto that does exactly this and should be removed if other endings follow later on
             gt.getAttribute("target.date").setValue(Double.toString(this.helper.getMidiTime()));
+    }
+
+    /**
+     * process MEI section elements
+     * TODO: What else can I do with this? I might also use it to generate a sectionStructure map.
+     * @param section
+     */
+    private void processSection(Element section) {
+        // generate a repetition start entry in the sequencingMap
+//        Element marker = new Element("marker");                                                     // do so
+//        marker.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));// give it a midi.date
+//        marker.addAttribute(new Attribute("message", "section start"));                             // set its message
+//
+//        Attribute id = section.getAttribute("id", "http://www.w3.org/XML/1998/namespace");          // if the section element has an xml:id attribute, get it
+//        if (id != null) {
+//            marker.addAttribute((Attribute) id.copy());                                             // copy the id to marker
+//        }
+//        else {                                                                                      // otherwise create an id
+//            id = new Attribute("id", "meico_" + UUID.randomUUID().toString());                      // give it a UUID
+//            id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");                         // set its namespace to xml
+//            marker.addAttribute(id);                                                                // add the id attribute to the marker
+//        }
+//
+//        Helper.addToMap(marker, helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap")); // add the marker to the sequencingMap
     }
 
     /** process an mei measure element
@@ -2428,7 +2453,7 @@ public class Mei {
         Element root = this.getRootElement();
         if (root == null) return 0;
 
-        Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest' or local-name()='mRest' or local-name()='multiRest' or local-name()='chord' or local-name()='tuplet' or local-name()='mdiv' or local-name()='reh') and not(@xml:id)]");
+        Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest' or local-name()='mRest' or local-name()='multiRest' or local-name()='chord' or local-name()='tuplet' or local-name()='mdiv' or local-name()='reh' or local-name()='section') and not(@xml:id)]");
         for (int i = 0; i < e.size(); ++i) {                                    // go through all the nodes
             String uuid = "meico_" + UUID.randomUUID().toString();              // generate new ids for them
             Attribute a = new Attribute("id", uuid);                            // create an attribute

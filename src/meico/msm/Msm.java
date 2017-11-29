@@ -308,7 +308,7 @@ public class Msm {
             Element localSequencingMap = part.getFirstChildElement("dated").getFirstChildElement("sequencingMap");   // get the part's local sequencingMap if there is one
             if (localSequencingMap != null) sequencingMap = localSequencingMap;                         // if there is a local sequencingMap use it as definitive sequencingMap in this part
             else if (sequencingMap == null) continue;                                                   // otherwise the global sequencingMap is used, but in case there is none, we can continue with the next part
-            if (sequencingMap.getChildCount() == 0) continue;                                           // if the sequencingMap is empty, we can continue with the nex part
+            if (sequencingMap.getChildCount() == 0) continue;                                           // if the sequencingMap is empty, we can continue with the next part
 
             // go through the score and all maps (except the sequencingMap itself) and apply the sequencingMap to them
             Nodes maps = part.query("descendant::*[local-name()='score' or (contains(local-name(), 'Map') and not((local-name()='sequencingMap') or (local-name()='miscMap')))]");    // get the score and all maps
@@ -342,7 +342,7 @@ public class Msm {
         // build a marker hashmap and a goto treemap (date, ArrayList<Goto>), the List holds all gotos at the given date
         HashMap<String, Element> markerMap = new HashMap<String, Element>();            // the hashmap of markers
         NavigableMap<Double, ArrayList<Goto>> gotoMap = new TreeMap<Double, ArrayList<Goto>>(); // the goto treemap
-        for (int i=0; i < sequencingMap.getChildCount(); ++i) {                         // search all sequencingMap entries for goto elements
+        for (int i=0; i < sequencingMap.getChildCount(); ++i) {                         // search all sequencingMap entries for goto and marker elements
             Element e = (Element)sequencingMap.getChild(i);                             // an element
             if (e.getLocalName().equals("marker")) {                                    // if it is a marker
                 markerMap.put(e.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace"), e);    // put it into the markerMap

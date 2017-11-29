@@ -1,9 +1,15 @@
 ### Version History
 
 
+#### v0.2.24
+- Added MEI `section` elements to method `meico.mei.Mei.addIds()`, so sections without an id get one.
+- Added method `meico.mei.Mei.processSection()` to experiment with interpreting MEI sections as potential repetition starts. But sections cannot generally be interpreted this way. So this function has been commented out again.
+- Initiated an MEI Coverage Documentation in `documentation.md`. Detailed descriptions need to be added in the future.
+
+
 #### v0.2.23
 - MSM `movement` ids had no namespace. Now they are in the xml namespace.
-- Repetitions started always at an `rptstart` or the beginning of the piece. End barlines where ignored, so far. Meico now interprets `<measure right="end">` as a potential repetition start.
+- Repetitions started always at an `rptstart` or the beginning of the piece. End barlines where ignored, so far. Meico now interprets `<measure left/right="end">` as a potential repetition start.
 
 
 #### v0.2.22
