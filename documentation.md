@@ -1,10 +1,10 @@
-### Meico: MEI Coverage Documentation
+# Meico: MEI Coverage Documentation
 
 The following MEI elements are supported, i.e. processed, by meico. The set of supported elements will be extended in the future. Details on how meico interprets these elements, their attributes and child elements will be added soon.
 
 
 #### abbr
-This element is processed only in the context (as child of) of `choice`.
+This element is processed only in the context as child of `choice`.
 
 #### accid
 
