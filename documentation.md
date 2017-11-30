@@ -122,6 +122,9 @@ Meico sets all `del` elements in this `restore` to `restore-meico="true"` and pr
 #### score
 There is no special processing routine for this element. Meico just processes its contents.
 
+#### section
+There is no special processing routine for this element. Meico just processes its contents.
+
 #### sic
 There is no special processing routine for this element. Meico just processes its contents.
 
