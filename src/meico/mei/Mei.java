@@ -359,7 +359,7 @@ public class Mei {
      * @return the list of msm documents (movements) created
      */
     public List<Msm> exportMsm(int ppq) {
-        return this.exportMsm(ppq, true, true);
+        return this.exportMsm(ppq, true, false, true);
     }
 
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv, ppq (pulses per quarter) sets the time resolution
@@ -369,7 +369,11 @@ public class Mei {
      * @return the list of msm documents (movements) created
      */
     public List<Msm> exportMsm(int ppq, boolean dontUseChannel10) {
-        return this.exportMsm(ppq, dontUseChannel10, true);
+        return this.exportMsm(ppq, dontUseChannel10, false, true);
+    }
+
+    public List<Msm> exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions) {
+        return this.exportMsm(ppq, dontUseChannel10, ignoreExpansions, true);
     }
 
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv, ppq (pulses per quarter) sets the time resolution
@@ -377,9 +381,10 @@ public class Mei {
      * @param ppq the ppq resolution for the conversion; this is counterchecked with the minimal required resolution to capture the shortest duration in the mei data; if a higher resolution is necessary, this input parameter is overridden
      * @param dontUseChannel10 the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
      * @param msmCleanup set true to return a clean msm file or false to keep all the crap from the conversion
+     * @param ignoreExpansions set this true to have a 1:1 conversion of MEI to MSM without the rearrangement that MEI's expansion elements produce
      * @return the list of msm documents (movements) created
      */
-    public List<Msm> exportMsm(int ppq, boolean dontUseChannel10, boolean msmCleanup) {
+    public List<Msm> exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions, boolean msmCleanup) {
         if (this.isEmpty() || (this.getMusic() == null) || (this.getMusic().getFirstChildElement("body", this.getMusic().getNamespaceURI()) == null))      // if no mei music data available
             return new ArrayList<Msm>();                                        // return empty list
 
@@ -392,8 +397,9 @@ public class Mei {
 
 //        long t = System.currentTimeMillis();
         this.resolveTieElements();                                              // first resolve the ties in case they are affected by the copyof resolution which comes next
-        this.resolveCopyofs();
+        this.resolveCopyofs();                                                  // replace the slacker elements with copyof attribute by copies of the referred elements
         this.reorderElements();                                                 // control elements (e.g. tupletSpan) are often not placed in the timeline but at the end of the measure, this must be resolved
+        if (!ignoreExpansions) this.resolveExpansions();                        // if expansions should be realized, render expansion elements in the MEI score to a "through-composed"/regularized score without expansions
 //        System.out.println("Time consumed: " + (System.currentTimeMillis()-t));
 
         this.helper = new Helper(ppq);                                          // some variables and methods to make life easier
@@ -539,6 +545,9 @@ public class Mei {
 
                 case "expan":                                                   // the expansion of an abbreviation
                     break;                                                      // nothing special about this element to process, but dive into it and process its children
+
+                case "expansion":                                               // indicates how a section may be programmatically expanded into its 'through-composed' form
+                    continue;                                                   // expansions should be deleted during preprocessing
 
                 case "fermata":
                     continue;                                                   // TODO: relevant for expressive performance
@@ -701,8 +710,9 @@ public class Mei {
                 case "pgHead2":
                     continue;                                                   // can be ignored
 
-                case "phrase":                                                  // dive into it TODO: make an entry in the phraseStructure map
-                    break;
+                case "phrase":                                                  // indication of 1) a "unified melodic idea" or 2) performance technique
+                    this.processPhrase(e);                                      // this contains a recursive call of convert()
+                    continue;
 
                 case "proport":
                     continue;                                                   // TODO: ignore
@@ -739,8 +749,8 @@ public class Mei {
                     break;
 
                 case "section":                                                 // Segment of music data.
-                    this.processSection(e);
-                    break;
+                    this.processSection(e);                                     // this contains a recursive call of convert()
+                    continue;
 
                 case "sic":                                                     // indicates an apparent error, usually paired with the corr element, but if not, its content should be processed
                     break;
@@ -864,18 +874,10 @@ public class Mei {
         dated.appendChild(new Element("timeSignatureMap"));                         // global time signatures
         dated.appendChild(new Element("keySignatureMap"));                          // global key signatures
         dated.appendChild(new Element("markerMap"));                                // global rehearsal marks
-        dated.appendChild(new Element("miscMap"));                                  // a temporal map that is filled with content that may be useful during processing but will be deleted in the final msm
-
-        // generate global sequencingMap with a repetition start marker at the beginning
-        Element sequencingMap = new Element("sequencingMap");                       // create the sequencingMap
-        dated.appendChild(sequencingMap);                                           // add it to global.dated
-//        Element marker = new Element("marker");                                     // create a "repetition start" marker
-//        marker.addAttribute(new Attribute("midi.date", "0"));                       // at the beginning of the movement
-//        marker.addAttribute(new Attribute("message", "repetition start"));          // its a repetition start (if there are no repetition ends, it will be ignored)
-//        Attribute markerId = new Attribute("id", "meico_" + movementId + "_generated_form_mdiv");   // create an attribute with xml:id, reuse the movement id (for cross reference)
-//        markerId.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");       // set its namespace to xml
-//        marker.addAttribute(markerId);                                              // add attribute to the marker
-//        sequencingMap.appendChild(new Element("marker"));                           // add the marker to the sequencingMap
+        dated.appendChild(new Element("sectionMap"));                               // global map of section structure
+        dated.appendChild(new Element("phraseMap"));                                // global map of phrase structure
+        dated.appendChild(new Element("sequencingMap"));                            // a global sequencingMap
+        dated.appendChild(new Element("miscMap"));                                  // a temporal map that is filled with content that may be useful during processing but will be deleted in the final MSM
 
         global.appendChild(header);
         global.appendChild(dated);
@@ -900,7 +902,7 @@ public class Mei {
             return;
         }
 
-        scoreDef.addAttribute(new Attribute("midi.date", Double.toString(helper.getMidiTime())));
+        scoreDef.addAttribute(new Attribute("midi.date", helper.getMidiTimeAsString()));
 
         // otherwise all entries are done in globally maps
         Element s;
@@ -920,7 +922,7 @@ public class Mei {
         // store default values in miscMap
         if ((scoreDef.getAttribute("dur.default") != null)) {                                       // if there is a default duration defined
             Element d = new Element("dur.default");                                                 // make an entry in the miscMap
-            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime()))); // add the current date
+            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString())); // add the current date
             d.addAttribute(new Attribute("dur", scoreDef.getAttributeValue("dur.default")));        // copy the value
             Helper.copyId(scoreDef, d);                                                             // copy the id
             Helper.addToMap(d, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make an entry in the miscMap
@@ -928,7 +930,7 @@ public class Mei {
 
         if (scoreDef.getAttribute("octave.default") != null) {                                      // if there is a default octave defined
             Element d = new Element("oct.default");
-            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime()))); // add the current date
+            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString())); // add the current date
             d.addAttribute(new Attribute("oct", scoreDef.getAttributeValue("octave.default")));     // copy the value
             Helper.copyId(scoreDef, d);                                                             // copy the id
             Helper.addToMap(d, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make an entry in the miscMap
@@ -939,7 +941,7 @@ public class Mei {
             trans = (scoreDef.getAttribute("trans.semi") == null) ? 0 : Integer.parseInt(scoreDef.getAttributeValue("trans.semi"));
             trans += Helper.processClefDis(scoreDef);
             Element d = new Element("transposition");                                               // create a transposition entry
-            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime()))); // add the current date
+            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString())); // add the current date
             d.addAttribute(new Attribute("semi", Integer.toString(trans)));                         // copy the value or write "0" for no transposition (this is to cancel previous entries)
             Helper.copyId(scoreDef, d);                                                             // copy the id
             Helper.addToMap(d, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make an entry in the miscMap
@@ -959,7 +961,7 @@ public class Mei {
     private void processStaffDef(Element staffDef) {
         this.helper.currentPart = this.makePart(staffDef);                                                  // create a part element in movement, or get Element pointer if this part exists already
 
-        staffDef.addAttribute(new Attribute("midi.date", Double.toString(helper.getMidiTime())));
+        staffDef.addAttribute(new Attribute("midi.date", helper.getMidiTimeAsString()));
 
         // handle local time signature entry
         Element t = this.makeTimeSignature(staffDef);                                                       // create a time signature element, or null if there is no such data
@@ -976,7 +978,7 @@ public class Mei {
         // store default values in miscMap
         if ((staffDef.getAttribute("dur.default") != null)) {                                               // if there is a default duration defined
             Element d = new Element("dur.default");                                                         // make an entry in the miscMap
-            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // add the current date
+            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));                  // add the current date
             d.addAttribute(new Attribute("dur", staffDef.getAttributeValue("dur.default")));                // copy the value
             Helper.copyId(staffDef, d);                                                                     // copy the id
             Helper.addToMap(d, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make an entry in the miscMap
@@ -984,7 +986,7 @@ public class Mei {
 
         if ((staffDef.getAttribute("octave.default", staffDef.getNamespaceURI()) != null)) {                // if there is a default duration defined
             Element d = new Element("oct.default");                                                         // make an entry in the miscMap
-            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // add the current date
+            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));                  // add the current date
             d.addAttribute(new Attribute("oct", staffDef.getAttributeValue("octave.default")));             // copy the value
             Helper.copyId(staffDef, d);                                                                     // copy the id
             Helper.addToMap(d, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make an entry in the miscMap
@@ -997,7 +999,7 @@ public class Mei {
             trans += Helper.processClefDis(staffDef);
             Element d = new Element("transposition");                                                       // create a transposition entry
             d.addAttribute(new Attribute("semi", Integer.toString(trans)));                                 // copy the value or write "0" for no transposition (this is to cancel previous entries)
-            d.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
+            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));
             Helper.copyId(staffDef, d);                                                                     // copy the id
             Helper.addToMap(d, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make an entry in the miscMap
         }
@@ -1025,7 +1027,7 @@ public class Mei {
 
         if (s != null) {
 //            s.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("midi.date") : "0.0"));  // set currentDate of processing
-            s.addAttribute(new Attribute("currentDate", Double.toString(this.helper.getMidiTime())));  // set currentDate of processing
+            s.addAttribute(new Attribute("currentDate", this.helper.getMidiTimeAsString()));  // set currentDate of processing
             this.helper.currentPart = s;                                                               // if that part entry was found, return it
         }
         else {            // the part was not found, create one
@@ -1044,7 +1046,7 @@ public class Mei {
      * @param layerDef an mei layerDef element
      */
     private void processLayerDef(Element layerDef) {
-        layerDef.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));
+        layerDef.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));
 
         if (layerDef.getAttribute("dur.default") != null) {                                                         // if there is a default duration defined
             Element d = new Element("dur.default");
@@ -1277,31 +1279,55 @@ public class Mei {
         this.convert(ending);   // process everything within the ending
 
         if (noPreviousEndings)  // if this was the first ending, it might be that no further ending will follow; however, this first ending should be left out at repetition; so we create a preliminary goto that does exactly this and should be removed if other endings follow later on
-            gt.getAttribute("target.date").setValue(Double.toString(this.helper.getMidiTime()));
+            gt.getAttribute("target.date").setValue(this.helper.getMidiTimeAsString());
+    }
+
+    /**
+     * process MEI phrase elements
+     * @param phrase
+     */
+    private void processPhrase(Element phrase) {
+        // create an entry in the global phraseMap
+        Element phraseMapEntry = new Element("phrase");                                                     // create a phrase element
+        phraseMapEntry.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));         // give it a midi.date attribute
+
+        if (phrase.getAttribute("label") != null)                                                           // if the phrase has a label
+            phraseMapEntry.addAttribute(new Attribute("label", phrase.getAttributeValue("label")));         // store it also in the MSM phrase
+        else if (phrase.getAttribute("n") != null)                                                          // or if it has an n attribute
+            phraseMapEntry.addAttribute(new Attribute("label", phrase.getAttributeValue("n")));             // take this as label
+
+        Helper.copyId(phrase, phraseMapEntry);                                                              // copy the xml:id
+
+        Element phraseMap = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("phraseMap"); // find the global phraseMap (there is no local phraseMap as this cannot be encoded in MEI)
+        phraseMap.appendChild(phraseMapEntry);                                                              // add the phrase element to the phraseMap
+
+        this.convert(phrase);                                                                               // process the contents of this phrase element
+
+        phraseMapEntry.addAttribute(new Attribute("midi.date.end", this.helper.getMidiTimeAsString()));    // add the date when the phrase ends (in MEI this is redundant with the date of the succeeding phrase, but in general phrase can overlap)
     }
 
     /**
      * process MEI section elements
-     * TODO: What else can I do with this? I might also use it to generate a sectionStructure map.
      * @param section
      */
     private void processSection(Element section) {
-        // generate a repetition start entry in the sequencingMap
-//        Element marker = new Element("marker");                                                     // do so
-//        marker.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));// give it a midi.date
-//        marker.addAttribute(new Attribute("message", "section start"));                             // set its message
-//
-//        Attribute id = section.getAttribute("id", "http://www.w3.org/XML/1998/namespace");          // if the section element has an xml:id attribute, get it
-//        if (id != null) {
-//            marker.addAttribute((Attribute) id.copy());                                             // copy the id to marker
-//        }
-//        else {                                                                                      // otherwise create an id
-//            id = new Attribute("id", "meico_" + UUID.randomUUID().toString());                      // give it a UUID
-//            id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");                         // set its namespace to xml
-//            marker.addAttribute(id);                                                                // add the id attribute to the marker
-//        }
-//
-//        Helper.addToMap(marker, helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap")); // add the marker to the sequencingMap
+        // create an entry in the global sectionMap
+        Element sectionMapEntry = new Element("section");                                                   // create a section element
+        sectionMapEntry.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));        // give it a midi.date attribute
+
+        if (section.getAttribute("label") != null)                                                          // if the section has a label
+            sectionMapEntry.addAttribute(new Attribute("label", section.getAttributeValue("label")));       // store it also in the MSM section
+        else if (section.getAttribute("n") != null)                                                         // or if it has an n attribute
+                sectionMapEntry.addAttribute(new Attribute("label", section.getAttributeValue("n")));       // take this as label
+
+        Helper.copyId(section, sectionMapEntry);                                                            // copy the xml:id
+
+        Element sectionMap = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sectionMap");   // find the global sectionMap (there is no local sectionMap as this cannot be encoded in MEI)
+        sectionMap.appendChild(sectionMapEntry);                                                            // add the section element to the sectionMap
+
+        this.convert(section);                                                                              // process the contents of this section element
+
+        sectionMapEntry.addAttribute(new Attribute("midi.date.end", this.helper.getMidiTimeAsString()));    // add the date when the section ends (in MEI this is redundant with the date of the succeeding section, but in general section can overlap)
     }
 
     /** process an mei measure element
@@ -1437,6 +1463,12 @@ public class Mei {
                 label = ((Element)staffDef.getParent()).getAttributeValue("label");                            // use it in the msm part name
         if (staffDef.getAttribute("label") != null)                                                            // does the staffDef iteself have a name
             label += (label.isEmpty()) ? staffDef.getAttributeValue("label") : " " + staffDef.getAttributeValue("label"); // append it to the label string so far (with a space between staffGrp label and staffDef label)
+        else {                                                                                                  // if no attribute label is present
+            Element labelElement = Helper.getFirstChildElement("label", staffDef);                              // there could still be a child element named label
+            if (labelElement != null) {                                                                         // if so
+                label += (label.isEmpty()) ? labelElement.getValue() : " " + labelElement.getValue();           // get its string content
+            }
+        }
 
         if (!label.isEmpty())
             part.addAttribute(new Attribute("name", label));
@@ -1496,7 +1528,7 @@ public class Mei {
         Helper.copyId(meiSource, s);                                                              // copy the id
 
         // date of the element
-        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));  // compute the date
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));  // compute the date
 
         // count and unit are preferred in the processing; if not givven take sym
         if (((meiSource.getAttribute("count") != null) && (meiSource.getAttribute("unit") != null)) || ((meiSource.getAttribute("meter.count") != null) && (meiSource.getAttribute("meter.unit") != null))) {
@@ -1546,7 +1578,7 @@ public class Mei {
     private Element makeKeySignature(Element meiSource) {
         Element s = new Element("keySignature");                                                        // create an element
         Helper.copyId(meiSource, s);                                                                    // copy the id
-        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // compute date
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));         // compute date
 
         LinkedList<Element> accidentals = new LinkedList<Element>();                                    // create an empty list which will be filled with the accidentals of this key signature
 
@@ -1752,7 +1784,7 @@ public class Mei {
         // create marker element
         Element marker = new Element("marker");
         Helper.copyId(reh, marker);                                                                     // copy a possibly present xml:id
-        marker.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));    // store the date of the element
+        marker.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));             // store the date of the element
         marker.addAttribute(new Attribute("message", reh.getValue()));                                  // store its text or empty string
         this.helper.addLayerAttribute(marker);                                                          // add an attribute that indicates the layer
 
@@ -1947,7 +1979,7 @@ public class Mei {
             return null;                                                // cancel
         }
 
-        rest.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));       // compute date
+        rest.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));       // compute date
         rest.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                         // store in rest element
         this.helper.addLayerAttribute(rest);                                                             // add an attribute that indicates the layer
         return rest;
@@ -1963,7 +1995,7 @@ public class Mei {
         Element rest = this.makeMeasureRest(multiRest);                                     // generate a one measure rest
         if (rest == null) return;                                                           // if failed to create a rest, cancel
 
-        rest.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));   // compute date
+        rest.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));   // compute date
         Helper.addToMap(rest, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score")); // insert the rest into the score
 
         int num = (multiRest.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRest.getAttributeValue("num"));
@@ -1980,7 +2012,7 @@ public class Mei {
     private void processRest(Element rest) {
         Element s = new Element("rest");                                                    // this is the new rest element
         Helper.copyId(rest, s);                                                             // copy the id
-        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));  // compute date
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));  // compute date
 
         double dur = this.helper.computeDuration(rest);                                     // compute note duration in midi ticks
         if (dur == 0.0) return;                                                             // if failed, cancel
@@ -2030,7 +2062,7 @@ public class Mei {
 
         Element s = new Element("addTransposition");                                        // create an addTransposition element (it adds to other transpositions, e.g. from the staffDef or scoreDef)
         Helper.copyId(octave, s);                                                           // copy the id
-        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));  // compute starting date of transposition
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));      // compute starting date of transposition
         s.addAttribute(new Attribute("semi", Integer.toString(result)));                    // write the semitone transposition into the element
 
         // compute duration or store endid for later reference
@@ -2067,7 +2099,7 @@ public class Mei {
 
         Element s = new Element("pedal");                                                               // create pedal element
         Helper.copyId(pedal, s);                                                                        // copy the id
-        s.addAttribute(new Attribute("midi.date", Double.toString(this.helper.getMidiTime())));         // compute starting of the pedal
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));                  // compute starting of the pedal
         s.addAttribute(new Attribute("state", pedal.getAttributeValue("dir")));                         // pedal state can be "down", "up", "half", and "bounce" (release then immediately depress the pedal)
 
         s.addAttribute(new Attribute("endid", pedal.getAttributeValue("endid")));                       // store endid for later reference
@@ -2445,13 +2477,106 @@ public class Mei {
         return notResolved;
     }
 
+    /**
+     * Expansion elements in MEI indicate the sequence in which sibling section and ending elements have to be arranged.
+     * This method creates a regularized, i.e. "through-composed", MEI that renders the expansions.
+     */
+    public void resolveExpansions() {
+        System.out.print("Resolve Expansions:");
+        this.getRootElement().replaceChild(this.getMusic(), this.resolveExpansions(this.getMusic()));   // replace the whole music subtree by its regularized version
+        System.out.println(" done");
+    }
+
+    /**
+     * Expansion elements in MEI indicate the sequence in which sibling section and ending elements have to be arranged.
+     * This method creates a regularized, i.e. "through-composed", MEI that renders the expansions.
+     * The MEI tree is scanned recursively and expansions are resolved.
+     * @param root from this element on the whole subtree will be resolved
+     * @return the regularized version root (can be used to replace root)
+     */
+    private Element resolveExpansions(Element root) {
+        Element regularizedRoot = (Element) root.copy();                                    // create a deep copy of root to be edited and returned
+        Element expansion = Helper.getFirstChildElement("expansion", regularizedRoot);      // this will hold the expansion element to resolve, or null if there is none
+        List<String> plist = null;                                                          // this will hold all the xml:id's from the expansion's plist in the order to be played, i.e., the plist says how to rearrange the expansion's siblings
+
+        // first some cleanup, find and remove stuff so it causes no processing effort later on
+        if (expansion != null) {
+            // remove all expansion elements from this regularizedRoot
+            Elements expansions = regularizedRoot.getChildElements("expansion");            // get all expansion elements that are present as direct children of regularizedRoot
+            for (int i = expansions.size() - 1; i >= 0; --i)                                // delete all expansion elements from the regularizedRoot
+                regularizedRoot.removeChild(expansions.get(i));
+
+            // parse the plist and write its content to expansionSequence
+            if (expansion.getAttribute("plist") != null) {                                  // if the expansion has a plist attribute
+                plist = Arrays.asList(expansion.getAttributeValue("plist").trim().replaceAll(" +", " ").replaceAll("#","").split(" ")); // fill plist with the xml:id's from the plist attribute; before this, leading and trailing whitespaces are removed, multiple whitespaces are reduced, # are removed, what remains are the pure xml:id's stored in a List object
+            }
+            else                                                                            // an expansion with no plist is not valid (meico does not interpret this as an empty plist which would simply clear the whole subtree)
+                expansion = null;                                                           // set expansion to null so it won't cause further processing effort
+        }
+
+        // for efficiency reasons we make a depth first recursive resolution, this means bottom-up, first go down, then do the resolution
+        Elements children = regularizedRoot.getChildElements();                             // get all child elements of regularizedRoot
+        for (int i = children.size() - 1; i >= 0; --i) {                                    // go through all children of regularizedRoot
+            Element child = children.get(i);                                                // get the current child element
+
+            if (expansion != null) {                                                        // if there is an expression element with a plist attribute
+                Attribute childId = Helper.getAttribute("id", child);                       // get the child's id
+                if (childId == null || !plist.contains(childId.getValue())) {               // if it does not have one, it cannot be in the plist and will not be played or the id is not in the plist, again the child will not be played
+                    regularizedRoot.removeChild(child);                                     // hence, delete it
+                    continue;                                                               // continue with the next child
+                }
+            }
+
+            regularizedRoot.replaceChild(child, this.resolveExpansions(child));             // replace this child by its regularization
+        }
+
+        // now do the regularization on the current regularizedRoot's children, i.e. duplicate and rearrange its children as indicated by the plist
+        if (expansion != null) {                                                            // if there is an expansion element
+            HashMap<String, Element> childHash = new HashMap<String, Element>();            // HashMap with (id, element) pairs to be filled with the children of regularizedRoot
+
+            // detache all children from regularizedRoot and put them into the HashMap
+            for (Element child = Helper.getFirstChildElement(regularizedRoot); child != null; child = Helper.getFirstChildElement(regularizedRoot)) {
+                child.detach();                                                             // detach the child
+                String id = Helper.getAttributeValue("id", child);                          // get its id
+                childHash.put(id, child);                                                   // fill the HashMap
+            }
+
+            // now append the former children according to the plist
+            for (String aPlist : plist) {                                                   // for each plist entry
+                Element child = childHash.get(aPlist);                                      // get the child with the id from the HashMap
+                if (child != null) {
+                    try {
+                        regularizedRoot.appendChild(child);                                 // try to append it to regularizedRoot, this will fail if it has already been added
+                    } catch (MultipleParentException e) {                                   // when it has already been added
+                        Element copy = (Element) child.copy();                              // make a deep copy of child
+
+                        Nodes cs = copy.query("descendant-or-self::*[@xml:id or @id]");     // find all elements with an id attribute
+                        for (int i = 0; i < cs.size(); ++i) {                               // give them all unique ids
+                            Element c = (Element) cs.get(i);
+                            Attribute id = Helper.getAttribute("id", c);
+                            id.setValue("meico_expansion_of_" + id.getValue() + "_" + UUID.randomUUID().toString()); // the new IDs are of the following form: "meico_oldID_newUUID"
+                        }
+
+                        regularizedRoot.appendChild(copy);                                  // add the copy
+                    }
+                }
+            }
+        }
+
+        return regularizedRoot;
+    }
+
     /** this method adds ids to note, rest, ... and chord elements in mei, as far as they do not have an id
      *
      * @return the generated ids count
      */
     public int addIds() {
+        System.out.print("Adding IDs:");
         Element root = this.getRootElement();
-        if (root == null) return 0;
+        if (root == null) {
+            System.out.println(" Error: no root element found");
+            return 0;
+        }
 
         Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest' or local-name()='mRest' or local-name()='multiRest' or local-name()='chord' or local-name()='tuplet' or local-name()='mdiv' or local-name()='reh' or local-name()='section') and not(@xml:id)]");
         for (int i = 0; i < e.size(); ++i) {                                    // go through all the nodes
@@ -2461,6 +2586,7 @@ public class Mei {
             ((Element) e.get(i)).addAttribute(a);                               // add attribute to the node
         }
 
+        System.out.println(" done");
 
         return e.size();
     }

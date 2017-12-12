@@ -70,7 +70,8 @@ def meico(body, request, response,
           validate: hug.types.smart_boolean = False,
           add_ids: hug.types.smart_boolean = False,
           no_program_changes: hug.types.smart_boolean = False,
-          dont_use_channel_10: hug.types.smart_boolean = False,
+          dont_use_channel_10: hug.types.smart_boolean = True,
+          ignore_expansions: hug.types.smart_boolean = False,
           debug: hug.types.smart_boolean = False,
           movement: hug.types.number = 0,
           tempo: hug.types.float_number = 120,
@@ -92,7 +93,7 @@ def meico(body, request, response,
         mei = Mei(mei_xml, validate)  # Read in MEI data
         if add_ids:
             mei.addIds()
-        msms = mei.exportMsm(720, dont_use_channel_10, not debug)  # Generate MSMs
+        msms = mei.exportMsm(720, dont_use_channel_10, ignore_expansions, not debug)  # Generate MSMs
         msm = msms.get(movement)  # Select the desired MSM by movement number
         msm.resolveSequencingMaps()  # Resolve repetitions etc.
 

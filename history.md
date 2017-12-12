@@ -1,6 +1,23 @@
 ### Version History
 
 
+#### v0.3.0
+- Two new types of maps have been added to the MSM format, `sectionMap` and `phraseMap`. Their contents derive from `section` and `phrase` elements in MEI. They indicate musical sections and phrases. The MEI-to-MSM conversion has been extended by the corresponding routines (`meico.mei.Mei.processSection()` and `meico.mei.Mei.processPhrase()`).
+- Added a new method `meico.mei.Helper.getMidiTimeAsString()` which is useful to avoid unnecessary String-to-Double-to-String conversions.
+- Added support for MEI `expansion` elements.
+    - New methods added to class `meico.mei.Mei`: `resolveExpansions(Element root)` and `resolveExpansions()`. The latter is public and can be called by applications to convert an MEI with `expansion` elements into a "through-composed" MEI without `expansion` elements.
+    - A new parameter `ignoreExpansions` has been added to method `meico.mei.Mei.exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions, boolean msmCleanup)`. So meico can be forced to convert the MEI data either as it is or in its rearranged form as indicated by `expansion` elements. There is also a method `meico.mei.Mei.exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions)`, if you have used a previous version of meico be sure to check consistency with your `exportMsm()` calls as there is a slight backwards incompatibility at this point!
+    - A new parameter (`-e`, `--ignore-expansions`) has been added to the commandline app.
+    - The Python demo `meicoPy.py` got the same parameter now.
+    - In the window app a checkbox has been added to the MEI-to-MSM conversion options saying `Do not resolve expansion elements`.
+    - The REST api has also been updated and features the new parameter `ignore_expansions`.
+- The resolution of MSM `sequencingMaps`, i.e. repetitions in MEI, has been redone and should work properly now.
+    - Method `meico.msm.Msm.applySequencingMapToMap()` has been rewritten.
+    - Class `meico.msm.Goto` has a second constructor method `Goto(Element gt)` which is much safer and more convenient than `Goto(double date, double targetDate, String targetId, String activity, Element source)`.
+- MEI `staffDef` elements do not necessarily need to have an attribute `label` but could also have a child element `label`. Support for this latter type has been added to method `meico.mei.Mei.makePart()`.
+- `Continuo` has been added to the instruments dictionary as an instance of `Harpsichord`.
+
+
 #### v0.2.24
 - Added MEI `section` elements to method `meico.mei.Mei.addIds()`, so sections without an id get one.
 - Added method `meico.mei.Mei.processSection()` to experiment with interpreting MEI sections as potential repetition starts. But sections cannot generally be interpreted this way. So this function has been commented out again.

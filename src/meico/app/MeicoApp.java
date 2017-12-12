@@ -330,8 +330,10 @@ public class MeicoApp extends JFrame {
         private MeicoApp app;                   // reference to the meico app
         private boolean idsAdded;
         private boolean copyofsResolved;
+        private boolean expansionsResolved;
         private int ppq;
         private boolean dontUseChannel10 = true;
+        private boolean ignoreExpansions = false;
 
         /**
          * constructor
@@ -352,6 +354,7 @@ public class MeicoApp extends JFrame {
             this.app = app;                                                                     // store the reference to the meico app
             this.idsAdded = false;
             this.copyofsResolved = false;
+            this.expansionsResolved = false;
             this.ppq = 720;
         }
 
@@ -401,6 +404,16 @@ public class MeicoApp extends JFrame {
                 });
                 resolveCopyofs.setEnabled(!this.copyofsResolved);
 
+                JMenuItem resolveExpansions = new JMenuItem(new AbstractAction("Resolve expansions") {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        resolveExpansions();
+                        expansionsResolved = true;
+                        this.setEnabled(false);
+                    }
+                });
+                resolveExpansions.setEnabled(!this.expansionsResolved);
+
                 JMenuItem reload = new JMenuItem(new AbstractAction("Reload original MEI") {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -420,6 +433,7 @@ public class MeicoApp extends JFrame {
                 meiNamePop.add(validate);
                 meiNamePop.add(addIDs);
                 meiNamePop.add(resolveCopyofs);
+                meiNamePop.add(resolveExpansions);
                 meiNamePop.add(reload);
 
                 JLabel meiName = new JLabel(this.getFile().getName());
@@ -526,6 +540,16 @@ public class MeicoApp extends JFrame {
                 });
                 mei2msmPop.add(dontUseChannel10CheckBox);
 
+                final JCheckBoxMenuItem ignoreExpansionsCheckBox = new JCheckBoxMenuItem("Do not resolve expansion elements", this.ignoreExpansions);
+                ignoreExpansionsCheckBox.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                        ignoreExpansions = !ignoreExpansions;
+                        ignoreExpansionsCheckBox.setState(ignoreExpansions);
+                    }
+                });
+                mei2msmPop.add(ignoreExpansionsCheckBox);
+
                 final JLabel mei2msm = new JLabel(convertIcon, JLabel.CENTER);
                 mei2msm.setOpaque(true);
                 mei2msm.setBackground(Color.LIGHT_GRAY);
@@ -564,7 +588,7 @@ public class MeicoApp extends JFrame {
                                     }
                                 }
                                 msm.clear();
-                                for (Msm m : exportMsm(ppq, dontUseChannel10)) {
+                                for (Msm m : exportMsm(ppq, dontUseChannel10, ignoreExpansions, true)) {    // true for MsmCleanup
                                     msm.add(new Msm4Gui(m, app));
                                 }
                                 mei2msm.setBackground(new Color(232, 232, 232));

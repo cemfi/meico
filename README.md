@@ -2,7 +2,7 @@
 [![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg)](https://github.com/cemfi/meico/releases/latest) [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/master/LICENSE) [![Java compatibility 1.7+](https://img.shields.io/badge/java-1.7%2B-blue.svg)](https://travis-ci.org/cemfi/meico)
 
 Author: [Axel Berndt](https://github.com/axelberndt)<br>
-MEI support: [Benjamin W. Bohl](https://github.com/bwbohl)<br>
+MEI support: [Benjamin W. Bohl](https://github.com/bwbohl), [Johannes Kepper](https://github.com/kepper)<br>
 Contributor: [Simon Waloschek](https://github.com/sonovice)<br>
 [Center of Music and Film Informatics](http://www.cemfi.de/), Detmold
 
@@ -11,7 +11,7 @@ Meico is a converter framework for MEI files. Even though MEI is a quasi-standar
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq),
 - MSM to MIDI conversion,
 - MIDI to audio PCM and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
-- MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute),
+- MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute, conversion of `expansion` elements into "through-composed" MEI code),
 - MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`),
 - an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers,
 - basic MIDI and audio playback,
@@ -38,6 +38,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | `-v`, `--validate`                | validate loaded MEI file                                                                                                            |
 | `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
+| `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
 | `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                      |
 | `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                             |

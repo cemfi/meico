@@ -11,8 +11,9 @@ Usage: `python3 meicoPy.py [OPTIONS] FILE`
 |-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | `-h`, `--help`                    | show this help text                                                                                                              |
 | `-v`, `--validate`                | validate loaded MEI file                                                                                                         |
-| `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
+| `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                           |
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
+| `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                          |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                   |
 | `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                          |
 | `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                        |

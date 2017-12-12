@@ -16,6 +16,7 @@ The endpoint is named `meico`, therefore all calls to the API have to address `h
 | `add_ids`             | [bool] add missing `xml:id`s to note, rest and chord elements in MEI             |
 | `no_program_changes`  | [bool] suppress program change events in MIDI, all music will be played by piano |
 | `dont_use_channel_10` | [bool] do not use channel 10 (drum channel) in MIDI and audio                    |
+| `ignore_expansions`   | [bool] expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step |
 | `tempo`               | [float] set MIDI tempo (bpm), default is 120 bpm                                 |
 | `movement`            | [uint] set the number of the desired movement to be processed                    |
 | `soundbank`           | [str] use a specific sound bank file (.sf2, .dls) for wave file conversion       |

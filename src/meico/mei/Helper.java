@@ -103,6 +103,21 @@ public class Helper {
         return (Element)e.get(0);                                               // else return the first element
     }
 
+    /**
+     * this function became necessary because the XOM methods sometimes do not seem to work for whatever reason
+     * @param name
+     * @param ofThis
+     * @return
+     */
+    public static Element getFirstChildElement(String name, Element ofThis) {
+        for (int i=0; i < ofThis.getChildElements().size(); ++i) {
+            if (ofThis.getChildElements().get(i).getLocalName().equals(name)) {
+                return ofThis.getChildElements().get(i);
+            }
+        }
+        return null;
+    }
+
     /** get the next sibling element of ofThis irrespective of its name
      *
      * @param ofThis
@@ -202,21 +217,6 @@ public class Helper {
     }
 
     /**
-     * this function became necessary because the XOM methods sometimes do not seem to work for whatever reason
-     * @param name
-     * @param ofThis
-     * @return
-     */
-    public static Element getFirstChildElement(String name, Element ofThis) {
-        for (int i=0; i < ofThis.getChildElements().size(); ++i) {
-            if (ofThis.getChildElements().get(i).getLocalName().equals(name)) {
-                return ofThis.getChildElements().get(i);
-            }
-        }
-        return null;
-    }
-
-    /**
      * this method adds element addThis to a timely sequenced list, the map, and ensures the timely order of the elements in the map;
      * therefore, addThis must contain the attribute "midi.date"; if not, addThis is appended at the end
      * @param addThis an xml element (should have an attribute midi.date)
@@ -261,7 +261,7 @@ public class Helper {
             return Double.parseDouble(this.currentPart.getAttributeValue("currentDate"));   // we have a more precise date somewhere within a measure
 
         if (this.currentMeasure != null)                                                    // if we are within a measure
-            return Double.parseDouble(this.currentMeasure.getAttributeValue("midi.date"));  // take its take
+            return Double.parseDouble(this.currentMeasure.getAttributeValue("midi.date"));  // take it
 
         if (this.currentMovement == null)                                                   // if we are outside of any movement
             return 0.0;                                                                     // return 0.0
@@ -276,6 +276,32 @@ public class Helper {
         }
         return latestDate;                                                                  // return the latest date of all parts
     }
+
+    /** compute the midi time of an mei element and return it as String
+     *
+     * @return
+     */
+    protected String getMidiTimeAsString() {
+        if (this.currentPart != null)                                                       // if we are within a staff environment
+            return this.currentPart.getAttributeValue("currentDate");                       // we have a more precise date somewhere within a measure
+
+        if (this.currentMeasure != null)                                                    // if we are within a measure
+            return this.currentMeasure.getAttributeValue("midi.date");                      // take it
+
+        if (this.currentMovement == null)                                                   // if we are outside of any movement
+            return "0.0";                                                                   // return 0.0
+
+        // go through all parts, determine the latest currentDate and return it
+        Elements parts = this.currentMovement.getChildElements("part");                     // get the list of all parts
+        double latestDate = 0.0;                                                            // here comes the result
+        for (int i = parts.size()-1; i >= 0; --i) {                                         // go through that list
+            double date = Double.parseDouble(parts.get(i).getAttributeValue("currentDate"));// get the part's date
+            if (latestDate < date)                                                          // if this part's date is later than latestDate so far
+                latestDate = date;                                                          // set latestDate to date
+        }
+        return Double.toString(latestDate);                                                 // return the latest date of all parts
+    }
+
 
     /**
      * this method parses an input string, extracts all integer substrings and returns them as a list of integers
@@ -1067,7 +1093,7 @@ public class Helper {
             {
                 Elements globalTrans = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
                 for (int i = globalTrans.size() - 1; i >= 0; --i) {                                                                                                     // go through the global transpositions
-                    if ((globalTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(globalTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {  // if this transposition element is after ofThis
+                    if ((globalTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
                         continue;                                                                                                                                       // continue searching
                     }
                     if ((globalTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
@@ -1083,10 +1109,10 @@ public class Helper {
             {
                 Elements globalAddTrans = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
                 for (int i = globalAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
-                    if ((globalAddTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(globalAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {    // if this transposition element is after ofThis
+                    if ((globalAddTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(globalAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {    // if this transposition element is after ofThis
                         continue;
                     }
-                    if ((globalAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(globalAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                    if ((globalAddTrans.get(i).getAttribute("end") != null) && ((Double.parseDouble(globalAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime()))) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
                         continue;
                     }
                     if ((globalAddTrans.get(i).getAttribute("layer") != null) && !globalAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                   // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
@@ -1098,7 +1124,7 @@ public class Helper {
             {
                 Elements localTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
                 for (int i = localTrans.size() - 1; i >= 0; --i) {                                                                                                      // go through the local transpositions
-                    if ((localTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(localTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {// if this transposition element is after ofThis
+                    if ((localTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {// if this transposition element is after ofThis
                         continue;
                     }
                     if ((localTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {     // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
@@ -1114,7 +1140,7 @@ public class Helper {
             {
                 Elements localAddTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
                 for (int i = localAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
-                    if ((localAddTrans.get(i).getAttributeValue("midi.date") != null) && Double.parseDouble(localAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime()) {  // if this transposition element is after ofThis
+                    if ((localAddTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
                         continue;
                     }
                     if ((localAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis

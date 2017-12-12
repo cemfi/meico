@@ -42,6 +42,7 @@ public class Main {
                 System.out.println("[-v] or [--validate]                    validate loaded MEI file");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
+                System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
                 System.out.println("[-i] or [--midi]                        convert to MIDI (and internally to MSM)");
@@ -61,6 +62,7 @@ public class Main {
         boolean validate = false;
         boolean addIds = false;
         boolean resolveCopyOfs = false;
+        boolean ignoreExpansions = false;
         File xslt = null;
         String xsltOutputExtension = "";
         boolean msm = false;
@@ -76,6 +78,7 @@ public class Main {
             if ((args[i].equals("-v")) || (args[i].equals("--validate"))) { validate = true; continue; }
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
+            if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
             if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
@@ -158,7 +161,7 @@ public class Main {
 
         // convert mei -> msm -> midi
         System.out.println("Converting MEI to MSM.");
-        List<Msm> msms = mei.exportMsm(720, dontUseChannel10, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
+        List<Msm> msms = mei.exportMsm(720, dontUseChannel10, ignoreExpansions, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
         if (msms.isEmpty()) {
             System.err.println("MSM data could not be created.");
             return 1;

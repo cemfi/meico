@@ -10,12 +10,13 @@ from argparse import ArgumentParser
 import jpype    # this package (JPype1-py3) enables Java integration in Python
 
 
-def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm=False, export_midi=False, no_program_changes=False, dont_use_channel_10=False, tempo=100, export_wav=False, export_mp3=False, soundbank=None, debug=False, mei_file=None):
+def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, ignore_expansions=False, export_msm=False, export_midi=False, no_program_changes=False, dont_use_channel_10=False, tempo=100, export_wav=False, export_mp3=False, soundbank=None, debug=False, mei_file=None):
     """
     This function processes and converts the input file (mei_file) according to the flags and parameters set.
     :param validate: set True to validate the MEI source against MEI schema
     :param add_ids: set True to generate xml:ids in the MEI source
     :param resolve_copyofs: set True to replace elements in the MEI source with a cofyof attribute by copys of the reference elements
+    :param ignore_expansions: expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step
     :param export_msm: set True to export MSM
     :param export_midi: set True to export MIDI
     :param no_program_changes: set True to suppress the generation of MIDI Program Change messages
@@ -77,7 +78,7 @@ def convert_mei(validate=False, add_ids=False, resolve_copyofs=False, export_msm
         return 0
 
     print('Converting MEI to MSM.')
-    msms = mei.exportMsm(720, dont_use_channel_10, not debug)   # usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
+    msms = mei.exportMsm(720, dont_use_channel_10, ignore_expansions, not debug)   # usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
     if msms.isEmpty():                                          # did something come out? if not
         print('No MSM data created.', file=sys.stderr)          # error message
         jpype.shutdownJVM()                                     # stop the JavaVM
@@ -144,6 +145,7 @@ def main(arguments, mei_file):
     parser.add_argument('-v', '--validate', action='store_true', default=False, help='Check validity of MEI file.')
     parser.add_argument('-a', '--add-ids', action='store_true', default=False, help='Add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file.')
     parser.add_argument('-r', '--resolve-copy-ofs', action='store_true', default=False, help='Resolve elements with \'copyof\' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file.')
+    parser.add_argument('-e', '--ignore-expansions', action='store_true', default=False, help='Expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step.')
     parser.add_argument('-m', '--msm', action='store_true', default=False, help='Convert to MSM.')
     parser.add_argument('-i', '--midi', action='store_true', default=False, help='Convert to MIDI (and internally to MSM).')
     parser.add_argument('-p', '--no-program-changes', action='store_true', default=False, help='Suppress program change events in MIDI.')
@@ -162,6 +164,7 @@ def main(arguments, mei_file):
     return convert_mei(validate = args.validate,
                        add_ids = args.add_ids,
                        resolve_copyofs = args.resolve_copy_ofs,
+                       ignore_expansions = args.ignore_expansions,
                        export_msm = args.msm,
                        export_midi = args.midi,
                        no_program_changes = args.no_program_changes,
