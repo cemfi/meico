@@ -547,7 +547,7 @@ public class Mei {
                     break;                                                      // nothing special about this element to process, but dive into it and process its children
 
                 case "expansion":                                               // indicates how a section may be programmatically expanded into its 'through-composed' form
-                    continue;                                                   // expansions should be deleted during preprocessing
+                    continue;                                                   // expansions are treated during preprocessing, here they are ignored
 
                 case "fermata":
                     continue;                                                   // TODO: relevant for expressive performance

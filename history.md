@@ -13,7 +13,7 @@
     - The REST api has also been updated and features the new parameter `ignore_expansions`.
 - The resolution of MSM `sequencingMaps`, i.e. repetitions in MEI, has been redone and should work properly now.
     - Method `meico.msm.Msm.applySequencingMapToMap()` has been rewritten.
-    - Class `meico.msm.Goto` has a second constructor method `Goto(Element gt)` which is much safer and more convenient than `Goto(double date, double targetDate, String targetId, String activity, Element source)`.
+    - Class `meico.msm.Goto` has a second constructor method `Goto(Element gt)` which is much safer and more convenient than `Goto(double date, double targetDate, String targetId, String activity, Element source)`. It features also an new method `isActive()` that is used during the
 - MEI `staffDef` elements do not necessarily need to have an attribute `label` but could also have a child element `label`. Support for this latter type has been added to method `meico.mei.Mei.makePart()`.
 - `Continuo` has been added to the instruments dictionary as an instance of `Harpsichord`.
 
