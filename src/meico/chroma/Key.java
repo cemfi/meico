@@ -15,8 +15,18 @@ public class Key {
      * creates key for equal tempered tuning over concert a 440 Hz
      */
     public Key() {
-        this.octaveModulo = true;
-        this.referenceFrequencies = new double[]{261.6, 277.2, 293.7, 311.1, 329.6, 349.2, 370.0, 392.0, 415.3, 440.0, 466.2, 493.9};
+        this(new double[]{261.6, 277.2, 293.7, 311.1, 329.6, 349.2, 370.0, 392.0, 415.3, 440.0, 466.2, 493.9}, true);
+    }
+
+    /**
+     * constructor
+     * @param referenceFrequencies
+     * @param octaveModulo
+     */
+    public Key(double[] referenceFrequencies, boolean octaveModulo) {
+        this.octaveModulo = octaveModulo;
+        this.referenceFrequencies = referenceFrequencies;
+        this.normalize();
     }
 
     /**
@@ -33,5 +43,19 @@ public class Key {
      */
     public boolean getOctaveModulo() {
         return this.octaveModulo;
+    }
+
+    /**
+     * This methhod scales the reference frequencies down so that the lowest frequency is 1.
+     * However, this method has only an effect if octaveModulo is true!
+     */
+    public void normalize() {
+        if (!this.octaveModulo) return;                                                         // if this key represents absolute pitches, normalization should not be applied
+
+        double[] normalizedFreqs = new double[this.referenceFrequencies.length];
+        for (int i = this.referenceFrequencies.length - 1; i >= 0; --i) {                       // for each reference frequency
+            normalizedFreqs[i] = this.referenceFrequencies[i] / this.referenceFrequencies[0];   // devide it by the first/lowest frequency
+        }
+        this.referenceFrequencies = normalizedFreqs;
     }
 }
