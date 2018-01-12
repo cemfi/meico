@@ -5,6 +5,7 @@ package meico.msm;
  * @author Axel Berndt.
  */
 
+import meico.chroma.Chroma;
 import meico.mei.Helper;
 import meico.midi.*;
 import nu.xom.*;
@@ -749,5 +750,67 @@ public class Msm {
             }
             track.add(EventMaker.createMarker(Math.round(Double.parseDouble(e.getAttributeValue("midi.date"))), message));
         }
+    }
+
+    /**
+     * returns the date when the last note offset
+     * @return
+     */
+    public double getEndDate() {
+        double lasteOffset = 0.0;
+        Elements parts = this.getRootElement().getChildElements("part");                                    // get all parts
+
+        for (int i = 0; i < parts.size(); ++i) {                                                    // in each part
+            Elements notes = parts.get(i).getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note");    // navigate to the note elements
+
+            // compute the offest of each note and keep the last one
+            for (int j = notes.size()-1; j >= 0; --j) {                                             // go through all notes
+                Element note = notes.get(j);                                                        // get the note
+                double date = Double.parseDouble(note.getAttributeValue("midi.date"));              // get its date
+                double dur = Double.parseDouble(note.getAttributeValue("midi.duration"));           // get its duration
+                double offset = date + dur;                                                         // compute the offset date
+                if (offset > lasteOffset)                                                           // if its after the last offset known so far
+                    lasteOffset = offset;                                                           // set this to the last offset
+            }
+        }
+
+        return lasteOffset;
+    }
+
+    /**
+     * export standard chroma features with 12 semitones in equal temperament and A = 440 Hz
+     * @return
+     */
+    public Chroma exportChroma() {
+        Chroma chroma = new Chroma();                                                                           // create Chroma object with equal temperament and A = 440 Hz
+        chroma.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".chr");                  // set a filename for the chroma
+        int numFrames = (int) this.getEndDate();                                                                // one frame corresponds with one Midi tick, this computes the number of frames that the music will have
+
+        // add zero feature vectors to chroma
+        double[] feature = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        for (int i = 0; i < numFrames; ++i)
+            chroma.addFeatureAt(i, feature.clone());
+
+        Elements parts = this.getRootElement().getChildElements("part");                                        // get all parts
+        for (int i = 0; i < parts.size(); ++i) {                                                                // in each part
+            Elements notes = parts.get(i).getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note");    // navigate to the note elements
+            for (int j = notes.size()-1; j >= 0; --j) {                                                         // go through all notes
+                Element note = notes.get(j);                                                                    // get the note
+
+                int date = (int)Double.parseDouble(note.getAttributeValue("midi.date"));                        // get its date
+                int offset = date + (int)Double.parseDouble(note.getAttributeValue("midi.duration"));           // compute the offset date
+
+                double pitch = Double.parseDouble(note.getAttributeValue("midi.pitch"));                        // get its pitch
+                int pitchClass = ((int) Math.round(pitch)) % 13;                                                // compute pitch class
+
+                feature = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};             // create the chroma feature vectore
+                feature[pitchClass] = 1.0;
+
+                for (int k = date; k < offset; ++k)                                                             // for as long as the note duration sais
+                    chroma.addFeatureAt(k, feature);                                                            // add the feature vector to chroma (midi tick-wise)
+            }
+        }
+
+        return chroma;      // output the result
     }
 }

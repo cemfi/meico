@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.3.1
+- Adeded a new getter method  `meico.msm.Msm.getEndDate()` that returns the date of the last note offset, i.e. the length of the music.
+- Added a new package `meico.chroma` with classes `Chroma` and `Key`.
+- Added method `meico.msm.Msm.exportChroma()` that converts MSM to Chroma. It exports standard chroma features with 12 semitones in equal temperament and A = 440 Hz
+
+
 #### v0.3.0
 - Two new types of maps have been added to the MSM format, `sectionMap` and `phraseMap`. Their contents derive from `section` and `phrase` elements in MEI. They indicate musical sections and phrases. The MEI-to-MSM conversion has been extended by the corresponding routines (`meico.mei.Mei.processSection()` and `meico.mei.Mei.processPhrase()`).
 - Added a new method `meico.mei.Helper.getMidiTimeAsString()` which is useful to avoid unnecessary String-to-Double-to-String conversions.
