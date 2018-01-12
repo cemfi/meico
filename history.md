@@ -2,9 +2,10 @@
 
 
 #### v0.3.1
-- Adeded a new getter method  `meico.msm.Msm.getEndDate()` that returns the date of the last note offset, i.e. the length of the music.
+- Added a new getter method  `meico.msm.Msm.getEndDate()` that returns the date of the last note offset, i.e. the length of the music.
 - Added a new package `meico.chroma` with classes `Chroma` and `Key`.
 - Added method `meico.msm.Msm.exportChroma()` that converts MSM to Chroma. It exports standard chroma features with 12 semitones in equal temperament and A = 440 Hz
+- The commandline app has a new option `-h` and `--chroma` to get chroma export. File `README.md` has been updated accordingly.
 
 
 #### v0.3.0

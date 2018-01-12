@@ -1,6 +1,7 @@
 package meico.app;
 
 import meico.audio.Audio;
+import meico.chroma.Chroma;
 import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
@@ -45,6 +46,7 @@ public class Main {
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
+                System.out.println("[-h] or [--chroma]                      convert to Chroma");
                 System.out.println("[-i] or [--midi]                        convert to MIDI (and internally to MSM)");
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
                 System.out.println("[-c] or [--dont-use-channel-10]         do not use channel 10 (drum channel) in MIDI");
@@ -66,6 +68,7 @@ public class Main {
         File xslt = null;
         String xsltOutputExtension = "";
         boolean msm = false;
+        boolean chroma = false;
         boolean midi = false;
         boolean wav = false;
         boolean mp3 = false;
@@ -80,6 +83,7 @@ public class Main {
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
+            if ((args[i].equals("-h")) || (args[i].equals("--chroma"))) { chroma = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
             if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
             if ((args[i].equals("-3")) || (args[i].equals("--mp3"))) { mp3 = true; continue; }
@@ -182,6 +186,19 @@ public class Main {
                 if (!debug) msm1.removeRests();  // purge the data (some applications may keep the rests from the mei; these should not call this function)
                 msm1.writeMsm();                 // write the msm file to the file system
                 System.out.println("\t" + msm1.getFile().getPath());
+            }
+        }
+
+        if (chroma) {
+            System.out.println("Converting MSM to Chroma.");
+            List<Chroma> chromas = new ArrayList<>();
+            for (int i = 0; i < msms.size(); ++i) {
+                chromas.add(msms.get(i).exportChroma());
+            }
+            System.out.println("Writing MIDI to file system: ");
+            for (int i = 0; i < chromas.size(); ++i) {
+                chromas.get(i).writeChroma();
+                System.out.println("\t" + chromas.get(i).getFile().getPath());
             }
         }
 

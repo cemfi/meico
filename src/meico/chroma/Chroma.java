@@ -195,7 +195,8 @@ public class Chroma {
 
         // write into the file
         try(PrintWriter out = new PrintWriter(filename)){
-            out.println(Arrays.toString(this.features.toArray()));
+            for (int i=0; i < features.size(); ++i)
+                out.println(Arrays.toString(this.features.get(i)));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return false;

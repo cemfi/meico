@@ -801,7 +801,7 @@ public class Msm {
                 int offset = date + (int)Double.parseDouble(note.getAttributeValue("midi.duration"));           // compute the offset date
 
                 double pitch = Double.parseDouble(note.getAttributeValue("midi.pitch"));                        // get its pitch
-                int pitchClass = ((int) Math.round(pitch)) % 13;                                                // compute pitch class
+                int pitchClass = ((int) Math.round(pitch)) % 12;                                                // compute pitch class
 
                 feature = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};             // create the chroma feature vectore
                 feature[pitchClass] = 1.0;
