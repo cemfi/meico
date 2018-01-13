@@ -24,12 +24,6 @@ public class Chroma {
         this.features = new ArrayList<>();  // create an empty list of chroma features
     }
 
-    public Chroma(File file) {
-        this.file = file;
-        this.key = new Key();               // create a default key
-        this.features = new ArrayList<>();  // create an empty list of chroma features
-    }
-
     /**
      * constructor
      * creates an empty Chroma object with the given key
@@ -170,7 +164,7 @@ public class Chroma {
      */
     public boolean writeChroma() {
         if (this.file == null) {
-            System.out.println("Cannot write to the file system. Path and filename are not specified.");
+            System.err.println("Cannot write to the file system. Path and filename are not specified.");
             return false;
         }
 

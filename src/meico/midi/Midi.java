@@ -171,7 +171,7 @@ public class Midi {
      */
     public void print(Sequence sequence) {
         if (sequence == null) {
-            System.out.println("No midi data loaded.");
+            System.err.println("No midi data loaded.");
             return;
         }
         System.out.println("Printing midi data ...");
@@ -208,7 +208,7 @@ public class Midi {
      */
     public boolean writeMidi() {
         if (this.file == null) {
-            System.out.println("Cannot write to the file system. Path and filename required.");
+            System.err.println("Cannot write to the file system. Path and filename required.");
             return false;
         }
 

@@ -128,7 +128,7 @@ public class Msm {
         this.file = file;
 
         if (!file.exists()) {
-            System.out.println("No such file or directory: " + file.getPath());
+            System.err.println("No such file or directory: " + file.getPath());
             this.msm = null;
             this.msmValidation = false;
             return;
@@ -143,7 +143,7 @@ public class Msm {
             this.msmValidation = false;                             // set msmValidation false to indicate that the msm code is not valid
             e.printStackTrace();                                    // output exception message
             for (int i = 0; i < e.getErrorCount(); i++) {           // output all validity error descriptions
-                System.out.println(e.getValidityError(i));
+                System.err.println(e.getValidityError(i));
             }
             this.msm = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
         }
@@ -443,12 +443,12 @@ public class Msm {
      */
     public boolean writeMsm() {
         if (this.file == null) {
-            System.out.println("Cannot write to the file system. Path and filename are not specified.");
+            System.err.println("Cannot write to the file system. Path and filename are not specified.");
             return false;
         }
 
         if (this.isEmpty()) {
-            System.out.println("Empty document, cannot write file.");
+            System.err.println("Empty document, cannot write file.");
             return false;
         }
 
@@ -463,7 +463,7 @@ public class Msm {
      */
     public boolean writeMsm(String filename) {
         if (this.isEmpty()) {
-            System.out.println("Empty document, cannot write file.");
+            System.err.println("Empty document, cannot write file.");
             return false;
         }
 
@@ -757,8 +757,8 @@ public class Msm {
      * @return
      */
     public double getEndDate() {
-        double lasteOffset = 0.0;
-        Elements parts = this.getRootElement().getChildElements("part");                                    // get all parts
+        double latestOffset = 0.0;
+        Elements parts = this.getRootElement().getChildElements("part");                            // get all parts
 
         for (int i = 0; i < parts.size(); ++i) {                                                    // in each part
             Elements notes = parts.get(i).getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note");    // navigate to the note elements
@@ -769,12 +769,12 @@ public class Msm {
                 double date = Double.parseDouble(note.getAttributeValue("midi.date"));              // get its date
                 double dur = Double.parseDouble(note.getAttributeValue("midi.duration"));           // get its duration
                 double offset = date + dur;                                                         // compute the offset date
-                if (offset > lasteOffset)                                                           // if its after the last offset known so far
-                    lasteOffset = offset;                                                           // set this to the last offset
+                if (offset > latestOffset)                                                          // if its after the last offset known so far
+                    latestOffset = offset;                                                          // set this to the last offset
             }
         }
 
-        return lasteOffset;
+        return latestOffset;
     }
 
     /**
@@ -782,32 +782,33 @@ public class Msm {
      * @return
      */
     public Chroma exportChroma() {
-        Chroma chroma = new Chroma();                                                                           // create Chroma object with equal temperament and A = 440 Hz
-        chroma.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".chr");                  // set a filename for the chroma
-        int numFrames = (int) this.getEndDate();                                                                // one frame corresponds with one Midi tick, this computes the number of frames that the music will have
+        Chroma chroma = new Chroma();                                                                   // create Chroma object with equal temperament and A = 440 Hz
+        chroma.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".chr");          // set a filename for the chroma
+        int numFrames = (int) this.getEndDate();                                                        // one frame corresponds with one Midi tick, this computes the number of frames that the music will have
 
-        // add zero feature vectors to chroma
+        // add as much zero vectors to chroma as the number of frames/ticks of the music
         double[] feature = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         for (int i = 0; i < numFrames; ++i)
-            chroma.addFeatureAt(i, feature.clone());
+            chroma.addFeatureAt(i, feature);
 
-        Elements parts = this.getRootElement().getChildElements("part");                                        // get all parts
-        for (int i = 0; i < parts.size(); ++i) {                                                                // in each part
+        // for each note in the music add its chroma vectors to the chroma object
+        Elements parts = this.getRootElement().getChildElements("part");                                // get all parts
+        for (int i = 0; i < parts.size(); ++i) {                                                        // in each part
             Elements notes = parts.get(i).getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note");    // navigate to the note elements
-            for (int j = notes.size()-1; j >= 0; --j) {                                                         // go through all notes
-                Element note = notes.get(j);                                                                    // get the note
+            for (int j = notes.size()-1; j >= 0; --j) {                                                 // go through all notes
+                Element note = notes.get(j);                                                            // get a note
 
-                int date = (int)Double.parseDouble(note.getAttributeValue("midi.date"));                        // get its date
-                int offset = date + (int)Double.parseDouble(note.getAttributeValue("midi.duration"));           // compute the offset date
+                int date = (int)Double.parseDouble(note.getAttributeValue("midi.date"));                // get its date
+                int offset = date + (int)Double.parseDouble(note.getAttributeValue("midi.duration"));   // compute its offset date
 
-                double pitch = Double.parseDouble(note.getAttributeValue("midi.pitch"));                        // get its pitch
-                int pitchClass = ((int) Math.round(pitch)) % 12;                                                // compute pitch class
+                double pitch = Double.parseDouble(note.getAttributeValue("midi.pitch"));                // get its pitch
+                int pitchClass = ((int) Math.round(pitch)) % 12;                                        // compute pitch class
 
-                feature = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};             // create the chroma feature vectore
+                feature = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};     // create the chroma feature vector
                 feature[pitchClass] = 1.0;
 
-                for (int k = date; k < offset; ++k)                                                             // for as long as the note duration sais
-                    chroma.addFeatureAt(k, feature);                                                            // add the feature vector to chroma (midi tick-wise)
+                for (int k = date; k < offset; ++k)                                                     // for as long as the note duration says
+                    chroma.addFeatureAt(k, feature);                                                    // add the feature vector to chroma (midi tick-wise)
             }
         }
 

@@ -126,7 +126,7 @@ public class Mei {
         if (!file.exists()) {
             this.mei = null;
             this.validMei = false;
-            System.out.println("No such file or directory: " + file.getPath());
+            System.err.println("No such file or directory: " + file.getPath());
             return;
         }
 
@@ -142,7 +142,7 @@ public class Mei {
 //            this.validMei = false;                             // set validMei false to indicate that the mei code is not valid
 //            e.printStackTrace();                                    // output exception message
 //            for (int i=0; i < e.getErrorCount(); i++) {             // output all validity error descriptions
-//                System.out.println(e.getValidityError(i));
+//                System.err.println(e.getValidityError(i));
 //            }
             this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
         }
@@ -264,11 +264,11 @@ public class Mei {
         } catch (SAXException e) {              // invalid mei
             this.validMei = false;
             e.printStackTrace();                // print the full error message
-//            System.out.println(e.getMessage()); // print only the validation error message, not the complete stackTrace
+//            System.err.println(e.getMessage()); // print only the validation error message, not the complete stackTrace
         } catch (IOException e) {               // missing rng file
             this.validMei = false;
 //            e.printStackTrace();
-            System.out.println("Validation failed: missing file /resources/mei-CMN.rng!");
+            System.err.println("Validation failed: missing file /resources/mei-CMN.rng!");
         }
         System.out.println("Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + this.validMei);  // command line output of the result
         return this.validMei;                   // return the result
@@ -1611,7 +1611,7 @@ public class Mei {
                 }
                 double pitch = Helper.pname2midi(accids.get(i).getAttributeValue("pname"));             // get the pitch class that the accidental is applied to
                 if (pitch < 0.0) {                                                                      // if invalid
-                    System.out.println("No valid value in attribute pname: " + accids.get(i).toXML());  // error message
+                    System.err.println("No valid value in attribute pname: " + accids.get(i).toXML());  // error message
                     continue;                                                                           // continue with the next keyAccid
                 }
                 Element accidental = new Element("accidental");                                                                                         // create an accidental element for the msm keySignature
@@ -1661,7 +1661,7 @@ public class Mei {
                         break;
                     default:
                         accidCount = 0;                                                                 // no accidentals that meico can understand
-                        System.out.println("Unknown sig or key.sig attribute value in " + meiSource.toXML() + ". Assume 0 in the further processing.");     // output error message
+                        System.err.println("Unknown sig or key.sig attribute value in " + meiSource.toXML() + ". Assume 0 in the further processing.");     // output error message
                 }
                 // generate msm accidentals and add them to the accidentals list
                 String[] acs = (accidCount > 0) ? new String[]{"5.0", "0.0", "7.0", "2.0", "9.0", "4.0", "11.0"} : new String[]{"11.0", "4.0", "9.0", "2.0", "7.0", "0.0", "5.0"};  // the sequence of (midi) pitches to apply the accidentals
@@ -2047,7 +2047,7 @@ public class Mei {
             case "15": result = 24; break;
             case "22": result = 36; break;
             default:
-                System.out.println("An invalid octave transposition occured (dis=" + octave.getAttributeValue("dis") + ").");
+                System.err.println("An invalid octave transposition occured (dis=" + octave.getAttributeValue("dis") + ").");
                 return;
         }
 
@@ -2056,7 +2056,7 @@ public class Mei {
             result = -result;
         }
         else if (!octave.getAttributeValue("dis.place").equals("above")){
-            System.out.println("An invalid octave transposition occured (dis.place=" + octave.getAttributeValue("dis.place") + ").");
+            System.err.println("An invalid octave transposition occured (dis.place=" + octave.getAttributeValue("dis.place") + ").");
             return;
         }
 
@@ -2269,7 +2269,7 @@ public class Mei {
                     notResolved.add(placeholder.getKey().toXML());                                      // add all entries to the return list
                     placeholder.getKey().getParent().removeChild(placeholder.getKey());                 // delete all placeholders from the xml, we cannot resolve them anyway
                 }
-                System.out.print(" circular copyof referencing detected, cannot be resolved,");
+                System.err.print(" circular copyof referencing detected, cannot be resolved,");
                 break;                                                                                  // stop the while loop
             }
             previousPlaceholders = placeholders;
@@ -2574,7 +2574,7 @@ public class Mei {
         System.out.print("Adding IDs:");
         Element root = this.getRootElement();
         if (root == null) {
-            System.out.println(" Error: no root element found");
+            System.err.println(" Error: no root element found");
             return 0;
         }
 
