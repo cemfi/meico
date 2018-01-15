@@ -138,7 +138,7 @@ public class Chroma {
             return false;
         }
 
-        if (index > (this.features.size()-1)) {                     // if the index is behind the last index
+        if (index >= this.features.size()) {                        // if the index is behind the last index
             // create an "all-zero feature"
             double[] filler = new double[feature.length];
             for (int i=0; i < feature.length; ++i)
@@ -146,7 +146,7 @@ public class Chroma {
 
             // add enough copies of the filler to fill up the list until the desired index
             for (int i = this.features.size(); i <= index; ++i) {
-                this.features.add(filler.clone());
+                this.features.add(filler);
             }
         }
 

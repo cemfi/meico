@@ -41,7 +41,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
 | `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                      |
-| `-h`, `--chroma`                  | convert to Chroma                                                                                                                   |
+| `-o`, `--chroma`                  | convert to Chroma                                                                                                                   |
 | `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                             |
 | `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                           |
 | `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                        |
