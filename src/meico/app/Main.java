@@ -1,7 +1,7 @@
 package meico.app;
 
 import meico.audio.Audio;
-import meico.chroma.Chroma;
+import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
@@ -46,7 +46,7 @@ public class Main {
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
-                System.out.println("[-o] or [--chroma]                      convert to Chroma");
+                System.out.println("[-o] or [--chroma]                      convert to Pitches");
                 System.out.println("[-i] or [--midi]                        convert to MIDI (and internally to MSM)");
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
                 System.out.println("[-c] or [--dont-use-channel-10]         do not use channel 10 (drum channel) in MIDI");
@@ -190,8 +190,8 @@ public class Main {
         }
 
         if (chroma) {
-            System.out.println("Converting MSM to Chroma.");
-            List<Chroma> chromas = new ArrayList<>();
+            System.out.println("Converting MSM to Pitches.");
+            List<Pitches> chromas = new ArrayList<>();
             for (int i = 0; i < msms.size(); ++i) {
                 chromas.add(msms.get(i).exportChroma());
             }

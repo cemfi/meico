@@ -1,4 +1,4 @@
-package meico.chroma;
+package meico.pitches;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -9,16 +9,16 @@ import java.util.Arrays;
  * @author Axel Berndt.
  */
 
-public class Chroma {
+public class Pitches {
     private File file;
     private ArrayList<double[]> features;   // the list of chroma features
-    private meico.chroma.Key key;           // the reference key for the chroma features
+    private meico.pitches.Key key;           // the reference key for the chroma features
 
     /**
      * default constructor
-     * creates an empty Chroma object for an equal temperament with pitch class chroma features
+     * creates an empty Pitches object for an equal temperament with pitch class chroma features
      */
-    public Chroma() {
+    public Pitches() {
         this.file = null;
         this.key = new Key();               // create a default key
         this.features = new ArrayList<>();  // create an empty list of chroma features
@@ -26,10 +26,10 @@ public class Chroma {
 
     /**
      * constructor
-     * creates an empty Chroma object with the given key
+     * creates an empty Pitches object with the given key
      * @param key
      */
-    public Chroma(meico.chroma.Key key) {
+    public Pitches(meico.pitches.Key key) {
         this.file = null;
         this.key = key;
         this.features = new ArrayList<>();  // create an empty list of chroma features
@@ -41,7 +41,7 @@ public class Chroma {
      * @param firstFeature
      * @throws Exception if the dimensions of key and firstFeature do not match
      */
-    public Chroma(meico.chroma.Key key, double[] firstFeature) throws Exception {
+    public Pitches(meico.pitches.Key key, double[] firstFeature) throws Exception {
         if (firstFeature.length != key.getSize())
             throw new Exception("Dimensions of key and feature vector do not match.");
 
@@ -52,11 +52,11 @@ public class Chroma {
     }
 
     /**
-     * this constructor initializes the Chroma object with the given key and list of chroma features
+     * this constructor initializes the Pitches object with the given key and list of chroma features
      * @param key
      * @param features
      */
-    public Chroma(meico.chroma.Key key, ArrayList<double[]> features) throws Exception {
+    public Pitches(meico.pitches.Key key, ArrayList<double[]> features) throws Exception {
         // check consistency of input data
         for (int i = 0; i < features.size(); ++i) {
             if (features.get(i).length != key.getSize())

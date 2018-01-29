@@ -5,7 +5,7 @@ package meico.msm;
  * @author Axel Berndt.
  */
 
-import meico.chroma.Chroma;
+import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.midi.*;
 import nu.xom.*;
@@ -781,8 +781,8 @@ public class Msm {
      * export standard chroma features with 12 semitones in equal temperament and A = 440 Hz
      * @return
      */
-    public Chroma exportChroma() {
-        Chroma chroma = new Chroma();                                                                   // create Chroma object with equal temperament and A = 440 Hz
+    public Pitches exportChroma() {
+        Pitches chroma = new Pitches();                                                                   // create Pitches object with equal temperament and A = 440 Hz
         chroma.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".chr");          // set a filename for the chroma
         int numFrames = (int) this.getEndDate();                                                        // one frame corresponds with one Midi tick, this computes the number of frames that the music will have
 

@@ -1,7 +1,7 @@
-package meico.chroma;
+package meico.pitches;
 
 /**
- * This class provides the key for the Chroma class with reference frequencies etc.
+ * This class provides the key for the Pitches class with reference frequencies etc.
  * @author Axel Berndt.
  */
 
