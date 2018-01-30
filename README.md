@@ -9,7 +9,7 @@ Contributor: [Simon Waloschek](https://github.com/sonovice)<br>
 Meico is a converter framework for MEI files. Even though MEI is a quasi-standard for digital music editions, there is few software support for it. If you want to listen to the music in your MEI file, you need a MIDI or audio export. If you want to process the musical data (e.g., for Music Information Retrieval), there are many better suited formats and representations than MEI. With meico we address these issues. Meico implements methods to convert MEI data into the MSM (Musical Sequence Markup) format, an intermediate format that we defined for further use in other projects. From MSM, the MIDI export and audio rendering are quite straight forward. Currently, meico is a beta release. The following features are implemented:
 
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq),
-- MSM to MIDI conversion,
+- MSM conversion to MIDI and sequences of chroma and absolute pitch vectors,
 - MIDI to audio PCM and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
 - MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute, conversion of `expansion` elements into "through-composed" MEI code),
 - MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`),
@@ -41,7 +41,8 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
 | `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                      |
-| `-o`, `--chroma`                  | convert to Chroma                                                                                                                   |
+| `-o`, `--chroma`                  | convert to chromas                                                                                                                  |
+| `-h`, `--pitches`                 | convert to pitches                                                                                                                  |
 | `-i`, `--midi`                    | convert to MIDI (and internally to MSM)                                                                                             |
 | `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                           |
 | `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                        |
@@ -76,7 +77,7 @@ Meico makes use of the following third party libraries:
 - [MigLayout](http://www.miglayout.com/) v4.0 by Mikael Grev (MiG InfoCom AB), BSD and GPL license.
 - the [FileDrop](https://sourceforge.net/projects/iharder/files/filedrop/1.1/FileDrop-v1.1.1.zip/download) class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
 - [Jing](http://www.thaiopensource.com/relaxng/jing.html) v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
-- [Saxon](http://saxon.sourceforge.net/) v9.7.0.15 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License Version 2.0.
+- [Saxon](http://saxon.sourceforge.net/) v9.7.0.15 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License Meico 2.0.
 - [Java LAME](https://github.com/nwaldispuehl/java-lame) v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
 - [MEI Common Music Notation Schema](https://github.com/music-encoding/music-encoding) (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
 - parts of `MidiToWavRenderer.java`, an add-on to the [JFugue](http://www.jfugue.org/download.html) library, LGPL license.

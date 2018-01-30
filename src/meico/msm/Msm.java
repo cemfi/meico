@@ -5,6 +5,7 @@ package meico.msm;
  * @author Axel Berndt.
  */
 
+import meico.pitches.Key;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.midi.*;
@@ -782,16 +783,37 @@ public class Msm {
      * @return
      */
     public Pitches exportChroma() {
-        Pitches chroma = new Pitches();                                                                   // create Pitches object with equal temperament and A = 440 Hz
-        chroma.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".chr");          // set a filename for the chroma
+        return this.exportPitches(new Key(Key.chromaReferenceFrequenciesEqualTemperament440, true));
+    }
+
+    /**
+     * export absolute pitches from the MSM score data with 12 semitones per octave in equal temperament and A = 440 Hz,
+     * this conforms to the MIDI standard with 0 being the lowest and 127 the highest possible pitch.
+     * @return
+     */
+    public Pitches exportPitches() {
+        return this.exportPitches(new Key(Key.midiReferenceFrequenciesEqualTemperament440, false));
+    }
+
+    /**
+     * export absolute pitches from the MSM score data
+     * @param key the key with reference frequencies and octave modulo
+     * @return
+     */
+    public Pitches exportPitches(Key key) {
+        Pitches pitches = new Pitches(key); // create Pitches object with equal temperament and A = 440 Hz
+        pitches.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".pch");         // set a filename for the pitches
         int numFrames = (int) this.getEndDate();                                                        // one frame corresponds with one Midi tick, this computes the number of frames that the music will have
 
-        // add as much zero vectors to chroma as the number of frames/ticks of the music
-        double[] feature = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int i = 0; i < numFrames; ++i)
-            chroma.addFeatureAt(i, feature);
+        // add as much zero vectors to pitches as the number of frames/ticks of the music
+        double[] feature = new double[key.getSize()];
+        for (int i = 0; i < key.getSize(); ++i)
+            feature[i] = 0.0;
 
-        // for each note in the music add its chroma vectors to the chroma object
+        for (int i = 0; i < numFrames; ++i)
+            pitches.addFeatureAt(i, feature);
+
+        // for each note in the music add its pitches vectors to the pitches object
         Elements parts = this.getRootElement().getChildElements("part");                                // get all parts
         for (int i = 0; i < parts.size(); ++i) {                                                        // in each part
             Elements notes = parts.get(i).getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note");    // navigate to the note elements
@@ -802,16 +824,22 @@ public class Msm {
                 int offset = date + (int)Double.parseDouble(note.getAttributeValue("midi.duration"));   // compute its offset date
 
                 double pitch = Double.parseDouble(note.getAttributeValue("midi.pitch"));                // get its pitch
-                int pitchClass = ((int) Math.round(pitch)) % 12;                                        // compute pitch class
+                if (key.getOctaveModulo()) pitch %= key.getSize();                                      // if the feature represents pitch classes do the modulo operation on the pitch value
+                else if (pitch > (key.getSize()-1)) pitch = key.getSize()-1;                            // clip extremely high pitch values at highest possible value
+                else if (pitch < 0.0) pitch = 0.0;                                                      // clip pitch values lower than 0.0
 
-                feature = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};     // create the chroma feature vector
-                feature[pitchClass] = 1.0;
+                // create the pitches feature vector
+                feature = new double[key.getSize()];
+                for (int k = 0; k < key.getSize(); ++k)
+                    feature[k] = 0.0;
+
+                feature[(int) pitch] = 1.0;
 
                 for (int k = date; k < offset; ++k)                                                     // for as long as the note duration says
-                    chroma.addFeatureAt(k, feature);                                                    // add the feature vector to chroma (midi tick-wise)
+                    pitches.addFeatureAt(k, feature);                                                   // add the feature vector to pitches (midi tick-wise)
             }
         }
 
-        return chroma;      // output the result
+        return pitches;      // output the result
     }
 }

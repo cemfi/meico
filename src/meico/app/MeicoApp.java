@@ -10,6 +10,7 @@ import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
 
+import meico.pitches.Pitches;
 import net.miginfocom.swing.MigLayout;
 import nu.xom.ParsingException;
 
@@ -721,8 +722,30 @@ public class MeicoApp extends JFrame {
                     });
                     resolveSequencingMaps.setEnabled(!this.sequencingMapsResolved);
 
+                    JMenuItem exportChroma = new JMenuItem(new AbstractAction("Export Chroma Features") {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            Pitches chroma = exportChroma();
+                            String filename = Helper.getFilenameWithoutExtension(chroma.getFile().getPath()) + "-chroma.pch";
+                            chroma.writePitches(filename);
+                        }
+                    });
+                    removeRests.setEnabled(true);
+
+                    JMenuItem exportPitches = new JMenuItem(new AbstractAction("Export Absolute Pitch Features") {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            Pitches pitches = exportPitches();
+                            String filename = Helper.getFilenameWithoutExtension(pitches.getFile().getPath()) + "-pitches.pch";
+                            pitches.writePitches(filename);
+                        }
+                    });
+                    removeRests.setEnabled(true);
+
                     msmNamePop.add(removeRests);
                     msmNamePop.add(resolveSequencingMaps);
+                    msmNamePop.add(exportChroma);
+                    msmNamePop.add(exportPitches);
 
 
                     JLabel msmName = new JLabel(this.getFile().getName());

@@ -15,7 +15,7 @@ SB_FILES = {
     """Example:
     
     'airfont': 'Airfont_340.dls',
-    'arachno': 'Arachno SoundFont - Version 1.0.sf2',
+    'arachno': 'Arachno SoundFont - Meico 1.0.sf2',
     'fluidr3': 'FluidR3 GM2-2.sf2',
     'freefont': 'FreeFont.sf2',
     'musescore': 'GeneralUser GS MuseScore v1.442.sf2',

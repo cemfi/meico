@@ -1,5 +1,6 @@
 package meico.app;
 
+import meico.Meico;
 import meico.audio.Audio;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
@@ -23,7 +24,7 @@ public class Main {
      */
     public static void main(String[] args) {
         if (args.length == 0) {                         // if meico.jar is called without command line arguments
-            new MeicoApp("meico - MEI Converter", true);// start meico in window mode
+            new MeicoApp("Meico: MEI Converter v" + Meico.version, true);// start meico in window mode
         }
         else                                            // in case of command line arguments
             System.exit(commandLineMode(args));         // run the command line mode
@@ -38,7 +39,7 @@ public class Main {
     public static int commandLineMode(String[] args) {
         for (String arg : args) {
             if (arg.equals("-?") || arg.equals("--help")) {
-                System.out.println("Meico requires the following arguments:\n");
+                System.out.println("Meico: MEI Converter v" + Meico.version + "\nMeico requires the following arguments:\n");
                 System.out.println("[-?] or [--help]                        show this help text");
                 System.out.println("[-v] or [--validate]                    validate loaded MEI file");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
@@ -46,7 +47,8 @@ public class Main {
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
-                System.out.println("[-o] or [--chroma]                      convert to Pitches");
+                System.out.println("[-o] or [--chroma]                      convert to chromas");
+                System.out.println("[-h] or [--pitches]                     convert to pitches");
                 System.out.println("[-i] or [--midi]                        convert to MIDI (and internally to MSM)");
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
                 System.out.println("[-c] or [--dont-use-channel-10]         do not use channel 10 (drum channel) in MIDI");
@@ -69,6 +71,7 @@ public class Main {
         String xsltOutputExtension = "";
         boolean msm = false;
         boolean chroma = false;
+        boolean pitches = false;
         boolean midi = false;
         boolean wav = false;
         boolean mp3 = false;
@@ -84,6 +87,7 @@ public class Main {
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-o")) || (args[i].equals("--chroma"))) { chroma = true; continue; }
+            if ((args[i].equals("-h")) || (args[i].equals("--pitches"))) { pitches = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
             if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
             if ((args[i].equals("-3")) || (args[i].equals("--mp3"))) { mp3 = true; continue; }
@@ -190,15 +194,30 @@ public class Main {
         }
 
         if (chroma) {
-            System.out.println("Converting MSM to Pitches.");
+            System.out.println("Converting MSM to chromas.");
             List<Pitches> chromas = new ArrayList<>();
             for (int i = 0; i < msms.size(); ++i) {
                 chromas.add(msms.get(i).exportChroma());
             }
-            System.out.println("Writing MIDI to file system: ");
+            System.out.println("Writing chroma to file system: ");
             for (int i = 0; i < chromas.size(); ++i) {
-                chromas.get(i).writeChroma();
+                String filename = Helper.getFilenameWithoutExtension(chromas.get(i).getFile().getPath()) + "-chroma.pch";
+                chromas.get(i).writePitches(filename);
                 System.out.println("\t" + chromas.get(i).getFile().getPath());
+            }
+        }
+
+        if (pitches) {
+            System.out.println("Converting MSM to pitches.");
+            List<Pitches> pitchesList = new ArrayList<>();
+            for (int i = 0; i < msms.size(); ++i) {
+                pitchesList.add(msms.get(i).exportPitches());
+            }
+            System.out.println("Writing pitches to file system: ");
+            for (int i = 0; i < pitchesList.size(); ++i) {
+                String filename = Helper.getFilenameWithoutExtension(pitchesList.get(i).getFile().getPath()) + "-pitches.pch";
+                pitchesList.get(i).writePitches(filename);
+                System.out.println("\t" + pitchesList.get(i).getFile().getPath());
             }
         }
 

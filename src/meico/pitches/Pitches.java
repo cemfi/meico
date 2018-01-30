@@ -5,18 +5,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * Tis class represents the list of chroma features for a piece of music.
+ * This class represents the list of pitch features for a piece of music.
+ * It supports also Chroma features.
  * @author Axel Berndt.
  */
 
 public class Pitches {
     private File file;
-    private ArrayList<double[]> features;   // the list of chroma features
-    private meico.pitches.Key key;           // the reference key for the chroma features
+    private ArrayList<double[]> features;    // the list of pitch features
+    private meico.pitches.Key key;           // the reference key for the pitch features
 
     /**
      * default constructor
-     * creates an empty Pitches object for an equal temperament with pitch class chroma features
+     * creates an empty Pitches object with the Key set to Chroma type features
      */
     public Pitches() {
         this.file = null;
@@ -47,12 +48,12 @@ public class Pitches {
 
         this.file = null;
         this.key = key;
-        this.features = new ArrayList<>();             // create an empty list of chroma features
+        this.features = new ArrayList<>();      // create an empty list of pitch features
         this.addFeatureAt(0, firstFeature);     // add the first feature
     }
 
     /**
-     * this constructor initializes the Pitches object with the given key and list of chroma features
+     * this constructor initializes the Pitches object with the given key and list of pitch features
      * @param key
      * @param features
      */
@@ -71,7 +72,7 @@ public class Pitches {
     /**
      * this getter returns the file
      *
-     * @return a java File object (this file does not necessarily have to exist in the file system, but may be created there when writing the file with writeChroma())
+     * @return a java File object (this file does not necessarily have to exist in the file system, but may be created there when writing the file with writePitches())
      */
     public File getFile() {
         return this.file;
@@ -80,7 +81,7 @@ public class Pitches {
     /**
      * with this setter a new filename can be set
      *
-     * @param filename the filename including the full path and .chr extension
+     * @param filename the filename including the full path and .pch extension
      */
     public void setFile(String filename) {
         this.file = new File(filename);
@@ -103,7 +104,7 @@ public class Pitches {
     }
 
     /**
-     * a getter that returns the number of chroma features.
+     * a getter that returns the number of pitch features.
      * @return
      */
     public int getFeatureCount() {
@@ -111,8 +112,8 @@ public class Pitches {
     }
 
     /**
-     * returns the chroma vector at the given index or null if index out of bounds
-     * @param index the index of the chroma feature should be in [0, features.size()-1], otherwise null is returned
+     * returns the pitch feature vector at the given index or null if index out of bounds
+     * @param index the index of the pitch feature should be in [0, features.size()-1], otherwise null is returned
      * @return
      */
     public double[] getFeatureAt(int index) {
@@ -124,7 +125,7 @@ public class Pitches {
     }
 
     /**
-     * add a chroma feature vector at the given index;
+     * add a pitch feature vector at the given index;
      * if there is already a vector at that index, their values will be added
      * @param index
      * @param feature
@@ -134,7 +135,7 @@ public class Pitches {
         if (index < 0) return false;                                // an index below 0 makes no sense
 
         if (feature.length != this.key.getSize()) {                 // if the feature to be added does not match with the size of the reference frequencies vector
-            System.err.println("Error: Dimensions of key and feature vector do not match. It cannot be added to the chroma features.");
+            System.err.println("Error: Dimensions of key and feature vector do not match. It cannot be added to the pitch features.");
             return false;
         }
 
@@ -159,24 +160,24 @@ public class Pitches {
     }
 
     /**
-     * write the chroma features to a file with default filename
+     * write the pitch features to a file with default filename
      * @return true if success, false if an error occured
      */
-    public boolean writeChroma() {
+    public boolean writePitches() {
         if (this.file == null) {
             System.err.println("Cannot write to the file system. Path and filename are not specified.");
             return false;
         }
 
-        return this.writeChroma(this.file.getPath());
+        return this.writePitches(this.file.getPath());
     }
 
     /**
-     * write chroma features to a file with specified filename (filename should include the path and the extension .chr)
-     * @param filename the filename string; it should include the path and the extension .chr
+     * write pitch features to a file with specified filename (filename should include the path and the extension .pch)
+     * @param filename the filename string; it should include the path and the extension .pch
      * @return true if success, false if an error occured
      */
-    public boolean writeChroma(String filename) {
+    public boolean writePitches(String filename) {
         // create the file in the file system
         File file = new File(filename);
         file.getParentFile().mkdirs();                              // ensure that the directory exists
