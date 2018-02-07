@@ -321,10 +321,15 @@ public class Mei {
         Element title;
 
         try {                                               // try to read the title from mei/meiHead/workDesc/work/titleStmt/title
-            title = this.getMeiHead().getFirstChildElement("workDesc").getFirstChildElement("work").getFirstChildElement("titleStmt").getFirstChildElement("title");
+            title = Helper.getFirstChildElement("workDesc", this.getMeiHead());
+            title = Helper.getFirstChildElement("work", title);
+            title = Helper.getFirstChildElement("titleStmt", title);
+            title = Helper.getFirstChildElement("title", title);
         } catch (NullPointerException ex1) {                // if that does not exist
             try {                                           // try to get the title from  mei/meiHead/fileDesc/titleStmt/title
-                title = this.getMeiHead().getFirstChildElement("fileDesc").getFirstChildElement("titleStmt").getFirstChildElement("title");
+                title = Helper.getFirstChildElement("fileDesc", this.getMeiHead());
+                title = Helper.getFirstChildElement("titleStmt", title);
+                title = Helper.getFirstChildElement("title", title);
             } catch (NullPointerException ex2) {            // if that does not exist
                 return (this.getFile() == null) ? "" : Helper.getFilenameWithoutExtension(this.getFile().getName());    // return the filename without extension or (if that does not exist either) return empty string
             }

@@ -191,13 +191,19 @@ public class Msm {
     }
 
     /**
-     * This getter method returns the title string from the root element's attribute title. If missing, it returns "".
+     * This getter method returns the title string from the root element's attribute title. If missing, use the filename without extension or return "".
      * @return
      */
     public String getTitle() {
-        Attribute title = this.getRootElement().getAttribute("title");
-        if (title == null) return "";
-        return title.getValue();
+        Attribute title;
+
+        try {                                               // try to read the title attribute
+            title = this.getRootElement().getAttribute("title");
+        } catch (NullPointerException ex) {                 // if that does not exist
+            return (this.getFile() != null) ? Helper.getFilenameWithoutExtension(this.getFile().getName()) : "";    // return the filename without extension or (if that does not exist either) return empty string
+        }
+
+        return title.getValue();                            // return the title string
     }
 
     /**
