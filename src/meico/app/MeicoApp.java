@@ -334,7 +334,7 @@ public class MeicoApp extends JFrame {
         private boolean expansionsResolved;
         private int ppq;
         private boolean dontUseChannel10 = true;
-        private boolean ignoreExpansions = false;
+        private boolean resolveExpansions = true;
 
         /**
          * constructor
@@ -541,15 +541,15 @@ public class MeicoApp extends JFrame {
                 });
                 mei2msmPop.add(dontUseChannel10CheckBox);
 
-                final JCheckBoxMenuItem ignoreExpansionsCheckBox = new JCheckBoxMenuItem("Do not resolve expansion elements", this.ignoreExpansions);
-                ignoreExpansionsCheckBox.addMouseListener(new MouseAdapter() {
+                final JCheckBoxMenuItem resolveExpansionsCheckBox = new JCheckBoxMenuItem("Resolve expansion elements", this.resolveExpansions);
+                resolveExpansionsCheckBox.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseReleased(MouseEvent e) {
-                        ignoreExpansions = !ignoreExpansions;
-                        ignoreExpansionsCheckBox.setState(ignoreExpansions);
+                        Mei4Gui.this.resolveExpansions = !Mei4Gui.this.resolveExpansions;
+                        resolveExpansionsCheckBox.setState(Mei4Gui.this.resolveExpansions);
                     }
                 });
-                mei2msmPop.add(ignoreExpansionsCheckBox);
+                mei2msmPop.add(resolveExpansionsCheckBox);
 
                 final JLabel mei2msm = new JLabel(convertIcon, JLabel.CENTER);
                 mei2msm.setOpaque(true);
@@ -589,7 +589,7 @@ public class MeicoApp extends JFrame {
                                     }
                                 }
                                 msm.clear();
-                                for (Msm m : exportMsm(ppq, dontUseChannel10, ignoreExpansions, true)) {    // true for MsmCleanup
+                                for (Msm m : exportMsm(ppq, dontUseChannel10, !Mei4Gui.this.resolveExpansions, true)) {    // true for MsmCleanup
                                     msm.add(new Msm4Gui(m, app));
                                 }
                                 mei2msm.setBackground(new Color(232, 232, 232));

@@ -1,21 +1,26 @@
 ### Version History
 
 
+#### v0.3.2
+- In window mode the checkbox "Do not resolve expansions" has been renamed to "Resolve expansions". This should be more intuitive than checking a negated statement.
+- More documentation has been added.
+
+
 #### v0.3.1
 - Added class `meico.Meico` that holds the version number of meico. It can be accessed via `Meico.version`.
 - Added a new package `meico.pitches` with classes `Pitches` and `Key`.
 - Added new methods to class `meico.msm.Msm`:
     - `getEndDate()` returns the date of the last note offset, i.e. the length of the music in MIDI ticks.
     - `exportChroma()` converts MSM to a sequence of chroma features with 12 semitones in equal temperament and A = 440 Hz.
-    - `exportPitches()` converts MSM to a sequence of absolute pitch vectors with 12 semitones per octave in equal temperament and A = 440 Hz. This conforms with the MIDI standard, i.e. 0 is the lowest and 127 the highest possible pitch. This method is overloaded. The more general version of this methos takes an instance of `meico.pitches.Key` as parameter.
+    - `exportPitches()` converts MSM to a sequence of absolute pitch vectors with 12 semitones per octave in equal temperament and A = 440 Hz. This conforms with the MIDI standard, i.e. 0 is the lowest and 127 the highest possible pitch. This method is overloaded. The more general version of this method takes an instance of `meico.pitches.Key` as parameter.
 - Some adds to the commandline app:
     - Added new option `-o` and `--chroma` to get chroma export.
-    - Added new option `-h` and `--pitches` to get absolute pitchs export.
-    - Added the version number to the output of option `-?`/`--help`.
+    - Added new option `-h` and `--pitches` to get absolute pitches export.
+    - Added the current version number to the output of option `-?`/`--help`.
     - File `README.md` has been updated accordingly.
-- Chroma/pitches export has also been added to the window mode gui, available via right click on an MSM opject.
+- Chroma/pitches export has also been added to the window mode gui, available via right click on an MSM object.
 - File `README.md` has been updated with the new pitches/chroma functions.
-- Redirected several error messages to `System.err` instead of `System.out`. This makes the output in the commandline and log file more consistent.
+- Redirected several error messages to `System.err` instead of `System.out`. This makes output in the commandline and log file more consistent.
 
 
 #### v0.3.0
