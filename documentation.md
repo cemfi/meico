@@ -197,7 +197,7 @@ There is no special processing routine for this element. Meico just processes it
 #### tie
 
 #### title
-This element is located in the `meiHead` environment, more precisely in one of these two subtrees `mei/meiHead/fileDesc/titleStmt` or `mei/meiHead/workDesc/work/titleStmt`. Meico prefers the latter and uses the former only in absence of the latter. Meico keeps the title string during MEI-to-MSM conversion and writes it to MSM's root element `msm`. However, if more than one `title` element are present, meico uses only the first!
+This element is located in the `meiHead` environment, more precisely in one of these two subtrees `mei/meiHead/fileDesc/titleStmt` or `mei/meiHead/workDesc/work/titleStmt`. Meico prefers the former and uses the latter only in absence of the former. Meico keeps the title string during MEI-to-MSM conversion and writes it to MSM's root element `msm`. However, if more than one `title` element are present, meico uses only the first!
 
 #### tuplet
 

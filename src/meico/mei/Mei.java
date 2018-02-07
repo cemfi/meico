@@ -314,20 +314,20 @@ public class Mei {
     }
 
     /**
-     * This getter method returns the title string from either workDesc or fileDesc. If none is given, it returns the filename. If not given either, "" is returned.
+     * This getter method returns the title string from either fileDesc or workDesc. If none is given, it returns the filename. If not given either, "" is returned.
      * @return
      */
     public String getTitle() {
         Element title;
 
         try {                                               // try to read the title from mei/meiHead/workDesc/work/titleStmt/title
-            title = Helper.getFirstChildElement("workDesc", this.getMeiHead());
-            title = Helper.getFirstChildElement("work", title);
+            title = Helper.getFirstChildElement("fileDesc", this.getMeiHead());
             title = Helper.getFirstChildElement("titleStmt", title);
             title = Helper.getFirstChildElement("title", title);
         } catch (NullPointerException ex1) {                // if that does not exist
             try {                                           // try to get the title from  mei/meiHead/fileDesc/titleStmt/title
-                title = Helper.getFirstChildElement("fileDesc", this.getMeiHead());
+                title = Helper.getFirstChildElement("workDesc", this.getMeiHead());
+                title = Helper.getFirstChildElement("work", title);
                 title = Helper.getFirstChildElement("titleStmt", title);
                 title = Helper.getFirstChildElement("title", title);
             } catch (NullPointerException ex2) {            // if that does not exist
