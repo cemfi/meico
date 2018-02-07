@@ -314,6 +314,26 @@ public class Mei {
     }
 
     /**
+     * This getter method returns the title string from either workDesc or fileDesc. If none is given, it returns the filename. If not given either, "" is returned.
+     * @return
+     */
+    public String getTitle() {
+        Element title;
+
+        try {                                               // try to read the title from mei/meiHead/workDesc/work/titleStmt/title
+            title = this.getMeiHead().getFirstChildElement("workDesc").getFirstChildElement("work").getFirstChildElement("titleStmt").getFirstChildElement("title");
+        } catch (NullPointerException ex1) {                // if that does not exist
+            try {                                           // try to get the title from  mei/meiHead/fileDesc/titleStmt/title
+                title = this.getMeiHead().getFirstChildElement("fileDesc").getFirstChildElement("titleStmt").getFirstChildElement("title");
+            } catch (NullPointerException ex2) {            // if that does not exist
+                return (this.getFile() == null) ? "" : Helper.getFilenameWithoutExtension(this.getFile().getName());    // return the filename without extension or (if that does not exist either) return empty string
+            }
+        }
+
+        return title.getValue();                            // return the title string
+    }
+
+    /**
      * @return the <music> element or null if this instance is not valid
      */
     public Element getMusic() {
@@ -419,7 +439,7 @@ public class Mei {
             if (msms.size() == 1)                                                                                           // if only one msm object (no numbering needed)
                 msms.get(0).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".msm");                 // replace the file extension mei with msm and make this the filename
             else {                                                                                                          // multiple msm objects created (or none)
-                for (int i = 0; i < msms.size(); ++i) {                                                                       // for each msm object
+                for (int i = 0; i < msms.size(); ++i) {                                                                     // for each msm object
                     msms.get(i).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-" + i + ".msm");   // replace the extension by the number and the .msm extension
                 }
             }
@@ -840,10 +860,19 @@ public class Mei {
     /** this function gets an mdiv and creates an instance of Msm
      *
      * @param mdiv an mei mdiv element
-     * @return an msm meta element (the root of an msm document)
+     * @return an msm root element (the root of an msm document)
      */
     private Msm makeMovement(Element mdiv) {
-        Element movement = new Element("meta");
+        Element movement = new Element("msm");
+
+        // make the title attribute for this MSM; concatenate work title and movement label
+        String titleString = this.getTitle();
+        Attribute mdivN = mdiv.getAttribute("n");
+        if (mdivN != null) titleString += " - " + mdivN.getValue();
+        Attribute mdivLabel = mdiv.getAttribute("label");
+        if (mdivLabel != null) titleString += " - " + mdivLabel.getValue();
+        Attribute title = new Attribute("title", titleString);
+        movement.addAttribute(title);
 
         // store the same id at the mei source and the msm, maybe it is needed later on
         String movementId;
@@ -867,8 +896,8 @@ public class Mei {
         Element dated = new Element("dated");
         Element header = new Element("header");
 
-        Element ppq = new Element("pulsesPerQuarter");                                // a global ppq element
-        ppq.addAttribute(new Attribute("ppq", Integer.toString(this.helper.ppq)));    // a default ppq value
+        Element ppq = new Element("pulsesPerQuarter");                              // a global ppq element
+        ppq.addAttribute(new Attribute("ppq", Integer.toString(this.helper.ppq)));  // a default ppq value
 
         header.appendChild(ppq);
         dated.appendChild(new Element("timeSignatureMap"));                         // global time signatures
@@ -1927,7 +1956,12 @@ public class Mei {
             double date = Double.parseDouble(e.getAttributeValue("midi.date"));                                                     // get date of the element
             if (date < startDate) break;                                                                                            // if all elements from the previous beat were collected, break the for loop
             if (layer.isEmpty() || ((e.getAttribute("layer") != null) && e.getAttributeValue("layer").equals(layer))) {             // if no need to consider layers or the layer of e matches the currentLayer
-                els.push(Helper.cloneElement(e)).getAttribute("midi.date").setValue(Double.toString(date + timeframe));             // make a new element, push onto the els stack, and update its date value
+                Element copy = Helper.cloneElement(e);                                                                              // make a new element
+                copy.getAttribute("midi.date").setValue(Double.toString(date + timeframe));                                         // update its date attribute
+                Attribute id = Helper.getAttribute("id", copy);                                                                     // get the id attribute
+                if (id != null)                                                                                                     // if the element has an id
+                    id.setValue("meico_repeats_" + id.getValue() + "_" + UUID.randomUUID().toString());                             // give it a new unique one of the following form: "meico_repeats_oldID_newUUID"
+                els.push(copy);                                                                                                     // push the copy onto the els stack
             }
         }
 

@@ -191,6 +191,16 @@ public class Msm {
     }
 
     /**
+     * This getter method returns the title string from the root element's attribute title. If missing, it returns "".
+     * @return
+     */
+    public String getTitle() {
+        Attribute title = this.getRootElement().getAttribute("title");
+        if (title == null) return "";
+        return title.getValue();
+    }
+
+    /**
      * @return the root element of the msm
      */
     public Element getRootElement() {

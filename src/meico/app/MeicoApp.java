@@ -754,7 +754,7 @@ public class MeicoApp extends JFrame {
                     msmName.setForeground(Color.DARK_GRAY);
                     msmName.setBorder(new EmptyBorder(0, 4, 0, 0));
                     msmName.setFont(new Font(fontName, fontStyle, fontSize));
-                    msmName.setToolTipText("<html>" + this.getFile().getPath() + "<br>RIGHT CLICK: further MSM processing functions</html>");
+                    msmName.setToolTipText("<html>" + this.getTitle() + "<br>" + this.getFile().getPath() + "<br>RIGHT CLICK: further MSM processing functions</html>");
                     msmName.setComponentPopupMenu(msmNamePop);
                     msmName.addMouseListener(new MouseAdapter() {
                         @Override

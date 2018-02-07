@@ -4,6 +4,10 @@
 #### v0.3.2
 - In window mode the checkbox "Do not resolve expansions" has been renamed to "Resolve expansions". This should be more intuitive than checking a negated statement.
 - More documentation has been added.
+- The root element of MSM documents has been renamed from `meta` to `msm`.
+- During MEI-to-MSM conversion, when resolving MEI elements `beatRpt`, `halfmRpt`, `mRpt`, `mRpt2`, and `multiRpt`, elements with duplicate IDs were created. This is taken care of now.
+- Added a new method to class `meico.mei.Mei` that returns the title of the music, `getTitle()`.
+- Method `meico.mei.Mei.makeMovement()` has been extended. It creates now also a `title` attribute in the MSM root element `msm`. That `title` attribute is a concatenation of the work's title and the `mdiv` element's attributes `n` and `label`.
 
 
 #### v0.3.1
