@@ -97,11 +97,13 @@ This element is deliberately ignored. Meico handles and generates MIDI-related i
 This element is deliberately ignored. Meico handles and generates MIDI-related information individually, more comprehensive and more consistent than MEI does.
 
 #### keyAccid
-This element is processed within a `keySig`. If it occurs outside of a keySig environment it is invalid, hence, ignored.
+This element is processed within a `keySig`. If it occurs outside of a `keySig` environment it is invalid, hence, ignored. Element `keySig` is no replacement for element `accid`! To be interpreted unambiguously, meico expects attributes `pname` and `accid`. See the `accid` element's documentation for a list of valid `accid` values and how meico interprets them.
 
 #### keySig
+Meico seeks for attributes `sig` and `sig.mixed` (yes, meico supports mixed key signatures) and also for `keyAccid` child elements. If none is given, meico assumes a C major key. Meico also keeps track of the `layer` that the `keySig` is associated with.
 
 #### layer
+Meico processes the child elements of `layer`. For multiple layers in the same `staff` meico keeps track of accidentals, i.e. if accidentals are defined within one `layer`, they will not be considered in another `layer`. This can be a problem in piano music and can be solved by providing the correct `pname.ges` and `accid.ges` attributes in the respective `note` elements. During MSM export, explicit layer information will get lost. MSM's `part` elements correspond to `staff` elements in MEI and will be converted to MIDI channels during MSM-to-MIDI conversion. Their further discrimination as layers is not stored.
 
 #### layerDef
 

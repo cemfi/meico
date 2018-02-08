@@ -1612,7 +1612,7 @@ public class Mei {
     private Element makeKeySignature(Element meiSource) {
         Element s = new Element("keySignature");                                                        // create an element
         Helper.copyId(meiSource, s);                                                                    // copy the id
-        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));         // compute date
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));                  // compute date
 
         LinkedList<Element> accidentals = new LinkedList<Element>();                                    // create an empty list which will be filled with the accidentals of this key signature
 
