@@ -1466,24 +1466,28 @@ public class Mei {
             return;                                                                     // not enough information to process it, cancel
 
         Element parentNote = null;                                                      // there might be a parent note element relevant to the accid when it misses the ploc and/or oloc attribute
-        double pitch = -1;
-        int octave = -2;
+        pitch pitch = -1;                                                            // this will get the pitch class name
+        String pitchname = null;
+        String octave = null;
         for (Node e = accid.getParent(); (e != null) || (((Element)e).getLocalName().equals("layer")); e = e.getParent()) { // check all parent nodes until layer level
             if (((Element)e).getLocalName().equals("note")) {                                           // found a note
                 parentNote = (Element)e;                                                // keep it in variable parentNote
-                pitch = this.helper.computePitch(parentNote);                           // get the note's pitch
-                octave = (int)(pitch / 12) - 1;                                         // get the octave
+                ArrayList<String> pitchdata = new ArrayList<String>();                  // this is to store pitchname, accidentals and octave as additional attributes of the note
+                pitch = this.helper.computePitch(parentNote, pitchdata);                // get the note's pitch
+                if (pitch != -1) {
+                    pitchname = Character.toString(pitchdata.get(0).charAt(0));
+                    octave = pitchdata.get(2);
+                }
                 break;                                                                  // stop the for loop
             }
         }
 
         Attribute ploc = accid.getAttribute("ploc");                                    // get the pitch class
-        String pname = "";                                                              // this will get the pitch class name
         if (ploc != null)                                                               // if there is a ploc attribute
             pname = ploc.getValue();                                                    // take this as pname
         else {                                                                          // if no ploc attribute
-            if ((parentNote == null) || (pitch < 0.0)) return;                          // and no parent note or it has no valid pitch, cancel
-            pname = this.helper.midi2pname(pitch).charAt(0);                            // get pitch class name without tailing accidental
+            if ((parentNote == null) || (pitchname == null)) return;                    // and no parent note or it has no valid pitch, cancel
+            pname = pitchname;
         }
 
         // make the accid compatible to note elements (ploc -> pname, oloc -> oct) so it can be added to the helper.accid list and processed in the same way as the notes in there, see method Helper.computePitch()
@@ -1491,7 +1495,8 @@ public class Mei {
         if (accid.getAttribute("oloc") != null)                                         // if there is the equivalent to the oct (octave transposition) attribute in notes
             accid.addAttribute(new Attribute("oct", accid.getAttributeValue("oloc")));  // store it in an attribute named oct
         else                                                                            // otherwise take the octave from the parent note if given
-            if (oct > -2) accid.addAttribute(new Attribute("oct", Integer.toString(octave)));
+            if (octave != null) 
+                accid.addAttribute(new Attribute("oct", octave));
 
         this.helper.addLayerAttribute(accid);                                           // add an attribute that indicates the layer
 
