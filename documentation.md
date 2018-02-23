@@ -7,7 +7,7 @@ The following MEI elements are supported, i.e. processed, by meico. The set of s
 This element is processed only as child of `choice`.
 
 #### accid
-Attributes `ploc` and `oloc` are mandatory to determine the pitch to be affected by the accidental. Otherwise it is ignored. The effect of the accidental is read from attribute `accid.ges` (prioritized) or `accid`. If none is given the element is ignored. Meico will take the accidental into account until the end of the measure. Previous accidentals on the same pitch are overridden, only the last accidental on that pitch is applied to succeeding notes. Accidentals apply to all notes throughout all layers in the same staff as the `accid` element. Meico renders the following accidentals to semitone intervals in MSM:
+Attributes `ploc` and `oloc` are mandatory to determine the pitch to be affected by the accidental. These attributes can be missing if the `accid` is child of a `note` element that provides the `pname` and `oct` attribute instead. Otherwise, the `accid` is ignored. The effect of the accidental is read from attribute `accid.ges` (prioritized) or `accid`. If none is given the element is ignored, too. Meico will take the accidental into account until the end of the measure. Previous accidentals on the same pitch are overridden, only the last accidental on that pitch is applied to succeeding notes. Accidentals apply to all notes throughout all layers in the same staff as the `accid` element. Meico renders the following accidentals to semitone intervals in MSM:
 
 | MEI accidental | Semitone interval in MSM |
 |----------------|--------------------------|
@@ -63,7 +63,7 @@ A correction, can occur as "standalone" or in the `choice` environment, usually 
 The `del` element contains information deleted, marked as deleted, or otherwise indicated as superfluous or spurious. Hence, by default, meico omits its content. The deletion is processed only if it is child of a `restore` element as this negates all deletions throughout its whole subtree.
 
 #### dot
-This element is proccessed as child of a note, rest etc. for the computation of durations. Outside of such an environment the meaning of the `dot` is unclear and meico cannot interpret it in a musically meanignful way.
+This element is proccessed as child of a `note` or `rest` for the computation of durations. Outside of such an environment the meaning of the `dot` is unclear and meico cannot interpret it in a musically meanignful way.
 
 #### ending
 MEI `ending` elements are transformed to entries in an MSM `sequencingMap`. If there is only one `ending`, playback will skip it at repetition by default. Meico tries to realize the order of the endings according to the numbering in the endings' `n` attribute. This attribute should contain an integer substring (e.g., `"1"`, `"1."`, `"2nd"`, `"Play this at the 3rd time!"`, but not `"first"` or `"Play this at the third time!"`). (Sub-)String `"fine"`/`"Fine"`/`"FINE"` will also be recognized. Strings such as `"1-3"` will be recognized as `"1"`, this means that more complex instructions will not be recognized correctly due to the lack of unambiguous, binding formalization (meico is no "guessing machine"). If meico fails to find attribute `n`, it tries to parse attribute `label`. If neither of them is provided or meico fails to extract a meaningful numbering, the endings are played in order of appearance in the MEI source.
@@ -97,13 +97,11 @@ This element is deliberately ignored. Meico handles and generates MIDI-related i
 This element is deliberately ignored. Meico handles and generates MIDI-related information individually, more comprehensive and more consistent than MEI does.
 
 #### keyAccid
-This element is processed within a `keySig`. If it occurs outside of a `keySig` environment it is invalid, hence, ignored. Element `keySig` is no replacement for element `accid`! To be interpreted unambiguously, meico expects attributes `pname` and `accid`. See the `accid` element's documentation for a list of valid `accid` values and how meico interprets them.
+This element is processed within a `keySig`. If it occurs outside of a keySig environment it is invalid, hence, ignored.
 
 #### keySig
-Meico seeks for attributes `sig` and `sig.mixed` (yes, meico supports mixed key signatures) and also for `keyAccid` child elements. If none is given, meico assumes a C major key. Meico also keeps track of the `layer` that the `keySig` is associated with.
 
 #### layer
-Meico processes the child elements of `layer`. For multiple layers in the same `staff` meico keeps track of accidentals, i.e. if accidentals are defined within one `layer`, they will not be considered in another `layer`. This can be a problem in piano music and can be solved by providing the correct `pname.ges` and `accid.ges` attributes in the respective `note` elements. During MSM export, explicit layer information will get lost. MSM's `part` elements correspond to `staff` elements in MEI and will be converted to MIDI channels during MSM-to-MIDI conversion. Their further discrimination as layers is not stored.
 
 #### layerDef
 
