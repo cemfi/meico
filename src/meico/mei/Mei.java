@@ -1509,7 +1509,7 @@ public class Mei {
     */
     private void processDot(Element dot) {
         Element parentNote = null;                                                      // this element makes only sense in the context of a note or rest
-        for (Node e = dot.getParent(); (e != null) || (((Element)e).getName().equals("layer")); e = e.getParent()) { // find the parent note
+        for (Node e = dot.getParent(); (e != null) || (((Element)e).getLocalName().equals("layer")); e = e.getParent()) { // find the parent note
             Element el = (Element)e;
             if (el.getLocalName().equals("note") || el.getLocalName().equals("rest")) {             // found a note/rest
                 parentNote = (Element)e;                                                // keep it in variable parentNote
