@@ -1523,7 +1523,7 @@ public class Mei {
         // add this dot to the childDots counter at the parent note/rest
         Attribute d = parentNote.getAttribute("childDots");
         if (d != null) {                                                                // does the counter attribute exist? if yes
-            d.setValue(Integer.toString(1 + Integer.parseInt(d.getValue("childDots"))));// add 1 to it
+            d.setValue(Integer.toString(1 + Integer.parseInt(d.getValue())));           // add 1 to it
         }
         else                                                                            // otherwise create the attribute
             parentNote.addAttribute(new Attribute("childDots", "1"));                   // and set it to 1
