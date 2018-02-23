@@ -1468,8 +1468,8 @@ public class Mei {
         Element parentNote = null;                                                      // there might be a parent note element relevant to the accid when it misses the ploc and/or oloc attribute
         double pitch = -1;
         int octave = -2;
-        for (Node e = accid.getParent(); (e != null) || (e.getName().equals("layer")); e = e.getParent()) { // check all parent nodes until layer level
-            if (e.getName().equals("note")) {                                           // found a note
+        for (Node e = accid.getParent(); (e != null) || (((Element)e).getLocalName().equals("layer")); e = e.getParent()) { // check all parent nodes until layer level
+            if (((Element)e).getLocalName().equals("note")) {                                           // found a note
                 parentNote = (Element)e;                                                // keep it in variable parentNote
                 pitch = this.helper.computePitch(parentNote);                           // get the note's pitch
                 octave = (int)(pitch / 12) - 1;                                         // get the octave
@@ -1504,8 +1504,9 @@ public class Mei {
     */
     private void processDot(Element dot) {
         Element parentNote = null;                                                      // this element makes only sense in the context of a note or rest
-        for (Node e = dot.getParent(); (e != null) || (e.getName().equals("layer")); e = e.getParent()) { // find the parent note
-            if (e.getName().equals("note") || e.getName().equals("rest")) {             // found a note/rest
+        for (Node e = dot.getParent(); (e != null) || (((Element)e).getName().equals("layer")); e = e.getParent()) { // find the parent note
+            Element el = (Element)e;
+            if (el.getLocalName().equals("note") || el.getLocalName().equals("rest")) {             // found a note/rest
                 parentNote = (Element)e;                                                // keep it in variable parentNote
                 break;                                                                  // stop the for loop
             }
