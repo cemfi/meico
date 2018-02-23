@@ -1482,6 +1482,7 @@ public class Mei {
         }
 
         Attribute ploc = accid.getAttribute("ploc");                                    // get the pitch class
+        String pname = "";
         if (ploc != null)                                                               // if there is a ploc attribute
             pname = ploc.getValue();                                                    // take this as pname
         else {                                                                          // if no ploc attribute
