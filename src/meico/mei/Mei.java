@@ -1507,7 +1507,7 @@ public class Mei {
     */
     private void processDot(Element dot) {
         Element parentNote = null;                                                      // this element makes only sense in the context of a note or rest
-        for (e = (Element)dot.getParent(); (e != null) && (e.getLocalName().equals("layer")); e = (Element)e.getParent()) { // find the parent note
+        for (Element e = (Element)dot.getParent(); (e != null) && (e.getLocalName().equals("layer")); e = (Element)e.getParent()) { // find the parent note
             if (e.getLocalName().equals("note") || e.getLocalName().equals("rest")) {   // found a note/rest
                 parentNote = (Element)e;                                                // keep it in variable parentNote
                 break;                                                                  // stop the for loop
