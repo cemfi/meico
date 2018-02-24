@@ -1465,38 +1465,36 @@ public class Mei {
         if (accidAttribute == null)                                                     // if also missing
             return;                                                                     // not enough information to process it, cancel
 
-        Element parentNote = null;                                                      // there might be a parent note element relevant to the accid when it misses the ploc and/or oloc attribute
+        // there might be a parent note element relevant to the accid when it misses the ploc and/or oloc attribute, try to find that
         String pitchname = null;
         String octave = null;
-        for (Node e = accid.getParent(); (e != null) || (((Element)e).getLocalName().equals("layer")); e = e.getParent()) { // check all parent nodes until layer level
-            if (((Element)e).getLocalName().equals("note")) {                                           // found a note
-                parentNote = (Element)e;                                                // keep it in variable parentNote
+        for (Element parentNote = (Element)accid.getParent(); (parentNote != null) && (parentNote.getLocalName().equals("layer")); parentNote = (Element)parentNote.getParent()) { // check all parent nodes until layer level
+            if (parentNote.getLocalName().equals("note")) {                                      // found a note
                 ArrayList<String> pitchdata = new ArrayList<String>();                  // this is to store pitchname, accidentals and octave as additional attributes of the note
-                double pitch = this.helper.computePitch(parentNote, pitchdata);                // get the note's pitch
-                if (pitch != -1.0) {
-                    pitchname = Character.toString(pitchdata.get(0).charAt(0));
-                    octave = pitchdata.get(2);
+                double pitch = this.helper.computePitch(parentNote, pitchdata);         // get the note's pitch
+                if (pitch != -1.0) {                                                    // if there is a meaningful pitch
+                    pitchname = Character.toString(pitchdata.get(0).charAt(0));         // get the pitch name without tailoring accidental signs
+                    octave = pitchdata.get(2);                                          // get the octave value
                 }
                 break;                                                                  // stop the for loop
             }
         }
 
-        Attribute ploc = accid.getAttribute("ploc");                                    // get the pitch class
-        String pname = "";
-        if (ploc != null)                                                               // if there is a ploc attribute
-            pname = ploc.getValue();                                                    // take this as pname
-        else {                                                                          // if no ploc attribute
-            if ((parentNote == null) || (pitchname == null)) return;                    // and no parent note or it has no valid pitch, cancel
-            pname = pitchname;
-        }
-
         // make the accid compatible to note elements (ploc -> pname, oloc -> oct) so it can be added to the helper.accid list and processed in the same way as the notes in there, see method Helper.computePitch()
-        accid.addAttribute(new Attribute("pname", pname));                              // store the ploc/pname value in the pname attribute
+
+        // get the pitch that the accid applies to
+        Attribute ploc = accid.getAttribute("ploc");                                    // get the pitch class
+        if (ploc != null)                                                               // if there is a ploc attribute
+            pitchname = ploc.getValue();                                                // take this as pname
+        if (pitchname == null)                                                          // if no ploc was given and no parent note gave valid pitch data
+            return;                                                                     // cancel
+        accid.addAttribute(new Attribute("pname", pitchname));                          // store the ploc/pname value in the pname attribute
+
+        // get the octave that the accid applies to
         if (accid.getAttribute("oloc") != null)                                         // if there is the equivalent to the oct (octave transposition) attribute in notes
-            accid.addAttribute(new Attribute("oct", accid.getAttributeValue("oloc")));  // store it in an attribute named oct
-        else                                                                            // otherwise take the octave from the parent note if given
-            if (octave != null) 
-                accid.addAttribute(new Attribute("oct", octave));
+            octave = accid.getAttributeValue("oloc");                                   // put it into variable octave
+        if (octave != null)                                                             // if either an oloc was given or a parent note provided the octave
+            accid.addAttribute(new Attribute("oct", octave));                           // make an attribute of it
 
         this.helper.addLayerAttribute(accid);                                           // add an attribute that indicates the layer
 
@@ -1509,9 +1507,8 @@ public class Mei {
     */
     private void processDot(Element dot) {
         Element parentNote = null;                                                      // this element makes only sense in the context of a note or rest
-        for (Node e = dot.getParent(); (e != null) || (((Element)e).getLocalName().equals("layer")); e = e.getParent()) { // find the parent note
-            Element el = (Element)e;
-            if (el.getLocalName().equals("note") || el.getLocalName().equals("rest")) {             // found a note/rest
+        for (e = (Element)dot.getParent(); (e != null) && (e.getLocalName().equals("layer")); e = (Element)e.getParent()) { // find the parent note
+            if (e.getLocalName().equals("note") || e.getLocalName().equals("rest")) {   // found a note/rest
                 parentNote = (Element)e;                                                // keep it in variable parentNote
                 break;                                                                  // stop the for loop
             }
