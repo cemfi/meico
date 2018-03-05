@@ -723,9 +723,8 @@ public class Helper {
                 dots = Integer.parseInt(focus.getAttributeValue("dots"));              // get the number of dots
             }
             else {                                                                      // if dotted through child tags
-                for (Element t = focus.getFirstChildElement("dot"); t != null; t = Helper.getNextSiblingElement("dot", t)) {    // count the number of dot tags (one for each dot)
-                    dots++;
-                }
+                if (focus.getAttribute("childDots") != null)
+                    dots = Integer.parseInt(focus.getAttributeValue("childDots"));      // get the number of dots from child elements
                 if ((dots == 0) && chordEnvironment && (this.currentChord.getAttribute("dots") != null)){   // if no dotting information so far, check chord environment for dots
                     dots = Integer.parseInt(this.currentChord.getAttributeValue("dots"));                   // get the number of dots
                 }

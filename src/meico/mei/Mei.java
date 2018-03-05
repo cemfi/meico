@@ -550,7 +550,7 @@ public class Mei {
 
                 case "del":                                                     // contains information deleted, marked as deleted, or otherwise indicated as superfluous or spurious in the copy text by an author, scribe, annotator, or corrector
                     this.processDel(e);
-                    continue;                                                   // can be ignored
+                    continue;
 
                 case "dir":
                     continue;                                                   // TODO: relevant for expressive performance
@@ -559,7 +559,8 @@ public class Mei {
                     continue;                                                   // can be ignored
 
                 case "dot":
-                    continue;                                                   // this element is proccessed as child of a note, rest etc., not here
+                    this.processDot(e);
+                    continue;                                                   // there should be no children, so continue with the next element
 
                 case "dynam":
                     continue;                                                   // TODO: relevant for expressive performance
@@ -1458,23 +1459,71 @@ public class Mei {
      * @param accid an accid element
      */
     private void processAccid(Element accid) {
-        if (accid.getAttribute("ploc") == null)                                         // If the equivalent to the note's pname attribute, here called ploc, is missing? These are the only ones that we process here to determine the pitch of an accidental.
-            return;                                                                     // cancel
-
         Attribute accidAttribute = accid.getAttribute("accid.ges");                     // get the accid.ges attribute
         if (accidAttribute == null)                                                     // if there is none
             accidAttribute = accid.getAttribute("accid");                               // get the accid attribute
         if (accidAttribute == null)                                                     // if also missing
             return;                                                                     // not enough information to process it, cancel
 
+        // there might be a parent note element relevant to the accid when it misses the ploc and/or oloc attribute, try to find that
+        String pitchname = null;
+        String octave = null;
+        for (Element parentNote = (Element)accid.getParent(); (parentNote != null) && (parentNote.getLocalName().equals("layer")); parentNote = (Element)parentNote.getParent()) { // check all parent nodes until layer level
+            if (parentNote.getLocalName().equals("note")) {                                      // found a note
+                ArrayList<String> pitchdata = new ArrayList<String>();                  // this is to store pitchname, accidentals and octave as additional attributes of the note
+                double pitch = this.helper.computePitch(parentNote, pitchdata);         // get the note's pitch
+                if (pitch != -1.0) {                                                    // if there is a meaningful pitch
+                    pitchname = Character.toString(pitchdata.get(0).charAt(0));         // get the pitch name without tailoring accidental signs
+                    octave = pitchdata.get(2);                                          // get the octave value
+                }
+                break;                                                                  // stop the for loop
+            }
+        }
+
         // make the accid compatible to note elements (ploc -> pname, oloc -> oct) so it can be added to the helper.accid list and processed in the same way as the notes in there, see method Helper.computePitch()
-        accid.addAttribute(new Attribute("pname", accid.getAttributeValue("ploc")));    // store the ploc value in the pname attribute
+
+        // get the pitch that the accid applies to
+        Attribute ploc = accid.getAttribute("ploc");                                    // get the pitch class
+        if (ploc != null)                                                               // if there is a ploc attribute
+            pitchname = ploc.getValue();                                                // take this as pname
+        if (pitchname == null)                                                          // if no ploc was given and no parent note gave valid pitch data
+            return;                                                                     // cancel
+        accid.addAttribute(new Attribute("pname", pitchname));                          // store the ploc/pname value in the pname attribute
+
+        // get the octave that the accid applies to
         if (accid.getAttribute("oloc") != null)                                         // if there is the equivalent to the oct (octave transposition) attribute in notes
-            accid.addAttribute(new Attribute("oct", accid.getAttributeValue("oloc")));  // store it in an attribute named oct
+            octave = accid.getAttributeValue("oloc");                                   // put it into variable octave
+        if (octave != null)                                                             // if either an oloc was given or a parent note provided the octave
+            accid.addAttribute(new Attribute("oct", octave));                           // make an attribute of it
 
         this.helper.addLayerAttribute(accid);                                           // add an attribute that indicates the layer
 
         this.helper.accid.add(accid);
+    }
+    
+    /**
+    * process MEI dot elements
+    * @param dot element
+    */
+    private void processDot(Element dot) {
+        Element parentNote = null;                                                      // this element makes only sense in the context of a note or rest
+        for (Element e = (Element)dot.getParent(); (e != null) && (e.getLocalName().equals("layer")); e = (Element)e.getParent()) { // find the parent note
+            if (e.getLocalName().equals("note") || e.getLocalName().equals("rest")) {   // found a note/rest
+                parentNote = (Element)e;                                                // keep it in variable parentNote
+                break;                                                                  // stop the for loop
+            }
+        }
+        
+        if (parentNote == null)                                                         // if no parent note or rest has been found
+            return;                                                                     // the meaning of the dot is unclear and it will not be further processed
+        
+        // add this dot to the childDots counter at the parent note/rest
+        Attribute d = parentNote.getAttribute("childDots");
+        if (d != null) {                                                                // does the counter attribute exist? if yes
+            d.setValue(Integer.toString(1 + Integer.parseInt(d.getValue())));           // add 1 to it
+        }
+        else                                                                            // otherwise create the attribute
+            parentNote.addAttribute(new Attribute("childDots", "1"));                   // and set it to 1
     }
 
     /** make a part entry in xml from an mei staffDef and insert into movement, if it exists already, return it
@@ -1612,7 +1661,7 @@ public class Mei {
     private Element makeKeySignature(Element meiSource) {
         Element s = new Element("keySignature");                                                        // create an element
         Helper.copyId(meiSource, s);                                                                    // copy the id
-        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));                  // compute date
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));         // compute date
 
         LinkedList<Element> accidentals = new LinkedList<Element>();                                    // create an empty list which will be filled with the accidentals of this key signature
 
@@ -2161,6 +2210,8 @@ public class Mei {
      */
     private void processNote(Element note) {
         if (this.helper.currentPart == null) return;                            // if we are not within a part, we don't know where to assign the note; hence we skip its processing
+        
+        this.convert(note);                                                     // look for and process what is in the note (e.g. accid, dot etc.) before 
 
         if (note.getAttribute("grace") != null) {                               // TODO: grace notes are relevant to expressive performance and need to be handled individually
             return;

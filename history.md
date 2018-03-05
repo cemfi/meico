@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.3.3
+- Updated `meico.mei.Mei.processNote()` so that first its child elements (`accid`, `dot`) are processed before processing the `note` itself.
+- Extended processing of `accid` elements to look for parent notes in case the `oloc` or `ploc` attribute are missing.
+- New method added `meico.mei.Mei.processDot()`: `dot` elements have been processed directly during the processing of `note` and `rest` elements which lead to not considering the critical apparatus elements and, hence, not recognizing dots within that environment. This should be fixed now.
+
+
 #### v0.3.2
 - In window mode the checkbox "Do not resolve expansions" has been renamed to "Resolve expansions". This should be more intuitive than checking a negated statement.
 - More documentation has been added.
