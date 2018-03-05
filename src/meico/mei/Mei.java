@@ -1468,13 +1468,13 @@ public class Mei {
         // there might be a parent note element relevant to the accid when it misses the ploc and/or oloc attribute, try to find that
         String pitchname = null;
         String octave = null;
-        for (Element parentNote = (Element)accid.getParent(); (parentNote != null) && (parentNote.getLocalName().equals("layer")); parentNote = (Element)parentNote.getParent()) { // check all parent nodes until layer level
-            if (parentNote.getLocalName().equals("note")) {                                      // found a note
+        for (Element parentNote = (Element)accid.getParent(); (parentNote != null) && (!parentNote.getLocalName().equals("layer")); parentNote = (Element)parentNote.getParent()) { // check all parent nodes until layer level
+            if (parentNote.getLocalName().equals("note")) {                             // found a note
                 ArrayList<String> pitchdata = new ArrayList<String>();                  // this is to store pitchname, accidentals and octave as additional attributes of the note
                 double pitch = this.helper.computePitch(parentNote, pitchdata);         // get the note's pitch
                 if (pitch != -1.0) {                                                    // if there is a meaningful pitch
                     pitchname = Character.toString(pitchdata.get(0).charAt(0));         // get the pitch name without tailoring accidental signs
-                    octave = pitchdata.get(2);                                          // get the octave value
+                    octave = Integer.toString(Integer.parseInt(pitchdata.get(2)) + 1);  // get the octave value
                 }
                 break;                                                                  // stop the for loop
             }

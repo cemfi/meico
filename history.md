@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.3.4
+- Little bugfix in `meico.mei.Mei.processAccid()`. In case of `note` elements with `accid` children that do not provite an `oloc` attribute, the `octave` is read from the `note`. Now it is done correct.
+
+
 #### v0.3.3
 - Updated `meico.mei.Mei.processNote()` so that first its child elements (`accid`, `dot`) are processed before processing the `note` itself.
 - Extended processing of `accid` elements to look for parent notes in case the `oloc` or `ploc` attribute are missing.
