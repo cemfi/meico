@@ -1,5 +1,5 @@
 package meico;
 
 public class Meico {
-    public static final String version = "0.3.2";
+    public static final String version = "0.3.5";
 }

@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.3.5
+- Another bugfix: processing of `accid` elements preceding to a `note` element has been fixed.
+
+
 #### v0.3.4
 - Little bugfix in `meico.mei.Mei.processAccid()`. In case of `note` elements with `accid` children that do not provite an `oloc` attribute, the `octave` is read from the `note`. Now it is done correct.
 

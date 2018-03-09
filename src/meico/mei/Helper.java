@@ -990,94 +990,76 @@ public class Helper {
                     checkKeySign = false;
                 }
             }
-            else {
-                Element accidElement = getFirstChildElement("accid", ofThis);                                           // is there an accid child element instead of an attribute?
-                if (accidElement != null) {
-                    if (accidElement.getAttribute("accid.ges") != null) {                                               // does it have an accid.ges attribute
-                        ofThis.addAttribute(new Attribute("accid.ges", accidElement.getAttributeValue("accid.ges")));   // make an attribute of it
-                        accid = ofThis.getAttributeValue("accid.ges");                                                  // store the accidental string
-                    }
-                    else {
-                        if (accidElement.getAttribute("accid") != null) {                                               // does it have an accid attribute
-                            ofThis.addAttribute(new Attribute("accid", accidElement.getAttributeValue("accid")));       // make an attribute of it
-                            accid = ofThis.getAttributeValue("accid");                                                  // store the accidental string
-                        }
-                    }
-                    if (!accid.isEmpty()) {
-                        this.accid.add(ofThis);                                                                         // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
-                        checkKeySign = false;
+            else {                                                      // look for preceding accid elements, this includes accid child elements of the note as they were processed in advance
+                for (int i = this.accid.size()-1; i >= 0; --i) {                                    // go through the accid list
+                    Element anAccid = this.accid.get(i);
+                    if ((anAccid.getAttribute("pname") != null)                                     // if it has a pname attribute
+                            && (anAccid.getAttributeValue("pname").equals(pname))                   // the same pitch class as ofThis
+                            && (anAccid.getAttribute("oct") != null)                                // has an oct attribute
+                            && (anAccid.getAttributeValue("oct").equals(Integer.toString(oct)))) {  // the same octave transposition as ofThis
+
+                        accid = anAccid.getAttributeValue("accid");                                 // apply its accid attribute
+                        checkKeySign = false;                                                       // local accidentals overrule the key signature
+                        break;
                     }
                 }
-                else {                                                                                                  // otherwise look for preceding accidentals in this measure
-                    for (Element anAccid : this.accid) {                                                                // go through the accid list
-                        if ((anAccid.getAttribute("pname") != null)                                                     // if it has a pitch attribute
-                                && (anAccid.getAttributeValue("pname").equals(pname))                                   // the same pitch class as ofThis
-                                && (anAccid.getAttribute("oct") != null)                                                // has an oct attribute
-                                && (anAccid.getAttributeValue("oct").equals(Integer.toString(oct)))) {                  // the same octave transposition as ofThis
+                if (checkKeySign) {                                                                                                 // if the note's pitch was defined by a pname attribute and had no local accidentals, we must check the key signature for accidentals
+                    // get both, local and global keySignatureMap in the msm document and get the latest keySignature element in there, check its accidentals' pitch attribute if it is of the same pitch class as pname
+                    Element keySigMapLocal = this.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap");// get the local key signature map from mpm
+                    Element keySigMapGlobal = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap");  // get the global key signature map
 
-                            accid = anAccid.getAttributeValue("accid");                                                 // apply its accid attribute
-                            checkKeySign = false;                                                                       // local accidentals overrule the key signature
-                            break;                                                                                      // stop the for loop
+                    Element keySigLocal = null;
+                    if (keySigMapLocal != null) {
+                        Elements keySigsLocal = keySigMapLocal.getChildElements("keySignature");                                    // get the local keySignature elements
+                        for (int i = keySigsLocal.size() - 1; i >= 0; --i) {                                                        // search for the last key signature that ...
+                            if ((keySigsLocal.get(i).getAttribute("layer") == null) || keySigsLocal.get(i).getAttributeValue("layer").equals(layerId)) {  // either has no layer dependency or has a matching layer attribute
+                                keySigLocal = keySigsLocal.get(i);                                                                  // take this one
+                                break;                                                                                              // break the for loop
+                            }
                         }
                     }
-                    if (checkKeySign) {                                                                                                 // if the note's pitch was defined by a pname attribute and had no local accidentals, we must check the key signature for accidentals
-                        // get both, local and global keySignatureMap in the msm document and get the latest keySignature element in there, check its accidentals' pitch attribute if it is of the same pitch class as pname
-                        Element keySigMapLocal = this.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap");// get the local key signature map from mpm
-                        Element keySigMapGlobal = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap");  // get the global key signature map
 
-                        Element keySigLocal = null;
-                        if (keySigMapLocal != null) {
-                            Elements keySigsLocal = keySigMapLocal.getChildElements("keySignature");                                    // get the local keySignature elements
-                            for (int i = keySigsLocal.size() - 1; i >= 0; --i) {                                                        // search for the last key signature that ...
-                                if ((keySigsLocal.get(i).getAttribute("layer") == null) || keySigsLocal.get(i).getAttributeValue("layer").equals(layerId)) {  // either has no layer dependency or has a matching layer attribute
-                                    keySigLocal = keySigsLocal.get(i);                                                                  // take this one
-                                    break;                                                                                              // break the for loop
-                                }
+                    Element keySigGlobal = null;
+                    if (keySigMapGlobal != null) {
+                        Elements keySigsGlobal = keySigMapGlobal.getChildElements("keySignature");                                  // get the global keySignature elements
+                        for (int i = keySigsGlobal.size() - 1; i >= 0; --i) {                                                       // search for the last key signature that ...
+                            if ((keySigsGlobal.get(i).getAttribute("layer") == null) || keySigsGlobal.get(i).getAttributeValue("layer").equals(layerId)) {  // either has no layer dependency or has a matching layer attribute (yes, a scoreDef can be within a layer in mei!)
+                                keySigGlobal = keySigsGlobal.get(i);                                                                // take this one
+                                break;                                                                                              // break the for loop
                             }
                         }
+                    }
 
-                        Element keySigGlobal = null;
-                        if (keySigMapGlobal != null) {
-                            Elements keySigsGlobal = keySigMapGlobal.getChildElements("keySignature");                                  // get the global keySignature elements
-                            for (int i = keySigsGlobal.size() - 1; i >= 0; --i) {                                                       // search for the last key signature that ...
-                                if ((keySigsGlobal.get(i).getAttribute("layer") == null) || keySigsGlobal.get(i).getAttributeValue("layer").equals(layerId)) {  // either has no layer dependency or has a matching layer attribute (yes, a scoreDef can be within a layer in mei!)
-                                    keySigGlobal = keySigsGlobal.get(i);                                                                // take this one
-                                    break;                                                                                              // break the for loop
-                                }
-                            }
+                    Element keySig = keySigLocal;                                                                                   // start with the local key signature
+                    if ((keySig == null)                                                                                            // if no local keySignature
+                            || ((keySigGlobal != null)                                                                              // or a global key signature ...
+                            && (Double.parseDouble(keySigLocal.getAttributeValue("midi.date")) < Double.parseDouble(keySigGlobal.getAttributeValue("midi.date"))))) {    // that is later than the local key signature
+                        keySig = keySigGlobal;                                                                                      // take the global
+
+                        // Shall the global keySignature element be added to the local map? Yes, this makes a correct msm representation of might be meant in mei. No, this is not what is encoded in mei.
+                        // Trade-off: Do it only if the local map is not empty. Caution, as long as the local map is empty, global entries aill not be copied and will be missing in the resulting msm.
+                        // Why doing this here and not in method Mei.makeKeySignature()? In mei the first key signature definition may occur before any staffs (parts in msm) are generated.
+                        assert keySigMapLocal != null;                                                                              // there should always be a local key signature map, because it is automatically created when the part is created
+                        if ((keySigGlobal != null) && (keySigMapLocal.getChildCount() > 0)) {                                       // if the global keySignature element was not null and the local map is not empty
+                            addToMap((Element)keySigGlobal.copy(), keySigMapLocal);                                                 // make a deep copy of the global keySignature element and append it to the local map
                         }
+                    }
 
-                        Element keySig = keySigLocal;                                                                                   // start with the local key signature
-                        if ((keySig == null)                                                                                            // if no local keySignature
-                                || ((keySigGlobal != null)                                                                              // or a global key signature ...
-                                && (Double.parseDouble(keySigLocal.getAttributeValue("midi.date")) < Double.parseDouble(keySigGlobal.getAttributeValue("midi.date"))))) {    // that is later than the local key signature
-                            keySig = keySigGlobal;                                                                                      // take the global
-
-                            // Shall the global keySignature element be added to the local map? Yes, this makes a correct msm representation of might be meant in mei. No, this is not what is encoded in mei.
-                            // Trade-off: Do it only if the local map is not empty. Caution, as long as the local map is empty, global entries aill not be copied and will be missing in the resulting msm.
-                            // Why doing this here and not in method Mei.makeKeySignature()? In mei the first key signature definition may occur before any staffs (parts in msm) are generated.
-                            assert keySigMapLocal != null;                                                                              // there should always be a local key signature map, because it is automatically created when the part is created
-                            if ((keySigGlobal != null) && (keySigMapLocal.getChildCount() > 0)) {                                       // if the global keySignature element was not null and the local map is not empty
-                                addToMap((Element)keySigGlobal.copy(), keySigMapLocal);                                                 // make a deep copy of the global keySignature element and append it to the local map
-                            }
-                        }
-
-                        if (keySig != null) {                                                                                       // if we have a key signature
-                            Elements keySigAccids = keySig.getChildElements("accidental");                                          // get its accidentals
-                            for (int i = 0; i < keySigAccids.size(); ++i) {                                                         // check the accidentals for a matching pitch class
-                                Element a = keySigAccids.get(i);                                                                    // take an accidental
-                                double aPitch;
-                                if (a.getAttribute("midi.pitch") != null)                                                           // if it has a midi.pitch atrtibute
-                                    aPitch = Double.parseDouble(a.getAttributeValue("midi.pitch"));                                 // get its pitch value
-                                else if (a.getAttribute("pitchname") != null)                                                       // else if it has a pitchname attribute
-                                    aPitch = Helper.pname2midi(a.getAttributeValue("pitchname"));                                   // get its pitch value
-                                else                                                                                                // without a midi.pitch and pitchname attribute the accidental is invalid
-                                    continue;                                                                                       // hence, continue with the next
-                                double pitchOfThis = Helper.pname2midi(pname) % 12;                                                 // get the current note's pitch as midi value modulo 12
-                                if (aPitch == pitchOfThis) {                                                                        // the accidental indeed affects the pitch ofThis
-                                    accid = a.getAttributeValue("value");                                                           // get the accidental's value
-                                    break;                                                                                          // done here, break the for loop
-                                }
+                    if (keySig != null) {                                                                                       // if we have a key signature
+                        Elements keySigAccids = keySig.getChildElements("accidental");                                          // get its accidentals
+                        for (int i = 0; i < keySigAccids.size(); ++i) {                                                         // check the accidentals for a matching pitch class
+                            Element a = keySigAccids.get(i);                                                                    // take an accidental
+                            double aPitch;
+                            if (a.getAttribute("midi.pitch") != null)                                                           // if it has a midi.pitch atrtibute
+                                aPitch = Double.parseDouble(a.getAttributeValue("midi.pitch"));                                 // get its pitch value
+                            else if (a.getAttribute("pitchname") != null)                                                       // else if it has a pitchname attribute
+                                aPitch = Helper.pname2midi(a.getAttributeValue("pitchname"));                                   // get its pitch value
+                            else                                                                                                // without a midi.pitch and pitchname attribute the accidental is invalid
+                                continue;                                                                                       // hence, continue with the next
+                            double pitchOfThis = Helper.pname2midi(pname) % 12;                                                 // get the current note's pitch as midi value modulo 12
+                            if (aPitch == pitchOfThis) {                                                                        // the accidental indeed affects the pitch ofThis
+                                accid = a.getAttributeValue("value");                                                           // get the accidental's value
+                                break;                                                                                          // done here, break the for loop
                             }
                         }
                     }
