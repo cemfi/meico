@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.3.7
+- Updated Saxon parser to version 9.8.0.11 HE.
+- Made the v0.3.6 fix a bit safer.
+
+
 #### v0.3.6
 - Fixed missing `accid.ges` support in `meico.mei.Helper.computePitch()` for preceding `accid` elements.
 
