@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.3.6
+- Fixed missing `accid.ges` support in `meico.mei.Helper.computePitch()` for preceding `accid` elements.
+
+
 #### v0.3.5
 - Another bugfix: processing of `accid` elements preceding to a `note` element has been fixed.
 

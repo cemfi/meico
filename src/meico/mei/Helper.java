@@ -998,7 +998,8 @@ public class Helper {
                             && (anAccid.getAttribute("oct") != null)                                // has an oct attribute
                             && (anAccid.getAttributeValue("oct").equals(Integer.toString(oct)))) {  // the same octave transposition as ofThis
 
-                        accid = anAccid.getAttributeValue("accid");                                 // apply its accid attribute
+                        accid = anAccid.getAttributeValue("accid.ges");                             // apply its accid attribute
+                        if (accid == null) accid = anAccid.getAttributeValue("accid");              // apply its accid attribute
                         checkKeySign = false;                                                       // local accidentals overrule the key signature
                         break;
                     }
