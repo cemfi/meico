@@ -1,8 +1,11 @@
 package meico.pitches;
 
+import com.github.cliftonlabs.json_simple.JsonArray;
+import com.github.cliftonlabs.json_simple.JsonObject;
+import com.github.cliftonlabs.json_simple.Jsoner;
+
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * This class represents the list of pitch features for a piece of music.
@@ -11,16 +14,15 @@ import java.util.Arrays;
  */
 
 public class Pitches {
-    private File file;
-    private ArrayList<double[]> features;    // the list of pitch features
-    private meico.pitches.Key key;           // the reference key for the pitch features
+    private File file = null;
+    private ArrayList<FeatureVector> features;      // the timeframe-wise list of pitch features
+    private meico.pitches.Key key;                  // the reference key for the pitch features
 
     /**
      * default constructor
      * creates an empty Pitches object with the Key set to Chroma type features
      */
     public Pitches() {
-        this.file = null;
         this.key = new Key();               // create a default key
         this.features = new ArrayList<>();  // create an empty list of chroma features
     }
@@ -31,43 +33,10 @@ public class Pitches {
      * @param key
      */
     public Pitches(meico.pitches.Key key) {
-        this.file = null;
         this.key = key;
         this.features = new ArrayList<>();  // create an empty list of chroma features
     }
 
-    /**
-     * constructor which adds the first feature to the features list
-     * @param key
-     * @param firstFeature
-     * @throws Exception if the dimensions of key and firstFeature do not match
-     */
-    public Pitches(meico.pitches.Key key, double[] firstFeature) throws Exception {
-        if (firstFeature.length != key.getSize())
-            throw new Exception("Dimensions of key and feature vector do not match.");
-
-        this.file = null;
-        this.key = key;
-        this.features = new ArrayList<>();      // create an empty list of pitch features
-        this.addFeatureAt(0, firstFeature);     // add the first feature
-    }
-
-    /**
-     * this constructor initializes the Pitches object with the given key and list of pitch features
-     * @param key
-     * @param features
-     */
-    public Pitches(meico.pitches.Key key, ArrayList<double[]> features) throws Exception {
-        // check consistency of input data
-        for (int i = 0; i < features.size(); ++i) {
-            if (features.get(i).length != key.getSize())
-                throw new Exception("Dimensions of key and feature vector " + i + " do not match.");
-        }
-
-        this.file = null;
-        this.key = key;
-        this.features = features;
-    }
 
     /**
      * this getter returns the file
@@ -99,8 +68,8 @@ public class Pitches {
      * this getter returns the whole features ArrayList
      * @return
      */
-    public ArrayList<double[]> getFeatures() {
-        return features;
+    public ArrayList<FeatureVector> getFeatures() {
+        return this.features;
     }
 
     /**
@@ -108,15 +77,15 @@ public class Pitches {
      * @return
      */
     public int getFeatureCount() {
-        return this.features.size();        // return the size of the features list
+        return this.features.size();        // return the getSize of the features list
     }
 
     /**
      * returns the pitch feature vector at the given index or null if index out of bounds
-     * @param index the index of the pitch feature should be in [0, features.size()-1], otherwise null is returned
+     * @param index the index of the pitch feature should be in [0, features.getSize()-1], otherwise null is returned
      * @return
      */
-    public double[] getFeatureAt(int index) {
+    public FeatureVector getFeatureAt(int index) {
         try {
             return this.features.get(index);        // try to access the index in the features list
         } catch (IndexOutOfBoundsException e) {     // if the index is not in the list
@@ -131,32 +100,45 @@ public class Pitches {
      * @param feature
      * @return true if the operation has been performed successfully, otherwise false
      */
-    public boolean addFeatureAt(int index, double[] feature) {
+    public boolean addFeatureAt(int index, FeatureVector feature) {
         if (index < 0) return false;                                // an index below 0 makes no sense
 
-        if (feature.length != this.key.getSize()) {                 // if the feature to be added does not match with the size of the reference frequencies vector
+        if (feature.getSize() != this.key.getSize()) {               // if the feature to be added does not match with the getSize of the reference frequencies vector
             System.err.println("Error: Dimensions of key and feature vector do not match. It cannot be added to the pitch features.");
             return false;
         }
 
         if (index >= this.features.size()) {                        // if the index is behind the last index
-            // create an "all-zero feature"
-            double[] filler = new double[feature.length];
-            for (int i=0; i < feature.length; ++i)
-                filler[i] = 0;
-
-            // add enough copies of the filler to fill up the list until the desired index
+            // add enough "all-zero features" to fill up the list until the desired index
             for (int i = this.features.size(); i <= index; ++i) {
+                FeatureVector filler = new FeatureVector(this.key); // create an "all-zero feature"
                 this.features.add(filler);
             }
         }
 
-        // add the new feature to the feature vector in the list
-        double[] f = this.features.get(index);
-        for (int i=0; i < feature.length; ++i)
-            f[i] += feature[i];
+        this.features.get(index).add(feature);                      // add the new feature to the feature vector in the list
 
         return true;
+    }
+
+    /**
+     * converts this class instance into a JsonObject, including the key
+     * @return
+     */
+    private JsonObject toJson() {
+        JsonObject pitches = new JsonObject();      // the JSON instance of this class
+
+        pitches.put("key", this.key.toJson());      // add the key
+
+        // get all feature vectors into a JsonArray
+        JsonArray feats = new JsonArray();
+        for (FeatureVector fv : this.features) {
+            feats.add(fv.toJson());
+        }
+
+        pitches.put("features", feats);
+
+        return pitches;
     }
 
     /**
@@ -169,30 +151,45 @@ public class Pitches {
             return false;
         }
 
-        return this.writePitches(this.file.getPath());
+        return this.writePitches(this.file.getPath(), false);
+    }
+
+    /**
+     * write the pitch features to a file with the specified filename,
+     * prettyPrint is set false for memory efficiency
+     * @param filename
+     * @return
+     */
+    public boolean writePitches(String filename) {
+        return this.writePitches(filename, false);
     }
 
     /**
      * write pitch features to a file with specified filename (filename should include the path and the extension .pch)
-     * @param filename the filename string; it should include the path and the extension .pch
+     * @param filename the filename string; it should include the path and the extension .json
+     * @param prettyPrint set true for better readability, set false for better memory efficiency
      * @return true if success, false if an error occured
      */
-    public boolean writePitches(String filename) {
+    public boolean writePitches(String filename, boolean prettyPrint) {
         // create the file in the file system
         File file = new File(filename);
-        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        file.getParentFile().mkdirs();                  // ensure that the directory exists
         try {
-            file.createNewFile();                                   // create the file if it does not already exist
+            file.createNewFile();                       // create the file if it does not already exist
         } catch (IOException | SecurityException e) {
             e.printStackTrace();
             return false;
         }
 
+        String json = this.toJson().toJson();           // generate output String
+        if (prettyPrint)
+            json = Jsoner.prettyPrint(json);            // Jsoner does the layouting of the output String (linebreaks, indentation etc.)
+
         // write into the file
-        try(PrintWriter out = new PrintWriter(filename)){
-            for (int i=0; i < features.size(); ++i)
-                out.println(Arrays.toString(this.features.get(i)));
-        } catch (FileNotFoundException e) {
+        try (FileWriter fileWriter = new FileWriter(file)) {
+            fileWriter.write(json);
+            fileWriter.flush();
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }

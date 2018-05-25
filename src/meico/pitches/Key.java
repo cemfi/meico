@@ -1,5 +1,8 @@
 package meico.pitches;
 
+import com.github.cliftonlabs.json_simple.JsonArray;
+import com.github.cliftonlabs.json_simple.JsonObject;
+
 /**
  * This class provides the key for the Pitches class with reference frequencies etc.
  * @author Axel Berndt.
@@ -39,7 +42,7 @@ public class Key {
     }
 
     /**
-     * this getter returns the size/length of the vector of reference frequencies
+     * this getter returns the getSize/getSize of the vector of reference frequencies
      * @return
      */
     public int getSize() {
@@ -52,5 +55,23 @@ public class Key {
      */
     public boolean getOctaveModulo() {
         return this.octaveModulo;
+    }
+
+    /**
+     * this returns a JSONObject of this class
+     * @return
+     */
+    public JsonObject toJson() {
+        // convert referenceFrequencies to JSONArray
+        JsonArray frequencies = new JsonArray();
+        for (double f : this.referenceFrequencies)
+            frequencies.add(f);
+
+        // make the return object
+        JsonObject key = new JsonObject();
+        key.put("referenceFrequencies", frequencies);
+        key.put("octaveModulo", this.octaveModulo);
+
+        return key;
     }
 }

@@ -161,8 +161,8 @@ public class GetAudio {
     int remaining, tmp_num_samples;
 
 		/*
-		 * NOTE: LAME can now handle arbritray size input data packets, so there
-		 * is no reason to read the input data in chuncks of size "framesize".
+		 * NOTE: LAME can now handle arbritray getSize input data packets, so there
+		 * is no reason to read the input data in chuncks of getSize "framesize".
 		 * EXCEPT: the LAME graphical frame analyzer will get out of sync if we
 		 * read more than framesize worth of data.
 		 */
@@ -310,11 +310,11 @@ public class GetAudio {
 			/* quick and dirty, but documented */
       fp.writeBytes("RIFF"); /* label */
       write32BitsLowHigh(fp, pcmbytes + 44 - 8);
-			/* length in bytes without header */
+			/* getSize in bytes without header */
       fp.writeBytes("WAVEfmt ");
 			/* 2 labels */
       write32BitsLowHigh(fp, 2 + 2 + 4 + 4 + 2 + 2);
-			/* length of PCM format declaration area */
+			/* getSize of PCM format declaration area */
       write16BitsLowHigh(fp, 1);
 			/* is PCM? */
       write16BitsLowHigh(fp, channels);
@@ -330,7 +330,7 @@ public class GetAudio {
       fp.writeBytes("data");
 			/* label */
       write32BitsLowHigh(fp, pcmbytes);
-			/* length in bytes of raw PCM data */
+			/* getSize in bytes of raw PCM data */
     } catch (IOException e) {
       return -1;
     }
@@ -591,7 +591,7 @@ public class GetAudio {
     if (pcm_aiff_data.blkAlgn.blockSize != 0) {
       if (parse.silent < 10) {
         System.err
-            .printf("ERROR: block size of input sound data is not 0 bytes\n");
+            .printf("ERROR: block getSize of input sound data is not 0 bytes\n");
       }
       return 1;
     }
@@ -847,7 +847,7 @@ public class GetAudio {
       double flen = new File(inPath).length();
 			/* try to figure out num_samples */
       if (flen >= 0) {
-				/* try file size, assume 2 bytes per sample */
+				/* try file getSize, assume 2 bytes per sample */
         if (is_mpeg_file_format(parse.getInputFormat())) {
           if (parse.getMp3InputData().bitrate > 0) {
             double totalseconds = (flen * 8.0 / (1000.0 * parse.getMp3InputData().bitrate));
@@ -1003,7 +1003,7 @@ public class GetAudio {
       }
       int aid_header = (buf[0] & 0xff) + 256 * (buf[1] & 0xff);
       if (parse.silent < 10) {
-        System.out.printf("Album ID found.  length=%d \n", aid_header);
+        System.out.printf("Album ID found.  getSize=%d \n", aid_header);
       }
 			/* skip rest of AID, except for 6 bytes we have already read */
       try {
@@ -1077,7 +1077,7 @@ public class GetAudio {
 			/* mpglib found a Xing VBR header and computed nsamp & totalframes */
     } else {
 			/*
-			 * set as unknown. Later, we will take a guess based on file size
+			 * set as unknown. Later, we will take a guess based on file getSize
 			 * ant bitrate
 			 */
       mp3data.setNumSamples(-1);

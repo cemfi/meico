@@ -1,6 +1,15 @@
 ### Version History
 
 
+#### v0.3.8
+- Added library JSON.simple v3.0.2
+- Switched the output of class `meico.pitches.Pitches` to JSON format. The default output file extension will also be `.json` from now on.
+- The whole data structure of pitch (and chroma) data has been revised. Some new classes have been added to package `meico.pitches`, namely `FeatureVector` and `FeatureElement`.
+- To make the pitches data structure and output file as memory efficient as possible, the timing resolution is reduced to the minimum ppq necessary to preserve accurate rhythm and note durations. MSM's ppq remains unchanged!
+- Previos function calls stay the same to ensure backwards compatibility. Hence, we do not increment the beta version number.
+- New methods `getParts()`, `getPPQ()` and `getMinimalPPQ()` in class `meico.msm.MSM`.
+
+
 #### v0.3.7
 - Updated Saxon parser to version 9.8.0.11 HE.
 - Made the v0.3.6 fix a bit safer.
@@ -37,7 +46,7 @@
 - Added class `meico.Meico` that holds the version number of meico. It can be accessed via `Meico.version`.
 - Added a new package `meico.pitches` with classes `Pitches` and `Key`.
 - Added new methods to class `meico.msm.Msm`:
-    - `getEndDate()` returns the date of the last note offset, i.e. the length of the music in MIDI ticks.
+    - `getEndDate()` returns the date of the last note offset, i.e. the getSize of the music in MIDI ticks.
     - `exportChroma()` converts MSM to a sequence of chroma features with 12 semitones in equal temperament and A = 440 Hz.
     - `exportPitches()` converts MSM to a sequence of absolute pitch vectors with 12 semitones per octave in equal temperament and A = 440 Hz. This conforms with the MIDI standard, i.e. 0 is the lowest and 127 the highest possible pitch. This method is overloaded. The more general version of this method takes an instance of `meico.pitches.Key` as parameter.
 - Some adds to the commandline app:

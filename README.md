@@ -78,6 +78,7 @@ Meico makes use of the following third party libraries:
 - the [FileDrop](https://sourceforge.net/projects/iharder/files/filedrop/1.1/FileDrop-v1.1.1.zip/download) class v1.1.1 by Robert Harder, Nathan Blomquist and Joshua Gerth, Public Domain release.
 - [Jing](http://www.thaiopensource.com/relaxng/jing.html) v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
 - [Saxon](http://saxon.sourceforge.net/) v9.8.0.11 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License Meico 2.0.
+- [JSON.simple](https://cliftonlabs.github.io/json-simple/) v3.0.2 by Yidong Fang, Chris Nokleberg, Dave Hughes, and Davin Loegering, Apache License 2.0.
 - [Java LAME](https://github.com/nwaldispuehl/java-lame) v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
 - [MEI Common Music Notation Schema](https://github.com/music-encoding/music-encoding) (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
 - parts of `MidiToWavRenderer.java`, an add-on to the [JFugue](http://www.jfugue.org/download.html) library, LGPL license.

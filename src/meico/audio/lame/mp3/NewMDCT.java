@@ -900,7 +900,7 @@ public class NewMDCT {
    * there are 36 coefficents in the time domain and 18 in the frequency
    * domain.<BR>
    * In the case of short blocks (type 2) there are 3 transformations with
-   * short length. This leads to 12 coefficents in the time and 6 in the
+   * short getSize. This leads to 12 coefficents in the time and 6 in the
    * frequency domain. In this case the results are stored side by side in the
    * vector out[].
    * <p/>

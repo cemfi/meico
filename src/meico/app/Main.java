@@ -201,7 +201,7 @@ public class Main {
             }
             System.out.println("Writing chroma to file system: ");
             for (int i = 0; i < chromas.size(); ++i) {
-                String filename = Helper.getFilenameWithoutExtension(chromas.get(i).getFile().getPath()) + "-chroma.pch";
+                String filename = Helper.getFilenameWithoutExtension(chromas.get(i).getFile().getPath()) + "-chroma.json";
                 chromas.get(i).writePitches(filename);
                 System.out.println("\t" + chromas.get(i).getFile().getPath());
             }
@@ -215,7 +215,7 @@ public class Main {
             }
             System.out.println("Writing pitches to file system: ");
             for (int i = 0; i < pitchesList.size(); ++i) {
-                String filename = Helper.getFilenameWithoutExtension(pitchesList.get(i).getFile().getPath()) + "-pitches.pch";
+                String filename = Helper.getFilenameWithoutExtension(pitchesList.get(i).getFile().getPath()) + "-pitches.json";
                 pitchesList.get(i).writePitches(filename);
                 System.out.println("\t" + pitchesList.get(i).getFile().getPath());
             }

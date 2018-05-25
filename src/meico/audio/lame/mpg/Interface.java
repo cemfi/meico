@@ -158,7 +158,7 @@ public class Interface {
   /*
    * traverse mp data structure without changing it (just like sync_buffer)
    * pull out Xing bytes call vbr header check code from LAME if we find a
-   * header, parse it and also compute the VBR header size if no header, do
+   * header, parse it and also compute the VBR header getSize if no header, do
    * nothing.
    *
    * bytes = number of bytes before MPEG header. skip this many bytes before
@@ -373,7 +373,7 @@ public class Interface {
 					 * try anyway
 					 */
           System.err
-              .printf("hip: wordpointer trashed.  size=%i (%i)  bytes=%i \n",
+              .printf("hip: wordpointer trashed.  getSize=%i (%i)  bytes=%i \n",
                   size, MPG123.MAXFRAMESIZE, bytes);
           size = 0;
           mp.wordpointer = mp.bsspace[mp.bsnum];
@@ -381,7 +381,7 @@ public class Interface {
         }
 
 				/*
-				 * buffer contains 'size' data right now we want to add 'bytes'
+				 * buffer contains 'getSize' data right now we want to add 'bytes'
 				 * worth of data, but do not exceed MAXFRAMESIZE, so we through
 				 * away 'i' bytes
 				 */

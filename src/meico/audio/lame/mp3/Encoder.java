@@ -158,7 +158,7 @@ public class Encoder {
    * <p/>
    * <p/>
    * <p/>
-   * inbuf = buffer of PCM data size=MP3 framesize
+   * inbuf = buffer of PCM data getSize=MP3 framesize
    * encoder acts on inbuf[ch][0], but output is delayed by MDCTDELAY
    * so the MDCT coefficints are from inbuf[ch][-MDCTDELAY]
    * <p/>

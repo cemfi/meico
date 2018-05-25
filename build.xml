@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="meico" default="all">
-
-
+  
+  
+  <property file="build.properties"/>
   <!-- Uncomment the following property if no tests compilation is needed -->
-  <!--
+  <!-- 
   <property name="skip.tests" value="true"/>
    -->
-
+  
   <!-- Compiler options -->
-
+  
   <property name="compiler.debug" value="on"/>
   <property name="compiler.generate.no.warnings" value="off"/>
   <property name="compiler.args" value=""/>
@@ -34,10 +35,10 @@
     <include name="*.egg"/>
     <include name="*.jar"/>
     <include name="*.ear"/>
-    <include name="*.ane"/>
     <include name="*.swc"/>
     <include name="*.war"/>
     <include name="*.zip"/>
+    <include name="*.ane"/>
   </patternset>
   <patternset id="compiler.resources">
     <exclude name="**/?*.java"/>
@@ -50,101 +51,112 @@
     <exclude name="**/?*.clj"/>
     <exclude name="**/?*.aj"/>
   </patternset>
-
+  
+  <!-- JDK definitions -->
+  
   <!-- Project Libraries -->
-
-  <path id="library.java-string-similarity-1.0.0.classpath">
+  
+  <path id="library.java-string-similarity-1.0.01.classpath">
     <pathelement location="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
   </path>
-
+  
   <path id="library.jing-20091111.classpath">
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
   </path>
-
+  
+  <path id="library.json-simple-3.0.2.classpath">
+    <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
+  </path>
+  
   <path id="library.miglayout-4.0.classpath">
     <pathelement location="${basedir}/externals/miglayout-4.0.jar"/>
   </path>
-
+  
   <path id="library.saxon9he.classpath">
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
   </path>
-
+  
   <path id="library.xom-1.2.10.classpath">
     <pathelement location="${basedir}/externals/xom-1.2.10.jar"/>
   </path>
-
-
+  
+  
   <!-- Global Libraries -->
-
+  
   <!-- Modules -->
-
-
+  
+  
   <!-- Module meico -->
-
+  
   <dirname property="module.meico.basedir" file="${ant.file}"/>
-
-
-  <property name="compiler.args.meico" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
-
+  
+  
+  <property name="compiler.args.meico" value="-encoding UTF-8 -source 7 -target 7 ${compiler.args}"/>
+  
   <property name="meico.output.dir" value="${module.meico.basedir}/out/production/meico"/>
   <property name="meico.testoutput.dir" value="${module.meico.basedir}/out/test/meico"/>
-
+  
   <path id="meico.module.bootclasspath">
     <!-- Paths to be included in compilation bootclasspath -->
   </path>
-
+  
   <path id="meico.module.production.classpath">
     <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.java-string-similarity-1.0.0.classpath"/>
     <path refid="library.miglayout-4.0.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
+    <path refid="library.java-string-similarity-1.0.01.classpath"/>
+    <path refid="library.json-simple-3.0.2.classpath"/>
   </path>
-
+  
   <path id="meico.runtime.production.module.classpath">
     <pathelement location="${meico.output.dir}"/>
     <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.java-string-similarity-1.0.0.classpath"/>
     <path refid="library.miglayout-4.0.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
+    <path refid="library.java-string-similarity-1.0.01.classpath"/>
+    <path refid="library.json-simple-3.0.2.classpath"/>
   </path>
-
+  
   <path id="meico.module.classpath">
     <pathelement location="${meico.output.dir}"/>
     <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.java-string-similarity-1.0.0.classpath"/>
     <path refid="library.miglayout-4.0.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
+    <path refid="library.java-string-similarity-1.0.01.classpath"/>
+    <path refid="library.json-simple-3.0.2.classpath"/>
   </path>
-
+  
   <path id="meico.runtime.module.classpath">
     <pathelement location="${meico.testoutput.dir}"/>
     <pathelement location="${meico.output.dir}"/>
     <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.java-string-similarity-1.0.0.classpath"/>
     <path refid="library.miglayout-4.0.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
+    <path refid="library.java-string-similarity-1.0.01.classpath"/>
+    <path refid="library.json-simple-3.0.2.classpath"/>
   </path>
-
-
+  
+  
   <patternset id="excluded.from.module.meico">
     <patternset refid="ignored.files"/>
   </patternset>
-
+  
   <patternset id="excluded.from.compilation.meico">
     <patternset refid="excluded.from.module.meico"/>
   </patternset>
-
+  
   <path id="meico.module.sourcepath">
     <dirset dir="${module.meico.basedir}">
       <include name="src"/>
+      <include name="externals"/>
     </dirset>
   </path>
-
-
+  
+  
   <target name="compile.module.meico" depends="compile.module.meico.production,compile.module.meico.tests" description="Compile module meico"/>
 
   <target name="compile.module.meico.production" description="Compile module meico; production classes">
@@ -164,55 +176,53 @@
       </fileset>
     </copy>
   </target>
-
+  
   <target name="compile.module.meico.tests" depends="compile.module.meico.production" description="compile module meico; test classes" unless="skip.tests"/>
-
+  
   <target name="clean.module.meico" description="cleanup module">
     <delete dir="${meico.output.dir}"/>
     <delete dir="${meico.testoutput.dir}"/>
   </target>
-
+  
   <target name="init" description="Build initialization">
     <!-- Perform any build initialization in this target -->
   </target>
-
+  
   <target name="clean" depends="clean.module.meico" description="cleanup all"/>
-
+  
   <target name="build.modules" depends="init, clean, compile.module.meico" description="build all modules"/>
-
+  
   <target name="init.artifacts">
     <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
-    <property name="artifact.output.meico" value="${basedir}/out/artifacts/meico"/>
+    <property name="artifact.output.meico:jar" value="${basedir}/out/artifacts/meico"/>
     <mkdir dir="${artifacts.temp.dir}"/>
     <property name="temp.jar.path.meico.jar" value="${artifacts.temp.dir}/meico.jar"/>
   </target>
-
-  <target name="artifact.meico" depends="init.artifacts, compile.module.meico" description="Build &#39;meico&#39; artifact">
-    <property name="artifact.temp.output.meico" value="${artifacts.temp.dir}/meico"/>
-    <mkdir dir="${artifact.temp.output.meico}"/>
+  
+  <target name="artifact.meico:jar" depends="init.artifacts, compile.module.meico" description="Build &#39;meico:jar&#39; artifact">
+    <property name="artifact.temp.output.meico:jar" value="${artifacts.temp.dir}/meico_jar"/>
+    <mkdir dir="${artifact.temp.output.meico:jar}"/>
     <jar destfile="${temp.jar.path.meico.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
       <zipfileset dir="${meico.output.dir}"/>
-      <zipfileset file="${basedir}/externals/saxon9he.jar"/>
       <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
-      <zipfileset src="${basedir}/externals/miglayout-4.0.jar"/>
-      <zipfileset src="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
       <zipfileset src="${basedir}/externals/xom-1.2.10.jar"/>
-      <manifest>
-        <attribute name="Main-Class" value="meico.app.MeicoApp"/>
-      </manifest>
+      <zipfileset src="${basedir}/externals/miglayout-4.0.jar"/>
+      <zipfileset src="${basedir}/externals/json-simple-3.0.2.jar"/>
+      <zipfileset src="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
+      <zipfileset file="${basedir}/externals/saxon9he.jar"/>
     </jar>
-    <copy file="${temp.jar.path.meico.jar}" tofile="${artifact.temp.output.meico}/meico.jar"/>
+    <copy file="${temp.jar.path.meico.jar}" tofile="${artifact.temp.output.meico:jar}/meico.jar"/>
   </target>
-
-  <target name="build.all.artifacts" depends="artifact.meico" description="Build all artifacts">
-    <mkdir dir="${artifact.output.meico}"/>
-    <copy todir="${artifact.output.meico}">
-      <fileset dir="${artifact.temp.output.meico}"/>
+  
+  <target name="build.all.artifacts" depends="artifact.meico:jar" description="Build all artifacts">
+    <mkdir dir="${artifact.output.meico:jar}"/>
+    <copy todir="${artifact.output.meico:jar}">
+      <fileset dir="${artifact.temp.output.meico:jar}"/>
     </copy>
-
+    
     <!-- Delete temporary files -->
     <delete dir="${artifacts.temp.dir}"/>
   </target>
-
+  
   <target name="all" depends="build.modules, build.all.artifacts" description="build all"/>
 </project>

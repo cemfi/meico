@@ -251,7 +251,7 @@ public class ID3Tag {
     byte[] data = image;
     LameInternalFlags gfc = gfp.internal_flags;
 
-		/* make sure the image size is no larger than the maximum value */
+		/* make sure the image getSize is no larger than the maximum value */
     if (Lame.LAME_MAXALBUMART < size) {
       return false;
     }
@@ -748,7 +748,7 @@ public class ID3Tag {
     int n = 0;
     if (node != null) {
       n = 10;
-			/* header size */
+			/* header getSize */
       n += 1;
 			/* text encoding flag */
       switch (node.txt.enc) {
@@ -768,7 +768,7 @@ public class ID3Tag {
     int n = 0;
     if (node != null) {
       n = 10;
-			/* header size */
+			/* header getSize */
       n += 1;
 			/* text encoding flag */
       n += 3;
@@ -949,7 +949,7 @@ public class ID3Tag {
       return 0;
     }
     {
-			/* calculate length of four fields which may not fit in verion 1 tag */
+			/* calculate getSize of four fields which may not fit in verion 1 tag */
       int title_length = gfc.tag_spec.title != null ? gfc.tag_spec.title
           .length() : 0;
       int artist_length = gfc.tag_spec.artist != null ? gfc.tag_spec.artist
@@ -971,7 +971,7 @@ public class ID3Tag {
 
         id3v2AddAudioDuration(gfp);
 
-				/* calulate size of tag starting with 10-byte tag header */
+				/* calulate getSize of tag starting with 10-byte tag header */
         tag_size = 10;
         for (i = 0; i < gfc.tag_spec.num_values; ++i) {
           tag_size += 6 + gfc.tag_spec.values.get(i).length();
@@ -1028,10 +1028,10 @@ public class ID3Tag {
         buffer[p++] = 0;
 				/* clear flags byte */
         buffer[p++] = 0;
-				/* calculate and set tag size = total size - header size */
+				/* calculate and set tag getSize = total getSize - header getSize */
         adjusted_tag_size = tag_size - 10;
 				/*
-				 * encode adjusted size into four bytes where most significant
+				 * encode adjusted getSize into four bytes where most significant
 				 * bit is clear in each byte, for 28-bit total
 				 */
         buffer[p++] = (byte) ((adjusted_tag_size >> 21) & 0x7f);
@@ -1177,7 +1177,7 @@ public class ID3Tag {
     for (int i = 0; i < n; ++i) {
       bits.add_dummy_byte(gfp, tag[i] & 0xff, 1);
     }
-    return (int) n; /* ok, tag has fixed size of 128 bytes, well below 2GB */
+    return (int) n; /* ok, tag has fixed getSize of 128 bytes, well below 2GB */
   }
 
   enum MimeType {

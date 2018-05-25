@@ -5,6 +5,7 @@ package meico.msm;
  * @author Axel Berndt.
  */
 
+import meico.pitches.FeatureVector;
 import meico.pitches.Key;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
@@ -207,12 +208,70 @@ public class Msm {
     }
 
     /**
+     * this getter returns the timing resolution (pulses per quarternote) of the MSM
+     * @return
+     */
+    public int getPPQ() {
+        Attribute ppq;
+
+        try {
+            ppq = this.getRootElement().getFirstChildElement("global").getFirstChildElement("header").getFirstChildElement("pulsesPerQuarter").getAttribute("ppq");
+        }
+        catch (NullPointerException ex) {
+            return 0;
+        }
+
+        return Integer.parseInt(ppq.getValue());
+    }
+
+    /**
+     * computes the minimal integer timing resolution necessary for a rhythmically reasonably accurate representation of the score data in this MSM
+     * @return
+     */
+    public int getMinimalPPQ() {
+        int ppq = this.getPPQ();
+        int minDur = ppq;                                                                                                       // this will get the shortest note duration
+        int minDateDif = ppq;                                                                                                   // this will hold the smallest number of ticks between notes on the time grid
+
+        Elements parts = this.getParts();
+        for (int p=0; p < parts.size(); ++p) {                                                                                  // go through all parts
+            Elements notes = parts.get(p).getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note"); // get all notes in its score
+
+            for (int n=0; n < notes.size(); ++n) {                                                                              // go through all notes
+                Element note = notes.get(n);
+                int dur = (int) Math.round(Double.parseDouble(note.getAttributeValue("midi.duration")));                        // get the note's duration (rounding is necessary for avoiding numeric problems with tripltes)
+                dur %= ppq;                                                                                                     // this operation returns 0.0 if the duration is an integer multiple of ppq and it returns something > 0.0 in case of a dotted or smaller note value
+                if ((dur != 0.0) && (dur < minDur))                                                                             // in case of a shorter or dotted note that is even shorter than the shortest we had so far
+                    minDur = dur;                                                                                               // store it
+
+                int date = (int) Math.round(Double.parseDouble(note.getAttributeValue("midi.date")));                           // get the note's date (rounding is necessary for avoiding numeric problems with tripltes)
+                date %= ppq;                                                                                                    // this operation returns 0.0 if the note is on the quarternote grid and it returns something > 0.0 when it is in-between
+                if ((date != 0.0) && (date < minDateDif))                                                                       // if we found evidence for a finer grid than the quarternote grid of ppq
+                    minDateDif = date;                                                                                          // store the value
+            }
+        }
+
+        int minPPQDur = ppq / minDur;                               // compute the smallest number of pulses per quarter from the durations
+        int minPPQDate = ppq / minDateDif;                          // compute the smallest number of pulses per quarter from the dates
+
+        return (minPPQDate > minPPQDur) ? minPPQDate : minPPQDur;   // return the larger number of the above computations
+    }
+
+    /**
      * @return the root element of the msm
      */
     public Element getRootElement() {
         if (this.isEmpty())
             return null;
         return this.msm.getRootElement();
+    }
+
+    /**
+     * a getter that returns all part elements in the XML tree
+     * @return
+     */
+    public Elements getParts() {
+        return this.getRootElement().getChildElements("part");
     }
 
     /**
@@ -608,7 +667,7 @@ public class Msm {
 //            { // this stuff is used, when tracks represent ports, not parts!
 //              // select the midi track, or create it if necessary
 //                int port = Integer.parseInt(part.getAttributeValue("midi.port"));                                    // the port number
-//                while ((seq.getTracks().length - 1) < port) seq.createTrack();                                  // create as many tracks as necessary, so that the port number corresponds to the track number in seq (port 0 = seq.getTracks().[0])
+//                while ((seq.getTracks().getSize - 1) < port) seq.createTrack();                                  // create as many tracks as necessary, so that the port number corresponds to the track number in seq (port 0 = seq.getTracks().[0])
 //                track = seq.getTracks()[port];                                                                  // select the track
 //            }
 
@@ -813,21 +872,17 @@ public class Msm {
 
     /**
      * export absolute pitches from the MSM score data
-     * @param key the key with reference frequencies and octave modulo
+     * @param key the key with reference frequencies and octave modulo setting
      * @return
      */
     public Pitches exportPitches(Key key) {
+        System.out.print("Generating pitch data: ");
         Pitches pitches = new Pitches(key); // create Pitches object with equal temperament and A = 440 Hz
-        pitches.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".pch");         // set a filename for the pitches
-        int numFrames = (int) this.getEndDate();                                                        // one frame corresponds with one Midi tick, this computes the number of frames that the music will have
+        pitches.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".json");        // set a filename for the pitches
 
-        // add as much zero vectors to pitches as the number of frames/ticks of the music
-        double[] feature = new double[key.getSize()];
-        for (int i = 0; i < key.getSize(); ++i)
-            feature[i] = 0.0;
-
-        for (int i = 0; i < numFrames; ++i)
-            pitches.addFeatureAt(i, feature);
+        int minPPQ = this.getMinimalPPQ();
+        double timingReductionFactor = this.getPPQ() / minPPQ;                                          // for memory efficiency it is highly required reduce the frame count, this here is the factor for this
+        System.out.print("timing is reduced to " + minPPQ + " ppq ... ");
 
         // for each note in the music add its pitches vectors to the pitches object
         Elements parts = this.getRootElement().getChildElements("part");                                // get all parts
@@ -837,24 +892,33 @@ public class Msm {
                 Element note = notes.get(j);                                                            // get a note
 
                 int date = (int)Double.parseDouble(note.getAttributeValue("midi.date"));                // get its date
-                int offset = date + (int)Double.parseDouble(note.getAttributeValue("midi.duration"));   // compute its offset date
+                int noteOff = date + (int)Double.parseDouble(note.getAttributeValue("midi.duration"));  // compute its noteOff date
 
                 double pitch = Double.parseDouble(note.getAttributeValue("midi.pitch"));                // get its pitch
                 if (key.getOctaveModulo()) pitch %= key.getSize();                                      // if the feature represents pitch classes do the modulo operation on the pitch value
                 else if (pitch > (key.getSize()-1)) pitch = key.getSize()-1;                            // clip extremely high pitch values at highest possible value
                 else if (pitch < 0.0) pitch = 0.0;                                                      // clip pitch values lower than 0.0
 
-                // create the pitches feature vector
-                feature = new double[key.getSize()];
-                for (int k = 0; k < key.getSize(); ++k)
-                    feature[k] = 0.0;
+                // create the FeatureVector
+                FeatureVector feature = new FeatureVector(key);
+                feature.getFeatureElement((int) pitch).addEnergy(1.0);
 
-                feature[(int) pitch] = 1.0;
+                // associate this note's xml:id with the FeatureElement
+                Attribute noteId =  note.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+                if (noteId != null)
+                    feature.getFeatureElement((int) pitch).addNoteId(noteId.getValue());
 
-                for (int k = date; k < offset; ++k)                                                     // for as long as the note duration says
+                // do timing reduction
+                date /= timingReductionFactor;
+                noteOff /= timingReductionFactor;
+
+                // generate pitch data
+                for (int k = date; k < noteOff; ++k)                                                    // for as long as the note duration says
                     pitches.addFeatureAt(k, feature);                                                   // add the feature vector to pitches (midi tick-wise)
             }
         }
+
+        System.out.println("done");
 
         return pitches;      // output the result
     }

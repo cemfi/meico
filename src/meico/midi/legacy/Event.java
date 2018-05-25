@@ -274,7 +274,7 @@ public class Event {
             case META_Lyric:
             case META_Marker:
             case META_Cue_Point:
-                this.setData(new short[]{metaEvType});              // user has to specify the length byte and succeeding ascii bytes
+                this.setData(new short[]{metaEvType});              // user has to specify the getSize byte and succeeding ascii bytes
                 break;
             case META_Midi_Channel_Prefix:
                 this.setData(new short[]{metaEvType, 0x01, 0});     // 20 01 cc (cc is the midi channel (00-0F) that all succeeding meta and sysex events are associated with), default is 0
@@ -295,7 +295,7 @@ public class Event {
                 this.setData(new short[]{metaEvType, 0x02, 0, 0});  // 59 02 sf mi (sf=number of sharps/flats [-7, 7], mi=major (0) or minor (1)), default is C major
                 break;
             case META_Sequence_specific_Meta_event:
-                this.setData(new short[]{metaEvType});              // user has to specify length, id and data byte
+                this.setData(new short[]{metaEvType});              // user has to specify getSize, id and data byte
                 break;
             default:
                 this.setFirstDataByte(metaEvType);

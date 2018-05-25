@@ -83,17 +83,17 @@ public class MPGLib {
          * 1. headers parsed, but data not complete
          *       pmp.header_parsed==1
          *       pmp.framesize=0
-         *       pmp.fsizeold=size of last frame, or 0 if this is first frame
+         *       pmp.fsizeold=getSize of last frame, or 0 if this is first frame
          *
          * 2. headers, data parsed, but ancillary data not complete
          *       pmp.header_parsed==1
-         *       pmp.framesize=size of frame
-         *       pmp.fsizeold=size of last frame, or 0 if this is first frame
+         *       pmp.framesize=getSize of frame
+         *       pmp.fsizeold=getSize of last frame, or 0 if this is first frame
          *
          * 3. frame fully decoded:
          *       pmp.header_parsed==0
          *       pmp.framesize=0
-         *       pmp.fsizeold=size of frame (which is now the last frame)
+         *       pmp.fsizeold=getSize of frame (which is now the last frame)
          *
          */
     if (pmp.header_parsed || pmp.fsizeold > 0 || pmp.framesize > 0) {

@@ -71,7 +71,7 @@ public class LameEncoder {
   public static int DEFAULT_BITRATE = BITRATE_AUTO;
   private int bitRate = DEFAULT_BITRATE;
   /**
-   * suggested maximum buffer size for an mpeg frame
+   * suggested maximum buffer getSize for an mpeg frame
    */
   private static final int DEFAULT_PCM_BUFFER_SIZE = 2048 * 16;
   public static int DEFAULT_QUALITY = Lame.QUALITY_MIDDLE;
@@ -207,9 +207,9 @@ public class LameEncoder {
   }
 
   /**
-   * Returns the buffer needed pcm buffer size. The passed parameter is a
-   * wished buffer size. The implementation of the encoder may return a lower
-   * or higher buffer size. The encoder must be initalized (i.e. not closed)
+   * Returns the buffer needed pcm buffer getSize. The passed parameter is a
+   * wished buffer getSize. The implementation of the encoder may return a lower
+   * or higher buffer getSize. The encoder must be initalized (i.e. not closed)
    * at this point. A return value of <0 denotes an error.
    */
   public final int getPCMBufferSize() {
@@ -290,7 +290,7 @@ public class LameEncoder {
   /**
    * Encode a block of data. Throws IllegalArgumentException when parameters
    * are wrong. When the <code>encoded</code> array is too small, an
-   * ArrayIndexOutOfBoundsException is thrown. <code>length</code> should be
+   * ArrayIndexOutOfBoundsException is thrown. <code>getSize</code> should be
    * the value returned by getPCMBufferSize.
    *
    * @return the number of bytes written to <code>encoded</code>. May be 0.

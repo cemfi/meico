@@ -682,15 +682,15 @@ public class BitStream {
 
   /*
    * compute the number of bits required to flush all mp3 frames currently in
-   * the buffer. This should be the same as the reservoir size. Only call this
+   * the buffer. This should be the same as the reservoir getSize. Only call this
    * routine between frames - i.e. only after all headers and data have been
    * added to the buffer by format_bitstream().
    *
-   * Also compute total_bits_output = size of mp3 buffer (including frame
+   * Also compute total_bits_output = getSize of mp3 buffer (including frame
    * headers which may not have yet been send to the mp3 buffer) + number of
    * bits needed to flush all mp3 frames.
    *
-   * total_bytes_output is the size of the mp3 output buffer if
+   * total_bytes_output is the getSize of the mp3 output buffer if
    * lame_encode_flush_nogap() was called right now.
    */
   private int compute_flushbits(final LameGlobalFlags gfp,
@@ -712,7 +712,7 @@ public class BitStream {
 
     if (flushbits >= 0) {
 			/* if flushbits >= 0, some headers have not yet been written */
-			/* reduce flushbits by the size of the headers */
+			/* reduce flushbits by the getSize of the headers */
       remaining_headers = 1 + last_ptr - first_ptr;
       if (last_ptr < first_ptr)
         remaining_headers = 1 + last_ptr - first_ptr
@@ -853,7 +853,7 @@ public class BitStream {
     if ((l3_side.main_data_begin * 8) != gfc.ResvSize) {
       System.err.printf("bit reservoir error: \n"
               + "l3_side.main_data_begin: %d \n"
-              + "Resvoir size:             %d \n"
+              + "Resvoir getSize:             %d \n"
               + "resv drain (post)         %d \n"
               + "resv drain (pre)          %d \n"
               + "header and sideinfo:      %d \n"

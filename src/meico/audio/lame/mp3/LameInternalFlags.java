@@ -22,7 +22,7 @@ public class LameInternalFlags {
   public static final int MAX_HEADER_BUF = 256;
   public Header[] header = new Header[MAX_HEADER_BUF];
   /**
-   * max size of header is 38
+   * max getSize of header is 38
    */
   private static final int MAX_HEADER_LEN = 40;
   /**

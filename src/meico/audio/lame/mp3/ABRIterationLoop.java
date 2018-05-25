@@ -84,7 +84,7 @@ public final class ABRIterationLoop implements IIterationLoop {
     } /* gr */
 
 		/*
-		 * find a bitrate which can refill the resevoir to positive size.
+		 * find a bitrate which can refill the resevoir to positive getSize.
 		 */
     for (gfc.bitrate_index = gfc.VBR_min_bitrate; gfc.bitrate_index <= gfc.VBR_max_bitrate; gfc.bitrate_index++) {
 

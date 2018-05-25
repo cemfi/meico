@@ -149,7 +149,7 @@ public class PsyModel {
   private static final int rpelev2 = 16;
   private static final int rpelev_s = 2;
   private static final int rpelev2_s = 16;
-  /* size of each partition band, in barks: */
+  /* getSize of each partition band, in barks: */
   private static final float DELBARK = .34f;
   /* tuned for output level (sensitive to energy scale) */
   private static final float VO_SCALE = (1.f / (14752 * 14752) / (Encoder.BLKSIZE / 2));
@@ -159,7 +159,7 @@ public class PsyModel {
   private static final float NS_PREECHO_ATT2 = 0.3f;
   private static final float NS_MSFIX = 3.5f;
   private static final int NSFIRLEN = 21;
-  /* size of each partition band, in barks: */
+  /* getSize of each partition band, in barks: */
   private static final float LN_TO_LOG10 = 0.2302585093f;
   /**
    * as in if(i>8)

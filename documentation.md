@@ -45,7 +45,7 @@ MEI's critical apparatus environment contains one or more alternative encodings/
 There is no special processing routine for this element. Meico just processes its children.
 
 #### beatRpt
-This repeats the musical contents of the last beat before this element. The length of one beat is taken from the underlying time signature's denominator or a quarter beat if no time signature is given.
+This repeats the musical contents of the last beat before this element. The getSize of one beat is taken from the underlying time signature's denominator or a quarter beat if no time signature is given.
 
 #### bTrem
 At the moment, tremoli are not resolved into sequences of notes but interpreted as chords. This is preliminary until we address ornamentations in the further development.
@@ -88,7 +88,7 @@ MEI's `expansion` elements can be regarded as the gestural counterparts of repet
 At the moment, tremoli are not resolved into sequences of notes but interpreted as chords. This is preliminary until we address ornamentations in the further development.
 
 #### halfmRpt
-This creates a copy of the preceding timeframe. This timeframe is `0.5 * length of one measure`.
+This creates a copy of the preceding timeframe. This timeframe is `0.5 * getSize of one measure`.
 
 #### instrDef
 This element is deliberately ignored. Meico handles and generates MIDI-related information individually, more comprehensive and more consistent than MEI does.

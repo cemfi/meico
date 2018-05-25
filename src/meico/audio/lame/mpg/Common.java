@@ -140,7 +140,7 @@ public class Common {
 
       case 3:
         if (fr.framesize > MAX_INPUT_FRAMESIZE) {
-          System.err.printf("Frame size too big.\n");
+          System.err.printf("Frame getSize too big.\n");
           fr.framesize = MAX_INPUT_FRAMESIZE;
           return (0);
         }
