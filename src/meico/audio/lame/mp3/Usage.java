@@ -255,8 +255,8 @@ public class Usage {
     ps.println("    --id3v1-only    add only a version 1 tag");
     ps.println("    --id3v2-only    add only a version 2 tag");
     ps.println("    --space-id3v1   pad version 1 tag with spaces instead of nulls");
-    ps.println("    --pad-id3v2     same as '--pad-id3v2-getSize 128'");
-    ps.println("    --pad-id3v2-getSize <value> adds version 2 tag, pad with extra <value> bytes");
+    ps.println("    --pad-id3v2     same as '--pad-id3v2-size 128'");
+    ps.println("    --pad-id3v2-size <value> adds version 2 tag, pad with extra <value> bytes");
     ps.println("    --genre-list    print alphabetically sorted ID3 genre list and exit");
     ps.println("    --ignore-tag-errors  ignore errors in values passed for tags");
     ps.println();

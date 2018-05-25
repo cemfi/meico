@@ -650,7 +650,7 @@ public class Mei {
                     break;
 
                 case "mdiv":
-                    if (this.makeMovement(e).isEmpty()) continue;               // create a new instance of Msm with a new Document and a unique id (getSize of the movements list so far), if something went wrong (I don't know how, just to be on the save side) stop diving into this subtree
+                    if (this.makeMovement(e).isEmpty()) continue;               // create a new instance of Msm with a new Document and a unique id (size of the movements list so far), if something went wrong (I don't know how, just to be on the save side) stop diving into this subtree
                     break;
 
                 case "measure":
@@ -1378,11 +1378,11 @@ public class Mei {
 
         if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null)) {    // if there is a local time signature map that is not empty
             Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");                                           // get the timeSignature elements
-            dur1 = this.helper.computeMeasureLength(Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));    // compute the measure's (preliminary) getSize from the time signature
+            dur1 = this.helper.computeMeasureLength(Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));    // compute the measure's (preliminary) length from the time signature
         }
         else if (this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null) {   // if there is a global time signature map
             Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");        // get the timeSignature elements
-            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));  // compute the measure's (preliminary) getSize from the time signature
+            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));  // compute the measure's (preliminary) length from the time signature
         }
 
         measure.addAttribute(new Attribute("midi.dur", Double.toString(dur1)));                                 // add attribute midi.dur and store the official (time signature defined) duration in it (this will be adapted some lines below if necessary)
@@ -1396,16 +1396,16 @@ public class Mei {
         double endDate = this.helper.getMidiTime();                                                             // get the current date
         double dur2 = endDate - startDate;                                                                      // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
         if (dur1 >= dur2) {                                                                                     // if the measure us underfull or properly filled
-            if ((measure.getAttribute("metcon") != null) && (measure.getAttributeValue("metcon").equals("false"))) {    // if the measure's getSize does not have to correspond with the time signature
+            if ((measure.getAttribute("metcon") != null) && (measure.getAttributeValue("metcon").equals("false"))) {    // if the measure's length does not have to correspond with the time signature
                 measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                               // take the duration from the fill state of the measure
             }
             else {                                                                                              // if the measure has to follow the time signature
-                // keep the measures official (time signature defined) getSize as set some lines above
+                // keep the measures official (time signature defined) length as set some lines above
                 endDate = startDate + dur1;                                                                     // in case it is underfull this ensures that the endDate of the measure is in accordance with the time signature and filled up with rests if necessary
             }
         }
         else {                                                                                                  // if the measure is overfull
-            measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                                   // take this longer duration as the measure's getSize
+            measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                                   // take this longer duration as the measure's length
         }
         // go through all msm parts and set the currentDate attribute to endDate
         Elements parts = this.helper.currentMovement.getChildElements("part");                                  // get all parts
@@ -1886,7 +1886,7 @@ public class Mei {
         }
 
         double beatLength = (es.size() == 0) ? 4 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator"));        // store the denominator value; if still no time signature information, one beat is 1/4 by default
-        beatLength = (4.0 * this.helper.ppq) / beatLength;                                                                          // compute the getSize of one beat in midi ticks
+        beatLength = (4.0 * this.helper.ppq) / beatLength;                                                                          // compute the length of one beat in midi ticks
 
         this.processRepeat(beatLength);
     }
@@ -1929,7 +1929,7 @@ public class Mei {
                 first.addAttribute(new Attribute("midi.date", this.helper.currentPart.getAttributeValue("currentDate")));  // update date of first  to currentDate
 
                 // set date of the last time signature element to the beginning of currentDate + 1 measure
-                double timeframe2 = (4.0 * this.helper.ppq * Integer.parseInt(first.getAttributeValue("numerator"))) / Integer.parseInt(first.getAttributeValue("denominator"));    // compute the getSize of one measure of time signature element first
+                double timeframe2 = (4.0 * this.helper.ppq * Integer.parseInt(first.getAttributeValue("numerator"))) / Integer.parseInt(first.getAttributeValue("denominator"));    // compute the length of one measure of time signature element first
                 second.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // update date of second time signature element
 
                 // add both instructions to the timeSignatureMap
@@ -1948,9 +1948,9 @@ public class Mei {
      * @param multiRpt an mei multiRpt element
      */
     private void processMultiRpt(Element multiRpt) {
-        double timeframe = 0;                                                                                                                                                           // here comes the getSize of the timeframe to be repeated
+        double timeframe = 0;                                                                                                                                                           // here comes the length of the timeframe to be repeated
         double currentDate = this.helper.getMidiTime();
-        double measureLength = currentDate - this.helper.getOneMeasureLength();                                                                                                         // getSize of one measure in ticks
+        double measureLength = currentDate - this.helper.getOneMeasureLength();                                                                                                         // length of one measure in ticks
 
         // get time signature element
         Elements ts = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
@@ -1961,7 +1961,7 @@ public class Mei {
 
         // go back measure-wise, check for time signature changes, sum up the measure lengths into the timeframe variable
         for (int measureCount = (multiRpt.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRpt.getAttributeValue("num")); measureCount > 0; --measureCount) {                   // for each measure
-            timeframe += measureLength;                                                                                                                                                 // add its getSize to the timeframe for repetition
+            timeframe += measureLength;                                                                                                                                                 // add its length to the timeframe for repetition
             while (tsdate >= (currentDate - timeframe)) {                                                                                                                               // if we pass the date of the current time signature (and maybe others, too)
                 --timesign;                                                                                                                                                             // choose predecessor in the ts list
                 tsdate = ((timesign) > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                  // get its date
@@ -1990,7 +1990,7 @@ public class Mei {
         this.processRepeat(0.5 * this.helper.getOneMeasureLength());
     }
 
-    /** repeats the material at the end of the score map, attribute timeframe specifies the getSize of the frame to be repeatetd (in midi ticks)
+    /** repeats the material at the end of the score map, attribute timeframe specifies the length of the frame to be repeatetd (in midi ticks)
      *
      * @param timeframe the timeframe to be repeated in midi ticks
      */

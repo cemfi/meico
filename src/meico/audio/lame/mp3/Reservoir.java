@@ -25,7 +25,7 @@ package meico.audio.lame.mp3;
 
 /**
  * ResvFrameBegin:<BR>
- * Called (repeatedly) at the beginning of a frame. Updates the maximum getSize of
+ * Called (repeatedly) at the beginning of a frame. Updates the maximum size of
  * the reservoir, and checks to make sure main_data_begin was set properly by
  * the formatter<BR>
  * Background information:
@@ -39,14 +39,14 @@ package meico.audio.lame.mp3;
  * number of bits used for one granule [^W frame]:<BR>
  * At the highest possible bitrate of Layer III (320 kbps
  * per stereo signal [^W^W^W], 48 kHz) the frames must be of
- * [^W^W^W are designed to have] constant getSize, i.e.
- * one buffer [^W^W the frame] getSize is:<BR>
+ * [^W^W^W are designed to have] constant length, i.e.
+ * one buffer [^W^W the frame] length is:<BR>
  * <p/>
  * 320 kbps * 1152/48 kHz = 7680 bit = 960 byte
  * <p/>
  * This value is used as the maximum buffer per channel [^W^W] at
  * lower bitrates [than 320 kbps]. At 64 kbps mono or 128 kbps
- * stereo the main granule getSize is 64 kbps * 576/48 kHz = 768 bit
+ * stereo the main granule length is 64 kbps * 576/48 kHz = 768 bit
  * [per granule and channel] at 48 kHz sampling frequency.
  * This means that there is a maximum deviation (short time buffer
  * [= reservoir]) of 7680 - 2*2*768 = 4608 bits is allowed at 64 kbps.
@@ -56,7 +56,7 @@ package meico.audio.lame.mp3;
  * [for MPEG-1 and (2^8-1)*8 bit for MPEG-2, both are hard limits].
  * ... The xchange of buffer bits between the left and right channel
  * is allowed without restrictions [exception: dual channel].
- * Because of the [constructed] constraint on the buffer getSize
+ * Because of the [constructed] constraint on the buffer size
  * main_data_end is always set to 0 in the case of bit_rate_index==14,
  * i.e. data rate 320 kbps per stereo signal [^W^W^W]. In this case
  * all data are allocated between adjacent header [^W sync] words
@@ -84,14 +84,14 @@ public class Reservoir {
      *  Meaning of the variables:
      *      resvLimit: (0, 8, ..., 8*255 (MPEG-2), 8*511 (MPEG-1))
      *          Number of bits can be stored in previous frame(s) due to
-     *          counter getSize constaints
+     *          counter size constaints
      *      maxmp3buf: ( ??? ... 8*1951 (MPEG-1 and 2), 8*2047 (MPEG-2.5))
      *          Number of bits allowed to encode one frame (you can take 8*511 bit
      *          from the bit reservoir and at most 8*1440 bit from the current
      *          frame (320 kbps, 32 kHz), so 8*1951 bit is the largest possible
      *          value for MPEG-1 and -2)
      *
-     *          maximum allowed granule/channel getSize times 4 = 8*2047 bits.,
+     *          maximum allowed granule/channel size times 4 = 8*2047 bits.,
      *          so this is the absolute maximum supported by the format.
      *
      *
@@ -104,7 +104,7 @@ public class Reservoir {
      *
      *      gfc.ResvMax:   maximum allowed reservoir
      *
-     *      gfc.ResvSize:  current reservoir getSize
+     *      gfc.ResvSize:  current reservoir size
      *
      *      l3_side.resvDrain_pre:
      *         ancillary data to be added to previous frame:
@@ -125,7 +125,7 @@ public class Reservoir {
     int resvLimit = (8 * 256) * gfc.mode_gr - 8;
 
 		/*
-     * maximum allowed frame getSize. dont use more than this number of bits,
+     * maximum allowed frame size. dont use more than this number of bits,
 		 * even if the frame has the space for them:
 		 */
     if (gfp.getBitRate() > 320) {
@@ -135,7 +135,7 @@ public class Reservoir {
     } else {
 			/*
 			 * all mp3 decoders should have enough buffer to handle this value:
-			 * getSize of a 320kbps 32kHz frame
+			 * size of a 320kbps 32kHz frame
 			 */
       maxmp3buf = 8 * 1440;
 
@@ -227,7 +227,7 @@ public class Reservoir {
   }
 
   /**
-   * Called after a granule's bit allocation. Readjusts the getSize of the
+   * Called after a granule's bit allocation. Readjusts the size of the
    * reservoir to reflect the granule's usage.
    */
   public final void ResvAdjust(final LameInternalFlags gfc,
@@ -237,7 +237,7 @@ public class Reservoir {
 
   /**
    * Called after all granules in a frame have been allocated. Makes sure that
-   * the reservoir getSize is within limits, possibly by adding stuffing bits.
+   * the reservoir size is within limits, possibly by adding stuffing bits.
    */
   public final void ResvFrameEnd(final LameInternalFlags gfc,
                                  final int mean_bits) {

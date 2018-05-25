@@ -763,7 +763,7 @@ public class Layer3 {
       int i;
       for (i = 0; i < 3; i++) {
         if (l[i] < 0) {
-          System.err.printf("hip: Bogus region getSize (%d)\n", l[i]);
+          System.err.printf("hip: Bogus region length (%d)\n", l[i]);
           l[i] = 0;
         }
       }

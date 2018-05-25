@@ -452,7 +452,7 @@ public class EventMaker {
      * create tempo event
      * @param date
      * @param bpm
-     * @param beatlength getSize of one beat in floating point format (e.g. quarter=0.25, whole=1; eight=0.125)
+     * @param beatlength length of one beat in floating point format (e.g. quarter=0.25, whole=1; eight=0.125)
      * @return
      */
     public static MidiEvent createTempo(long date, double bpm, double beatlength) {

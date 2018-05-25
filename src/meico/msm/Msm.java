@@ -667,7 +667,7 @@ public class Msm {
 //            { // this stuff is used, when tracks represent ports, not parts!
 //              // select the midi track, or create it if necessary
 //                int port = Integer.parseInt(part.getAttributeValue("midi.port"));                                    // the port number
-//                while ((seq.getTracks().getSize - 1) < port) seq.createTrack();                                  // create as many tracks as necessary, so that the port number corresponds to the track number in seq (port 0 = seq.getTracks().[0])
+//                while ((seq.getTracks().length - 1) < port) seq.createTrack();                                  // create as many tracks as necessary, so that the port number corresponds to the track number in seq (port 0 = seq.getTracks().[0])
 //                track = seq.getTracks()[port];                                                                  // select the track
 //            }
 

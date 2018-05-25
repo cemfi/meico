@@ -205,10 +205,10 @@ public class VBRQuantize {
   }
 
   /**
-   * the find_scalefac* routines calculate a quantization step getSize which
-   * would introduce as much noise as is allowed. The larger the step getSize the
+   * the find_scalefac* routines calculate a quantization step size which
+   * would introduce as much noise as is allowed. The larger the step size the
    * more quantization noise we'll get. The scalefactors are there to lower
-   * the global step getSize, allowing limited differences in quantization step
+   * the global step size, allowing limited differences in quantization step
    * sizes per band (shaping the noise).
    */
   private int find_scalefac_x34(final float[] xr, final float[] xr34,
@@ -873,7 +873,7 @@ public class VBRQuantize {
 						 *
 						 * This isn't explicitly stated in the ISO docs, but the
 						 * part2_3_length field has only 12 bits, that makes it
-						 * up to a maximum getSize of 4095 bits!!!
+						 * up to a maximum size of 4095 bits!!!
 						 */
             ok = false;
           }

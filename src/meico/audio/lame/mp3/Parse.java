@@ -784,7 +784,7 @@ public class Parse {
             id3.id3tag_pad_v2(gfp);
 
           } else if (token.substring(tokenPos).equalsIgnoreCase(
-              "pad-id3v2-getSize")) {
+              "pad-id3v2-size")) {
             int n = Integer.valueOf(nextArg);
             n = n <= 128000 ? n : 128000;
             n = n >= 0 ? n : 0;

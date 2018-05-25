@@ -60,12 +60,12 @@ public class Lame {
   public static final int MEDIUM = 1006;
   public static final int MEDIUM_FAST = 1007;
   /**
-   * maximum getSize of albumart image (128KB), which affects LAME_MAXMP3BUFFER
+   * maximum size of albumart image (128KB), which affects LAME_MAXMP3BUFFER
    * as well since lame_encode_buffer() also returns ID3v2 tag data
    */
   static final int LAME_MAXALBUMART = (128 * 1024);
   /**
-   * maximum getSize of mp3buffer needed if you encode at most 1152 samples for
+   * maximum size of mp3buffer needed if you encode at most 1152 samples for
    * each call to lame_encode_buffer. see lame_encode_buffer() below
    * (LAME_MAXMP3BUFFER is now obsolete)
    */
@@ -708,7 +708,7 @@ public class Lame {
       --filter_l; /* must be odd */
     filter_l += intratio; /* unless resample_ratio=int, it must be even */
 
-    int BLACKSIZE = filter_l + 1; /* getSize of data needed for FIR */
+    int BLACKSIZE = filter_l + 1; /* size of data needed for FIR */
 
     if (gfc.fill_buffer_resample_init == 0) {
       gfc.inbuf_old[0] = new float[BLACKSIZE];
@@ -1889,11 +1889,11 @@ public class Lame {
       if (gfc.mf_size >= mf_needed) {
 				/* encode the frame. */
 				/* mp3buf = pointer to current location in buffer */
-				/* mp3buf_size = getSize of original mp3 output buffer */
+				/* mp3buf_size = size of original mp3 output buffer */
 				/* = 0 if we should not worry about the */
-				/* buffer getSize because calling program is */
+				/* buffer size because calling program is */
 				/* to lazy to compute it */
-				/* mp3size = getSize of data written to buffer so far */
+				/* mp3size = size of data written to buffer so far */
 				/* mp3buf_size-mp3size = amount of space avalable */
 
         int buf_size = mp3buf_size - mp3size;
@@ -1979,7 +1979,7 @@ public class Lame {
 
   /**
    * Flush mp3 buffer, pad with ancillary data so last frame is complete.
-   * Reset reservoir getSize to 0 but keep all PCM samples and MDCT data in
+   * Reset reservoir size to 0 but keep all PCM samples and MDCT data in
    * memory This option is used to break a large file into several mp3 files
    * that when concatenated together will decode with no gaps Because we set
    * the reservoir=0, they will also decode seperately with no errors.
@@ -2071,7 +2071,7 @@ public class Lame {
 
       mp3buffer_size_remaining = mp3buffer.length - mp3count;
 
-			/* if user specifed buffer getSize = 0, dont check getSize */
+			/* if user specifed buffer size = 0, dont check size */
       if (mp3buffer.length == 0)
         mp3buffer_size_remaining = 0;
 
@@ -2094,7 +2094,7 @@ public class Lame {
     }
 
     mp3buffer_size_remaining = mp3buffer.length - mp3count;
-		/* if user specifed buffer getSize = 0, dont check getSize */
+		/* if user specifed buffer size = 0, dont check size */
     if (mp3buffer.length == 0)
       mp3buffer_size_remaining = 0;
 
@@ -2109,7 +2109,7 @@ public class Lame {
     mp3bufferPos += imp3;
     mp3count += imp3;
     mp3buffer_size_remaining = mp3buffer.length - mp3count;
-		/* if user specifed buffer getSize = 0, dont check getSize */
+		/* if user specifed buffer size = 0, dont check size */
     if (mp3buffer.length == 0)
       mp3buffer_size_remaining = 0;
 

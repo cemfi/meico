@@ -321,7 +321,7 @@ public class Helper {
         return results;                                         // return the resulting list of integers
     }
 
-    /** compute the getSize of one measure in midi ticks at the currentDate in the currentPart of the currentMovement; if no time signature information available it returns the getSize of a 4/4 measure
+    /** compute the length of one measure in midi ticks at the currentDate in the currentPart of the currentMovement; if no time signature information available it returns the length of a 4/4 measure
      *
      * @return
      */
@@ -332,7 +332,7 @@ public class Helper {
             es = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");    // get global entries
         }
 
-        // get getSize of one measure (4/4 is default if information is insufficient)
+        // get length of one measure (4/4 is default if information is insufficient)
         int denom = (es.size() == 0) ? 4 : Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator"));
         int num = (es.size() == 0) ? 4 : Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator"));
 
@@ -340,7 +340,7 @@ public class Helper {
 
     }
 
-    /** compute the getSize of one measure with specified numerator and denominator values (the underlying time signature)
+    /** compute the length of one measure with specified numerator and denominator values (the underlying time signature)
      *
      * @param numerator
      * @param denominator
@@ -1006,6 +1006,7 @@ public class Helper {
 
                         // local accidentals overrule the key signature, but an empty accid string is interpreted as no accid and, hence, does not overrule the key signature
                         checkKeySign = accid.isEmpty();
+
                         break;
                     }
                 }

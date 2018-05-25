@@ -49,8 +49,8 @@ public class VBRTag {
    * 4 bytes for Header Tag
    * 4 bytes for Header Flags
    * 100 bytes for entry (toc)
-   * 4 bytes for frame getSize
-   * 4 bytes for stream getSize
+   * 4 bytes for frame size
+   * 4 bytes for stream size
    * 4 bytes for VBR scale. a VBR quality indicator: 0=best 100=worst
    * 20 bytes for LAME tag.  for example, "LAME3.12 (beta 6)"
    * ___________
@@ -69,15 +69,15 @@ public class VBRTag {
   private static final int TOC_FLAG = 0x0004;
   private static final int VBR_SCALE_FLAG = 0x0008;
   /**
-   * The getSize of the Xing header MPEG-1, bit rate in kbps.
+   * The size of the Xing header MPEG-1, bit rate in kbps.
    */
   private static final int XING_BITRATE1 = 128;
   /**
-   * The getSize of the Xing header MPEG-2, bit rate in kbps.
+   * The size of the Xing header MPEG-2, bit rate in kbps.
    */
   private static final int XING_BITRATE2 = 64;
   /**
-   * The getSize of the Xing header MPEG-2.5, bit rate in kbps.
+   * The size of the Xing header MPEG-2.5, bit rate in kbps.
    */
   private static final int XING_BITRATE25 = 32;
   /**
@@ -465,7 +465,7 @@ public class VBRTag {
      * table of contents)
      * let's always embed Xing header inside a 64kbs layer III frame.
      * this gives us enough room for a LAME version string too.
-     * getSize determined by sampling frequency (MPEG1)
+     * size determined by sampling frequency (MPEG1)
      * 32kHz:    216 bytes@48kbs    288bytes@ 64kbs
      * 44.1kHz:  156 bytes          208bytes@64kbs     (+1 if padding = 1)
      * 48kHz:    144 bytes          192
@@ -545,7 +545,7 @@ public class VBRTag {
    * Dee 2001/08/31).
    *
    * @param gfp             global flags
-   * @param musicLength     music getSize
+   * @param musicLength     music length
    * @param streamBuffer    pointer to output buffer
    * @param streamBufferPos offset into the output buffer
    * @param crc             computation of CRC-16 of Lame Tag so far (starting at frame
@@ -803,7 +803,7 @@ public class VBRTag {
     int id3v2TagSize;
     if (!new String(id3v2Header, "ISO-8859-1").startsWith("ID3")) {
 			/*
-			 * the tag getSize (minus the 10-byte header) is encoded into four
+			 * the tag size (minus the 10-byte header) is encoded into four
 			 * bytes where the most significant bit is clear in each byte
 			 */
       id3v2TagSize = (((id3v2Header[6] & 0x7f) << 21)
@@ -884,7 +884,7 @@ public class VBRTag {
     createInteger(buffer, streamIndex, gfc.VBR_seek_table.nVbrNumFrames);
     streamIndex += 4;
 
-    // Put total audio stream getSize, including Xing/LAME Header
+    // Put total audio stream size, including Xing/LAME Header
     int streamSize = (gfc.VBR_seek_table.nBytesWritten + gfc.VBR_seek_table.TotalFrameSize);
     createInteger(buffer, streamIndex, (int) streamSize);
     streamIndex += 4;
@@ -926,7 +926,7 @@ public class VBRTag {
     // Seek to end of file
     stream.seek(stream.length());
 
-    // Get file getSize, abort if file has zero getSize.
+    // Get file size, abort if file has zero length.
     if (stream.length() == 0)
       return -1;
 

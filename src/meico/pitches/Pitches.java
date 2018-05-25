@@ -77,7 +77,7 @@ public class Pitches {
      * @return
      */
     public int getFeatureCount() {
-        return this.features.size();        // return the getSize of the features list
+        return this.features.size();        // return the size of the features list
     }
 
     /**

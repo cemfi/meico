@@ -121,7 +121,7 @@ public class GainAnalysis {
   private static final int MAX_SAMP_FREQ = 48000;
   private static final int RMS_WINDOW_TIME_NUMERATOR = 1;
   /**
-   * numerator / denominator = time slice getSize [s]
+   * numerator / denominator = time slice size [s]
    */
   private static final int RMS_WINDOW_TIME_DENOMINATOR = 20;
   /**

@@ -262,7 +262,7 @@ public class LameGlobalFlags {
    */
   private int encoderDelay;
   /**
-   * Get frame getSize.
+   * Get frame size.
    */
   private int frameSize;
 
@@ -490,9 +490,9 @@ public class LameGlobalFlags {
   }
 
   /**
-   * Set frame getSize.
+   * Set frame size.
    *
-   * @return frame getSize
+   * @return frame size
    */
   public int getFrameSize() {
     return frameSize;
@@ -501,9 +501,9 @@ public class LameGlobalFlags {
 	/* more internal variables are stored in this structure: */
 
   /**
-   * Set frame getSize.
+   * Set frame size.
    *
-   * @param frameSize frame getSize
+   * @param frameSize frame size
    */
   public void setFrameSize(int frameSize) {
     this.frameSize = frameSize;

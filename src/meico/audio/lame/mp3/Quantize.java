@@ -285,7 +285,7 @@ public class Quantize {
   /**
    * author/date??
    * <p/>
-   * binary step getSize search used by outer_loop to get a quantizer step getSize
+   * binary step size search used by outer_loop to get a quantizer step size
    * to start with
    */
   private int bin_search_StepSize(final LameInternalFlags gfc,
@@ -530,7 +530,7 @@ public class Quantize {
 			/*
 			 * If no distorted bands, only use this quantization if it is
 			 * better, and if it uses less bits. Unfortunately, part2_3_length
-			 * is sometimes a poor estimator of the final getSize at low bitrates.
+			 * is sometimes a poor estimator of the final size at low bitrates.
 			 */
       better = better && calc.bits < best.bits;
     }

@@ -128,8 +128,8 @@ public class MeicoApp extends JFrame {
         });
 
         // some general window settings
-        //this.setBounds(100, 100, 1000, 400);                                          // set window getSize and position
-        this.setSize(this.windowWidth, this.windowHeight);                              // set window getSize
+        //this.setBounds(100, 100, 1000, 400);                                          // set window length and position
+        this.setSize(this.windowWidth, this.windowHeight);                              // set window length
         this.setResizable(true);                                                        // don't allow resizing
         this.setLocationRelativeTo(null);                                               // set window position
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);                   // what happens when the X is clicked?
@@ -227,7 +227,7 @@ public class MeicoApp extends JFrame {
         this.closeAllIcon.setPreferredSize(new Dimension(16, 16));
         this.closeAllIcon.setHorizontalAlignment(JLabel.CENTER);
         this.closeAllIcon.setForeground(Color.DARK_GRAY);                               // the text color
-        this.closeAllIcon.setFont(new Font(fontName, Font.PLAIN, 15));                 // font type, style and getSize
+        this.closeAllIcon.setFont(new Font(fontName, Font.PLAIN, 15));                 // font type, style and length
         this.closeAllIcon.setToolTipText("<html>clear the workspace</html>");
         this.closeAllIcon.addMouseListener(new MouseAdapter() {
             @Override
@@ -273,7 +273,7 @@ public class MeicoApp extends JFrame {
             // create a file drop label
             this.dropLabel.setForeground(Color.GRAY);                                       // text color
             this.dropLabel.setHorizontalTextPosition(JLabel.CENTER);                        // center the label text within the label
-            this.dropLabel.setFont(new Font("default", Font.PLAIN, 20));                    // font type, style and getSize
+            this.dropLabel.setFont(new Font("default", Font.PLAIN, 20));                    // font type, style and length
             this.backgroundPanel.add(dropLabel, "span, grow, push");                        // add it to the background panel
 //            this.dropLabel.addMouseListener(new MouseAdapter() {                             // add a mouse listener to the button
 //                @Override

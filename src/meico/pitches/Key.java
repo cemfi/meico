@@ -42,7 +42,7 @@ public class Key {
     }
 
     /**
-     * this getter returns the getSize/getSize of the vector of reference frequencies
+     * this getter returns the length/size of the vector of reference frequencies
      * @return
      */
     public int getSize() {

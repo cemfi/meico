@@ -117,7 +117,7 @@ public class Audio {
     public static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
         byte[] array;
         try {
-            array = new byte[(int)(stream.getFrameLength() * stream.getFormat().getFrameSize())];   // initialize the byte array with the getSize of the stream
+            array = new byte[(int)(stream.getFrameLength() * stream.getFormat().getFrameSize())];   // initialize the byte array with the length of the stream
             stream.read(array);         // write the stream's bytes into the byte array
         } catch (IOException e) {       // in case of an IOException
             e.printStackTrace();        // output error
@@ -216,7 +216,7 @@ public class Audio {
     }
 
     /**
-     * a getter for the sample getSize in bits
+     * a getter for the sample size in bits
      * @return
      */
     public int getSampleSizeInBits() {
@@ -224,7 +224,7 @@ public class Audio {
     }
 
     /**
-     * a getter for the frame getSize
+     * a getter for the frame size
      * @return
      */
     public int getFrameSize() {

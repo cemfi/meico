@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.3.8-rev
+- Never trust automated refactoring. Some strange side effects have been fixed.
+
+
 #### v0.3.8
 - Added library JSON.simple v3.0.2
 - Switched the output of class `meico.pitches.Pitches` to JSON format. The default output file extension will also be `.json` from now on.
@@ -46,7 +50,7 @@
 - Added class `meico.Meico` that holds the version number of meico. It can be accessed via `Meico.version`.
 - Added a new package `meico.pitches` with classes `Pitches` and `Key`.
 - Added new methods to class `meico.msm.Msm`:
-    - `getEndDate()` returns the date of the last note offset, i.e. the getSize of the music in MIDI ticks.
+    - `getEndDate()` returns the date of the last note offset, i.e. the length of the music in MIDI ticks.
     - `exportChroma()` converts MSM to a sequence of chroma features with 12 semitones in equal temperament and A = 440 Hz.
     - `exportPitches()` converts MSM to a sequence of absolute pitch vectors with 12 semitones per octave in equal temperament and A = 440 Hz. This conforms with the MIDI standard, i.e. 0 is the lowest and 127 the highest possible pitch. This method is overloaded. The more general version of this method takes an instance of `meico.pitches.Key` as parameter.
 - Some adds to the commandline app:

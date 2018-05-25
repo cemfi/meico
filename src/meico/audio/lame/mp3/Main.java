@@ -228,7 +228,7 @@ public class Main {
     if (!lame.getParser().disable_wav_header)
       lame.getAudio().WriteWaveHeader(outf, Integer.MAX_VALUE, lame.getFlags().getInSampleRate(),
           tmp_num_channels, 16);
-		/* unknown getSize, so write maximum 32 bit signed value */
+		/* unknown size, so write maximum 32 bit signed value */
 
     double wavsize = -(skip_start + skip_end);
     lame.getParser().getMp3InputData().setTotalFrames(lame.getParser().getMp3InputData().getNumSamples()
@@ -311,7 +311,7 @@ public class Main {
     }
 
     ((Closeable) outf).close();
-		/* if outf is seekable, rewind and adjust getSize */
+		/* if outf is seekable, rewind and adjust length */
     if (!lame.getParser().disable_wav_header) {
       RandomAccessFile rf = new RandomAccessFile(outPath, "rw");
       lame.getAudio().WriteWaveHeader(rf, (int) wavsize, lame.getFlags().getInSampleRate(),
@@ -401,7 +401,7 @@ public class Main {
     int imp3 = lame.getVbr().getLameTagFrame(lame.getFlags(), mp3buffer);
     if (imp3 > mp3buffer.length) {
       System.err
-          .printf("Error writing LAME-tag frame: buffer too small: buffer getSize=%d  frame getSize=%d\n",
+          .printf("Error writing LAME-tag frame: buffer too small: buffer size=%d  frame size=%d\n",
               mp3buffer.length, imp3);
       return -1;
     }
@@ -430,7 +430,7 @@ public class Main {
     if (imp3 > mp3buffer.length) {
       encoder_progress_end();
       System.err
-          .printf("Error writing ID3v2 tag: buffer too small: buffer getSize=%d  ID3v2 getSize=%d\n",
+          .printf("Error writing ID3v2 tag: buffer too small: buffer size=%d  ID3v2 size=%d\n",
               mp3buffer.length, imp3);
       return 1;
     }
@@ -509,7 +509,7 @@ public class Main {
     imp3 = lame.getId3().lame_get_id3v1_tag(lame.getFlags(), mp3buffer, mp3buffer.length);
     if (imp3 > mp3buffer.length) {
       System.err
-          .printf("Error writing ID3v1 tag: buffer too small: buffer getSize=%d  ID3v1 getSize=%d\n",
+          .printf("Error writing ID3v1 tag: buffer too small: buffer size=%d  ID3v1 size=%d\n",
               mp3buffer.length, imp3);
     } else {
       if (imp3 > 0) {
