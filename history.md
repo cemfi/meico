@@ -1,6 +1,39 @@
 ### Version History
 
 
+#### v0.4.0
+- Added `NullPointerException` not audio rendering Exception handling in `meico.app.MeicoApp`, subclass `Midi4Gui` (line 1112).
+- MIDI playback overhaul:
+    - Extracted all MIDI playback related parts from `meico.midi.Midi` to new class `meico.midi.MidiPlayer`. Class `Midi` holds the data and its processing methods, class `MidiPlayer` provides playback and synthesis functionality.
+    - Removed all MIDI playback methods from class `Midi`. Hence, this part is no longer backwards compatible.
+    - Class `MidiPlayer` features lots of new getter, setter and play methods.
+    - An application that wants to play MIDI data should do this:
+        ```
+        MidiPlayer player = new MidiPlayer();
+        player.loadSoundbank(soundbank); // this is optional; soundbank is a File or URL object
+        player.play(myMidi);             // myMidi is an instance of Sequence or meico's Midi class
+        ... music plays ...
+        player.stop();
+        player.close();                  // if not needed anymore, close it
+        ```
+    - Soundbanks can now be loaded and applied to MIDI playback. In GUI mode, users do not have render audio to get the "high-quality" sound output. Hence, setup of the soundbank has been shifted to the MIDI name (right click). Here users can select the `sf2` or `dls` file to be used or switch back to Java's default soundbank. It is even possible to switch the soundbank during playback.
+    - The corresponding parts of `meico.app.MeicoApp` have been adapted. There is no longer a player for each MIDI instance but only one global MidiPlayer instance that is fed with the MIDI data (either a `Sequence` object or a `Midi` object) to be played back.
+- Audio playback overhaul:
+    - Extracted all audio playback related parts from `meico.audio.Audio` to new class `meico.audio.AudioPlayer`. Class `Audio` holds the data and its processing methods, class `AudioPlayer` provides playback functionality.
+    - Removed all audio playback methods from class `Audio`. Hence, this part is no longer backwards compatible.
+    - Class `AudioPlayer` features lots of new getter, setter and play methods.
+    - An application that wants to play audio data should do this:
+        ```
+        AudioPlayer player = new AudioPlayer();
+        player.play(myAudio);   // myAudio is an instance of meico's Audio class
+        ... music plays ...
+        player.stop();
+        ```
+- Added method `exportAudio(URL soundbankUrl)` to class `meico.midi.Midi` so that soundbanks do not have to local files or URLs have to be decoded to files by the application.
+- Slight revisions to class `meico.audio.Audio` to ensure data integrity after MP3 conversion.
+- A note concerning MIDI to audio rendering: Meico's Midi to audio renderer relies on the package `sun.com.media.sound`. However, Java 9 and later versions do no longer provide access to this package at compile time. It is still accessible at runtime. Hence, meico should be compiled with Java 8 and can run with later versions (tested until Java 10). But at some point they will probably make this package inaccessible also at runtime. A workaround for this is using the Gervill Sound Synthesizer (search `gervill.jar` in the internet and add it to `externals`) that provides the required package, so no code changes are necessary. However, consider that Gervill is licensed under GNU GPL-2.0 while meico is under GNU LGPL-3.0!
+
+
 #### v0.3.8-rev
 - Never trust automated refactoring. Some strange side effects have been fixed.
 

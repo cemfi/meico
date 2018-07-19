@@ -20,16 +20,14 @@ import java.util.Map;
  * Created by Axel Berndt on 19.09.2016.
  */
 public class Midi2AudioRenderer {
-    private Synthesizer synth = null;       // the synthesizer object, used for midi to wav conversion
+    private Synthesizer synth;       // the Synthesizer object, used for midi to wav conversion
 
     /**
      * constuctor
      *
      * @throws MidiUnavailableException
-     * @throws InvalidMidiDataException
-     * @throws IOException
      */
-    public Midi2AudioRenderer() throws MidiUnavailableException, InvalidMidiDataException, IOException {
+    public Midi2AudioRenderer() throws MidiUnavailableException {
         this.synth = MidiSystem.getSynthesizer();
     }
 
@@ -40,6 +38,9 @@ public class Midi2AudioRenderer {
      * @return the soundbank from the url or (if something went wrong with it) the default soundbank
      */
     public static Soundbank loadSoundbank(URL soundbankUrl, Synthesizer synth) {
+        if (soundbankUrl == null)
+            return synth.getDefaultSoundbank();
+
         File soundbankFile;  // get the file behind the url
         try {
             soundbankFile = new File(URLDecoder.decode(soundbankUrl.getFile(), "UTF-8"));
@@ -58,11 +59,10 @@ public class Midi2AudioRenderer {
      * @return the soundbank from the file or (if something went wrong with it) the default soundbank
      */
     public static Soundbank loadSoundbank(File soundbankFile, Synthesizer synth) {
-        Soundbank soundbank;
-
         if (soundbankFile == null)
             return synth.getDefaultSoundbank();
 
+        Soundbank soundbank;
         try {
             soundbank = MidiSystem.getSoundbank(soundbankFile);
         } catch (InvalidMidiDataException | IOException | NullPointerException e) {
@@ -92,28 +92,41 @@ public class Midi2AudioRenderer {
      * creates an AudioInputStream based on the sequence and uses the given soundbank for synthesis
      *
      * @param sequence
+     * @param soundbankURL
+     * @return
+     * @throws MidiUnavailableException
+     */
+    public AudioInputStream renderMidi2Audio(Sequence sequence, URL soundbankURL) throws MidiUnavailableException {
+        Soundbank soundbank = loadSoundbank(soundbankURL, this.synth);
+        return this.renderMidi2Audio(sequence, soundbank, 44100, 16, 2);
+    }
+
+    /**
+     * creates an AudioInputStream based on the sequence and uses the given soundbank for synthesis
+     *
+     * @param sequence
      * @param soundbankFile
      * @return
      * @throws MidiUnavailableException
      */
     public AudioInputStream renderMidi2Audio(Sequence sequence, File soundbankFile) throws MidiUnavailableException {
-        return this.renderMidi2Audio(sequence, soundbankFile, 44100, 16, 2);
+        Soundbank soundbank = loadSoundbank(soundbankFile, this.synth);
+        return this.renderMidi2Audio(sequence, soundbank, 44100, 16, 2);
     }
 
     /**
      * creates an AudioInputStream based on the sequence
      *
      * @param sequence
-     * @param soundbankFile can be a valid URL or null
+     * @param soundbank
      * @param sampleRate
      * @param sampleSizeInBits
      * @param channels
      * @return
      * @throws MidiUnavailableException
      */
-    public AudioInputStream renderMidi2Audio(Sequence sequence, File soundbankFile, float sampleRate, int sampleSizeInBits, int channels) throws MidiUnavailableException {
-        Soundbank soundbank = loadSoundbank(soundbankFile, this.synth);
-
+    public AudioInputStream renderMidi2Audio(Sequence sequence, Soundbank soundbank, float sampleRate, int sampleSizeInBits, int channels) throws MidiUnavailableException {
+//        AudioSynthesizer synth = this.findAudioSynthesizer();
         AudioSynthesizer synth = this.findAudioSynthesizer();
         if (synth == null) {
             System.err.println("No AudioSynthesizer was found!");

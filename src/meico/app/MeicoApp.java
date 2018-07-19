@@ -6,8 +6,10 @@ package meico.app;
  */
 
 import meico.audio.Audio;
+import meico.audio.AudioPlayer;
 import meico.mei.Helper;
 import meico.mei.Mei;
+import meico.midi.MidiPlayer;
 import meico.msm.Msm;
 
 import meico.pitches.Pitches;
@@ -30,21 +32,24 @@ import java.util.List;
 
 public class MeicoApp extends JFrame {
 
-    private List<Mei4Gui> music = new ArrayList<>();
+    private List<Mei4Gui> music = new ArrayList<>();                // the music data
+    private MidiPlayer midiplayer = null;                           // for mmidi playback
+    private File soundbankFile = null;                              // the soundbank to be used for midi synthesis
+    private AudioPlayer audioplayer = null;                         // meico's player for audio data
 
     // some global interface elements
-    private final JLabel statusMessage = new JLabel();             // the message component of the statusbar
-    private final JLabel fileListPanel = new JLabel();             // a container for the list of loaded and generated files, here, the main interactions take place
-    private final JPanel backgroundPanel = new JPanel();           // the conainer of everything that happens in the work area of the window
-    private final JPanel statusPanel = new JPanel();               // the container of the statusbar components
-    private final JLabel dropLabel = new JLabel("Drop your MEI, MSM, Midi, and Wave files here.", JLabel.CENTER);                               // a text label that tells the user to drop files
+    private final JLabel statusMessage = new JLabel();              // the message component of the statusbar
+    private final JLabel fileListPanel = new JLabel();              // a container for the list of loaded and generated files, here, the main interactions take place
+    private final JPanel backgroundPanel = new JPanel();            // the conainer of everything that happens in the work area of the window
+    private final JPanel statusPanel = new JPanel();                // the container of the statusbar components
+    private final JLabel dropLabel = new JLabel("Drop your files here", JLabel.CENTER);                                                         // a text label that tells the user to drop files
 //    private final JLabel dropLabel = new JLabel("Drop your mei, msm and midi files here.", new ImageIcon(getClass().getResource("/resources/drop-inverse.png")), JLabel.CENTER);
     private final JLabel meilabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/mei-inverse.png")), JLabel.CENTER);    // mei logo
     private final JLabel msmlabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/msm-inverse.png")), JLabel.CENTER);    // msm logo
     private final JLabel midilabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/midi-inverse.png")), JLabel.CENTER);  // midi logo
-    private final JLabel audiolabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/audio-inverse.png")), JLabel.CENTER);  // audio logo
+    private final JLabel audiolabel = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/audio-inverse.png")), JLabel.CENTER);// audio logo
     private final JLabel loadIcon = new JLabel(new ImageIcon(getClass().getResource("/resources/graphics/open-small.png")));                    // a clickable icon in the statusbar to start the filo open dialog
-    private final JLabel closeAllIcon = new JLabel("\u2716");      // a clickable icon to close all loaded data in the work area, it is placed in the statusbar
+    private final JLabel closeAllIcon = new JLabel("\u2716");       // a clickable icon to close all loaded data in the work area, it is placed in the statusbar
 
     // layout variables
     private final int windowWidth = 1020;
@@ -93,7 +98,7 @@ public class MeicoApp extends JFrame {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());        // try to use the system's look and feel
         }
         catch (Throwable ex) {                                                          // if failed
-                                                                                        // it hopefully keeps the old look and feel (not tested)
+            // it hopefully keeps the old look and feel (not tested)
         }
 
         // keyboard input via key binding
@@ -102,6 +107,8 @@ public class MeicoApp extends JFrame {
         this.getRootPane().getActionMap().put("Exit", new AbstractAction(){             // define the "Exit" action
             @Override
             public void actionPerformed(ActionEvent e) {
+                stopAllPlayback();
+                if (midiplayer != null) midiplayer.close();                             // close midiplayer (sequencer and synthesizer)
                 dispose();                                                              // close the window (if this is the only window, this will terminate the JVM)
                 System.exit(0);                                                         // the program may still run, enforce exit
             }
@@ -142,6 +149,17 @@ public class MeicoApp extends JFrame {
         this.getContentPane().add(this.backgroundPanel, BorderLayout.CENTER);           // display it
 
         this.setVisible(true);                                                          // show the frame
+
+        // initialize the midi player
+        try {
+            this.midiplayer = new MidiPlayer();
+            this.initMidiplayerListener();
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+        }
+
+        // initialize the audio player
+        this.audioplayer = new AudioPlayer();
     }
 
     /**
@@ -173,6 +191,30 @@ public class MeicoApp extends JFrame {
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {      // file open has been approved
             loadFile(chooser.getSelectedFile());                                // load it
             this.doRepaint();
+        }
+    }
+
+    /**
+     * initialize a listener that sets all midi playback buttons to stop when playback stops
+     */
+    protected void initMidiplayerListener() {
+        if (this.midiplayer != null) {
+            this.midiplayer.getSequencer().addMetaEventListener(new MetaEventListener() {  // Add a listener for meta message events to detect when ...
+                public void meta(MetaMessage event) {
+                    if (event.getType() == 47) {                                // ... the sequencer is done playing
+//                                    stop();       // performing this, cuts the sound at the end
+                        for (int mei = 0; mei < music.size(); ++mei) {
+                            for (int msm = 0; msm < music.get(mei).msm.size(); ++msm) {
+                                if (music.get(mei).msm.get(msm).midi != null) {
+                                    music.get(mei).msm.get(msm).midi.isPlaying = false;
+                                    music.get(mei).msm.get(msm).midi.panel[2].setText("\u25BA");
+                                    music.get(mei).msm.get(msm).midi.panel[2].setBackground(Color.LIGHT_GRAY);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -234,6 +276,8 @@ public class MeicoApp extends JFrame {
             public void mouseClicked(MouseEvent e) {
                 stopAllPlayback();
                 music.clear();
+                midiplayer.loadDefaultSoundbank();
+                soundbankFile = null;
                 doRepaint();
             }
 
@@ -296,30 +340,25 @@ public class MeicoApp extends JFrame {
     }
 
     private void stopAllPlayback() {
-        this.stopAllMidiPlayback();
-        this.stopAllAudioPlayback();
-    }
+        this.midiplayer.stop();
+        this.audioplayer.stop();
 
-    private void stopAllMidiPlayback() {
-        for (Mei4Gui mei : music) {
-            for (Mei4Gui.Msm4Gui msm : mei.msm) {
-                if ((msm.midi == null) || msm.midi.isEmpty())
-                    continue;
-                msm.midi.stop();
-            }
-        }
-    }
+        for (int mei = 0; mei < music.size(); ++mei) {
+            for (int msm = 0; msm < music.get(mei).msm.size(); ++msm) {
+                if (music.get(mei).msm.get(msm).midi != null) {
+                    music.get(mei).msm.get(msm).midi.isPlaying = false;
+                    if (music.get(mei).msm.get(msm).midi.panel[2] != null) {
+                        music.get(mei).msm.get(msm).midi.panel[2].setText("\u25BA");
+                        music.get(mei).msm.get(msm).midi.panel[2].setBackground(Color.LIGHT_GRAY);
+                    }
 
-    private void stopAllAudioPlayback() {
-        for (Mei4Gui mei : music) {
-            for (Mei4Gui.Msm4Gui msm : mei.msm) {
-                if (!((msm.midi == null) || msm.midi.isEmpty())) {
-                    if (!((msm.midi.audio == null) || (msm.midi.audio.isEmpty()))) {
-                        msm.midi.audio.stop();
+                    if (music.get(mei).msm.get(msm).midi.audio != null) {
+                        music.get(mei).msm.get(msm).midi.audio.panel[2].setText("\u25BA");
                     }
                 }
             }
         }
+
     }
 
     /**
@@ -580,10 +619,11 @@ public class MeicoApp extends JFrame {
                             if (mei2msm.contains(e.getPoint())) {
                                 for (Msm4Gui m : msm) {
                                     if (m.midi != null) {
-                                        if (m.midi.getSequencer().isRunning()) {
-                                            m.midi.stop();
+                                        if (m.midi.isPlaying) {
+                                            app.midiplayer.stop();
+                                            m.midi.isPlaying = false;
                                         }
-                                        if ((m.midi.audio != null) && m.midi.audio.isPlaying()) {
+                                        if ((m.midi.audio != null) && m.midi.audio.isPlaying) {
                                             m.midi.audio.stop();
                                         }
                                     }
@@ -887,10 +927,11 @@ public class MeicoApp extends JFrame {
                             if (SwingUtilities.isLeftMouseButton(e)) {
                                 if (msm2midi.contains(e.getPoint())) {
                                     if (midi != null) {
-                                        if (midi.getSequencer().isRunning()) {
-                                            midi.stop();
+                                        if (midi.isPlaying) {
+                                            app.midiplayer.stop();
+                                            midi.isPlaying = false;
                                         }
-                                        if ((midi.audio != null) && midi.audio.isPlaying()) {
+                                        if ((midi.audio != null) && midi.audio.isPlaying) {
                                             midi.audio.stop();
                                         }
                                     }
@@ -920,7 +961,7 @@ public class MeicoApp extends JFrame {
                 protected final JLabel[] panel;             // the actual gui extension
                 private Audio4Gui audio = null;
                 private MeicoApp app;
-                private File soundfont = null;
+                boolean isPlaying = false;                  // indicates whether this midi data is currently played back by app.midiplayer or not
 
                 /**
                  * constructor
@@ -938,7 +979,6 @@ public class MeicoApp extends JFrame {
                         this.audio = new Audio4Gui(file, app);
                     }
 
-                    this.initSequencer();
                     this.panel = new JLabel[4];     // the name label, save label, play, and convert label
                     this.app = app;
                 }
@@ -947,7 +987,8 @@ public class MeicoApp extends JFrame {
                  * constructor
                  */
                 public Midi4Gui(meico.midi.Midi midi, MeicoApp app) {
-                    super(midi.getSequence(), midi.getFile());
+                    this.setSequence(midi.getSequence());
+                    this.setFile(midi.getFile());
                     this.panel = new JLabel[4];
                     this.app = app;
                 }
@@ -970,7 +1011,7 @@ public class MeicoApp extends JFrame {
                         midiName.setForeground(Color.DARK_GRAY);
                         midiName.setBorder(new EmptyBorder(0, 4, 0, 0));
                         midiName.setFont(new Font(fontName, fontStyle, fontSize));
-                        midiName.setToolTipText("<html>" + this.getFile().getPath() + "</html>");
+                        midiName.setToolTipText("<html>" + this.getFile().getPath() + "<br>RIGHT CLICK: further Midi options</html>");
                         midiName.addMouseListener(new MouseAdapter() {
                             @Override
                             public void mouseEntered(MouseEvent e) {
@@ -981,6 +1022,36 @@ public class MeicoApp extends JFrame {
                                 app.setStatusMessage("");
                             }
                         });
+
+                        JPopupMenu midiNamePop = new JPopupMenu("Midi options");
+                        midiNamePop.setEnabled(true);
+                        JMenuItem soundbankChooser = new JMenuItem(new AbstractAction("Choose soundbank") {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                JFileChooser chooser = new JFileChooser();                                                                        // open the fileopen dialog
+                                chooser.setAcceptAllFileFilterUsed(false);
+                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("all supported files (*.dls, *.sf2)", "dls", "sf2"));  // make only suitable file types choosable
+                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("SoundFont (*.sf2)", "sf2"));                          // make only suitable file types choosable
+                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("Downloadable Sounds (*.dls)", "dls"));
+                                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {                                                // file open has been approved
+                                    app.soundbankFile = chooser.getSelectedFile();
+                                    app.midiplayer.loadSoundbank(app.soundbankFile);                                                              // set this soundfont for use during midi to audio conversion
+                                }
+                            }
+                        });
+                        midiNamePop.add(soundbankChooser);
+
+                        JMenuItem defaultSoundbank = new JMenuItem(new AbstractAction("Load default soundbank") {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                app.midiplayer.loadDefaultSoundbank();
+                                app.soundbankFile = null;
+                            }
+                        });
+                        defaultSoundbank.setEnabled(true);
+                        midiNamePop.add(defaultSoundbank);
+
+                        midiName.setComponentPopupMenu(midiNamePop);
 
                         final JLabel saveMidi = new JLabel(saveIcon, JLabel.CENTER);
                         saveMidi.setOpaque(true);
@@ -1022,13 +1093,13 @@ public class MeicoApp extends JFrame {
                             }
                         });
 
-                        final JLabel playMidi = new JLabel(((this.getSequencer() != null) && this.getSequencer().isRunning()) ? "\u25A0" : "\u25BA");
+                        final JLabel playMidi = new JLabel((this.isPlaying) ? "\u25A0" : "\u25BA");
                         playMidi.setFont(new Font(fontName, fontStyle, fontSize));
                         playMidi.setHorizontalAlignment(JLabel.CENTER);
                         playMidi.setOpaque(true);
                         playMidi.setBackground(Color.LIGHT_GRAY);
                         playMidi.setForeground(Color.DARK_GRAY);
-                        playMidi.setToolTipText("<html>play Midi file</html>");
+                        playMidi.setToolTipText("<html>Play Midi file</html>");
                         playMidi.addMouseListener(new MouseAdapter() {
                             @Override
                             public void mouseEntered(MouseEvent e) {
@@ -1048,7 +1119,7 @@ public class MeicoApp extends JFrame {
                             @Override
                             public void mouseReleased(MouseEvent e) {
                                 if (playMidi.contains(e.getPoint())) {
-                                    if ((getSequencer() != null) && getSequencer().isRunning()) {
+                                    if (isPlaying) {
                                         stop();
                                         return;
                                     }
@@ -1060,29 +1131,11 @@ public class MeicoApp extends JFrame {
                             }
                         });
 
-                        JPopupMenu midi2audioPop = new JPopupMenu("Midi to audio conversion options");
-                        midi2audioPop.setEnabled(true);
-                        JMenuItem soundbank = new JMenuItem(new AbstractAction("Choose soundbank") {
-                            @Override
-                            public void actionPerformed(ActionEvent e) {
-                                JFileChooser chooser = new JFileChooser();                              // open the fileopen dialog
-                                chooser.setAcceptAllFileFilterUsed(false);
-                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("all supported files (*.dls, *.sf2)", "dls", "sf2"));  // make only suitable file types choosable
-                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("SoundFont (*.sf2)", "sf2"));            // make only suitable file types choosable
-                                chooser.addChoosableFileFilter(new FileNameExtensionFilter("Downloadable Sounds (*.dls)", "dls"));
-                                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {      // file open has been approved
-                                    soundfont = chooser.getSelectedFile();                              // set this soundfont for use during midi to audio conversion
-                                }
-                            }
-                        });
-                        midi2audioPop.add(soundbank);
-
                         final JLabel midi2audio = new JLabel(convertIcon, JLabel.CENTER);
                         midi2audio.setOpaque(true);
                         midi2audio.setBackground(Color.LIGHT_GRAY);
                         midi2audio.setForeground(Color.DARK_GRAY);
-                        midi2audio.setComponentPopupMenu(midi2audioPop);
-                        midi2audio.setToolTipText("<html>LEFT CLICK: convert to audio<br>RIGHT CLICK: conversion options</html>");
+                        midi2audio.setToolTipText("<html>Convert to audio</html>");
                         midi2audio.addMouseListener(new MouseAdapter() {
                             @Override
                             public void mouseEntered(MouseEvent e) {
@@ -1104,12 +1157,12 @@ public class MeicoApp extends JFrame {
                             public void mouseReleased(MouseEvent e) {
                                 if (SwingUtilities.isLeftMouseButton(e)) {
                                     if (midi2audio.contains(e.getPoint())) {
-                                        if ((audio != null) && audio.isPlaying())
+                                        if ((audio != null) && audio.isPlaying)
                                             audio.stop();
                                         try {
-                                            Audio a = exportAudio(soundfont);
+                                            Audio a = exportAudio(soundbankFile);
                                             audio = new Audio4Gui(a, app);
-                                        } catch (IOException | UnsupportedAudioFileException e1) {
+                                        } catch (NullPointerException e1) {
                                             e1.printStackTrace();
                                         }
                                         midi2audio.setBackground(new Color(232, 232, 232));
@@ -1131,47 +1184,25 @@ public class MeicoApp extends JFrame {
                 }
 
                 /**
-                 * extend the initSequencer() mehtod by a MetaEventListener
-                 * @return
+                 * playback start method
                  */
-                @Override
-                public boolean initSequencer() {
-                    if (super.initSequencer()) {
-                        this.getSequencer().addMetaEventListener(new MetaEventListener() {  // Add a listener for meta message events to detect when ...
-                            public void meta(MetaMessage event) {
-                                if (event.getType() == 47) {                                // ... the sequencer is done playing
-//                                    stop();       // performing this, cuts the sound at the end
-                                    panel[2].setText("\u25BA");
-                                    panel[2].setBackground(Color.LIGHT_GRAY);
-                                }
-                            }
-                        });
-                        return true;
-                    }
-                    return false;
-                }
-
-                /**
-                 * playback start method extended by some gui stuff
-                 */
-                @Override
                 public void play() {
                     try {
-                        super.play();
-                    } catch (InvalidMidiDataException | MidiUnavailableException e) {
+                        this.app.midiplayer.play(this);
+                        this.isPlaying = true;
+                        panel[2].setText("\u25A0");
+                        panel[2].setBackground(new Color(232, 232, 232));
+                    } catch (InvalidMidiDataException e) {
                         e.printStackTrace();
-                        return;
                     }
-                    panel[2].setText("\u25A0");
-                    panel[2].setBackground(new Color(232, 232, 232));
                 }
 
                 /**
-                 * playback stop method extended by some gui stuff
+                 * playback stop method
                  */
-                @Override
                 public void stop() {
-                    super.stop();
+                    this.app.midiplayer.stop();
+                    this.isPlaying = false;
                     panel[2].setText("\u25BA");
                     panel[2].setBackground(Color.LIGHT_GRAY);
                 }
@@ -1179,12 +1210,13 @@ public class MeicoApp extends JFrame {
                 private class Audio4Gui extends meico.audio.Audio {
                     protected final JLabel[] panel = new JLabel[3];             // the actual gui extension
                     private MeicoApp app;
+                    boolean isPlaying = false;                  // indicates whether this audio data is currently played back by app.audioplayer or not
 
                     /**
                      * constructor
                      * @param audio
                      */
-                    public Audio4Gui(Audio audio, MeicoApp app) throws IOException, UnsupportedAudioFileException {
+                    public Audio4Gui(Audio audio, MeicoApp app) {
                         super(audio.getAudio(), audio.getFormat(), audio.getFile());
                         this.app = app;
                     }
@@ -1264,7 +1296,6 @@ public class MeicoApp extends JFrame {
                                             if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {      // file save has been approved
                                                 String path = chooser.getSelectedFile().getAbsolutePath();
                                                 String type = path.substring(path.lastIndexOf("."), path.length()).toLowerCase();
-                                                System.out.println(type);
                                                 switch (type) {
                                                     case ".wav":
                                                         writeAudio(path);       // save it as Wave file
@@ -1284,7 +1315,7 @@ public class MeicoApp extends JFrame {
                                 }
                             });
 
-                            final JLabel playAudio = new JLabel((this.isPlaying()) ? "\u25A0" : "\u25BA");
+                            final JLabel playAudio = new JLabel((this.isPlaying) ? "\u25A0" : "\u25BA");
                             playAudio.setFont(new Font(fontName, fontStyle, fontSize));
                             playAudio.setHorizontalAlignment(JLabel.CENTER);
                             playAudio.setOpaque(true);
@@ -1310,7 +1341,7 @@ public class MeicoApp extends JFrame {
                                 @Override
                                 public void mouseReleased(MouseEvent e) {
                                     if (playAudio.contains(e.getPoint())) {
-                                        if (isPlaying()) {
+                                        if (isPlaying) {
                                             stop();
                                             return;
                                         }
@@ -1334,15 +1365,11 @@ public class MeicoApp extends JFrame {
                     /**
                      * playback start method extended by some gui stuff
                      */
-                    @Override
                     public void play() {
-                        try {
-                            super.play();
-                        } catch (LineUnavailableException | IOException e) {
-                            e.printStackTrace();
-                        }
-                        panel[2].setText("\u25A0");
-                        panel[2].setBackground(new Color(232, 232, 232));
+                        this.app.audioplayer.play(this);
+                        this.isPlaying = true;
+                        this.panel[2].setText("\u25A0");
+                        this.panel[2].setBackground(new Color(232, 232, 232));
 
                         // listen to the audioClip and when it is finished playing, trigger the stop() method to clean up and reset the button
                         LineListener listener = new LineListener() {
@@ -1352,19 +1379,18 @@ public class MeicoApp extends JFrame {
                                 }
                             }
                         };
-                        this.getAudioClip().addLineListener(listener);
+                        this.app.audioplayer.getAudioClip().addLineListener(listener);
                     }
 
                     /**
                      * playback stop method extended by some gui stuff
                      */
-                    @Override
                     public void stop() {
-                        super.stop();
-                        panel[2].setText("\u25BA");
-                        panel[2].setBackground(Color.LIGHT_GRAY);
+                        this.app.audioplayer.stop();
+                        this.isPlaying = false;
+                        this.panel[2].setText("\u25BA");
+                        this.panel[2].setBackground(Color.LIGHT_GRAY);
                     }
-
                 }
             }
         }
