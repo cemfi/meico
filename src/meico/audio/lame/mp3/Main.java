@@ -533,7 +533,7 @@ public class Main {
       write_xing_frame(rf);
       rf.close();
     } catch (IOException e) {
-      System.err.printf("fatal error: can't update LAME-tag frame!\n");
+      System.err.printf("fatal error: can't draw LAME-tag frame!\n");
     }
 
     print_trailing_info();

@@ -68,16 +68,12 @@
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
   </path>
   
-  <path id="library.miglayout-4.0.classpath">
-    <pathelement location="${basedir}/externals/miglayout-4.0.jar"/>
-  </path>
-  
   <path id="library.saxon9he.classpath">
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
   </path>
   
-  <path id="library.xom-1.2.10.classpath">
-    <pathelement location="${basedir}/externals/xom-1.2.10.jar"/>
+  <path id="library.xom-1.2.11.classpath">
+    <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
   </path>
   
   
@@ -101,8 +97,7 @@
   </path>
   
   <path id="meico.module.production.classpath">
-    <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.miglayout-4.0.classpath"/>
+    <path refid="library.xom-1.2.11.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
     <path refid="library.java-string-similarity-1.0.01.classpath"/>
@@ -111,8 +106,7 @@
   
   <path id="meico.runtime.production.module.classpath">
     <pathelement location="${meico.output.dir}"/>
-    <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.miglayout-4.0.classpath"/>
+    <path refid="library.xom-1.2.11.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
     <path refid="library.java-string-similarity-1.0.01.classpath"/>
@@ -121,8 +115,7 @@
   
   <path id="meico.module.classpath">
     <pathelement location="${meico.output.dir}"/>
-    <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.miglayout-4.0.classpath"/>
+    <path refid="library.xom-1.2.11.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
     <path refid="library.java-string-similarity-1.0.01.classpath"/>
@@ -132,8 +125,7 @@
   <path id="meico.runtime.module.classpath">
     <pathelement location="${meico.testoutput.dir}"/>
     <pathelement location="${meico.output.dir}"/>
-    <path refid="library.xom-1.2.10.classpath"/>
-    <path refid="library.miglayout-4.0.classpath"/>
+    <path refid="library.xom-1.2.11.classpath"/>
     <path refid="library.jing-20091111.classpath"/>
     <path refid="library.saxon9he.classpath"/>
     <path refid="library.java-string-similarity-1.0.01.classpath"/>
@@ -205,8 +197,7 @@
     <jar destfile="${temp.jar.path.meico.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
       <zipfileset dir="${meico.output.dir}"/>
       <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
-      <zipfileset src="${basedir}/externals/xom-1.2.10.jar"/>
-      <zipfileset src="${basedir}/externals/miglayout-4.0.jar"/>
+      <zipfileset src="${basedir}/externals/xom-1.2.11.jar"/>
       <zipfileset src="${basedir}/externals/json-simple-3.0.2.jar"/>
       <zipfileset src="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
       <zipfileset file="${basedir}/externals/saxon9he.jar"/>

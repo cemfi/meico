@@ -37,7 +37,6 @@ public class Pitches {
         this.features = new ArrayList<>();  // create an empty list of chroma features
     }
 
-
     /**
      * this getter returns the file
      *
@@ -146,14 +145,22 @@ public class Pitches {
      * @return true if success, false if an error occured
      */
     public boolean writePitches() {
+        return this.writePitches(false);
+    }
+
+    /**
+     * write the pitch features to a file with default filename and the specified text layouting option
+     * @param prettyPrint
+     * @return
+     */
+    public boolean writePitches(boolean prettyPrint) {
         if (this.file == null) {
             System.err.println("Cannot write to the file system. Path and filename are not specified.");
             return false;
         }
 
-        return this.writePitches(this.file.getPath(), false);
+        return this.writePitches(this.file.getPath(), prettyPrint);
     }
-
     /**
      * write the pitch features to a file with the specified filename,
      * prettyPrint is set false for memory efficiency
@@ -181,9 +188,7 @@ public class Pitches {
             return false;
         }
 
-        String json = this.toJson().toJson();           // generate output String
-        if (prettyPrint)
-            json = Jsoner.prettyPrint(json);            // Jsoner does the layouting of the output String (linebreaks, indentation etc.)
+        String json = this.getAsString(prettyPrint);
 
         // write into the file
         try (FileWriter fileWriter = new FileWriter(file)) {
@@ -198,5 +203,25 @@ public class Pitches {
             this.file = file;
 
         return true;
+    }
+
+    /**
+     * returns the json string
+     * @param prettyPrint
+     * @return
+     */
+    public String getAsString(boolean prettyPrint) {
+        String json = this.toJson().toJson();           // generate output String
+        if (prettyPrint)
+            json = Jsoner.prettyPrint(json);            // Jsoner does the layouting of the output String (linebreaks, indentation etc.)
+        return json;
+    }
+
+    /**
+     * returns the jason string in its compact form (pretty print = false)
+     * @return
+     */
+    public String getAsString() {
+        return this.getAsString(false);
     }
 }

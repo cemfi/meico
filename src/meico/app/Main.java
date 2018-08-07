@@ -24,7 +24,8 @@ public class Main {
      */
     public static void main(String[] args) {
         if (args.length == 0) {                         // if meico.jar is called without command line arguments
-            new MeicoApp("Meico: MEI Converter v" + Meico.version, true);// start meico in window mode
+//            Meico.launch("Meico: MEI Converter v" + Meico.version);  // 1st string is the window title (is optional, MeicoApp generates a default title if none is given here)
+            Meico.launch();                             // this is the minimal call to launch meico's gui
         }
         else                                            // in case of command line arguments
             System.exit(commandLineMode(args));         // run the command line mode

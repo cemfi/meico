@@ -1,6 +1,7 @@
 package meico.midi;
 
 /**
+ * This class holds Midi data and provides som functionality for it.
  * @author Axel Berndt.
  */
 
@@ -69,7 +70,7 @@ public class Midi {
      * @throws InvalidMidiDataException
      * @throws IOException
      */
-    protected void readMidiFile(File file) throws InvalidMidiDataException, IOException {
+    protected synchronized void readMidiFile(File file) throws InvalidMidiDataException, IOException {
         this.sequence = MidiSystem.getSequence(file);
         this.file = file;
     }
@@ -96,7 +97,7 @@ public class Midi {
      *
      * @param filename the filename including the full path and .mid extension
      */
-    public void setFile(String filename) {
+    public synchronized void setFile(String filename) {
         this.file = new File(filename);
     }
 
@@ -104,7 +105,7 @@ public class Midi {
      * a setter to set the file
      * @param file
      */
-    public void setFile(File file) {
+    public synchronized void setFile(File file) {
         this.file = file;
     }
 
@@ -121,7 +122,7 @@ public class Midi {
      * this setter set the sequence
      * @param sequence
      */
-    public void setSequence(Sequence sequence) {
+    public synchronized void setSequence(Sequence sequence) {
         this.sequence = sequence;
     }
 
@@ -165,7 +166,7 @@ public class Midi {
      *
      * @return true if success, false if an error occurred
      */
-    public boolean writeMidi() {
+    public synchronized boolean writeMidi() {
         if (this.file == null) {
             System.err.println("Cannot write to the file system. Path and filename required.");
             return false;
@@ -179,7 +180,7 @@ public class Midi {
      * @param filename
      * @return true if success, false if an error occurred
      */
-    public boolean writeMidi(String filename) {
+    public synchronized boolean writeMidi(String filename) {
         File file = new File(filename);     // create the file with this filename
         file.getParentFile().mkdirs();      // ensure that the directory exists
         return this.writeMidi(file);
@@ -190,7 +191,7 @@ public class Midi {
      * @param file
      * @return true if success, false if an error occurred
      */
-    public boolean writeMidi(File file) {
+    public synchronized boolean writeMidi(File file) {
         try {
             file.createNewFile();                                   // create the file if it does not already exist
             MidiSystem.write(this.sequence, 1, file);

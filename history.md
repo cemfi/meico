@@ -1,8 +1,33 @@
 ### Version History
 
 
+#### v0.5.0
+- New graphical user interface:
+    - The new desktop application is located in package `meico.app.gui` in class `MeicoApp`.
+    - Lots of new file formats are droppable. Here is an overview of all supported file extensions: `.mei`, `.msm`, `.mid`, `.wav`, `.txt`, `.xsl`, `.sf2`, `.dls`.
+    - In addition to these import formats there are the following export formats that cannot be imported: `.mp3`, `.json` (encodes pitch/chroma information).
+    - Radial menus provide access to all operations that can be applied to the different data types. As a convenience shortcut MIDI and audio playback can be triggered by doubleclick. Soundbanks and XSLTs can also be activated via doubleclick.
+    - The following stuff has been deleted from the project as they are no longer required:
+        - classe `meico.app.MeicoApp` has been removed,
+        - class `meico.app.FileDrop` has been removed,
+        - the layout manager MigLayout has been removed from `externals`,
+        - all the graphics from the old GUI have been removed from the `resources/graphics` folder.
+    - Font Awesome has been added.
+    - Meico uses the default system font. Layouting reacts on different font measurements.
+    - Added keyboard input to trigger playback: SPACE (does not work on all systems), ENTER and the play/pause key (one of the extra media keys on some keyboards).
+    - All operations are now processed in seperate threads. This prevents interface freezing and allows to run several operations in parallel. While an operation is processed, a "computing/please wait" animation is shown on the corresponding data item.
+    - A separate window offers some preferences settings to customize meico a little bit and preload certain soundbanks and XSLTs. However, most of the settings will become active only after restarting meico. All settings are stored in a file `meico.cfg` when closing meico and restored at the next startup. The file will be generated if not yet existent.
+- Class `meico.Meico` got two new static methods `launch()` and `launch(String windowTitle, String logFileName)`. Applications can conveniently launch meico's graphical user interface by calling one of these methods, e.g. `Meico.launch()` or `Meico.launch("My window title")`.
+- Some revisions to classes `meico.midi.MidiPlayer` and `meico.audio.AudioPlayer` to ensure data integrity and correct feedback on method call `isPlaying()` (esp. in `AudioPlayer`). Class `MidiPlayer` got also two further getter methods `getMicrosecondLength()` and `getTickLength()`.
+- The output of method `meico.mei.Mei.validate()` has been changed from `boolean` to `String`. Now it returns the whole validation report. To get a `boolean` call `validate()` and then `isValid()`.
+- Added lots of `synchronized`s so that meico should run more stable in multithreaded environments.
+- Up to now, the MEI data was altered during conversion rendering it invalid. It has no use except for debugging purposes. We now ensured, that the original version is reset in method `meico.mei.Mei.exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions, boolean cleanup)` after the conversion process. The altered version is kept only if attribute cleanup is set false (debug mode).
+- XOM library has been updated to version 1.2.11.
+- Known issue: Loading XSLTs does not work on several Java versions. The issue seems to originate from the XOM library. In tests with Java 1.8.0_172 everything works fine. So at the moment this is the recommended Java version for running meico, at least regarding the use of XSLTs. everything else works alo in later versions.
+
+
 #### v0.4.0
-- Added `NullPointerException` not audio rendering Exception handling in `meico.app.MeicoApp`, subclass `Midi4Gui` (line 1112).
+- Added `NullPointerException` to audio rendering Exception handling in `meico.app.MeicoApp`, subclass `Midi4Gui`.
 - MIDI playback overhaul:
     - Extracted all MIDI playback related parts from `meico.midi.Midi` to new class `meico.midi.MidiPlayer`. Class `Midi` holds the data and its processing methods, class `MidiPlayer` provides playback and synthesis functionality.
     - Removed all MIDI playback methods from class `Midi`. Hence, this part is no longer backwards compatible.
@@ -16,7 +41,7 @@
         player.stop();
         player.close();                  // if not needed anymore, close it
         ```
-    - Soundbanks can now be loaded and applied to MIDI playback. In GUI mode, users do not have render audio to get the "high-quality" sound output. Hence, setup of the soundbank has been shifted to the MIDI name (right click). Here users can select the `sf2` or `dls` file to be used or switch back to Java's default soundbank. It is even possible to switch the soundbank during playback.
+    - Soundbanks can now be loaded and applied to MIDI playback. In GUI mode, users do not have to render audio to get the "high-quality" sound output. Hence, setup of the soundbank has been shifted to the MIDI name (right click). Here users can select the `.sf2` or `.dls` file to be used or switch back to Java's default soundbank. It is even possible to switch the soundbank during playback.
     - The corresponding parts of `meico.app.MeicoApp` have been adapted. There is no longer a player for each MIDI instance but only one global MidiPlayer instance that is fed with the MIDI data (either a `Sequence` object or a `Midi` object) to be played back.
 - Audio playback overhaul:
     - Extracted all audio playback related parts from `meico.audio.Audio` to new class `meico.audio.AudioPlayer`. Class `Audio` holds the data and its processing methods, class `AudioPlayer` provides playback functionality.
@@ -29,9 +54,9 @@
         ... music plays ...
         player.stop();
         ```
-- Added method `exportAudio(URL soundbankUrl)` to class `meico.midi.Midi` so that soundbanks do not have to local files or URLs have to be decoded to files by the application.
+- Added method `exportAudio(URL soundbankUrl)` to class `meico.midi.Midi` so that soundbanks do not have to be local files and URLs do not have to be decoded to files by the application.
 - Slight revisions to class `meico.audio.Audio` to ensure data integrity after MP3 conversion.
-- A note concerning MIDI to audio rendering: Meico's Midi to audio renderer relies on the package `sun.com.media.sound`. However, Java 9 and later versions do no longer provide access to this package at compile time. It is still accessible at runtime. Hence, meico should be compiled with Java 8 and can run with later versions (tested until Java 10). But at some point they will probably make this package inaccessible also at runtime. A workaround for this is using the Gervill Sound Synthesizer (search `gervill.jar` in the internet and add it to `externals`) that provides the required package, so no code changes are necessary. However, consider that Gervill is licensed under GNU GPL-2.0 while meico is under GNU LGPL-3.0!
+- A note concerning MIDI to audio rendering: Meico's MIDI to audio renderer relies on the package `sun.com.media.sound`. However, Java 9 and later versions do no longer provide access to this package at compile time. It is still accessible at runtime. Hence, meico should be compiled with Java 8 and can run with later versions (tested until Java 10). But at some point they will probably make this package inaccessible also at runtime. A workaround for this is using the Gervill Sound Synthesizer (search `gervill.jar` in the internet and add it to `externals`) that provides the required package, so no code changes are necessary. However, consider that Gervill is licensed under GNU GPL-2.0 while meico is under GNU LGPL-3.0!
 
 
 #### v0.3.8-rev
@@ -234,7 +259,7 @@
 - Two new helper methods have been added to `meico.mei.Helper`:
     - `public static Document xslTransformToDocument(Document input, Document stylesheet)` and
     - `public static String xslTransformToString(Document input, Document stylesheet)`.
-- These adds are not part of the window mode and meicoPy, yet, butt will be integrated in a future update.
+- These adds are not part of the window mode and meicoPy, yet, butt will be integrated in a future draw.
 
 
 #### v0.2.11

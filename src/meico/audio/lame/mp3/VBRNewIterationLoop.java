@@ -74,7 +74,7 @@ public final class VBRNewIterationLoop implements IIterationLoop {
       gfc.bitrate_index = 0;
     }
     if (used_bits <= frameBits[gfc.bitrate_index]) {
-			/* update Reservoire status */
+			/* draw Reservoire status */
       int mean_bits = 0, fullframebits;
       MeanBits mb = new MeanBits(mean_bits);
       fullframebits = this.quantize.rv.ResvFrameBegin(gfp, mb);

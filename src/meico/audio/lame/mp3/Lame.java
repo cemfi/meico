@@ -1867,13 +1867,13 @@ public class Lame {
             mfbuf[1], gfc.mf_size, n_out, gfc.channels_out) == GainAnalysis.GAIN_ANALYSIS_ERROR)
           return -6;
 
-			/* update in_buffer counters */
+			/* draw in_buffer counters */
       nsamples -= n_in;
       in_bufferPos += n_in;
       if (gfc.channels_out == 2)
         ;// in_bufferPos += n_in;
 
-			/* update mfbuf[] counters */
+			/* draw mfbuf[] counters */
       gfc.mf_size += n_out;
       assert (gfc.mf_size <= LameInternalFlags.MFSIZE);
 

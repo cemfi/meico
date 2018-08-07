@@ -101,7 +101,7 @@ public class Audio {
      * @throws IOException
      * @throws UnsupportedAudioFileException
      */
-    public static AudioInputStream loadWavFileToAudioInputStream(File file) throws IOException, UnsupportedAudioFileException {
+    public synchronized static AudioInputStream loadWavFileToAudioInputStream(File file) throws IOException, UnsupportedAudioFileException {
         return AudioSystem.getAudioInputStream(file);
     }
 
@@ -110,7 +110,7 @@ public class Audio {
      * @param stream
      * @return
      */
-    public static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
+    public synchronized static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
         byte[] array;
         try {
             array = new byte[(int)(stream.getFrameLength() * stream.getFormat().getFrameSize())];   // initialize the byte array with the length of the stream
@@ -128,7 +128,7 @@ public class Audio {
      * @param format
      * @return
      */
-    public static AudioInputStream convertByteArray2AudioInputStream(byte[] array, AudioFormat format) {
+    public synchronized static AudioInputStream convertByteArray2AudioInputStream(byte[] array, AudioFormat format) {
         ByteArrayInputStream bis = new ByteArrayInputStream(array);             // byte array to ByteArrayInputStream
         AudioInputStream ais = new AudioInputStream(bis, format, array.length); // byteArrayInputStream to AudioInputStream
         return ais;                                                             // return it
@@ -140,7 +140,7 @@ public class Audio {
      * @param format audio format of PCM data
      * @return mp3 data as byte array
      */
-    public byte[] encodePcmToMp3(byte[] pcm, AudioFormat format) {
+    public synchronized byte[] encodePcmToMp3(byte[] pcm, AudioFormat format) {
         LameEncoder encoder = new LameEncoder(format, 256, MPEGMode.STEREO, Lame.QUALITY_HIGH, true);   // bitrate is 256; in this case VBR (=variable bitrate) is true
 
         ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
@@ -171,7 +171,7 @@ public class Audio {
      * check if there is data in the audio byte array
      * @return
      */
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return ((this.audio == null) || (this.audio.length == 0));
     }
 
@@ -179,7 +179,7 @@ public class Audio {
      * a setter for the file object
      * @param file
      */
-    public void setFile(File file) {
+    public synchronized void setFile(File file) {
         this.file = file;
     }
 
@@ -187,7 +187,7 @@ public class Audio {
      * a getter for the file
      * @return
      */
-    public File getFile() {
+    public synchronized File getFile() {
         return this.file;
     }
 
@@ -195,11 +195,11 @@ public class Audio {
      * a getter for the audio data
      * @return
      */
-    public byte[] getAudio() {
+    public synchronized byte[] getAudio() {
         return this.audio;
     }
 
-    public AudioFormat getFormat() {
+    public synchronized AudioFormat getFormat() {
         return this.format;
     }
 
@@ -207,7 +207,7 @@ public class Audio {
      * a getter for the sample rate
      * @return
      */
-    public float getSampleRate() {
+    public synchronized float getSampleRate() {
         return this.format.getSampleRate();
     }
 
@@ -215,7 +215,7 @@ public class Audio {
      * a getter for the sample size in bits
      * @return
      */
-    public int getSampleSizeInBits() {
+    public synchronized int getSampleSizeInBits() {
         return this.format.getSampleSizeInBits();
     }
 
@@ -223,7 +223,7 @@ public class Audio {
      * a getter for the frame size
      * @return
      */
-    public int getFrameSize() {
+    public synchronized int getFrameSize() {
         return this.format.getFrameSize();
     }
 
@@ -231,7 +231,7 @@ public class Audio {
      * a getter for the frame rate
      * @return
      */
-    public float getFrameRate() {
+    public synchronized float getFrameRate() {
         return this.format.getFrameRate();
     }
 
@@ -239,7 +239,7 @@ public class Audio {
      * a getter for the number of channels
      * @return
      */
-    public int getChannels() {
+    public synchronized int getChannels() {
         return this.format.getChannels();
     }
 
@@ -247,7 +247,7 @@ public class Audio {
      * a getter for the encoding
      * @return
      */
-    public AudioFormat.Encoding getEncoding() {
+    public synchronized AudioFormat.Encoding getEncoding() {
         return this.format.getEncoding();
     }
 
@@ -255,7 +255,7 @@ public class Audio {
      * a getter for the bigEndian
      * @return
      */
-    public boolean isBigEndian() {
+    public synchronized boolean isBigEndian() {
         return this.format.isBigEndian();
     }
 
@@ -272,7 +272,7 @@ public class Audio {
      * @param filename
      * @return true if success, false if an error occurred
      */
-    public boolean writeAudio(String filename) {
+    public synchronized boolean writeAudio(String filename) {
         File file = new File(filename);     // create the file with this filename
         file.getParentFile().mkdirs();                              // ensure that the directory exists
         return this.writeAudio(file);              // write into it
@@ -283,7 +283,7 @@ public class Audio {
      * @param file
      * @return true if success, false if an error occurred
      */
-    public boolean writeAudio(File file) {
+    public synchronized boolean writeAudio(File file) {
         if (file == null) {                                                 // if no valid file
             System.err.println("No file specified to write audio data.");   // print error message
             return false;                                                         // cancel
@@ -321,7 +321,7 @@ public class Audio {
      * @param filename
      * @return true if success, false if an error occurred
      */
-    public boolean writeMp3(String filename) {
+    public synchronized boolean writeMp3(String filename) {
         File file = new File(filename);     // create the file with this filename
         file.getParentFile().mkdirs();      // ensure that the directory exists
         return this.writeMp3(file);         // write into it
@@ -332,7 +332,7 @@ public class Audio {
      * @param file
      * @return true if success, false if an error occurred
      */
-    public boolean writeMp3(File file) {
+    public synchronized boolean writeMp3(File file) {
         if (file == null) {                                                 // if no valid file
             System.err.println("No file specified to write audio data.");   // print error message
             return false;                                                         // cancel

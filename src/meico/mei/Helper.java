@@ -1300,6 +1300,28 @@ public class Helper {
     /**
      * a helper method to perform XSL transforms
      * @param input the in input xml document
+     * @param transform the XSLT stylesheet
+     * @return the output Document of the transform or null if output not contains a single root or stylesheet error occurs
+     */
+    public static Document xslTransformToDocument(Document input, XSLTransform transform) {
+        try {
+            Nodes output = transform.transform(input);              // do the transform
+            return XSLTransform.toDocument(output);                 // create a Document instance from the output
+        }
+        catch (XMLException ex) {
+            System.err.println("Result did not contain a single root.");
+            return null;
+        }
+        catch (XSLException ex) {
+            System.err.println("Stylesheet error.");
+            return null;
+        }
+    }
+
+
+    /**
+     * a helper method to perform XSL transforms
+     * @param input the in input xml document
      * @param xslt the XSLT stylesheet
      * @return the output string (null in case of an error)
      */
@@ -1325,6 +1347,36 @@ public class Helper {
             return null;
         }
         catch (XSLException ex) {
+            System.err.println("Stylesheet error.");
+            return null;
+        }
+
+        // compile output string
+        for (int i = 0; i < output.size(); i++) {
+            result += output.get(i).toXML();
+        }
+
+        return result;
+    }
+
+    /**
+     * a helper method to perform XSL transforms
+     * @param input the in input xml document
+     * @param transform the XSLT stylesheet
+     * @return the output string (null in case of an error)
+     */
+    public static String xslTransformToString(Document input, XSLTransform transform) {
+        String result = "";
+        Nodes output;
+
+        try {
+            output = transform.transform(input);                    // do the transform
+        }
+        catch (XMLException ex) {
+            System.err.println("Result did not contain a single root.");
+            return null;
+        }
+        catch (XSLException e) {
             System.err.println("Stylesheet error.");
             return null;
         }

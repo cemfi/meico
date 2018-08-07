@@ -797,7 +797,7 @@ public class PsyModel {
       uselongblock[0] = uselongblock[1] = 0;
 
 		/*
-		 * update the blocktype of the previous granule, since it depends on
+		 * draw the blocktype of the previous granule, since it depends on
 		 * what happend in this granule
 		 */
     for (int chn = 0; chn < gfc.channels_out; chn++) {
@@ -1978,7 +1978,7 @@ public class PsyModel {
     final LameInternalFlags gfc = gfp.internal_flags;
 
 		/*
-		 * update the blocktype of the previous granule, since it depends on
+		 * draw the blocktype of the previous granule, since it depends on
 		 * what happend in this granule
 		 */
     for (int chn = 0; chn < gfc.channels_out; chn++) {

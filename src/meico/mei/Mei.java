@@ -12,6 +12,7 @@ import java.util.*;
 import meico.msm.Goto;
 import nu.xom.*;
 import meico.msm.Msm;
+import nu.xom.xslt.XSLTransform;
 import org.xml.sax.SAXException;
 
 public class Mei {
@@ -75,14 +76,14 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(String xml, boolean validate) throws IOException, ParsingException {
-        if (validate)                                               // if the mei file should be validated
-            this.validate();                                        // do so, the result is stored in this.validMei
         Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
         try {
             this.mei = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
         } catch (ValidityException e) {                             // in case of a ValidityException (no valid mei code)
             this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
         }
+        if (validate)                                               // if the mei file should be validated
+            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
     }
 
     /**
@@ -104,7 +105,7 @@ public class Mei {
      */
     public Mei(InputStream inputStream, boolean validate) throws IOException, ParsingException {
         if (validate)                                               // if the mei file should be validated
-            this.validate();                                        // do so, the result is stored in this.validMei
+            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
         Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
         try {
             this.mei = builder.build(inputStream);
@@ -120,26 +121,26 @@ public class Mei {
      * @throws IOException
      * @throws ParsingException
      */
-    protected void readMeiFile(File file, boolean validate) throws IOException, ParsingException {
+    protected synchronized void readMeiFile(File file, boolean validate) throws IOException, ParsingException {
         this.file = file;
 
         if (!file.exists()) {
             this.mei = null;
             this.validMei = false;
-            System.err.println("No such file or directory: " + file.getPath());
-            return;
+//            System.err.println("No such file or directory: " + file.getPath());
+            throw new IOException("No such file or directory: " + file.getPath());
         }
 
         // read file into the mei instance of Document
         if (validate)                                               // if the mei file should be validated
-            this.validate();                                        // do so, the result is stored in this.validMei
-        Builder builder = new Builder(false);                    // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
-//        this.validMei = true;                                  // the mei code is valid until validation fails (ValidityException)
+            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
+        Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
+//        this.validMei = true;                                       // the mei code is valid until validation fails (ValidityException)
         try {
             this.mei = builder.build(file);
         }
         catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
-//            this.validMei = false;                             // set validMei false to indicate that the mei code is not valid
+//            this.validMei = false;                                  // set validMei false to indicate that the mei code is not valid
 //            e.printStackTrace();                                    // output exception message
 //            for (int i=0; i < e.getErrorCount(); i++) {             // output all validity error descriptions
 //                System.err.println(e.getValidityError(i));
@@ -160,7 +161,7 @@ public class Mei {
      * a setter to change the file
      * @param file
      */
-    public void setFile(File file) {
+    public synchronized void setFile(File file) {
         this.file = file;
     }
 
@@ -169,7 +170,7 @@ public class Mei {
      *
      * @param filename the filename including the full path and .mei extension
      */
-    public void setFile(String filename) {
+    public synchronized void setFile(String filename) {
         this.file = new File(filename);
     }
     /** writes the mei document to a ...-meico.mei file at the same location as the original mei file; this method is mainly relevant for debug output after calling exportMsm()
@@ -253,25 +254,29 @@ public class Mei {
      * validate the data loaded into this.file and return whether it is proper mei according to mei-CMN.rng
      * @return
      */
-    public boolean validate() {
-        if (this.isEmpty()) return false;       // no file, no validation
+    public synchronized String validate() {
+        if (this.isEmpty()) return "No MEI data present to be validated";    // no file, no validation
 
         this.validMei = true;                   // it is valid until the validator throws an exception
+        String report = "Passed.";              // the validation report string, it will be overwritten if validation fails
 
         try {
             Helper.validateAgainstSchema(this.file, this.getClass().getResource("/resources/mei-CMN.rng"));
 //            Helper.validateAgainstSchema(this.file, new URL("http://www.music-encoding.org/schema/current/mei-CMN.rng"));     // this variant takes the schema from the web, the user has to be online for this!
         } catch (SAXException e) {              // invalid mei
             this.validMei = false;
+            report = "Failed. \n" + e.getMessage();
             e.printStackTrace();                // print the full error message
 //            System.err.println(e.getMessage()); // print only the validation error message, not the complete stackTrace
         } catch (IOException e) {               // missing rng file
             this.validMei = false;
+            report = "Failed.  Missing file /resources/mei-CMN.rng!";
 //            e.printStackTrace();
             System.err.println("Validation failed: missing file /resources/mei-CMN.rng!");
         }
         System.out.println("Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + this.validMei);  // command line output of the result
-        return this.validMei;                   // return the result
+        report = "Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + report;
+        return report;                          // return the result
     }
 
     /**
@@ -334,8 +339,7 @@ public class Mei {
                 return (this.getFile() == null) ? "" : Helper.getFilenameWithoutExtension(this.getFile().getName());    // return the filename without extension or (if that does not exist either) return empty string
             }
         }
-
-        return title.getValue();                            // return the title string
+        return (title != null) ? title.getValue() : ((this.getFile() == null) ? "" : Helper.getFilenameWithoutExtension(this.getFile().getName()));  // return the title string
     }
 
     /**
@@ -362,12 +366,30 @@ public class Mei {
     }
 
     /**
+     * transform this MEI via the given xsl transform
+     * @param transform
+     * @return result of the transform as XOM Document instance
+     */
+    public Document xslTransformToDocument(XSLTransform transform) {
+        return Helper.xslTransformToDocument(this.mei, transform);
+    }
+
+    /**
      * transform this MEI via the given xsl file
      * @param xslt
      * @return result of the transform as String instance
      */
     public String xslTransformToString(File xslt) {
         return Helper.xslTransformToString(this.mei, xslt);
+    }
+
+    /**
+     * transform this MEI via the given xsl transform
+     * @param transform
+     * @return result of the transform as String instance
+     */
+    public String xslTransformToString(XSLTransform transform) {
+        return Helper.xslTransformToString(this.mei, transform);
     }
 
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv; the thime resolution (pulses per quarter note) is 720 by default or more if required (for very short note durations)
@@ -405,11 +427,11 @@ public class Mei {
      *
      * @param ppq the ppq resolution for the conversion; this is counterchecked with the minimal required resolution to capture the shortest duration in the mei data; if a higher resolution is necessary, this input parameter is overridden
      * @param dontUseChannel10 the flag says whether channel 10 (midi drum channel) shall be used or not; it is already dont here, at the mei2msm conversion, because the msm should align with the midi file later on
-     * @param msmCleanup set true to return a clean msm file or false to keep all the crap from the conversion
+     * @param cleanup set true to return a clean msm file or false to keep all the crap from the conversion
      * @param ignoreExpansions set this true to have a 1:1 conversion of MEI to MSM without the rearrangement that MEI's expansion elements produce
      * @return the list of msm documents (movements) created
      */
-    public List<Msm> exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions, boolean msmCleanup) {
+    public synchronized List<Msm> exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions, boolean cleanup) {
         if (this.isEmpty() || (this.getMusic() == null) || (this.getMusic().getFirstChildElement("body", this.getMusic().getNamespaceURI()) == null))      // if no mei music data available
             return new ArrayList<Msm>();                                        // return empty list
 
@@ -419,6 +441,10 @@ public class Mei {
             ppq = minPPQ;                                                       // adjust the specified ppq to ensure viable results
             System.out.println("The specified pulses per quarternote resolution (ppq) is too coarse to capture the shortest duration values in the mei source. Using the minimal required resolution of " + ppq + " instead");
         }
+
+        Document orig = null;
+        if (cleanup)
+            orig = (Document)this.mei.copy();                                   // the document will be altered during conversion, thus we keep the original to restore it after the process
 
 //        long t = System.currentTimeMillis();
         this.resolveTieElements();                                              // first resolve the ties in case they are affected by the copyof resolution which comes next
@@ -437,7 +463,11 @@ public class Mei {
         }
         this.helper = null;                                                     // as this is a class variable it would remain in memory after this method, so it has to be nulled for garbage collection
 
-        if (msmCleanup) Helper.msmCleanup(msms);                                // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
+        // cleanup
+        if (cleanup){
+            this.mei = orig;                                                    // restore the unaltered version of the mei data
+            Helper.msmCleanup(msms);                                            // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
+        }
 
         // generate a dummy file name in the msm objects
         if (this.file != null) {
@@ -1391,7 +1421,7 @@ public class Mei {
         this.convert(measure);                                                                                  // process everything within the measure
         this.helper.accid.clear();                                                                              // accidentals are valid within one measure, but not in the subsequent measures, so forget them
 
-        // update the duration of the measure
+        // draw the duration of the measure
         this.helper.currentMeasure = null;                                                                      // this has to be set null so that getMidiTime() does not return the measure's date
         double endDate = this.helper.getMidiTime();                                                             // get the current date
         double dur2 = endDate - startDate;                                                                      // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
@@ -1803,7 +1833,7 @@ public class Mei {
         this.convert(chord);                                                // process everything within this chord
         this.helper.currentChord = f;                                       // foget the pointer to this chord and return to the surrounding environment or nullptr
         if (this.helper.currentChord == null) {                             // we are done with all chord/bTrem/fTrem environments
-            this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur))); // update currentDate
+            this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString((Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur))); // draw currentDate
         }
     }
 
@@ -1926,11 +1956,11 @@ public class Mei {
                 else {                                                              // otherwise
                     first = Helper.cloneElement(es.get(es.size() - 2));             // get the second to last time signature element
                 }
-                first.addAttribute(new Attribute("midi.date", this.helper.currentPart.getAttributeValue("currentDate")));  // update date of first  to currentDate
+                first.addAttribute(new Attribute("midi.date", this.helper.currentPart.getAttributeValue("currentDate")));  // draw date of first  to currentDate
 
                 // set date of the last time signature element to the beginning of currentDate + 1 measure
                 double timeframe2 = (4.0 * this.helper.ppq * Integer.parseInt(first.getAttributeValue("numerator"))) / Integer.parseInt(first.getAttributeValue("denominator"));    // compute the length of one measure of time signature element first
-                second.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // update date of second time signature element
+                second.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // draw date of second time signature element
 
                 // add both instructions to the timeSignatureMap
                 Helper.addToMap(first, (Element)es.get(0).getParent());
@@ -1965,7 +1995,7 @@ public class Mei {
             while (tsdate >= (currentDate - timeframe)) {                                                                                                                               // if we pass the date of the current time signature (and maybe others, too)
                 --timesign;                                                                                                                                                             // choose predecessor in the ts list
                 tsdate = ((timesign) > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                  // get its date
-                measureLength = ((timesign) > 0) ? this.helper.computeMeasureLength(Integer.parseInt(ts.get(timesign).getAttributeValue("numerator")), Integer.parseInt(ts.get(timesign).getAttributeValue("denominator"))) : this.helper.computeMeasureLength(4, 4);   // update measureLength
+                measureLength = ((timesign) > 0) ? this.helper.computeMeasureLength(Integer.parseInt(ts.get(timesign).getAttributeValue("numerator")), Integer.parseInt(ts.get(timesign).getAttributeValue("denominator"))) : this.helper.computeMeasureLength(4, 4);   // draw measureLength
             }
         }
 
@@ -1974,7 +2004,7 @@ public class Mei {
             Element tsMap = (Element)ts.get(0).getParent();                                                                                         // get the map
             for(++timesign; timesign < ts.size(); ++timesign) {                                                                                     // go through all time signature elements we just passed
                 Element clone = Helper.cloneElement(ts.get(timesign));                                                                              // clone the element
-                clone.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(clone.getAttributeValue("midi.date")) + timeframe));    // update its date
+                clone.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(clone.getAttributeValue("midi.date")) + timeframe));    // draw its date
                 Helper.addToMap(clone, tsMap);
             }
         }
@@ -2011,7 +2041,7 @@ public class Mei {
             if (date < startDate) break;                                                                                            // if all elements from the previous beat were collected, break the for loop
             if (layer.isEmpty() || ((e.getAttribute("layer") != null) && e.getAttributeValue("layer").equals(layer))) {             // if no need to consider layers or the layer of e matches the currentLayer
                 Element copy = Helper.cloneElement(e);                                                                              // make a new element
-                copy.getAttribute("midi.date").setValue(Double.toString(date + timeframe));                                         // update its date attribute
+                copy.getAttribute("midi.date").setValue(Double.toString(date + timeframe));                                         // draw its date attribute
                 Attribute id = Helper.getAttribute("id", copy);                                                                     // get the id attribute
                 if (id != null)                                                                                                     // if the element has an id
                     id.setValue("meico_repeats_" + id.getValue() + "_" + UUID.randomUUID().toString());                             // give it a new unique one of the following form: "meico_repeats_oldID_newUUID"
@@ -2024,7 +2054,7 @@ public class Mei {
             Helper.addToMap(els.peek(), this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));       // append element to score and pop from stack
         }
 
-        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(currentDate + timeframe));                     // update currentDate counter
+        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(currentDate + timeframe));                     // draw currentDate counter
     }
 
 
@@ -2041,7 +2071,7 @@ public class Mei {
             return;
 
         Helper.addToMap(rest, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));                     // insert in movement
-        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration"))));  // update currentDate
+        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration"))));  // draw currentDate
     }
 
     /** make a rest that lasts a complete measure
@@ -2090,7 +2120,7 @@ public class Mei {
         if (num > 1)                                                                        // if multiple measures (more than 1)
             rest.getAttribute("midi.duration").setValue(Double.toString(Double.parseDouble(rest.getAttributeValue("midi.duration")) * num));    // rest duration of one measure times the number of measures
 
-        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))); // update currentDate counter
+        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + Double.parseDouble(rest.getAttributeValue("midi.duration")))); // draw currentDate counter
     }
 
     /** process an mei rest element
@@ -2107,7 +2137,7 @@ public class Mei {
 
         s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                               // else store attribute
         this.helper.addLayerAttribute(s);                                                                   // add an attribute that indicates the layer
-        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur));  // update currentDate counter
+        this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur));  // draw currentDate counter
         Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));    // insert the new note into the part->dated->score
 
         // this is just for the debugging in mei
@@ -2237,9 +2267,9 @@ public class Mei {
         if (dur == 0.0) return;                                                 // if failed, cancel
         s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));
 
-        // update currentDate counter
+        // draw currentDate counter
         if (this.helper.currentChord == null)                                   // the next instruction must be suppressed in the chord environment
-            this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(date + dur));  // update currentDate counter
+            this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(date + dur));  // draw currentDate counter
 
         //adding some attributes to the mei source, this is only for the debugging in mei
         note.addAttribute(new Attribute("pnum", String.valueOf(pitch)));
@@ -2319,7 +2349,7 @@ public class Mei {
      *
      * @return null (no document loaded), an ArrayList with those ids that could not be resolved, or an empty ArrayList if everything went well
      */
-    public ArrayList<String> resolveCopyofs() {
+    public synchronized ArrayList<String> resolveCopyofs() {
         Element e = this.getRootElement();                                                              // this also includes the meiHead section, not only the music section, as there might be reference from music into the head
         if (e == null) return null;
 
@@ -2418,7 +2448,7 @@ public class Mei {
      *
      * @return null (no document loaded), an ArrayList with those tie elements that could not be resolved, or an empty ArrayList if everything went well
      */
-    public ArrayList<String> resolveTieElements() {
+    public synchronized ArrayList<String> resolveTieElements() {
         Element e = this.getMusic();
         if (e == null) return null;                                                                 // if there is no music, cancel
 
@@ -2571,7 +2601,7 @@ public class Mei {
      * Expansion elements in MEI indicate the sequence in which sibling section and ending elements have to be arranged.
      * This method creates a regularized, i.e. "through-composed", MEI that renders the expansions.
      */
-    public void resolveExpansions() {
+    public synchronized void resolveExpansions() {
         System.out.print("Resolve Expansions:");
         this.getRootElement().replaceChild(this.getMusic(), this.resolveExpansions(this.getMusic()));   // replace the whole music subtree by its regularized version
         System.out.println(" done");
@@ -2584,7 +2614,7 @@ public class Mei {
      * @param root from this element on the whole subtree will be resolved
      * @return the regularized version root (can be used to replace root)
      */
-    private Element resolveExpansions(Element root) {
+    private synchronized Element resolveExpansions(Element root) {
         Element regularizedRoot = (Element) root.copy();                                    // create a deep copy of root to be edited and returned
         Element expansion = Helper.getFirstChildElement("expansion", regularizedRoot);      // this will hold the expansion element to resolve, or null if there is none
         List<String> plist = null;                                                          // this will hold all the xml:id's from the expansion's plist in the order to be played, i.e., the plist says how to rearrange the expansion's siblings
@@ -2660,7 +2690,7 @@ public class Mei {
      *
      * @return the generated ids count
      */
-    public int addIds() {
+    public synchronized int addIds() {
         System.out.print("Adding IDs:");
         Element root = this.getRootElement();
         if (root == null) {

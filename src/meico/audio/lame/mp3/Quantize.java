@@ -1024,7 +1024,7 @@ public class Quantize {
   /**
    * Robert Hegemann 2000-09-06
    * <p/>
-   * update reservoir status after FINAL quantization/bitrate
+   * draw reservoir status after FINAL quantization/bitrate
    */
   public final void iteration_finish_one(final LameInternalFlags gfc,
                                          final int gr, final int ch) {
@@ -1043,7 +1043,7 @@ public class Quantize {
       tk.best_huffman_divide(gfc, cod_info);
 
 		/*
-		 * update reservoir status after FINAL quantization/bitrate
+		 * draw reservoir status after FINAL quantization/bitrate
 		 */
     rv.ResvAdjust(gfc, cod_info);
   }

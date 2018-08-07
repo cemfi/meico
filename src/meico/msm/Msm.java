@@ -11,6 +11,7 @@ import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.midi.*;
 import nu.xom.*;
+import nu.xom.xslt.XSLTransform;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
@@ -126,7 +127,7 @@ public class Msm {
      * @throws IOException
      * @throws ParsingException
      */
-    protected void readMsmFile(File file, boolean validate) throws IOException, ParsingException {
+    protected synchronized void readMsmFile(File file, boolean validate) throws IOException, ParsingException {
         this.file = file;
 
         if (!file.exists()) {
@@ -165,7 +166,7 @@ public class Msm {
      *
      * @return true if the msm document is empty, else false
      */
-    public boolean isEmpty() {
+    public  boolean isEmpty() {
         return (this.msm == null);
     }
 
@@ -187,7 +188,7 @@ public class Msm {
      * a setter for the document
      * @param msmDocument
      */
-    public void setDocument(Document msmDocument) {
+    public synchronized void setDocument(Document msmDocument) {
         this.msm = msmDocument;
     }
 
@@ -344,7 +345,7 @@ public class Msm {
      * this method is not part of the mei.exportMsm() cleanup procedure as some applications may still need the rests;
      * others who don't, can call this method to remove all rest elements and get a purged msm
      */
-    public void removeRests() {
+    public synchronized void removeRests() {
         if (this.isEmpty()) return;
 
         Nodes r = this.getRootElement().query("descendant::*[local-name()='rest']");    // select all rest elements
@@ -356,7 +357,7 @@ public class Msm {
      * this method removes all empty maps (timeSignatureMap, keySignatureMap, markerMap, sequencingMap etc.);
      * this is to make the msm document a bit smaller and less cluttered
      */
-    public void deleteEmptyMaps() {
+    public synchronized void deleteEmptyMaps() {
         if (this.isEmpty()) return;
 
         Nodes maps = this.getRootElement().query("descendant::*[contains(local-name(), 'Map')]");   // get all elements in the document that have a substring "Map" in their local-name
@@ -371,7 +372,7 @@ public class Msm {
      * this method expands all global and local maps according to the sequencingMaps;
      * if a nonempty, local sequencingMap is given in a certain part, that part ignores the global sequencingMap
      */
-    public void resolveSequencingMaps() {
+    public synchronized void resolveSequencingMaps() {
         if (this.isEmpty()) return;
 
         Element globalSequencingMap = this.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap"); // get the global sequencingMap (or null if there is none)
@@ -440,7 +441,7 @@ public class Msm {
                 currentDate = Double.parseDouble(e.getAttributeValue("midi.date"));                                     // read its date
                 if (currentDate >= gt.date) break;                                                                      // if the element's date is at or after the goto (keep in mind, the goto is active) don't copy further, break the loop
                 Element eCopy = (Element) e.copy();                                                                     // make a deep copy of the element
-                eCopy.getAttribute("midi.date").setValue(Double.toString(currentDate + dateOffset));                    // update its date
+                eCopy.getAttribute("midi.date").setValue(Double.toString(currentDate + dateOffset));                    // draw its date
 
                 Attribute repetitionCounter = e.getAttribute("repetitionCounter");                                      // get the counter of how often we have already repeated this element
                 if (repetitionCounter == null) {                                                                        // if we pass this element the first time
@@ -456,8 +457,8 @@ public class Msm {
                 newMap.appendChild(eCopy);                                  // append the copy to the new map
             }
 
-            dateOffset += gt.date - gt.targetDate;                          // update the dateOffset
-            currentDate = gt.targetDate;                                    // update currentDate
+            dateOffset += gt.date - gt.targetDate;                          // draw the dateOffset
+            currentDate = gt.targetDate;                                    // draw currentDate
             i = -1;                                                         // start searching for the next goto
         }
 
@@ -465,7 +466,7 @@ public class Msm {
         for (Element e = Msm.getElementAtAfter(currentDate, map); e != null; e = Helper.getNextSiblingElement(e)) { // go through the map elements, starting the first element at or after the goto's target.date, and then go on with the next sibling
             currentDate = Double.parseDouble(e.getAttributeValue("midi.date"));                                     // read its date
             Element eCopy = (Element) e.copy();                                                                     // make a deep copy of the element
-            eCopy.getAttribute("midi.date").setValue(Double.toString(currentDate + dateOffset));                    // update its date
+            eCopy.getAttribute("midi.date").setValue(Double.toString(currentDate + dateOffset));                    // draw its date
 
             Attribute repetitionCounter = e.getAttribute("repetitionCounter");                                      // get the counter of how often we have already repeated this element
             if (repetitionCounter != null) {                                                                        // this is not the first time we process this element
@@ -507,7 +508,7 @@ public class Msm {
      *
      * @param filename the filename including the full path and .msm extension
      */
-    public void setFile(String filename) {
+    public synchronized void setFile(String filename) {
         this.file = new File(filename);
     }
 
@@ -537,7 +538,7 @@ public class Msm {
      * @param filename the filename string; it should include the path and the extension .msm
      * @return true if success, false if an error occured
      */
-    public boolean writeMsm(String filename) {
+    public synchronized boolean writeMsm(String filename) {
         if (this.isEmpty()) {
             System.err.println("Empty document, cannot write file.");
             return false;
@@ -598,12 +599,30 @@ public class Msm {
     }
 
     /**
+     * transform this MSM via the given xsl transform
+     * @param transform
+     * @return result of the transform as XOM Document instance
+     */
+    public Document xslTransformToDocument(XSLTransform transform) {
+        return Helper.xslTransformToDocument(this.msm, transform);
+    }
+
+    /**
      * transform this MSM via the given xsl file
      * @param xslt
      * @return result of the transform as String instance
      */
     public String xslTransformToString(File xslt) {
         return Helper.xslTransformToString(this.msm, xslt);
+    }
+
+    /**
+     * transform this MSM via the given xsl transform
+     * @param transform
+     * @return result of the transform as String instance
+     */
+    public String xslTransformToString(XSLTransform transform) {
+        return Helper.xslTransformToString(this.msm, transform);
     }
 
     /**
@@ -832,7 +851,7 @@ public class Msm {
      * returns the date when the last note offset
      * @return
      */
-    public double getEndDate() {
+    public synchronized double getEndDate() {
         double latestOffset = 0.0;
         Elements parts = this.getRootElement().getChildElements("part");                            // get all parts
 
@@ -881,7 +900,7 @@ public class Msm {
         pitches.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".json");        // set a filename for the pitches
 
         int minPPQ = this.getMinimalPPQ();
-        double timingReductionFactor = this.getPPQ() / minPPQ;                                          // for memory efficiency it is highly required reduce the frame count, this here is the factor for this
+        double timingReductionFactor = (double)this.getPPQ() / minPPQ;                                  // for memory efficiency it is highly required reduce the frame count, this here is the factor for this
         System.out.print("timing is reduced to " + minPPQ + " ppq ... ");
 
         // for each note in the music add its pitches vectors to the pitches object

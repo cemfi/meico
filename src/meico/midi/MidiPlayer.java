@@ -7,6 +7,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 
+/**
+ * This class provides Midi playback functinality.
+ * @author Axel Berndt
+ */
 public class MidiPlayer {
     private Sequencer sequencer = null;         // a sequencer to playback midi sequences
     private Synthesizer synthesizer = null;     // the synthesizer object, this is where soundbanks can be loaded
@@ -22,6 +26,15 @@ public class MidiPlayer {
     }
 
     /**
+     * constructor
+     * @param midi
+     * @throws MidiUnavailableException
+     */
+    public MidiPlayer(Midi midi) throws MidiUnavailableException {
+        this();
+    }
+
+    /**
      * initialize the synthesizer
      * @throws MidiUnavailableException
      */
@@ -30,10 +43,11 @@ public class MidiPlayer {
             this.synthesizer = MidiSystem.getSynthesizer();
         }
 
-        if (!this.synthesizer.isOpen())
-            this.synthesizer.open();
-
         this.soundbank = this.synthesizer.getDefaultSoundbank();    // the Java default soundbank is usually already loaded
+
+        if (!this.synthesizer.isOpen()) {
+            this.synthesizer.open();                                // This may sometimes produce a Java WARNING message, esp. on Windows when you run meico in an IDE. It can be ignored. To get rid of it, run your IDE in admin mode.
+        }
     }
 
     /**
@@ -64,7 +78,7 @@ public class MidiPlayer {
      * @param soundbankUrl
      * @return true (success), false (failed)
      */
-    public boolean loadSoundbank(URL soundbankUrl) {
+    public synchronized boolean loadSoundbank(URL soundbankUrl) {
         if (this.synthesizer == null)
             return false;
 
@@ -86,7 +100,7 @@ public class MidiPlayer {
      * @param soundbankFile
      * @return true (success), false (failed)
      */
-    public boolean loadSoundbank(File soundbankFile) {
+    public synchronized boolean loadSoundbank(File soundbankFile) {
         if ((this.synthesizer == null) || (soundbankFile == null))
             return false;
 
@@ -116,7 +130,7 @@ public class MidiPlayer {
      * loads Java's default soundbank into the synthesizer
      * @return
      */
-    public boolean loadDefaultSoundbank() {
+    public synchronized boolean loadDefaultSoundbank() {
         if (this.synthesizer == null)
             return false;
 
@@ -130,7 +144,7 @@ public class MidiPlayer {
      * a getter for the soundbank that is used for midi playback
      * @return
      */
-    public Soundbank getSoundbank() {
+    public synchronized Soundbank getSoundbank() {
         return this.soundbank;
     }
 
@@ -139,7 +153,7 @@ public class MidiPlayer {
      *
      * @return
      */
-    public Sequencer getSequencer() {
+    public synchronized Sequencer getSequencer() {
         return this.sequencer;
     }
 
@@ -147,7 +161,7 @@ public class MidiPlayer {
      * a sequencer setter
      * @param sequencer
      */
-    public void setSequencer(Sequencer sequencer) {
+    public synchronized void setSequencer(Sequencer sequencer) {
         this.sequencer = sequencer;
     }
 
@@ -155,16 +169,16 @@ public class MidiPlayer {
      * a getter for the synthesizer
      * @return
      */
-    public Synthesizer getSynthesizer() {
+    public synchronized Synthesizer getSynthesizer() {
         return this.synthesizer;
     }
 
     /**
      * start playback at current playback position
      */
-    public void play() {
+    public synchronized void play() {
         this.setTickPosition(this.playbackPositionInTicks);
-        if (this.sequencer != null && !this.sequencer.isRunning())
+        if ((this.sequencer != null) && (this.sequencer.getSequence() != null) && !this.sequencer.isRunning())
             this.sequencer.start();
     }
 
@@ -172,9 +186,9 @@ public class MidiPlayer {
      * start playback at current playback position
      * @param playbackPositionInTicks
      */
-    public void play(long playbackPositionInTicks) {
+    public synchronized void play(long playbackPositionInTicks) {
         this.setTickPosition(playbackPositionInTicks);
-        if (this.sequencer != null && !this.sequencer.isRunning())
+        if ((this.sequencer != null) && (this.sequencer.getSequence() != null) && !this.sequencer.isRunning())
             this.sequencer.start();
     }
 
@@ -182,9 +196,9 @@ public class MidiPlayer {
      * start playback at current playback position
      * @param playbackPositionInMicroseconds
      */
-    public void play(int playbackPositionInMicroseconds) {
+    public synchronized void play(int playbackPositionInMicroseconds) {
         this.setMicrosecondPosition(playbackPositionInMicroseconds);
-        if (this.sequencer != null && !this.sequencer.isRunning())
+        if ((this.sequencer != null) && (this.sequencer.getSequence() != null) && !this.sequencer.isRunning())
             this.sequencer.start();
     }
 
@@ -193,7 +207,7 @@ public class MidiPlayer {
      * @param sequence midi sequence
      * @throws InvalidMidiDataException
      */
-    public void play(Sequence sequence) throws InvalidMidiDataException {
+    public synchronized void play(Sequence sequence) throws InvalidMidiDataException {
         this.play(sequence, 0);
     }
 
@@ -202,7 +216,7 @@ public class MidiPlayer {
      * @param midi the Midi instance to be played back
      * @throws InvalidMidiDataException
      */
-    public void play(Midi midi) throws InvalidMidiDataException {
+    public synchronized void play(Midi midi) throws InvalidMidiDataException {
         this.play(midi.getSequence(), 0);
     }
 
@@ -212,7 +226,7 @@ public class MidiPlayer {
      * @param relativePlaybackPosition relative playback position to start, should be in [0.0, 1.0]
      * @throws InvalidMidiDataException
      */
-    public void play(Sequence sequence, double relativePlaybackPosition) throws InvalidMidiDataException {
+    public synchronized void play(Sequence sequence, double relativePlaybackPosition) throws InvalidMidiDataException {
         long startDate = (long)((double)sequence.getTickLength() * relativePlaybackPosition);
         this.play(sequence, startDate);
     }
@@ -223,7 +237,7 @@ public class MidiPlayer {
      * @param relativePlaybackPosition relative playback position to start, should be in [0.0, 1.0]
      * @throws InvalidMidiDataException
      */
-    public void play(Midi midi, double relativePlaybackPosition) throws InvalidMidiDataException {
+    public synchronized void play(Midi midi, double relativePlaybackPosition) throws InvalidMidiDataException {
         Sequence sequence = midi.getSequence();
         long startDate = (long)((double)sequence.getTickLength() * relativePlaybackPosition);
         this.play(sequence, startDate);
@@ -235,7 +249,7 @@ public class MidiPlayer {
      * @param playbackPositionInTicks this sets the tick position where to start the playback
      * @throws InvalidMidiDataException
      */
-    public void play(Midi midi, long playbackPositionInTicks) throws InvalidMidiDataException {
+    public synchronized void play(Midi midi, long playbackPositionInTicks) throws InvalidMidiDataException {
         this.play(midi.getSequence(), playbackPositionInTicks);
     }
 
@@ -245,7 +259,7 @@ public class MidiPlayer {
      * @param playbackPositionInTicks this sets the tick position where to start the playback
      * @throws InvalidMidiDataException
      */
-    public void play(Sequence sequence, long playbackPositionInTicks) throws InvalidMidiDataException {
+    public synchronized void play(Sequence sequence, long playbackPositionInTicks) throws InvalidMidiDataException {
         if (this.sequencer.isRunning())
             this.sequencer.stop();                              // stop it
 
@@ -263,7 +277,7 @@ public class MidiPlayer {
     /**
      * pause the playback
      */
-    public void pause() {
+    public synchronized void pause() {
         if ((this.sequencer == null) || !this.sequencer.isOpen())
             return;
 
@@ -274,7 +288,7 @@ public class MidiPlayer {
     /**
      * stop midi playback
      */
-    public void stop() {
+    public synchronized void stop() {
         if ((this.sequencer == null) || !this.sequencer.isOpen())
             return;
 
@@ -288,7 +302,7 @@ public class MidiPlayer {
      * indicates whether the playback/sequencer is currently running
      * @return
      */
-    public boolean isPlaying() {
+    public synchronized boolean isPlaying() {
         if (this.sequencer != null)
             return this.sequencer.isRunning();
         return false;
@@ -298,7 +312,7 @@ public class MidiPlayer {
      * obtains the current position in the sequence, expressed in MIDI ticks
      * @return
      */
-    public long getTickPosition() {
+    public synchronized long getTickPosition() {
         if (this.sequencer != null)
             return this.sequencer.getTickPosition();
         return 0;
@@ -308,7 +322,7 @@ public class MidiPlayer {
      * obtains the current position in the sequence, expressed in micoroseconds
      * @return
      */
-    public long getMicrosecondPosition() {
+    public synchronized long getMicrosecondPosition() {
         if (this.sequencer != null)
             return this.sequencer.getMicrosecondPosition();
         return 0;
@@ -318,7 +332,7 @@ public class MidiPlayer {
      * obtains the current position in the sequence, expressed as relative value between 0.0 (beginning) and 1.0 (end)
      * @return
      */
-    public double getRelativePosition() {
+    public synchronized double getRelativePosition() {
         if (this.sequencer != null)
             return (double)this.sequencer.getTickPosition() / (double)this.sequencer.getTickLength();
         return 0.0;
@@ -328,7 +342,7 @@ public class MidiPlayer {
      * a setter for the playback position
      * @param ticks
      */
-    public void setTickPosition(long ticks) {
+    public synchronized void setTickPosition(long ticks) {
         this.playbackPositionInTicks = ticks;
         if (this.sequencer != null)
             this.sequencer.setTickPosition(this.playbackPositionInTicks);
@@ -338,7 +352,7 @@ public class MidiPlayer {
      * a setter for the playback position
      * @param microseconds
      */
-    public void setMicrosecondPosition(long microseconds) {
+    public synchronized void setMicrosecondPosition(long microseconds) {
         if (this.sequencer != null) {
             this.sequencer.setMicrosecondPosition(microseconds);
             this.playbackPositionInTicks = this.sequencer.getTickPosition();
@@ -349,7 +363,7 @@ public class MidiPlayer {
      * a setter for the playback position
      * @param relativePosition
      */
-    public void setRelativePosition(double relativePosition) {
+    public synchronized void setRelativePosition(double relativePosition) {
         if ((this.sequencer == null) || (this.sequencer.getSequence() == null)) {
             this.playbackPositionInTicks = 0;
             return;
@@ -362,5 +376,25 @@ public class MidiPlayer {
             this.sequencer.setTickPosition((long)((double)this.sequencer.getSequence().getTickLength() * relativePosition));
 
         this.playbackPositionInTicks = this.sequencer.getTickPosition();
+    }
+
+    /**
+     * returns the length of the midi sequence in microseconds or 0 if none is loaded
+     * @return
+     */
+    public synchronized long getMicrosecondLength() {
+        if (this.sequencer != null)
+            return this.sequencer.getMicrosecondLength();
+        return 0;
+    }
+
+    /**
+     * returns the length of the midi sequence in ticks or 0 if none is loaded
+     * @return
+     */
+    public synchronized long getTickLength() {
+        if (this.sequencer != null)
+            return this.sequencer.getTickLength();
+        return 0;
     }
 }
