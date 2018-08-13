@@ -31,9 +31,15 @@ public class MeicoApp extends Application {
     public void init() {
 //        super.init();     // not necessary as it does nothing
 
+        try {
+            Settings.readSettings();
+        } catch (IOException e) {
+            System.err.println("File meico.cfg not found.");
+        }
+
         // in window mode all the command line output and error messages are redirected to a log file, if a filename is given in Settings
 //        if ((this.getParameters().getUnnamed().size() >= 2) && !(this.getParameters().getUnnamed().get(1).isEmpty())) { // this can be used to deliver the log file name as third parameter in MeicoApp.launch()
-        if (Settings.makeLogfile && Settings.logfile.isEmpty()) {                                                       // is there a nonempty string?
+        if (Settings.makeLogfile && !Settings.logfile.isEmpty()) {                                                       // is there a nonempty string?
             try {
 //                FileOutputStream log = new FileOutputStream(this.getParameters().getUnnamed().get(1));                  // use the string as filename
                 FileOutputStream log = new FileOutputStream(Settings.logfile);                                          // use the string as filename
@@ -54,12 +60,6 @@ public class MeicoApp extends Application {
         System.out.println("Meico: MEI Converter version " + Meico.version + "\nrunning on " + System.getProperty("os.name") + " version " + System.getProperty("os.version") + ", " + System.getProperty("os.arch") + "\nJava version " + System.getProperty("java.version"));
 
         // load current settings from settings file if one is present, otherwise keep the initial settings in class Settings
-        try {
-            Settings.readSettings();
-        } catch (IOException e) {
-           System.err.println("File meico.cfg not found.");
-        }
-
         this.stage = stage;
         this.stage.setTitle((this.getParameters().getUnnamed().isEmpty() || this.getParameters().getUnnamed().get(1).isEmpty()) ? "Meico: MEI Converter " + meico.Meico.version : this.getParameters().getUnnamed().get(0));   // if the first argument is a nonempty string, it is used as window title
 //        stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));    // add an icon to the window header

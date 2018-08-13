@@ -27,7 +27,7 @@ public class XSLTransform {
      */
     public XSLTransform(File xslt, DataObject graphiccalInstance) throws ParsingException, IOException, XSLException {
         // The following two statements will throw Exceptions if something goes wrong. Thus, this will not appear in the workspace.
-        Document stylesheet = (new Builder()).build(xslt);          //read the XSLT stylesheet  mei2musicxml.xsl
+        Document stylesheet = (new Builder()).build(xslt);          // read the XSLT stylesheet
         this.transform = new nu.xom.xslt.XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
 
         this.graphicalInstance = graphiccalInstance;

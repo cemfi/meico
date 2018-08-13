@@ -221,7 +221,7 @@ public class Workspace extends ScrollPane {
                         DataObject data = this.makeDataObject(file);
                         this.addDataObjectAt(data, local.getX(), local.getY());
                     } catch (ParsingException | InvalidMidiDataException | IOException | UnsupportedAudioFileException | XSLException e) {
-//                        this.app.statuspanel.setMessage("File drop " + filePath + ": failed.");
+                        this.app.getStatuspanel().setMessage(e.toString());
                         e.printStackTrace();
                     }
                 }

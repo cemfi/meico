@@ -402,7 +402,7 @@ public class Settings {
                     Settings.accordionAnimations = !line.equals("0");    // everything else but "0" switches the webview on
                     break;
                 case "logfile":
-                    Settings.makeLogfile = !line.equals("0");
+                    Settings.makeLogfile = line.equals("1");
                     break;
                 case "debug":
                     Settings.Mei2Msm_msmCleanup = !line.equals("1");    // only "1" triggers debug mode

@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.5.1
+- Bugfix: make logfile when checked in the settings.
+- If a file drop fails, the exception message is sent to the statuspanel.
+- The conversion option "Score Rendering" has been removed from MEI menu as long as Verovio integration is not yet functional.
+- Updated `README.md`.
+
+
 #### v0.5.0
 - New graphical user interface:
     - The new desktop application is located in package `meico.app.gui` in class `MeicoApp`.
