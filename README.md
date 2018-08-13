@@ -26,7 +26,7 @@ Meico can be used in several different ways. The jar file (see the [latest relea
 
 Starting the standalone jar without any command line options will start the window mode of meico. Simply drag your MEI, MSM, MIDI, and Wave files into the window. You can find context information on each interface element in the statusbar. If you have several mdivs in your MEI document you will get an individual MSM instance for each movement. Conversion from MIDI to audio may take some time when it is a long piece. To get better quality sounds than Java's built-in default instruments (those used for the Midi playback function), we recommend using a higher-quality soundbank, such as one of [these soundfonts](https://sourceforge.net/projects/androidframe/files/soundfonts/). Simply drag and drop them on the workspace and activate them via their menu or double click. XSL file are used in the same way. If you want to apply an XSL Transform to your MEI or MSM data, drop the XSL over the workspace, activate it and transform. Soundfonts and XSLTs can also be set as standard so that this loading procedure is not necessary any further.
 
-![A screenshot of the meico graphical user interface.](https://raw.githubusercontent.com/cemfi/meico/master/figures/meico-screenshot-new.png)
+![A screenshot of the meico graphical user interface.](https://github.com/cemfi/meico/blob/master/figures/meico-screenshot.png)
 
 The command line mode expects the following command line options:
 
