@@ -24,11 +24,12 @@ import meico.mei.Mei;
 import meico.midi.Midi;
 import meico.msm.Msm;
 import meico.pitches.Pitches;
+import net.sf.saxon.s9api.SaxonApiException;
+import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.ParsingException;
 import nu.xom.ValidityException;
-import nu.xom.xslt.XSLException;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -66,7 +67,7 @@ public class DataObject extends Group {
      * @throws UnsupportedAudioFileException
      * @throws IOException
      */
-    public DataObject(Object data, Workspace workspace) throws NullPointerException, InvalidMidiDataException, ParsingException, UnsupportedAudioFileException, IOException, XSLException {
+    public DataObject(Object data, Workspace workspace) throws NullPointerException, InvalidMidiDataException, ParsingException, UnsupportedAudioFileException, IOException, SaxonApiException {
         this.workspace = workspace;
         if (data instanceof File) {
             this.data = this.readFile((File) data);
@@ -143,7 +144,7 @@ public class DataObject extends Group {
      * given an input file, from its extension this method decides which type of object to instantiate and returns the result or null if unknown
      * @param file
      */
-    protected synchronized Object readFile(File file) throws InvalidMidiDataException, IOException, ParsingException, UnsupportedAudioFileException, XSLException {
+    protected synchronized Object readFile(File file) throws InvalidMidiDataException, IOException, ParsingException, UnsupportedAudioFileException, SaxonApiException {
         int index = file.getName().lastIndexOf(".");
         if (index < 0) {                                                    // if the file has no extension
             this.workspace.getApp().getStatuspanel().setMessage("Input file type is not supported by meico.");
@@ -166,7 +167,6 @@ public class DataObject extends Group {
             case ".json":
                 this.workspace.getApp().getStatuspanel().setMessage("Input file type .json is not yet supported by meico.");
                 throw new IOException("File type .json is not supported by meico.");
-
             case ".dls":
             case ".sf2":
                 return new meico.app.gui.Soundbank(file, this);
@@ -773,14 +773,24 @@ public class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI ...");
-                            File xslt = this.workspace.getActiveXSLT();
-                            if (xslt == null)
-                                xslt = Settings.xslTransform;
+                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            String xslFilename = "";
+                            Xslt30Transformer xslt = null;
+                            if (activeXslt != null) {
+                                xslFilename = activeXslt.getFile().getName();
+                                xslt = activeXslt.getTransform();
+                            }
+                            else {
+                                if ((Settings.xslFile != null) && (Settings.xslTransform != null)) {
+                                    xslFilename = Settings.getXslFile().getName();
+                                    xslt = Settings.getXslTransform();
+                                }
+                            }
                             if (xslt != null) {
                                 Mei mei = (Mei)this.data;
                                 String string = mei.xslTransformToString(xslt);
                                 if (string != null) {
-                                    TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(mei.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslt.getName()) + ".txt"));    // do the xsl transform
+                                    TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(mei.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
                                     this.addOneChild(mouseEvent, txt);
                                     this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI: done.");
                                 }
@@ -904,14 +914,24 @@ public class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MSM ...");
-                            File xslt = this.workspace.getActiveXSLT();
-                            if (xslt == null)
-                                xslt = Settings.xslTransform;
+                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            String xslFilename = "";
+                            Xslt30Transformer xslt = null;
+                            if (activeXslt != null) {
+                                xslFilename = activeXslt.getFile().getName();
+                                xslt = activeXslt.getTransform();
+                            }
+                            else {
+                                if ((Settings.xslFile != null) && (Settings.xslTransform != null)) {
+                                    xslFilename = Settings.getXslFile().getName();
+                                    xslt = Settings.getXslTransform();
+                                }
+                            }
                             if (xslt != null) {
                                 Msm msm = (Msm)this.data;
                                 String string = msm.xslTransformToString(xslt);
                                 if (string != null) {
-                                    TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(msm.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslt.getName()) + ".txt"));    // do the xsl transform
+                                    TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(msm.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
                                     this.addOneChild(mouseEvent, txt);
                                     this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MSM: done.");
                                 }
@@ -1266,9 +1286,19 @@ public class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to text data ...");
-                            File xslt = this.workspace.getActiveXSLT();
-                            if (xslt == null)
-                                xslt = Settings.xslTransform;
+                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            String xslFilename = "";
+                            Xslt30Transformer xslt = null;
+                            if (activeXslt != null) {
+                                xslFilename = activeXslt.getFile().getName();
+                                xslt = activeXslt.getTransform();
+                            }
+                            else {
+                                if ((Settings.xslFile != null) && (Settings.xslTransform != null)) {
+                                    xslFilename = Settings.getXslFile().getName();
+                                    xslt = Settings.getXslTransform();
+                                }
+                            }
                             if ((xslt != null) && (!((TxtData) this.data).getString().isEmpty())) {
                                 // try interpreting the string as xml data
                                 Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
@@ -1280,11 +1310,12 @@ public class DataObject extends Group {
                                 } catch (ParsingException | IOException e) {
                                     this.workspace.getApp().getStatuspanel().setMessage(e.toString());
                                     e.printStackTrace();
+                                    input = null;
                                 }
                                 if (input != null) {
                                     String string = Helper.xslTransformToString(input, xslt);
                                     if (string != null) {
-                                        TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(((TxtData)this.data).getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslt.getName()) + ".txt"));    // do the xsl transform
+                                        TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(((TxtData)this.data).getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
                                         this.addOneChild(mouseEvent, txt);
                                         this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to text: done.");
                                     }
@@ -1436,7 +1467,7 @@ public class DataObject extends Group {
                 this.lines.add(line);
                 dataObject.lines.add(line);
             });
-        } catch (InvalidMidiDataException | ParsingException | IOException | UnsupportedAudioFileException | XSLException e) {
+        } catch (InvalidMidiDataException | ParsingException | IOException | UnsupportedAudioFileException | SaxonApiException e) {
             this.workspace.getApp().getStatuspanel().setMessage(e.toString());
             e.printStackTrace();
             returnValue = false;

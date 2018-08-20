@@ -2,13 +2,12 @@ package meico.app.gui;
 
 import javafx.scene.effect.Glow;
 import javafx.scene.layout.StackPane;
-import nu.xom.Builder;
-import nu.xom.Document;
-import nu.xom.ParsingException;
-import nu.xom.xslt.XSLException;
+import meico.mei.Helper;
+import net.sf.saxon.s9api.SaxonApiException;
+import net.sf.saxon.s9api.Xslt30Transformer;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 
 /**
  * This represents XSL transforms in the meico GUI.
@@ -18,17 +17,20 @@ import java.io.IOException;
 public class XSLTransform {
     private DataObject graphicalInstance;
     private File file;                              // the xsl file
-    private nu.xom.xslt.XSLTransform transform;     // the actual xslt stylesheet
+    private Xslt30Transformer transform;
     private boolean isActive = false;               // will be set true when it is activated for transformations
 
     /**
      * constructor
      * @param xslt
      */
-    public XSLTransform(File xslt, DataObject graphiccalInstance) throws ParsingException, IOException, XSLException {
-        // The following two statements will throw Exceptions if something goes wrong. Thus, this will not appear in the workspace.
-        Document stylesheet = (new Builder()).build(xslt);          // read the XSLT stylesheet
-        this.transform = new nu.xom.xslt.XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
+    public XSLTransform(File xslt, DataObject graphiccalInstance) throws FileNotFoundException, SaxonApiException {
+        // compile the stylesheet and get a Transformer instance (the plain Java version)
+//        TransformerFactory tFactory = TransformerFactory.newInstance();
+//        this.transform = tFactory.newTransformer(new StreamSource(xslt));
+
+        // compile the stylesheet and get a Transformer instance (the Saxon version)
+        this.transform = Helper.makeXslt30Transformer(xslt);
 
         this.graphicalInstance = graphiccalInstance;
         this.file = xslt;
@@ -46,7 +48,7 @@ public class XSLTransform {
      * a getter for the transform
      * @return
      */
-    public nu.xom.xslt.XSLTransform getTransform() {
+    public Xslt30Transformer getTransform() {
         return this.transform;
     }
 

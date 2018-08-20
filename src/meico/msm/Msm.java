@@ -10,8 +10,8 @@ import meico.pitches.Key;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.midi.*;
+import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
-import nu.xom.xslt.XSLTransform;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
@@ -603,7 +603,7 @@ public class Msm {
      * @param transform
      * @return result of the transform as XOM Document instance
      */
-    public Document xslTransformToDocument(XSLTransform transform) {
+    public Document xslTransformToDocument(Xslt30Transformer transform) {
         return Helper.xslTransformToDocument(this.msm, transform);
     }
 
@@ -621,7 +621,7 @@ public class Msm {
      * @param transform
      * @return result of the transform as String instance
      */
-    public String xslTransformToString(XSLTransform transform) {
+    public String xslTransformToString(Xslt30Transformer transform) {
         return Helper.xslTransformToString(this.msm, transform);
     }
 

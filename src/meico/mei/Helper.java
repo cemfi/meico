@@ -5,21 +5,21 @@ package meico.mei;
  * @author Axel Berndt.
  */
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.thaiopensource.relaxng.jaxp.XMLSyntaxSchemaFactory;
 import meico.msm.Msm;
+import net.sf.saxon.s9api.*;
+import net.sf.saxon.s9api.Serializer;
 import nu.xom.*;
-import nu.xom.xslt.XSLException;
-import nu.xom.xslt.XSLTransform;
 import org.xml.sax.SAXException;
+
+import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
 public class Helper {
@@ -1272,27 +1272,15 @@ public class Helper {
      * @param xslt the XSLT stylesheet
      * @return the output Document of the transform or null if output not contains a single root or stylesheet error occurs
      */
-    public static Document xslTransformToDocument(Document input, File xslt) {
+    public synchronized static Document xslTransformToDocument(Document input, File xslt) {
+        String xml = Helper.xslTransformToString(input.toXML(), xslt);
+        assert xml != null;
+
+        Builder builder = new Builder(false);   // we leave the validate argument false
         try {
-            Document stylesheet = (new Builder()).build(xslt);      //read the XSLT stylesheet
-            XSLTransform transform = new XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
-            Nodes output = transform.transform(input);              // do the transform
-            return XSLTransform.toDocument(output);                 // create a Document instance from the output
-        }
-        catch (ParsingException ex) {
-            System.err.println("Well-formedness error in " + ex.getURI() + ".");
-            return null;
-        }
-        catch (IOException ex) {
-            System.err.println("I/O error while reading input document or stylesheet.");
-            return null;
-        }
-        catch (XMLException ex) {
-            System.err.println("Result did not contain a single root.");
-            return null;
-        }
-        catch (XSLException ex) {
-            System.err.println("Stylesheet error.");
+            return builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (ParsingException | IOException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -1300,20 +1288,18 @@ public class Helper {
     /**
      * a helper method to perform XSL transforms
      * @param input the in input xml document
-     * @param transform the XSLT stylesheet
+     * @param transformer the XSLT stylesheet
      * @return the output Document of the transform or null if output not contains a single root or stylesheet error occurs
      */
-    public static Document xslTransformToDocument(Document input, XSLTransform transform) {
+    public synchronized static Document xslTransformToDocument(Document input, Xslt30Transformer transformer) {
+        String xml = Helper.xslTransformToString(input.toXML(), transformer);
+        assert xml != null;
+
+        Builder builder = new Builder(false);   // we leave the validate argument false
         try {
-            Nodes output = transform.transform(input);              // do the transform
-            return XSLTransform.toDocument(output);                 // create a Document instance from the output
-        }
-        catch (XMLException ex) {
-            System.err.println("Result did not contain a single root.");
-            return null;
-        }
-        catch (XSLException ex) {
-            System.err.println("Stylesheet error.");
+            return builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (ParsingException | IOException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -1325,67 +1311,127 @@ public class Helper {
      * @param xslt the XSLT stylesheet
      * @return the output string (null in case of an error)
      */
-    public static String xslTransformToString(Document input, File xslt) {
-        String result = "";
-        Nodes output;
-
-        try {
-            Document stylesheet = (new Builder()).build(xslt);      //read the XSLT stylesheet  mei2musicxml.xsl
-            XSLTransform transform = new XSLTransform(stylesheet);  // instantiate XSLTransform object from XSLT stylesheet
-            output = transform.transform(input);                    // do the transform
-        }
-        catch (ParsingException ex) {
-            System.err.println("Well-formedness error in " + ex.getURI() + ".");
-            return null;
-        }
-        catch (IOException ex) {
-            System.err.println("I/O error while reading input document or stylesheet.");
-            return null;
-        }
-        catch (XMLException ex) {
-            System.err.println("Result did not contain a single root.");
-            return null;
-        }
-        catch (XSLException ex) {
-            System.err.println("Stylesheet error.");
-            return null;
-        }
-
-        // compile output string
-        for (int i = 0; i < output.size(); i++) {
-            result += output.get(i).toXML();
-        }
-
-        return result;
+    public synchronized static String xslTransformToString(Document input, File xslt) {
+        return Helper.xslTransformToString(input.toXML(), xslt);
     }
 
     /**
      * a helper method to perform XSL transforms
      * @param input the in input xml document
-     * @param transform the XSLT stylesheet
+     * @param transformer the XSLT stylesheet
      * @return the output string (null in case of an error)
      */
-    public static String xslTransformToString(Document input, XSLTransform transform) {
-        String result = "";
-        Nodes output;
+    public synchronized static String xslTransformToString(Document input, Xslt30Transformer transformer) {
+        return Helper.xslTransformToString(input.toXML(), transformer);
+    }
 
+    public synchronized static String xslTransformToString(String input, Xslt30Transformer transformer) {
+        StreamSource source = new StreamSource(new StringReader(input));    // get the input string in a StreamSource
+        StringWriter output = new StringWriter();                           // the output goes into a StringWriter
+        Processor processor = new Processor(false);                         // we need a Processor
+        Serializer destination = processor.newSerializer(output);           // the transformer need an instance of Destination to output, here we use a Serializer as destination and it outputs into the StringWriter
         try {
-            output = transform.transform(input);                    // do the transform
-        }
-        catch (XMLException ex) {
-            System.err.println("Result did not contain a single root.");
+            transformer.applyTemplates(source, destination);                // do the transform
+        } catch (SaxonApiException e) {
+            e.printStackTrace();
             return null;
         }
-        catch (XSLException e) {
-            System.err.println("Stylesheet error.");
+        return output.toString();                                           // return the buffer of the StringWriter as String
+    }
+
+    /**
+     * a helper method to perform XSL transforms
+     * https://www.saxonica.com/html/documentation/using-xsl/embedding/s9api-transformation.html
+     * @param input
+     * @param xslt
+     * @return
+     */
+    public synchronized static String xslTransformToString(String input, File xslt) {
+        StreamSource source = new StreamSource(new StringReader(input));    // get the input string in a StreamSource
+        StringWriter output = new StringWriter();                           // the output goes into a StringWriter
+        Processor processor = new Processor(false);                         // we need a Processor
+        Serializer destination = processor.newSerializer(output);           // the transformer need an instance of Destination to output, here we use a Serializer as destination and it outputs into the StringWriter
+
+        // do the transform with XSLT 1.0 and 2.0 transformer
+//        try {
+//            XsltTransformer transformer = Helper.makeXsltTransformer(xslt, processor, source, destination);                    // from the executable get the transformer
+//            transformer.transform();
+//        } catch (SaxonApiException | FileNotFoundException e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+//        return output.toString();
+
+        Xslt30Transformer transformer30;
+        try {
+            transformer30 = Helper.makeXslt30Transformer(xslt);  // make a transformer
+            transformer30.applyTemplates(source, destination);              // do the transform
+        } catch (SaxonApiException | FileNotFoundException e) {
+            e.printStackTrace();
             return null;
         }
+        return output.toString();                                           // return the buffer of the StringWriter as String
+    }
 
-        // compile output string
-        for (int i = 0; i < output.size(); i++) {
-            result += output.get(i).toXML();
-        }
+    /**
+     * compile an XSLT 1.0 or 2.0 compatible Transformer from a given xslt stylesheet using the given processor and set the source and destination
+     * @param xslt
+     * @param processor
+     * @param source
+     * @param destination
+     * @return
+     * @throws SaxonApiException
+     * @throws FileNotFoundException
+     */
+    public synchronized static XsltTransformer makeXsltTransformer(File xslt, Processor processor, Source source, Destination destination) throws SaxonApiException, FileNotFoundException {
+        // get XSLT stylesheet as (Stream)Source object
+        FileReader fileReader;
+        fileReader = new FileReader(xslt);
+        Source streamSource = new StreamSource(fileReader);
 
-        return result;
+        // create the transformer
+//        Processor processor = new Processor(false);                         // we need a Processor
+        XsltCompiler compiler = processor.newXsltCompiler();                // from it create a compiler that compiles the stylesheet to an executable
+        XsltExecutable executable;
+        executable = compiler.compile(streamSource);                        // compile the stylesheet and get the executable
+        XsltTransformer transformer = executable.load();                    // from the executable get the transformer
+        transformer.setDestination(destination);
+        transformer.setSource(source);
+
+        return transformer;
+    }
+
+    /**
+     * compile an XSLT 3.0 Transformer from a given xslt stylesheet using the given Processor instance
+     * @param xslt
+     * @param processor
+     * @return
+     * @throws SaxonApiException
+     * @throws FileNotFoundException
+     */
+    public synchronized static Xslt30Transformer makeXslt30Transformer(File xslt, Processor processor) throws SaxonApiException, FileNotFoundException {
+        // get XSLT stylesheet as (Stream)Source object
+        FileReader fileReader;
+        fileReader = new FileReader(xslt);
+        Source streamSource = new StreamSource(fileReader);
+
+        // create the transformer
+//        Processor processor = new Processor(false);                         // we need a Processor
+        XsltCompiler compiler = processor.newXsltCompiler();                // from it create a compiler that compiles the stylesheet to an executable
+        XsltExecutable executable;
+        executable = compiler.compile(streamSource);                        // compile the stylesheet and get the executable
+
+        return executable.load30();                                         // from the executable get the transformer
+    }
+
+    /**
+     * compile an XSLT 3.0 Transformer from a given xslt stylesheet
+     * @param xslt
+     * @return
+     * @throws SaxonApiException
+     * @throws FileNotFoundException
+     */
+    public synchronized static Xslt30Transformer makeXslt30Transformer(File xslt) throws SaxonApiException, FileNotFoundException {
+        return Helper.makeXslt30Transformer(xslt, new Processor(false));
     }
 }

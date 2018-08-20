@@ -5,15 +5,18 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import meico.mei.Helper;
+import net.sf.saxon.s9api.SaxonApiException;
+import net.sf.saxon.s9api.Xslt30Transformer;
 
 import java.io.*;
-import java.util.HashMap;
 
 /**
  * This provides some basic style definitions.
@@ -77,7 +80,8 @@ public class Settings {
     protected static File soundbank = null;                             // set this null to use the default soundbank
 
     // XSL Transform settings
-    protected static File xslTransform = null;                          // here it is possible to set a default XSLT
+    protected static File xslFile = null;                               // here it is possible to set a default XSLT
+    protected static Xslt30Transformer xslTransform = null;             // the actual transformer instance
 
     /**
      * this opens a dialog window to edit the preferences settings in meico
@@ -143,7 +147,7 @@ public class Settings {
         windowSizePane.getChildren().addAll(windowWidth, windowWidthLabel, windowHeight, windowHeightLabel);
 
         // webview
-        CheckBox webview = new CheckBox("Use internal WebView, uncheck to use the system default browser instead");
+        CheckBox webview = new CheckBox("Use internal WebView, uncheck to use the system default browser instead (requires restart)");
         webview.setSelected(Settings.useInternalWebView);
         webview.setTextFill(Color.GRAY);
 
@@ -151,19 +155,21 @@ public class Settings {
         CheckBox player = new CheckBox("Expand player automatically on mouseover");
         player.setSelected(Settings.autoExpandPlayerOnMouseOver);
         player.setTextFill(Color.GRAY);
+        player.selectedProperty().addListener((observable, oldValue, newValue) -> app.setPlayerAccordion(newValue));
 
         // autoexpanding player
         CheckBox accordion = new CheckBox("Animate expansion and collapseing of accordion menu items (WebView, player)");
         accordion.setSelected(Settings.accordionAnimations);
         accordion.setTextFill(Color.GRAY);
+        accordion.selectedProperty().addListener((observable, oldValue, newValue) -> app.setAccordionAnimation(newValue));
 
         // logfile
-        CheckBox logfile = new CheckBox("Make logfile \"meico.log\" in program folder");
+        CheckBox logfile = new CheckBox("Make logfile \"meico.log\" in program folder (requires restart)");
         logfile.setSelected(Settings.makeLogfile);
         logfile.setTextFill(Color.GRAY);
 
         // debug mode
-        CheckBox debug = new CheckBox("Debug mode, only for development purpose, it will alter your MEI data!");
+        CheckBox debug = new CheckBox("Debug mode, only for development purpose, it will alter your MEI data! (requires restart)");
         debug.setSelected(!Settings.Mei2Msm_msmCleanup);
         debug.setTextFill(Color.GRAY);
 
@@ -265,22 +271,22 @@ public class Settings {
         soundbankPane.getChildren().addAll(soundbankField, soundbankFileButton, soundbankDefault, soundbankLabel);
 
         // default xslt
-        TextField xsltField = new TextField((Settings.xslTransform == null) ? "No XSLT specified" : Settings.xslTransform.getAbsolutePath());
+        TextField xsltField = new TextField((Settings.xslFile == null) ? "No XSLT specified" : Settings.xslFile.getAbsolutePath());
         xsltField.setMinWidth(Settings.mWidth * 30);
         xsltField.setMaxWidth(Settings.mWidth * 30);
         xsltField.setEditable(false);
         xsltField.setStyle("-fx-background-color: #1a1a1a; -fx-text-fill: grey; -fx-padding: 6px;");
 
-        File originalXslt = Settings.xslTransform;
+        File originalXslt = Settings.xslFile;
 
         Button xsltFileButton = new Button("\uf07c");
         xsltFileButton.setFont(Settings.getIconFont(Font.getDefault().getSize() +3, app));
         xsltFileButton.setOnMouseReleased(event -> {
             FileChooser chooser = new FileChooser();                                    // the file chooser to select file location and name
-            if ((Settings.xslTransform == null) || !Settings.xslTransform.exists())
+            if ((Settings.xslFile == null) || !Settings.xslFile.exists())
                 chooser.setInitialDirectory(new File(System.getProperty("user.dir")));
             else
-                chooser.setInitialDirectory(new File(Settings.xslTransform.getParent()));
+                chooser.setInitialDirectory(new File(Settings.xslFile.getParent()));
             chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XSL Transform files (*.xsl)", "*.xsl"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
             File file = chooser.showOpenDialog(stage);
             if (file != null) {
@@ -359,6 +365,7 @@ public class Settings {
         stage.setMinWidth(705);
         stage.setMaxWidth(705);
         stage.setTitle("Meico Preferences");
+        stage.getIcons().add(new Image(app.getClass().getResource("/resources/graphics/meico_icon_flat.png").toString()));    // add an icon to the window header
         stage.setScene(scene);
         stage.setResizable(false);
         stage.show();
@@ -432,7 +439,7 @@ public class Settings {
                     break;
                 case "xslt":
                     Settings.setXSLT((line.equals("none")) ? null : new File(line));
-                    if ((Settings.xslTransform != null) && !Settings.xslTransform.exists())
+                    if ((Settings.xslFile != null) && !Settings.xslFile.exists())
                         Settings.setXSLT(null);
                     break;
                 default:
@@ -458,7 +465,7 @@ public class Settings {
                 + "\n\n# tempo\n" + Settings.Msm2Midi_defaultTempo
                 + "\n\n# prettyJson\n" + (Settings.savePitchesWithPrettyPrint ? "1" : "0")
                 + "\n\n# soundbank\n" + ((Settings.soundbank == null) ? "default" : Settings.soundbank.getAbsolutePath())
-                + "\n\n# xslt\n" + ((Settings.xslTransform == null) ? "none" : Settings.xslTransform.getAbsolutePath())
+                + "\n\n# xslt\n" + ((Settings.xslFile == null) ? "none" : Settings.xslFile.getAbsolutePath())
                 +"\n";
 
         PrintWriter writer;
@@ -629,6 +636,45 @@ public class Settings {
      * @param xslt
      */
     protected static synchronized void setXSLT(File xslt) {
-        Settings.xslTransform = xslt;
+        Settings.xslFile = xslt;
+
+        if (Settings.xslFile == null) {
+            Settings.xslTransform = null;
+            return;
+        }
+
+        try {
+            Settings.xslTransform = Helper.makeXslt30Transformer(xslt);
+        } catch (FileNotFoundException | SaxonApiException e) {
+            e.printStackTrace();
+            Settings.xslFile = null;
+            Settings.xslTransform = null;
+        }
+
+        // old Java version
+//        TransformerFactory tFactory = TransformerFactory.newInstance();
+//        try {
+//            Settings.xslTransform = tFactory.newTransformer(new StreamSource(Settings.xslFile));
+//        } catch (TransformerConfigurationException e) {
+//            e.printStackTrace();
+//            Settings.xslFile = null;
+//            Settings.xslTransform = null;
+//        }
+    }
+
+    /**
+     * get the default XSLT
+     * @return
+     */
+    protected static synchronized Xslt30Transformer getXslTransform() {
+        return Settings.xslTransform;
+    }
+
+    /**
+     * get the file of the default XSLT
+     * @return
+     */
+    protected static synchronized File getXslFile() {
+        return Settings.xslFile;
     }
 }

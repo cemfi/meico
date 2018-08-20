@@ -5,6 +5,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.input.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -21,8 +22,18 @@ public class MeicoApp extends Application {
     private Stage stage;
     private StatusPanel statuspanel;
     private Player player;
+    private TitledPane playerAccordion;
     private Workspace workspace;
     private WebBrowser web = null;
+    private TitledPane webAccordion;
+
+    /**
+     * the main method to compile and run meico as a JavaFX application
+     * @param args command line arguments (not used)
+     */
+    public static void main(String[] args) {
+        Meico.launch();                             // this is the minimal call to launch meico's gui
+    }
 
     /**
      * JavaFX init method is called when the application starts
@@ -62,7 +73,7 @@ public class MeicoApp extends Application {
         // load current settings from settings file if one is present, otherwise keep the initial settings in class Settings
         this.stage = stage;
         this.stage.setTitle((this.getParameters().getUnnamed().isEmpty() || this.getParameters().getUnnamed().get(1).isEmpty()) ? "Meico: MEI Converter " + meico.Meico.version : this.getParameters().getUnnamed().get(0));   // if the first argument is a nonempty string, it is used as window title
-//        stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));    // add an icon to the window header
+        this.stage.getIcons().add(new Image(this.getClass().getResource("/resources/graphics/meico_icon_flat.png").toString()));    // add an icon to the window header
 //        stage.setFullScreen(true);                                                              // set on fullscreen
 
         // set the window's minimal dimensions
@@ -85,38 +96,38 @@ public class MeicoApp extends Application {
         this.workspace = new Workspace(this);
 
         // put contents into an accordion interface
-        TitledPane playerAccordion = new TitledPane();
-        playerAccordion.setStyle(Settings.ACCORDION);
-        playerAccordion.setText("Player & Settings");
-        playerAccordion.setExpanded(false);
-        playerAccordion.setAnimated(Settings.accordionAnimations);
+        this.playerAccordion = new TitledPane();
+        this.playerAccordion.setStyle(Settings.ACCORDION);
+        this.playerAccordion.setText("Player & Settings");
+        this.playerAccordion.setExpanded(false);
+        this.playerAccordion.setAnimated(Settings.accordionAnimations);
         if (Settings.autoExpandPlayerOnMouseOver) {
             // automatically expand the player at mouse over
-            playerAccordion.setOnMouseEntered(event -> {
-                playerAccordion.setExpanded(true);
+            this.playerAccordion.setOnMouseEntered(event -> {
+                this.playerAccordion.setExpanded(true);
                 event.consume();
             });
             // auto-collapse when mouse exits
-            playerAccordion.setOnMouseExited(event -> {
-                playerAccordion.setExpanded(false);
+            this.playerAccordion.setOnMouseExited(event -> {
+                this.playerAccordion.setExpanded(false);
                 event.consume();
             });
         }
-        playerAccordion.setContent(this.player);
+        this.playerAccordion.setContent(this.player);
 
         root.getChildren().add(this.workspace);                                         // the sequence for adding the components is: workspace, (webAccordion), playerAcordion, statuspanel
 
         if (Settings.useInternalWebView) {
-            TitledPane webAccordion = new TitledPane();
-            webAccordion.setStyle(Settings.ACCORDION);
-            webAccordion.setText("WebView");
-            webAccordion.setExpanded(false);
-            webAccordion.setAnimated(Settings.accordionAnimations);
-            webAccordion.setContent(this.web);
-            root.getChildren().add(webAccordion);
+            this.webAccordion = new TitledPane();
+            this.webAccordion.setStyle(Settings.ACCORDION);
+            this.webAccordion.setText("WebView");
+            this.webAccordion.setExpanded(false);
+            this.webAccordion.setAnimated(Settings.accordionAnimations);
+            this.webAccordion.setContent(this.web);
+            root.getChildren().add(this.webAccordion);
         }
 
-        root.getChildren().addAll(playerAccordion, this.statuspanel);
+        root.getChildren().addAll(this.playerAccordion, this.statuspanel);
 
         // put all into a scene graph and display
         Scene scene = new Scene(root/*, 1500, 1000, new Color(0.1, 0.1, 0.1, 1.0)*/);   // the scene is the container for the scene graph, root is the root element of the scene graph
@@ -204,6 +215,29 @@ public class MeicoApp extends Application {
      */
     protected synchronized Workspace getWorkspace() {
         return this.workspace;
+    }
+
+    /**
+     * switch the auto expansion of the player on or off
+     * @param autoExpand
+     */
+    protected synchronized void setPlayerAccordion(boolean autoExpand) {
+        this.playerAccordion.setOnMouseEntered(event -> {
+            if (autoExpand)
+                this.playerAccordion.setExpanded(true);
+            event.consume();
+        });
+        // auto-collapse when mouse exits
+        this.playerAccordion.setOnMouseExited(event -> {
+            if (autoExpand)
+                this.playerAccordion.setExpanded(false);
+            event.consume();
+        });
+    }
+
+    protected synchronized void setAccordionAnimation(boolean animate) {
+        this.playerAccordion.setAnimated(animate);
+        this.webAccordion.setAnimated(animate);
     }
 
 //    /**

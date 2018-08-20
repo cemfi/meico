@@ -10,9 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import meico.msm.Goto;
+import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
 import meico.msm.Msm;
-import nu.xom.xslt.XSLTransform;
 import org.xml.sax.SAXException;
 
 public class Mei {
@@ -370,7 +370,7 @@ public class Mei {
      * @param transform
      * @return result of the transform as XOM Document instance
      */
-    public Document xslTransformToDocument(XSLTransform transform) {
+    public Document xslTransformToDocument(Xslt30Transformer transform) {
         return Helper.xslTransformToDocument(this.mei, transform);
     }
 
@@ -388,7 +388,7 @@ public class Mei {
      * @param transform
      * @return result of the transform as String instance
      */
-    public String xslTransformToString(XSLTransform transform) {
+    public String xslTransformToString(Xslt30Transformer transform) {
         return Helper.xslTransformToString(this.mei, transform);
     }
 

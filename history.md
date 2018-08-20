@@ -1,6 +1,18 @@
 ### Version History
 
 
+#### v0.5.2
+- So far, XSL transform functions of meico did support only XSLT 1.0 and 2.0. In some Java versions also 3.0 stylesheets worked but not in general. This issue has been solved.
+    - Update [Saxon](http://saxon.sourceforge.net/)  to version 9.8.0.14 HE.
+    - Due to signature issues the files `TE-050AC.RSA` and `TE-050AC.SF` had to be removed from the `META-INF` folder of `saxon9he.jar`.
+    - In class `meico.mei.Helper` all XSLTransform processing methods have been redone and new ones have been added in order to overcome the afformentioned issues. XOM and Java were accessing Saxon's old transformer functionality only which does not support XSLT 3.0. The reworked versions access Saxon directly now and use its `Xslt30Transformer` for all stylesheets. Classes `meico.mei.Mei`, `meico.msm.Msm`, `meico.app.gui.XSLTransform`, `meico.app.gui.Workspace`, and `meico.app.gui.DataObject` have beed adapted accordingly.
+    - Some further optimizations to XSL transforms have been implemented, esp. in classes `meico.app.gui.Settings` and `meico.app.gui.DataObject`.
+- Added a custom meico icon to the window titlebar. It replaces Java's default icon. This and further icon files have been added to `resources/figures`.
+- When closing objects in the workspace the garbage collector does not seem to free their allocated memory automatically. A call of `System.gc()` has been added to class `meico.app.gui.Workspace` method `clearAll()` to force the garbage collection.
+- When changing the settings for accordion animation and auto expansion of the player a restart is no longer necessary necessary.
+- Added method `main()` to class `meico.app.gui.MeicoApp` so it can be compiled and run as self-contained JavaFX application.
+
+
 #### v0.5.1
 - Bugfix: make logfile when checked in the settings.
 - If a file drop fails, the exception message is sent to the statuspanel.

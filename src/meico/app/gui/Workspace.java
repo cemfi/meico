@@ -7,8 +7,8 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import net.sf.saxon.s9api.SaxonApiException;
 import nu.xom.ParsingException;
-import nu.xom.xslt.XSLException;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -70,7 +70,7 @@ public class Workspace extends ScrollPane {
         this.soundbanks.clear();
         this.xslts.clear();
         this.app.getPlayer().setSoundbank(null);
-//        System.gc();
+        System.gc();    // force garbage collector to do its job
     }
 
     /**
@@ -87,7 +87,7 @@ public class Workspace extends ScrollPane {
 
         this.container.getChildren().remove(object);
         object.clear();
-//        System.gc();
+//        System.gc();    // force garbage collector to do its job
     }
 
     /**
@@ -99,7 +99,7 @@ public class Workspace extends ScrollPane {
      * @throws IOException
      * @throws UnsupportedAudioFileException
      */
-    private synchronized DataObject makeDataObject(Object data) throws InvalidMidiDataException, ParsingException, IOException, UnsupportedAudioFileException, XSLException {
+    private synchronized DataObject makeDataObject(Object data) throws InvalidMidiDataException, ParsingException, IOException, UnsupportedAudioFileException, SaxonApiException {
         return new DataObject(data, this);
     }
 
@@ -176,11 +176,11 @@ public class Workspace extends ScrollPane {
      * returns the XSLTransform that is currently activated
      * @return
      */
-    protected File getActiveXSLT() {
+    protected XSLTransform getActiveXSLT() {
         for (DataObject o : this.xslts) {
             meico.app.gui.XSLTransform x = (meico.app.gui.XSLTransform)o.getData();
             if (x.isActive())
-                return x.getFile();
+                return x;
         }
         return null;
     }
@@ -220,7 +220,7 @@ public class Workspace extends ScrollPane {
                     try {
                         DataObject data = this.makeDataObject(file);
                         this.addDataObjectAt(data, local.getX(), local.getY());
-                    } catch (ParsingException | InvalidMidiDataException | IOException | UnsupportedAudioFileException | XSLException e) {
+                    } catch (ParsingException | InvalidMidiDataException | IOException | UnsupportedAudioFileException | SaxonApiException e) {
                         this.app.getStatuspanel().setMessage(e.toString());
                         e.printStackTrace();
                     }
