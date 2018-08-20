@@ -1,4 +1,4 @@
-![](figures/meico-title.png)
+![](https://github.com/cemfi/meico/blob/master/figures/meico_title.png)
 [![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg)](https://github.com/cemfi/meico/releases/latest) [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/master/LICENSE) [![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)](https://travis-ci.org/cemfi/meico)
 
 Author: [Axel Berndt](https://github.com/axelberndt)<br>
