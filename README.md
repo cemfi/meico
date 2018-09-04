@@ -7,19 +7,20 @@ MEI support: [Benjamin W. Bohl](https://github.com/bwbohl), [Johannes Kepper](ht
 Contributor: [Simon Waloschek](https://github.com/sonovice)<br>
 [Center of Music and Film Informatics](http://www.cemfi.de/), Detmold
 
-Meico is a converter framework for MEI files. Even though MEI is a quasi-standard for digital music editions, there is few software support for it. If you want to listen to the music in your MEI file, you need a MIDI or audio export. If you want to process the musical data (e.g., for Music Information Retrieval), there are many better suited formats and representations than MEI. With meico we address these issues. Meico implements methods to convert MEI data into the MSM (Musical Sequence Markup) format, an intermediate format that we defined for further use in other projects. From MSM, the MIDI export and audio rendering are quite straight forward. Currently, meico is a beta release. The following features are implemented:
+Meico is a converter framework for MEI files. MEI offer an invaluable combination of symbolic music data and additional information far beyond the typical metadata found in other formats. All this is often based on musicological research and features an accordingly high scientific quality. Digital music editions motivate new interesting research questions highly relevant to MIR and the demand to gain deeper insight into subjects such as composition styles, performance practices, historical change processes in music tradition, and how all these reflect in the musical works edited. In this, MIR can make valuable contributions to musicology, for instance by providing tools to work on large corpora of MEI encoded music. Further application scenarios include digital music stand technology, music notation and music production. Even though MEI is a quasi-standard for digital music editions, there is few software support for it. Processing MEI encoded music is by far not a trivial task and many application scenarios have their own more established and efficient formats. With meico we address these issues. Meico implements methods to convert MEI data several other format, making MEI encodings accessible to a variety of applications. We presented meico at the Audio Mostly conference in 2018, the paper can be found [here](http://www.cemfi.de/wp-content/papercite-data/pdf/berndt-2018-meico.pdf) and in the ACM Digital Library. Currently, meico is a beta release. The following features are implemented:
 
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq),
 - MSM conversion to MIDI and sequences of chroma and absolute pitch vectors,
-- MIDI to audio PCM and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
+- MIDI to PCM audio and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
 - MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute, conversion of `expansion` elements into "through-composed" MEI code),
 - MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`),
-- an instrument dictionary that uses several string matching algorithms to map staff names to MIDI program change numbers,
+- an instrument dictionary and several string matching algorithms to map staff names to MIDI program change numbers,
 - basic MIDI and audio playback,
 - two standalone modes (command line mode, desktop gui mode),
+- a REST API,
 - processing of XML sources with XSLT stylesheets, e.g. to convert MEI to MusicXML using the Music Encoding Initiative's `mei2musicxml.xsl` stylesheet from the [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools).
 
-There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). Several MEI elements and attributes are not supported so far (e.g. `meterSigGrp`, `uneume`, `lyrics`). Meico implements a default method to resolve ambiguity (e.g., choose a reading from different alternatives in MEI). If other choices should be made, the user can use [MEI Sequence Editor](http://nashira.uni-paderborn.de:5555/seditor) to prepare an unambiguous MEI file.
+There are several features open, though. Currently, meico ignores any MEI data that is concerned with expressive performance (tempo, dynamics, articulation, ornamentation). We would also like to include MusicXML support. Several MEI elements and attributes are not supported so far (e.g. `meterSigGrp`, `uneume`, `lyrics`). Meico implements a default method to resolve ambiguity (e.g., choose a reading from different alternatives in MEI). If other choices should be made, the user can use [MEI Sequence Editor](http://nashira.uni-paderborn.de:5555/seditor) to prepare an unambiguous MEI file.
 
 ### How to use meico?
 
