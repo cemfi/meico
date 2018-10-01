@@ -71,6 +71,11 @@ $ ant
 ```
 The resulting `meico.jar` can be found in `out/artifacts/meico`.
 
+**A note on OpenJDK:** OpenJDK does not come with JavaFX (the graphical user interface framework that meico uses) preinstalled. OpenJFX has to be installed separately. On Linux it would be done like this:
+```
+$ sudo apt-get install openjfx
+```
+
 **A note concerning MIDI to audio rendering:** Meico's MIDI to audio renderer relies on the package `sun.com.media.sound`. However, Java 9 and later versions do no longer provide access to this package at compile time. It is still accessible at runtime. Hence, meico should be compiled with Java 8 and can run with later versions (tested until Java 10). But at some point they will probably make this package inaccessible also at runtime. A workaround for this is using the Gervill Sound Synthesizer (search `gervill.jar` in the internet and add it to `externals`) that provides the required package, so no code changes are necessary. However, consider that Gervill is licensed under GNU GPL-2.0 while meico is under GNU LGPL-3.0!
 
 ### License information

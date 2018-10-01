@@ -132,8 +132,6 @@ public class Mei {
         }
 
         // read file into the mei instance of Document
-        if (validate)                                               // if the mei file should be validated
-            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
         Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
 //        this.validMei = true;                                       // the mei code is valid until validation fails (ValidityException)
         try {
@@ -147,6 +145,9 @@ public class Mei {
 //            }
             this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
         }
+
+        if (validate)                                               // if the mei file should be validated
+            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
     }
 
     /** returns the File object from which the mei data originates
@@ -274,7 +275,7 @@ public class Mei {
 //            e.printStackTrace();
             System.err.println("Validation failed: missing file /resources/mei-CMN.rng!");
         }
-        System.out.println("Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + this.validMei);  // command line output of the result
+//        System.out.println("Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + this.validMei);  // command line output of the result
         report = "Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + report;
         return report;                          // return the result
     }

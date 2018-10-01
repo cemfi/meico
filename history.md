@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.5.3
+- Bugfix in method `meico.mei.Mei.readMeiFile()`: If argument `validate` is set `true`, it was trying to validate the MEI before it was actually loaded.
+- Generated an up-to-date Ant script `build.xml` and added `<manifest> <attribute name="Main-Class" value="meico.app.Main"/> </manifest>` to ensure that there is a main manifest attribute.
+- Thanks to David Weigl for reporting these issues!
+
+
 #### v0.5.2
 - So far, XSL transform functions of meico did support only XSLT 1.0 and 2.0. In some Java versions also 3.0 stylesheets worked but not in general. This issue has been solved.
     - Update [Saxon](http://saxon.sourceforge.net/)  to version 9.8.0.14 HE.
