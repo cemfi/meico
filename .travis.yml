@@ -9,10 +9,9 @@ jdk:
   - openjdk10
   - openjdk8
   - openjdk7
-addons:
-  apt:
-    packages:
-      - openjfx
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y openjfx
 script:
   - ant all
 email: false
