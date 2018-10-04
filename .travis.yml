@@ -13,6 +13,7 @@ addons:
   apt:
     packages:
       - openjfx
+      - ant
 script:
   - ant all
 email: false
