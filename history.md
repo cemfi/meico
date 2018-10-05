@@ -2,7 +2,6 @@
 
 
 #### v0.5.4
-- Updated MEI Coverage Documentation `documentation.md`.
 - Some tweaks in the Travis CI script `.travis.yml`. Because of bad OpenJFX support Travis CI reports build fails with OpneJDK. At the moment only the Oracle JDK builds can be trusted.
 - Finished the MEI Coverage Documentation `documentation.md`.
 - Some minor code revisions, nothing essential.
