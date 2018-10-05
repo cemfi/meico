@@ -942,7 +942,8 @@ public class Mei {
         dated.appendChild(new Element("markerMap"));                                // global rehearsal marks
         dated.appendChild(new Element("sectionMap"));                               // global map of section structure
         dated.appendChild(new Element("phraseMap"));                                // global map of phrase structure
-        dated.appendChild(new Element("sequencingMap"));                            // a global sequencingMap
+        dated.appendChild(new Element("sequencingMap"));                            // global sequencingMap
+        dated.appendChild(new Element("pedalMap"));                                 // global map for pedal instructions
         dated.appendChild(new Element("miscMap"));                                  // a temporal map that is filled with content that may be useful during processing but will be deleted in the final MSM
 
         global.appendChild(header);
@@ -1426,7 +1427,7 @@ public class Mei {
         this.helper.currentMeasure = null;                                                                      // this has to be set null so that getMidiTime() does not return the measure's date
         double endDate = this.helper.getMidiTime();                                                             // get the current date
         double dur2 = endDate - startDate;                                                                      // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
-        if (dur1 >= dur2) {                                                                                     // if the measure us underfull or properly filled
+        if (dur1 >= dur2) {                                                                                     // if the measure is underfull or properly filled
             if ((measure.getAttribute("metcon") != null) && (measure.getAttributeValue("metcon").equals("false"))) {    // if the measure's length does not have to correspond with the time signature
                 measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                               // take the duration from the fill state of the measure
             }
@@ -1619,6 +1620,7 @@ public class Mei {
         dated.appendChild(new Element("keySignatureMap"));
         dated.appendChild(new Element("markerMap"));
         dated.appendChild(new Element("sequencingMap"));
+        dated.appendChild(new Element("pedalMap"));
         Element miscMap = new Element("miscMap");
         miscMap.appendChild(new Element("tupletSpanMap"));
         dated.appendChild(miscMap);
@@ -1739,7 +1741,7 @@ public class Mei {
         // process sig, accid, pname and mixed to generate msm accidentals from them
         if (accidentals.isEmpty() && !sig.isEmpty()) {                                                  // if the meiSource is a keySig element and had keyAccid children, these overrule the attributes and, hence, the attributes will not be processed, this part will be skipped; same if there is no signature data
             if (sig.equals("mixed")) {                                                                  // process an unorthodox key signature, e.g. "a4 c5ss e5f"
-                if (!mixed.isEmpty()) {                                                                 // is there something standing in the mixed string
+                if (!mixed.isEmpty()) {                                                                 // is there something in the mixed string
                     String[] acs = mixed.split(" ");                                                    // split the space separated mixed string into an array of single strings
                     for (String ac : acs) {                                                             // for each accidental string extracted from the mixed string
                         double pitch = Helper.pname2midi(ac.substring(0, 1));                           // the first character designates the pitch to be affected by the accidental
@@ -1862,7 +1864,7 @@ public class Mei {
         // check validity of information
         if ((this.helper.currentPart == null)                                                                   // the tupletSpan is not in a staff environment, so I have no idea where it belongs to and to which note and rest elements it applies
 //                || ((tupletSpan.getAttribute("startid") == null) && (tupletSpan.getAttribute("tstamp") == null) && (tupletSpan.getAttribute("tstamp.ges") == null) && (tupletSpan.getAttribute("tstamp.real") == null)) // or no starting information
-                || ((tupletSpan.getAttribute("dur") == null) && (tupletSpan.getAttribute("dur.ges") == null) && (tupletSpan.getAttribute("endid") == null))  // or no ending information
+                || ((tupletSpan.getAttribute("dur") == null) /*&& (tupletSpan.getAttribute("dur.ges") == null)*/ && (tupletSpan.getAttribute("endid") == null))  // or no ending information
                 || (tupletSpan.getAttribute("num") == null) || (tupletSpan.getAttribute("numbase") == null)){   // and no num or numbase attribute
             return;                                                                                             // cancel
         }
@@ -1871,7 +1873,7 @@ public class Mei {
         Element clone = Helper.cloneElement(tupletSpan);
         clone.addAttribute(new Attribute("midi.date", this.helper.currentPart.getAttributeValue("currentDate")));
 
-        // compute duration if already possible (if a du or dur.ges attribute is given) and set the end attribute accordingly
+        // compute duration if already possible (if a dur or dur.ges attribute is given) and set the end attribute accordingly
         double dur = this.helper.computeDuration(tupletSpan);                               // compute duration
         if (dur > 0.0) {                                                                    // if success
             clone.addAttribute(new Attribute("end", Double.toString(this.helper.getMidiTime() + dur))); // compute end date of the transposition and store in attribute end
@@ -2131,13 +2133,13 @@ public class Mei {
     private void processRest(Element rest) {
         Element s = new Element("rest");                                                    // this is the new rest element
         Helper.copyId(rest, s);                                                             // copy the id
-        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));  // compute date
+        s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));      // compute date
 
         double dur = this.helper.computeDuration(rest);                                     // compute note duration in midi ticks
         if (dur == 0.0) return;                                                             // if failed, cancel
 
-        s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                               // else store attribute
-        this.helper.addLayerAttribute(s);                                                                   // add an attribute that indicates the layer
+        s.addAttribute(new Attribute("midi.duration", Double.toString(dur)));                                       // else store attribute
+        this.helper.addLayerAttribute(s);                                                                           // add an attribute that indicates the layer
         this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + dur));  // draw currentDate counter
         Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("score"));    // insert the new note into the part->dated->score
 
@@ -2146,7 +2148,7 @@ public class Mei {
         rest.addAttribute(new Attribute("midi.dur", s.getAttributeValue("midi.duration")));
     }
 
-    /** process an mei octave element; this method does not process tstamp and tstamp2 or tstamp.ges or tstamp.real; there MUST be a dur, dur.ges or endid attribute
+    /** process an mei octave element; this method does not process tstamp and tstamp2 or tstamp.ges or tstamp.real; there MUST be a dur or endid attribute
      *
      * @param octave an mei octave element
      */
@@ -2227,12 +2229,12 @@ public class Mei {
 
         this.helper.endids.add(s);                                                                      // and append element to the endids list
 
-        // make an entry in the global or local miscMap from which later on midi ctrl events can be generated
+        // make an entry in the global or local pedalMap from which later on midi ctrl events can be generated
         if (this.helper.currentPart == null) {                                                          // if global information
-            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // insert in global miscMap
+            Helper.addToMap(s, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("pedalMap"));   // insert in global pedalMap
             return;
         }
-        Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // otherwise local information: insert in the part's miscMap
+        Helper.addToMap(s, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("pedalMap"));  // otherwise local information: insert in the part's pedalMap
     }
 
     /** process an mei note element
@@ -2372,7 +2374,7 @@ public class Mei {
                     String copyof = a.getValue();                                                       // get its value
                     if (copyof.charAt(0) == '#') copyof = copyof.substring(1);                          // local references within the document usually start with #; this must be excluded when searching for the id
                     placeholders.put(element, copyof);                                                  // put that entry on the placeholder hashmap
-                    //continue;                                                                         // this elemnt may also have an xml:id, so it must be added to the other list as well and we later on have the possibility to resolve references of placeholders to other placeholders
+                    //continue;                                                                         // this element may also have an xml:id, so it must be added to the other list as well and we later on have the possibility to resolve references of placeholders to other placeholders
                 }
 
                 a = element.getAttribute("id", "http://www.w3.org/XML/1998/namespace");                 // get the element's xml:id

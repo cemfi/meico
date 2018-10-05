@@ -678,6 +678,7 @@ public class Msm {
         this.parseMarkerMap(this.getRootElement().getFirstChildElement("global"), track);          // parse markerMap
         this.parseTimeSignatureMap(this.getRootElement().getFirstChildElement("global"), track);   // parse timeSignatureMap
         this.parseKeySignatureMap(this.getRootElement().getFirstChildElement("global"), track);    // parse keySignatureMap
+//        this.parsePedalMap(this.getRootElement().getFirstChildElement("global"), track);           // parse pedalMap
 
         // parse the parts
         for (Element part = this.getRootElement().getFirstChildElement("part"); part != null; part = Helper.getNextSiblingElement("part", part)) {  // go through all parts in the msm document
@@ -699,6 +700,7 @@ public class Msm {
 //            this.parseKeySignatureMap(part, track);                                                             // parse keySignatureMap
 //            this.parseTimeSignatureMap(part, track);                                                            // parse timeSignatureMap
 //            this.parseMarkerMap(part, track);                                                                   // parse markerMap
+//            this.parsePedalMap(part, track);                                                                      // parse pedalMap
 
             this.parseScore(part, track);                                                       // parse score
         }

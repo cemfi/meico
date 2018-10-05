@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.5.4
+- Updated MEI Coverage Documentation `documentation.md`.
+- Some tweaks in the Travis CI script `.travis.yml`. Because of bad OpenJFX support Travis CI reports build fails with OpneJDK. At the moment only the Oracle JDK builds can be trusted.
+- Finished the MEI Coverage Documentation `documentation.md`.
+- Some minor code revisions, nothing essential.
+
+
 #### v0.5.3
 - Bugfix in method `meico.mei.Mei.readMeiFile()`: If argument `validate` is set `true`, it was trying to validate the MEI before it was actually loaded.
 - Generated an up-to-date Ant script `build.xml` and added `<manifest> <attribute name="Main-Class" value="meico.app.Main"/> </manifest>` to ensure that there is a main manifest attribute.
