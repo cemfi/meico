@@ -37,13 +37,16 @@ public class Settings {
     protected static final String ICON_PRESSED = "-fx-background-color: transparent; -fx-border-width: 0px; -fx-text-fill: #686868; -fx-alignment: center;";
     protected static final String ACCORDION = "-fx-box-border: #353535; -fx-color: #323232; -fx-body-color: linear-gradient(#404040, #252525); -fx-inner-border: linear-gradient(#404040, #252525); -fx-text-fill: #989898; -fx-mark-color: #989898; -fx-mark-highlight-color: #d8d8d8;";
     protected static final String PLAYER = "-fx-background-color: #2b2b2b;-fx-border-width: 0px;-fx-alignment: center;";
-    protected static final String WEB_BROWSER = "-fx-background-color: #2b2b2b;" + Settings.SCROLLBAR;
+    protected static final String WEB_BROWSER = Settings.BACKGROUND_GRAY + Settings.SCROLLBAR;
     protected static final String WORKSPACE = "-fx-background: transparent; -fx-background-color: transparent;" + Settings.SCROLLBAR;
     protected static final String DATA_OBJECT_LABEL = "-fx-fill: lightgray; -fx-font-weight: bold; -fx-line-spacing: 0em;";
+    protected static final String WELCOME_MESSAGE_COLOR = "-fx-text-fill: white; -fx-opacity: 0.2;";
+    protected static final String WELCOME_MESSAGE_STYLE = Settings.WELCOME_MESSAGE_COLOR + "-fx-font-size: " + (Settings.getSystemFont().getSize() * 1.8) + "pt; -fx-text-alignment: center; -fx-font-weight: normal; -fx-line-spacing: 320.0px;";
+    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   TXT   MIDI   WAV   XSL   SF2   DLS";
 
     // global layout settings
-    protected static boolean makeLogfile = true;                            // make a logfile
-    protected static String logfile = "meico.log";
+    protected static boolean makeLogfile = true;                        // make a logfile
+    protected static String logfile = "meico.log";                      // filename of log file
     protected static int defaultWindowWidth = 1200;                     // initial window width
     protected static int defaultWindowHeight = 800;                     // initial window height
     protected static boolean useInternalWebView = true;                 // if false, the external browser is called for Verovio and other online services
@@ -82,6 +85,10 @@ public class Settings {
     // XSL Transform settings
     protected static File xslFile = null;                               // here it is possible to set a default XSLT
     protected static Xslt30Transformer xslTransform = null;             // the actual transformer instance
+
+    // Score rendering settings
+    protected static boolean oneLineScore = false;                      // if true, the score rendering in the WebView will output all music in one line
+    protected static boolean useLatestVerovio = true;                   // if set true, meico will try to use the latest online available version of verovio-toolkit.js
 
     /**
      * this opens a dialog window to edit the preferences settings in meico
@@ -147,9 +154,9 @@ public class Settings {
         windowSizePane.getChildren().addAll(windowWidth, windowWidthLabel, windowHeight, windowHeightLabel);
 
         // webview
-        CheckBox webview = new CheckBox("Use internal WebView, uncheck to use the system default browser instead (requires restart)");
-        webview.setSelected(Settings.useInternalWebView);
-        webview.setTextFill(Color.GRAY);
+//        CheckBox webview = new CheckBox("Use internal WebView, uncheck to use the system default browser instead (requires restart)");
+//        webview.setSelected(Settings.useInternalWebView);
+//        webview.setTextFill(Color.GRAY);
 
         // autoexpanding player
         CheckBox player = new CheckBox("Expand player automatically on mouseover");
@@ -319,13 +326,23 @@ public class Settings {
         Separator separator3 = new Separator(Orientation.HORIZONTAL);
         separator3.setOpacity(0.5);
 
+        // Score rendering
+        CheckBox oneLineScore = new CheckBox("Score rendering in one score line (no system breaks)");
+        oneLineScore.setSelected(Settings.oneLineScore);
+        oneLineScore.setTextFill(Color.GRAY);
+
+        // latest online Verovio version
+        CheckBox latestVerovio = new CheckBox("Use latest Verovio version (requires internet connection)");
+        latestVerovio.setSelected(Settings.useLatestVerovio);
+        latestVerovio.setTextFill(Color.GRAY);
+
         // Save, Cancel
         Button save = new Button("Save Settings");
         save.setPrefSize(200, 40);
         save.setOnMouseReleased(event -> {
             Settings.defaultWindowWidth = windowWidth.getValue();
             Settings.defaultWindowHeight = windowHeight.getValue();
-            Settings.useInternalWebView = webview.isSelected();
+//            Settings.useInternalWebView = webview.isSelected();
             Settings.autoExpandPlayerOnMouseOver = player.isSelected();
             Settings.accordionAnimations = accordion.isSelected();
             Settings.makeLogfile = logfile.isSelected();
@@ -336,6 +353,8 @@ public class Settings {
             Settings.Msm2Midi_generateProgramChanges = prog.isSelected();
             Settings.Msm2Midi_defaultTempo = tempo.getValue();
             Settings.savePitchesWithPrettyPrint = jsonPretty.isSelected();
+            Settings.oneLineScore = oneLineScore.isSelected();
+            Settings.useLatestVerovio = latestVerovio.isSelected();
             stage.close();
         });
 
@@ -355,8 +374,8 @@ public class Settings {
         VBox container = new VBox();
         container.setStyle(Settings.BACKGROUND_GRAY);
         container.setPadding(new Insets(spacing, spacing, spacing, spacing));
-        container.setSpacing(spacing * 1.5);
-        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane, webview, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, expan, channel10, prog, tempoPane, soundbankPane, xsltPane, jsonPretty, separator3, closePane);
+        container.setSpacing(spacing * 1.25);
+        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, soundbankPane, xsltPane, jsonPretty, oneLineScore, latestVerovio, separator3, closePane);
 
         Scene scene = new Scene(container/*, 300, 300*/);
 
@@ -399,9 +418,9 @@ public class Settings {
                 case "defaultWindowHeight":
                     Settings.defaultWindowHeight = Integer.parseInt(line);
                     break;
-                case "useInternalWebView":
-                    Settings.useInternalWebView = !line.equals("0");    // everything else but "0" switches the webview on
-                    break;
+//                case "useInternalWebView":
+//                    Settings.useInternalWebView = !line.equals("0");    // everything else but "0" switches the webview on
+//                    break;
                 case "autoExpandPlayerOnMouseOver":
                     Settings.autoExpandPlayerOnMouseOver = !line.equals("0");    // everything else but "0" switches the webview on
                     break;
@@ -432,6 +451,12 @@ public class Settings {
                 case "prettyJson":
                     Settings.savePitchesWithPrettyPrint = line.equals("1");
                     break;
+                case "oneLineScore":
+                    Settings.oneLineScore = line.equals("1");
+                    break;
+                case "useLatestVerovio":
+                    Settings.useLatestVerovio = line.equals("1");
+                    break;
                 case "soundbank":
                     Settings.setSoundbank((line.equals("default")) ? null : new File(line));
                     if ((Settings.soundbank != null) && !Settings.soundbank.exists())
@@ -453,7 +478,7 @@ public class Settings {
     protected static void writeSettingsFile() {
         String output = "% Meico settings\n\n# defaultWindowWidth\n" + Settings.defaultWindowWidth
                 + "\n\n# defaultWindowHeight\n" + Settings.defaultWindowHeight
-                + "\n\n# useInternalWebView\n" + (Settings.useInternalWebView ? "1" : "0")
+//                + "\n\n# useInternalWebView\n" + (Settings.useInternalWebView ? "1" : "0")
                 + "\n\n# autoExpandPlayerOnMouseOver\n" + (Settings.autoExpandPlayerOnMouseOver ? "1" : "0")
                 + "\n\n# accordionAnimations\n" + (Settings.accordionAnimations ? "1" : "0")
                 + "\n\n# logfile\n" + (Settings.makeLogfile ? "1" : "0")
@@ -464,6 +489,8 @@ public class Settings {
                 + "\n\n# generateProgramChanges\n" + (Settings.Msm2Midi_generateProgramChanges ? "1" : "0")
                 + "\n\n# tempo\n" + Settings.Msm2Midi_defaultTempo
                 + "\n\n# prettyJson\n" + (Settings.savePitchesWithPrettyPrint ? "1" : "0")
+                + "\n\n# oneLineScore\n" + (Settings.oneLineScore ? "1" : "0")
+                + "\n\n# useLatestVerovio\n" + (Settings.useLatestVerovio ? "1" : "0")
                 + "\n\n# soundbank\n" + ((Settings.soundbank == null) ? "default" : Settings.soundbank.getAbsolutePath())
                 + "\n\n# xslt\n" + ((Settings.xslFile == null) ? "none" : Settings.xslFile.getAbsolutePath())
                 +"\n";
@@ -486,7 +513,13 @@ public class Settings {
      */
     protected static synchronized Font getIconFont(Object caller) {
 //        Font font = Font.loadFont(caller.getClass().getResource("/resources/fonts/fa-solid-900.ttf").toExternalForm(), Font.getDefault().getSize());  // this does not work in IDEs
-        Font font = Font.loadFont(caller.getClass().getResourceAsStream("/resources/fonts/fa-solid-900.ttf"), Font.getDefault().getSize());
+        InputStream is = caller.getClass().getResourceAsStream("/resources/fonts/fa-solid-900.ttf");
+        Font font = Font.loadFont(is, Font.getDefault().getSize());
+        try {
+            is.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return font;
     }
 
@@ -497,7 +530,13 @@ public class Settings {
      * @return
      */
     protected static synchronized Font getIconFont(double size, Object caller) {
-        Font font = Font.loadFont(caller.getClass().getResourceAsStream("/resources/fonts/fa-solid-900.ttf"), size);
+        InputStream is = caller.getClass().getResourceAsStream("/resources/fonts/fa-solid-900.ttf");
+        Font font = Font.loadFont(is, size);
+        try {
+            is.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return font;
     }
 
@@ -509,7 +548,13 @@ public class Settings {
      * @return
      */
     protected static synchronized Font getFont(String fontFileName, double size, Object caller) {
-        Font font = Font.loadFont(caller.getClass().getResourceAsStream(fontFileName), size);
+        InputStream is = caller.getClass().getResourceAsStream(fontFileName);
+        Font font = Font.loadFont(is, size);
+        try {
+            is.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return font;
     }
 

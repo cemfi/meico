@@ -1,12 +1,16 @@
 package meico.app.gui;
 
 import javafx.geometry.Point2D;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import net.sf.saxon.s9api.SaxonApiException;
 import nu.xom.ParsingException;
 
@@ -21,8 +25,9 @@ import java.util.ArrayList;
  * @author Axel Berndt
  */
 public class Workspace extends ScrollPane {
-    private MeicoApp app;                                         // this is a link to the parent application
-    private Pane container;                                       // this is the "drawing area", all contents go in here, Pane features a better behavior than Group in this context (resizes only in positive direction, Pane local bounds start always at (0, 0) in top left whereas Group's bounds start at the top-leftmost child at (0+x, 0+y)).
+    private MeicoApp app;                                           // this is a link to the parent application
+    private Pane container;                                         // this is the "drawing area", all contents go in here, Pane features a better behavior than Group in this context (resizes only in positive direction, Pane local bounds start always at (0, 0) in top left whereas Group's bounds start at the top-leftmost child at (0+x, 0+y)).
+    private StackPane welcomeMessage;
     private ArrayList<DataObject> data = new ArrayList<>();         // this holds the data that is presented in the workspace area
     private ArrayList<DataObject> soundbanks = new ArrayList<>();   // the list of soundbanks that are present in the workspace (they are also contained in this.data)
     private ArrayList<DataObject> xslts = new ArrayList<>();        // the list of XSLTs that are present in the workspace (they are also contained in this.data)
@@ -39,8 +44,51 @@ public class Workspace extends ScrollPane {
 
         this.container = new Pane();                            // create the "drawing area"
 
+        this.welcomeMessage = this.makeWelcomeMessage();        // make a welcome message that shows which file types can be imported
+        this.container.getChildren().add(this.welcomeMessage);  // add the message to the container so it will be displayed
+
         this.setFileDrop();                                     // set file drop functionality on the workspace
         this.setContent(this.container);                        // set it as the content of the scrollpane
+    }
+
+    /**
+     * make a welcome message that shows which file types can be imported
+     * @return
+     */
+    private synchronized StackPane makeWelcomeMessage() {
+        // the message text
+        Label message = new Label(Settings.WELCOME_MESSAGE);    // the welcome message text as label
+        message.setFont(Settings.font);                         // set font
+        message.setStyle(Settings.WELCOME_MESSAGE_STYLE);       // set style
+
+        // the file drop icon
+        Label dropIcon = new Label("\uf56f");                   // icon
+        dropIcon.setFont(Settings.getIconFont(120, this));      // icon size
+        dropIcon.setStyle(Settings.WELCOME_MESSAGE_COLOR);      // style
+        dropIcon.setTranslateX(-12.0);                          // center aethetically
+        dropIcon.setTranslateY(-4.0);                           // center aethetically
+
+        // dashed rectangle arround drop icon
+        Rectangle rectangle = new Rectangle(250, 250);          // dimensions
+        rectangle.setArcWidth(86.0);                            // rounded corner
+        rectangle.setArcHeight(86.0);                           // rounded corner
+        rectangle.setFill(new Color(0, 0, 0, 0.0));             // background transparent
+        rectangle.setStroke(new Color(1, 1, 1, 0.25));          // stroke
+        rectangle.setStrokeWidth(7.0);                          // stroke width
+        rectangle.getStrokeDashArray().addAll(17.0, 27.0);      // dash it
+//        rectangle.setStrokeDashOffset(25.0);
+
+        // stack all the above elements together
+        StackPane pane = new StackPane();
+        pane.getChildren().addAll(rectangle, dropIcon, message);
+        pane.layoutXProperty().bind(this.widthProperty().subtract(pane.widthProperty()).divide(2));   // center the message in the workspace
+        pane.layoutYProperty().bind(this.heightProperty().subtract(pane.heightProperty()).divide(2)); // center the message in the workspace
+
+        // scale the whole thing with the height of the stage
+        pane.scaleXProperty().bind(this.heightProperty().divide(800));
+        pane.scaleYProperty().bind(this.heightProperty().divide(800));
+
+        return pane;
     }
 
     /**
@@ -220,6 +268,12 @@ public class Workspace extends ScrollPane {
                     try {
                         DataObject data = this.makeDataObject(file);
                         this.addDataObjectAt(data, local.getX(), local.getY());
+
+                        // once the user successfully drops/imports the first file the welcome message is removed and set null to free memory and avoid expensive tests
+                        if (this.welcomeMessage != null) {
+                            this.container.getChildren().remove(this.welcomeMessage);
+                            this.welcomeMessage = null;
+                        }
                     } catch (ParsingException | InvalidMidiDataException | IOException | UnsupportedAudioFileException | SaxonApiException e) {
                         this.app.getStatuspanel().setMessage(e.toString());
                         e.printStackTrace();

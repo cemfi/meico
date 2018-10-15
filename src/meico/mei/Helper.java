@@ -1434,4 +1434,52 @@ public class Helper {
     public synchronized static Xslt30Transformer makeXslt30Transformer(File xslt) throws SaxonApiException, FileNotFoundException {
         return Helper.makeXslt30Transformer(xslt, new Processor(false));
     }
+
+    /**
+     * given a string of XML code, this method prettyfies it
+     * @param xml
+     * @return
+     */
+    public static String prettyXml(String xml) {
+        if (xml == null || xml.trim().length() == 0) return "";
+
+        int stack = 0;
+        StringBuilder pretty = new StringBuilder();
+        String[] rows = xml.trim().replaceAll(">", ">\n").replaceAll("<", "\n<").split("\n");
+
+        for (int i = 0; i < rows.length; i++) {
+            if (rows[i] == null || rows[i].trim().length() == 0) continue;
+
+            String row = rows[i].trim();
+            if (row.startsWith("<?")) {
+                pretty.append(row + "\n");
+            } else if (row.startsWith("</")) {
+                String indent = repeatString(--stack);
+                pretty.append(indent + row + "\n");
+            } else if (row.startsWith("<") && !row.endsWith("/>")) {
+                String indent = repeatString(stack++);
+                pretty.append(indent + row + "\n");
+                if (row.endsWith("]]>")) stack--;
+            } else {
+                String indent = repeatString(stack);
+                pretty.append(indent + row + "\n");
+            }
+        }
+
+        return pretty.toString().trim();
+    }
+
+    /**
+     * just a helper method for prettyXml()
+     * @param stack
+     * @return
+     */
+    private static String repeatString(int stack) {
+        StringBuilder indent = new StringBuilder();
+        for (int i = 0; i < stack; i++) {
+            indent.append("  ");
+        }
+        return indent.toString();
+    }
+
 }

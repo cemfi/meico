@@ -12,6 +12,7 @@ Meico is a converter framework for MEI files. MEI offers an invaluable combinati
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq),
 - MSM conversion to MIDI and sequences of chroma and absolute pitch vectors,
 - MIDI to PCM audio and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
+- MEI score rendering (based on Verovio),
 - MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute, conversion of `expansion` elements into "through-composed" MEI code),
 - MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`),
 - an instrument dictionary and several string matching algorithms to map staff names to MIDI program change numbers,
@@ -90,6 +91,7 @@ Meico makes use of the following third party libraries:
 - [MEI Common Music Notation Schema](https://github.com/music-encoding/music-encoding) (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
 - parts of `MidiToWavRenderer.java`, an add-on to the [JFugue](http://www.jfugue.org/download.html) library, LGPL license.
 - [Font Awesome](https://fontawesome.com/) v5.2.0 (the free solid icons font `fa-solid-900.ttf`), Fonticons, Inc., [SIL OFL 1.1 License](https://scripts.sil.org/OFL).
+- [Verovio JavaScript Toolkit](https://www.verovio.org/index.xhtml) v2.0.0-dev-c0ae726 by Etienne Darbellay, Jean-François Marti, Laurent Pugin, Rodolfo Zitellini and others, GNU Lesser General Public License (LGPL) 3.0.
 
 We publish meico under GNU LGPL version 3.0 Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
 If you use meico in your project make sure that you do not conflict with any of the above licenses.

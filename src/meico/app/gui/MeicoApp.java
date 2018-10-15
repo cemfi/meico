@@ -25,7 +25,7 @@ public class MeicoApp extends Application {
     private TitledPane playerAccordion;
     private Workspace workspace;
     private WebBrowser web = null;
-    private TitledPane webAccordion;
+    protected TitledPane webAccordion;
 
     /**
      * the main method to compile and run meico as a JavaFX application
@@ -207,6 +207,14 @@ public class MeicoApp extends Application {
      */
     protected synchronized WebBrowser getWeb() {
         return this.web;
+    }
+
+    /**
+     * access the webAccordion (e.g. to auto-expand it when loading a score rendering)
+     * @return
+     */
+    protected synchronized TitledPane getWebAccordion() {
+        return this.webAccordion;
     }
 
     /**

@@ -1,8 +1,28 @@
 ### Version History
 
 
+#### v0.5.5
+- Added a welcome message in the workspace: `"Drop your files here: MEI, MSM, TXT, MIDI, WAV, XSL, SF2, DLS."` and a file drop icon. This should clarify the first step of meico's usage to every beginner and provides a list of file formats that can be imported. The whole thing is responsive to window height, i.e. resizing the window will adjust the scale of the message. It will disappear after successfully dropping/importing the first file.
+- In class `meico.app.gui.Settings` there were some InputStreams that have not been closed. This has been fixed.
+- Disabled the option to switch off the internal WebView. Not all information shown internally can be forwarded to an external browser.
+- [Verovio](https://www.verovio.org) integration:
+    - The motivation behind adding the webview to the GUI was to show Verovio's score renderings in it. This is now finally implemented.
+    - Added a prototype HTML document `/resources/Verovio/verovio.html`.  It contains a placeholder `"MeiCode"` which will be replaced by actual MEI code.
+    - The new class `meico.app.gui.VerovioGenerator` provides the necessary methods to generate an HTML code that calls Verovio and passes the MEI code to it.
+    - Classes `meico.app.gui.DataObject` and `meico.app.gui.WebBrowser` have been adapted.
+    - In class `meico.app.gui.Settings` a new flag `oneLineScore` has been added. If true, the score rendering will print all music in one system. This can be specified by the user in the settings.
+    - In the settings the user can decide whether to use the local version of Verovio that is packed into meico's jar or the latest online available version (requires internet connection, of course).
+    - Do not expect too much, Verovio works suboptimal in Java's JavaScript engine.
+- Whenever something is shown in the WebView, i.e. when clicking on "Score Rendering" or "Show",
+    - the WebView window will expand automatically and
+    - its title string will change to express what is shown.
+- If an MEI or MSM does not provide a title, its visual representation in the GUI will be an empty circle. This has been changed. If the title string is empty, the filename will be printed.
+- Class `meico.app.gui.WebBrowser` has extended `VBox` which cased a problem when resizing the window. The render area did not resize. This has been fixed by extending `StackPane` instead of `VBox`.
+- Added two new methods `prettyXml()` and `repeatString()` to class `meico.mei.Helper` to generate a formatted XML string from an unformatted one, basically for printing MEI and MSM code in the WebView. The corresponding options have been added to their menues.
+
+
 #### v0.5.4
-- Some tweaks in the Travis CI script `.travis.yml`. Because of bad OpenJFX support Travis CI reports build fails with OpneJDK. At the moment only the Oracle JDK builds can be trusted.
+- Some tweaks in the Travis CI script `.travis.yml`. Because of bad OpenJFX support Travis CI reports build fails with OpenJDK. At the moment only the Oracle JDK builds can be trusted.
 - Finished the MEI Coverage Documentation `documentation.md`.
 - Some minor code revisions, nothing essential.
 

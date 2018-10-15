@@ -33,9 +33,7 @@ import nu.xom.ValidityException;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -209,11 +207,12 @@ public class DataObject extends Group {
      * @return
      */
     private synchronized String getName() {
+        String name = "";
         if (this.data instanceof Mei)
-            return ((Mei)this.data).getTitle();
+            name = ((Mei)this.data).getTitle();
         else if (this.data instanceof Msm)
-            return ((Msm)this.data).getTitle();
-        return this.getFileName();                  // all the other data types have no formatted name or the like, so just use the filename
+            name = ((Msm)this.data).getTitle();
+        return (name.isEmpty()) ? this.getFileName() : name;    // if the name string is (still) empty, return the filename
     }
 
     /**
@@ -358,13 +357,13 @@ public class DataObject extends Group {
         Group menu = new Group();
 
         if (this.data instanceof Mei) {
-            String[] leftItems = {"Validate", "Add IDs", "Resolve Copyofs", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Validate", "Add IDs", "Resolve Copyofs", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to MSM", "to MIDI", "to Audio"/*, "Score Rendering"*/, "XSL Transform"};
+            String[] rightItems = {"to MSM", "to MIDI", "to Audio", "Score Rendering", "XSL Transform"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -372,7 +371,7 @@ public class DataObject extends Group {
             }
         }
         else if (this.data instanceof Msm) {
-            String[] leftItems = {"Remove Rests", "Expand Repetitions", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Remove Rests", "Expand Repetitions", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -408,7 +407,7 @@ public class DataObject extends Group {
             }
         }
         else if (this.data instanceof Pitches) {
-            String[] leftItems = {"Show in WebView", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -432,7 +431,7 @@ public class DataObject extends Group {
             }
         }
         else if (this.data instanceof TxtData) {
-            String[] leftItems = {"Show in WebView", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -594,16 +593,24 @@ public class DataObject extends Group {
         // object type-specific commands
         if (this.data instanceof Mei) {             // MEI-specific commands
             switch (command) {
-//                case "Show in WebView":
-//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-//                        Thread thread = new Thread(() -> {
-//                            RotateTransition ani = this.startComputeAnimation();
-//                            Platform.runLater(() -> this.workspace.getApp().getWeb().printContent(((Mei)this.data).getDocument().toXML(), false));
-//                            this.stopComputeAnimation(ani);
-//                        });
-//                        this.start(thread);
-//                    });
-//                    break;
+                case "Show":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            if (this.workspace.getApp().getWeb() != null) {
+                                Platform.runLater(() -> {
+                                    this.workspace.getApp().getWeb().printContent((Helper.prettyXml(((Mei) this.data).toXML())), true);
+                                    if (this.workspace.getApp().getWebAccordion() != null) {
+                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    }
+                                });
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
                 case "Validate":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
@@ -757,12 +764,17 @@ public class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.workspace.getApp().getStatuspanel().setMessage("MEI Score Rendering via Verovio ...");
-//                            this.workspace.getApp().getWeb().openURL();     // TODO: call Verovio
-                            try {
-                                Thread.sleep(5000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+//                            this.getWorkspace().getApp().getHostServices().showDocument(getClass().getResource("/resources/Verovio/verovio.html").toString());  // display score rendering in system standard browser, this is not finished as the content of the HTML is never filled with score data
+                            // do Verovio score rendering
+                            Platform.runLater(() -> {
+                                String verovio = null;                                                          // this will get the HTML code to be shown in the WebView
+                                verovio = VerovioGenerator.generate(((Mei)this.getData()).toXML(), this);       // generate that HTML code
+                                this.getWorkspace().getApp().getWeb().printContent(verovio, false);             // show it in the WebView
+                                if (this.workspace.getApp().getWebAccordion() != null) {
+                                    this.workspace.getApp().getWebAccordion().setText("Score: " + this.label);  // change the title string of the WebView
+                                    this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                }
+                            });
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -809,6 +821,24 @@ public class DataObject extends Group {
         }
         else if (this.data instanceof Msm) {        // MSM-specific commands
             switch (command) {
+                case "Show":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            if (this.workspace.getApp().getWeb() != null) {
+                                Platform.runLater(() -> {
+                                    this.workspace.getApp().getWeb().printContent((Helper.prettyXml(((Msm) this.data).toXML())), true);
+                                    if (this.workspace.getApp().getWebAccordion() != null) {
+                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    }
+                                });
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
                 case "Remove Rests":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
@@ -1093,12 +1123,19 @@ public class DataObject extends Group {
         }
         else if (this.data instanceof Pitches) {    // Pitches-specific commands
             switch (command) {
-                case "Show in WebView":
+                case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            if (this.workspace.getApp().getWeb() != null)
-                                Platform.runLater(() -> this.workspace.getApp().getWeb().printContent(((Pitches)this.data).getAsString(true), true));
+                            if (this.workspace.getApp().getWeb() != null) {
+                                Platform.runLater(() -> {
+                                    this.workspace.getApp().getWeb().printContent(((Pitches) this.data).getAsString(true), true);
+                                    if (this.workspace.getApp().getWebAccordion() != null) {
+                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    }
+                                });
+                            }
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1235,13 +1272,18 @@ public class DataObject extends Group {
         }
         else if (this.data instanceof TxtData) {    // txt file-specific commands
             switch (command) {
-                case "Show in WebView":
+                case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             Platform.runLater(() -> {
-                                if (this.workspace.getApp().getWeb() != null)
-                                    this.workspace.getApp().getWeb().printContent(((TxtData)this.data).getString(), true);
+                                if (this.workspace.getApp().getWeb() != null) {
+                                    this.workspace.getApp().getWeb().printContent(((TxtData) this.data).getString(), true);
+                                    if (this.workspace.getApp().getWebAccordion() != null) {
+                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    }
+                                }
                             });
                             this.stopComputeAnimation(ani);
                         });
