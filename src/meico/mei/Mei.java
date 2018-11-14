@@ -6,6 +6,7 @@ package meico.mei;
  */
 
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -44,18 +45,19 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(File file) throws IOException, ParsingException {
-        this(file, false);
+        this(file, false, null);
     }
 
     /** constructor
      *
      * @param file a File object
      * @param validate set true to activate validation of the mei document, else false
+     * @param schema URL to MEI schema
      * @throws IOException
      * @throws ParsingException
      */
-    public Mei(File file, boolean validate) throws IOException, ParsingException {
-        this.readMeiFile(file, validate);
+    public Mei(File file, boolean validate, URL schema) throws IOException, ParsingException {
+        this.readMeiFile(file, validate, schema);
     }
 
     /**
@@ -65,25 +67,26 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(String xml) throws IOException, ParsingException {
-        this(xml, false);
+        this(xml, false, null);
     }
 
     /**
      * constructor
      * @param xml xml code as UTF8 String
      * @param validate validate the code?
+     * @param schema URL to MEI schema
      * @throws IOException
      * @throws ParsingException
      */
-    public Mei(String xml, boolean validate) throws IOException, ParsingException {
+    public Mei(String xml, boolean validate, URL schema) throws IOException, ParsingException {
         Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
         try {
             this.mei = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
         } catch (ValidityException e) {                             // in case of a ValidityException (no valid mei code)
             this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
         }
-        if (validate)                                               // if the mei file should be validated
-            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
+        if (validate && (schema != null))                           // if the mei file should be validated
+            System.out.println(this.validate(schema));              // do so, the result is stored in this.validMei
     }
 
     /**
@@ -93,19 +96,20 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(InputStream inputStream) throws IOException, ParsingException {
-        this(inputStream, false);
+        this(inputStream, false, null);
     }
 
     /**
      * constructor
      * @param inputStream read xml code from this input stream
      * @param validate
+     * @param schema URL to MEI schema
      * @throws IOException
      * @throws ParsingException
      */
-    public Mei(InputStream inputStream, boolean validate) throws IOException, ParsingException {
-        if (validate)                                               // if the mei file should be validated
-            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
+    public Mei(InputStream inputStream, boolean validate, URL schema) throws IOException, ParsingException {
+        if (validate && (schema != null))                           // if the mei file should be validated
+            System.out.println(this.validate(schema));              // do so, the result is stored in this.validMei
         Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
         try {
             this.mei = builder.build(inputStream);
@@ -118,10 +122,11 @@ public class Mei {
      * reads the data from an MEI file into this object
      * @param file
      * @param validate
+     * @param schema URL to MEI schema
      * @throws IOException
      * @throws ParsingException
      */
-    protected synchronized void readMeiFile(File file, boolean validate) throws IOException, ParsingException {
+    protected synchronized void readMeiFile(File file, boolean validate, URL schema) throws IOException, ParsingException {
         this.file = file;
 
         if (!file.exists()) {
@@ -146,8 +151,8 @@ public class Mei {
             this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
         }
 
-        if (validate)                                               // if the mei file should be validated
-            System.out.println(this.validate());                    // do so, the result is stored in this.validMei
+        if (validate && (schema != null))                           // if the mei file should be validated
+            System.out.println(this.validate(schema));              // do so, the result is stored in this.validMei
     }
 
     /** returns the File object from which the mei data originates
@@ -255,14 +260,14 @@ public class Mei {
      * validate the data loaded into this.file and return whether it is proper mei according to mei-CMN.rng
      * @return
      */
-    public synchronized String validate() {
+    public synchronized String validate(URL schema) {
         if (this.isEmpty()) return "No MEI data present to be validated";    // no file, no validation
 
         this.validMei = true;                   // it is valid until the validator throws an exception
         String report = "Passed.";              // the validation report string, it will be overwritten if validation fails
 
         try {
-            Helper.validateAgainstSchema(this.file, this.getClass().getResource("/resources/mei-CMN.rng"));
+            Helper.validateAgainstSchema(this.file, schema);
 //            Helper.validateAgainstSchema(this.file, new URL("http://www.music-encoding.org/schema/current/mei-CMN.rng"));     // this variant takes the schema from the web, the user has to be online for this!
         } catch (SAXException e) {              // invalid mei
             this.validMei = false;
@@ -271,12 +276,12 @@ public class Mei {
 //            System.err.println(e.getMessage()); // print only the validation error message, not the complete stackTrace
         } catch (IOException e) {               // missing rng file
             this.validMei = false;
-            report = "Failed.  Missing file /resources/mei-CMN.rng!";
+            report = "Failed.  Missing schema file!";
 //            e.printStackTrace();
-            System.err.println("Validation failed: missing file /resources/mei-CMN.rng!");
+            System.err.println("Validation failed: missing schema file!");
         }
-//        System.out.println("Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + this.validMei);  // command line output of the result
-        report = "Validation of " + this.file.getName() + " against mei-CMN.rng (meiversion 3.0.0 2016): " + report;
+//        System.out.println("Validation of " + this.file.getName() + ": " + this.validMei);  // command line output of the result
+        report = "Validation of " + this.file.getName() + ": " + report;
         return report;                          // return the result
     }
 

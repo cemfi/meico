@@ -42,6 +42,8 @@ public class MeicoApp extends Application {
     public void init() {
 //        super.init();     // not necessary as it does nothing
 
+        System.setProperty("prism.order", "sw");
+
         try {
             Settings.readSettings();
         } catch (IOException e) {
@@ -68,7 +70,7 @@ public class MeicoApp extends Application {
      * @param stage
      */
     public void start(Stage stage) {
-        System.out.println("Meico: MEI Converter version " + Meico.version + "\nrunning on " + System.getProperty("os.name") + " version " + System.getProperty("os.version") + ", " + System.getProperty("os.arch") + "\nJava version " + System.getProperty("java.version"));
+        System.out.println("Meico: MEI Converter version " + Meico.version + "\nrunning on " + System.getProperty("os.name") + " version " + System.getProperty("os.version") + ", " + System.getProperty("os.arch") + "\nJava version " + System.getProperty("java.version") + "\nJavaFX version " + System.getProperty("javafx.version"));
 
         // load current settings from settings file if one is present, otherwise keep the initial settings in class Settings
         this.stage = stage;

@@ -1,6 +1,22 @@
 ### Version History
 
 
+#### v0.6.0
+- Added `System.setProperty("prism.order", "sw");` to method `meico.app.gui.MeicoApp.init()`. This fixes a graphics glitch that occurs every now and then.
+- Meico's MIDI to audio renderer relies on the package `sun.com.media.sound`. However, since Java 9 this package is marked as deprecated. It was still accessible at runtime but is going to disappear from Oracle JDK in the near future. It seems to have disappeared from OpenJDK as well.
+    - To solve this the Gervill Sound Synthesizer `gervill.jar` has been added to the `externals`. It provides the required package, so no code changes were necessary.
+    - Since it is published under GNU GPL 2.0, we have to change meico's license model as well. The new license is GNU GPL 3.0.
+- Some JavaFX 11 modules had to be added, too, as it is no longer included in any JDK (neither Oracle nor Open): `javafx.base.jar`, `javafx.controls.jar`, `javafx.graphics.jar`, `javafx.media.jar`, and `javafx.web.jar`.
+    - These are also licensed under GNU GPL 2.0.
+    - In GUI mode, JavaFX version number has been added to the log file/commandline output at startup.
+- Because of incompatible licensing models we had to remove the MEI Common Music Notation Schema `mei-CMN.rng` from this project.
+    - Instead, RNG files can now be imported and used in the same way as XSLTs and soundfonts, i.e. drag and drop it into the workspace, activate it and validate the MEI.
+    - Classes `meico.mei.Mei`, `meico.app.gui.Settings`, `meico.app.gui.Workspace`, `meico.app.gui.DataObject`, and `meico.app.Main` had to be adapted.
+    - New class `meico.app.gui.Schema` has been added.
+    - It is possible to set a default schema that meico will remember with every restart. Once this is done, meico behaves in the same way users of previous versions are used to.
+- Updated copyright notice in class `meico.midi.Midi2AudioRenderer` and the license information in `README.md`.
+
+
 #### v0.5.5
 - Added a welcome message in the workspace: `"Drop your files here: MEI, MSM, TXT, MIDI, WAV, XSL, SF2, DLS."` and a file drop icon. This should clarify the first step of meico's usage to every beginner and provides a list of file formats that can be imported. The whole thing is responsive to window height, i.e. resizing the window will adjust the scale of the message. It will disappear after successfully dropping/importing the first file.
 - In class `meico.app.gui.Settings` there were some InputStreams that have not been closed. This has been fixed.

@@ -31,6 +31,7 @@ public class Workspace extends ScrollPane {
     private ArrayList<DataObject> data = new ArrayList<>();         // this holds the data that is presented in the workspace area
     private ArrayList<DataObject> soundbanks = new ArrayList<>();   // the list of soundbanks that are present in the workspace (they are also contained in this.data)
     private ArrayList<DataObject> xslts = new ArrayList<>();        // the list of XSLTs that are present in the workspace (they are also contained in this.data)
+    private ArrayList<DataObject> schemas = new ArrayList<>();      // the list of schemas (RNGs) that are present in the workspace (they are also contained in this.data)
 
     public Workspace(MeicoApp app) {
         super();
@@ -117,6 +118,7 @@ public class Workspace extends ScrollPane {
         this.data.clear();
         this.soundbanks.clear();
         this.xslts.clear();
+        this.schemas.clear();
         this.app.getPlayer().setSoundbank(null);
         System.gc();    // force garbage collector to do its job
     }
@@ -132,6 +134,8 @@ public class Workspace extends ScrollPane {
             this.soundbanks.remove(object);
         else if (object.getDataType() == meico.app.gui.XSLTransform.class)
             this.xslts.remove(object);
+        else if (object.getDataType() == Schema.class)
+            this.schemas.remove(object);
 
         this.container.getChildren().remove(object);
         object.clear();
@@ -166,6 +170,8 @@ public class Workspace extends ScrollPane {
             this.addToSoundbanks(dataObject);                       // add it also to the soundbanks
         else  if (dataObject.getDataType() == XSLTransform.class)   // if it is an xslt
             this.addToXSLTs(dataObject);                            // add it also to the xslts
+        else  if (dataObject.getDataType() == Schema.class)   // if it is an xslt
+            this.addToSchemas(dataObject);                            // add it also to the xslts
     }
 
     /**
@@ -239,6 +245,36 @@ public class Workspace extends ScrollPane {
     protected synchronized void deactivateAllXSLTs() {
         for (DataObject o : this.xslts) {
             ((meico.app.gui.XSLTransform)o.getData()).deactivate();
+        }
+    }
+
+    /**
+     * this adds the given DataObject to the schemas list
+     * @param schema
+     */
+    protected synchronized void addToSchemas(DataObject schema) {
+        this.schemas.add(schema);
+    }
+
+    /**
+     * returns the SchemaFile that is currently activated
+     * @return
+     */
+    protected Schema getActiveSchema() {
+        for (DataObject o : this.schemas) {
+            Schema schema = (Schema)o.getData();
+            if (schema.isActive())
+                return schema;
+        }
+        return null;
+    }
+
+    /**
+     * This deactivates all schemas.
+     */
+    protected synchronized void deactivateAllSchemas() {
+        for (DataObject o : this.schemas) {
+            ((Schema)o.getData()).deactivate();
         }
     }
 

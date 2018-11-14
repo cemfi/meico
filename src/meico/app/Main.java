@@ -10,6 +10,8 @@ import nu.xom.ParsingException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +44,7 @@ public class Main {
             if (arg.equals("-?") || arg.equals("--help")) {
                 System.out.println("Meico: MEI Converter v" + Meico.version + "\nMeico requires the following arguments:\n");
                 System.out.println("[-?] or [--help]                        show this help text");
-                System.out.println("[-v] or [--validate]                    validate loaded MEI file");
+                System.out.println("[-v argument] or [--validate argument]  validate loaded MEI file against the griven RNG schema definition");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
@@ -65,6 +67,7 @@ public class Main {
 
         // what does the user want meico to do with the file just loaded?
         boolean validate = false;
+        URL schema = null;
         boolean addIds = false;
         boolean resolveCopyOfs = false;
         boolean ignoreExpansions = false;
@@ -82,7 +85,17 @@ public class Main {
         double tempo = 120;
         File soundbank = null;
         for (int i = 0; i < args.length-1; ++i) {
-            if ((args[i].equals("-v")) || (args[i].equals("--validate"))) { validate = true; continue; }
+            if ((args[i].equals("-v")) || (args[i].equals("--validate"))) {
+                validate = true;
+                try {
+                    schema = new URL(args[++i]);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                    schema = null;
+                    validate = false;
+                }
+                continue;
+            }
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
@@ -135,15 +148,20 @@ public class Main {
         }
         Mei mei;
         try {
-            mei = new Mei(meiFile, validate);                           // read an mei file
+            mei = new Mei(meiFile);                                     // read an mei file
         } catch (IOException | ParsingException e) {
-            System.err.println("MEI file is not valid.");
+            System.err.println("Error parsing MEI file.");
             e.printStackTrace();
             return 65;
         }
         if (mei.isEmpty()) {
             System.err.println("MEI file could not be loaded.");
             return 66;
+        }
+
+        // validation
+        if (validate && (schema != null)) {
+            System.out.println(mei.validate(schema));
         }
 
         // xsl transform

@@ -34,6 +34,8 @@ import nu.xom.ValidityException;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -170,6 +172,8 @@ public class DataObject extends Group {
                 return new meico.app.gui.Soundbank(file, this);
             case ".xsl":
                 return new meico.app.gui.XSLTransform(file, this);
+            case ".rng":
+                return new meico.app.gui.Schema(file, this);
             case ".txt":
                 return new TxtData(file);
             default:
@@ -197,6 +201,8 @@ public class DataObject extends Group {
             return ((meico.app.gui.Soundbank)this.data).getFile().getName();
         else if (this.data instanceof meico.app.gui.XSLTransform)
             return ((meico.app.gui.XSLTransform)this.data).getFile().getName();
+        else if (this.data instanceof meico.app.gui.Schema)
+            return ((meico.app.gui.Schema)this.data).getFile().getName();
         else if (this.data instanceof TxtData)
             return ((TxtData)this.data).getFile().getName();
         return "unknown";
@@ -302,6 +308,21 @@ public class DataObject extends Group {
                         }
                         else {
                             xsltransform.deactivate();
+                        }
+                        this.stopComputeAnimation(ani);
+                    });
+                    this.start(thread);
+                }
+                else if (this.data instanceof Schema) {
+                    Thread thread = new Thread(() -> {
+                        RotateTransition ani = this.startComputeAnimation();
+                        meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
+                        if (!schema.isActive()) {
+                            this.workspace.deactivateAllSchemas();
+                            schema.activate();
+                        }
+                        else {
+                            schema.deactivate();
                         }
                         this.stopComputeAnimation(ani);
                     });
@@ -423,6 +444,14 @@ public class DataObject extends Group {
             }
         }
         else if (this.data instanceof meico.app.gui.XSLTransform) {
+            String[] leftItems = {"Activate", "Deactivate", "Set As Default", "Close"};
+            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            for (int i = 0; i < leftItems.length; ++i) {
+                Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+        }
+        else if (this.data instanceof meico.app.gui.Schema) {
             String[] leftItems = {"Activate", "Deactivate", "Set As Default", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
@@ -615,19 +644,39 @@ public class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            Mei mei = (Mei)this.data;
-                            String report = mei.validate();
-                            Platform.runLater(() ->  {                                      // the following stuff must be done by the JavaFX thread
-                                Alert alert = new Alert(Alert.AlertType.INFORMATION);       // a good documentation on JavaFX dialogs: http://code.makery.ch/blog/javafx-dialogs-official/
-                                alert.setTitle("Validation Report");
-                                alert.setHeaderText("Validation of " + mei.getFile().getName());
-                                alert.setContentText(((mei.isValid()) ? "Passed.\n\n" : "Failed.\n\n"));
-                                TextArea reportArea = new TextArea(report);
-                                reportArea.setEditable(false);
-                                reportArea.setWrapText(true);
-                                alert.getDialogPane().setExpandableContent(reportArea);
-                                alert.showAndWait();
-                            });
+
+                            Schema activeSchema = this.workspace.getActiveSchema();                                     // get active schema
+                            File schemaFile = (activeSchema != null) ? activeSchema.getFile() : Settings.getSchema();   // is there a schema activated in the workspace or a default schema file?
+
+                            URL schemaURL = null;                                                                       // this is needed for validation, must be != null
+                            if (schemaFile != null) {
+                                try {
+                                    schemaURL = schemaFile.toURI().toURL();
+                                } catch (MalformedURLException e) {
+                                    e.printStackTrace();
+                                    this.workspace.getApp().getStatuspanel().setMessage("Schema " + schemaFile.getAbsolutePath() + " not accessible.");
+                                }
+                            }
+                            else {
+                                this.workspace.getApp().getStatuspanel().setMessage("No Schema activated.");
+                            }
+
+                            if (schemaURL != null) {
+                                Mei mei = (Mei) this.data;
+                                String report = mei.validate(schemaURL);
+                                Platform.runLater(() -> {                                      // the following stuff must be done by the JavaFX thread
+                                    Alert alert = new Alert(Alert.AlertType.INFORMATION);       // a good documentation on JavaFX dialogs: http://code.makery.ch/blog/javafx-dialogs-official/
+                                    alert.setTitle("Validation Report");
+                                    alert.setHeaderText("Validation of " + mei.getFile().getName());
+                                    alert.setContentText(((mei.isValid()) ? "Passed.\n\n" : "Failed.\n\n"));
+                                    TextArea reportArea = new TextArea(report);
+                                    reportArea.setEditable(false);
+                                    reportArea.setWrapText(true);
+                                    alert.getDialogPane().setExpandableContent(reportArea);
+                                    alert.showAndWait();
+                                });
+                            }
+
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1258,6 +1307,52 @@ public class DataObject extends Group {
                             meico.app.gui.XSLTransform xsltransform = (meico.app.gui.XSLTransform) this.data;
                             if (xsltransform.isActive()) {
                                 xsltransform.deactivate();
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+//                case "Close":
+//                    break;
+                default:
+                    break;
+            }
+        }
+        else if (this.data instanceof meico.app.gui.Schema) {    // XML schema-specific commands
+            switch (command) {
+                case "Set As Default":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
+                            Settings.setSchema(schema.getFile());
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Activate":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
+                            if (!schema.isActive()) {
+                                this.workspace.deactivateAllSchemas();
+                                schema.activate();
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Deactivate":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
+                            if (schema.isActive()) {
+                                schema.deactivate();
                             }
                             this.stopComputeAnimation(ani);
                         });

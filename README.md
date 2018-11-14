@@ -38,7 +38,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | Option                            | Description                                                                                                                         |
 |-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
 | `-?`, `--help`                    | show this help text                                                                                                                 |
-| `-v`, `--validate`                | validate loaded MEI file                                                                                                            |
+| `-v FILE`, `--validate FILE`      | validate loaded MEI file against given schema (e.g. `C:\mei-CMN.rng`)                                                               |
 | `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
 | `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
@@ -72,27 +72,20 @@ $ ant
 ```
 The resulting `meico.jar` can be found in `out/artifacts/meico`.
 
-**A note on OpenJDK:** OpenJDK does not come with JavaFX (the graphical user interface framework that meico uses) preinstalled. OpenJFX has to be installed separately. On Linux it would be done like this:
-```
-$ sudo apt-get install openjfx
-```
-
-**A note concerning MIDI to audio rendering:** Meico's MIDI to audio renderer relies on the package `sun.com.media.sound`. However, Java 9 and later versions do no longer provide access to this package at compile time. It is still accessible at runtime. Hence, meico should be compiled with Java 8 and can run with later versions (tested until Java 10). But at some point they will probably make this package inaccessible also at runtime. A workaround for this is using the Gervill Sound Synthesizer (search `gervill.jar` in the internet and add it to `externals`) that provides the required package, so no code changes are necessary. However, consider that Gervill is licensed under GNU GPL-2.0 while meico is under GNU LGPL-3.0!
-
 ### License information
 
 Meico makes use of the following third party libraries:
 - [XOM](http://www.xom.nu/) v1.2.11 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1.
 - [Java-String-Similarity](https://github.com/tdebatty/java-string-similarity) v1.0.0 by Thibault Debatty, MIT license.
 - [Jing](http://www.thaiopensource.com/relaxng/jing.html) v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
-- [Saxon](http://saxon.sourceforge.net/) v9.8.0.14 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License Meico 2.0.
+- [Saxon](http://saxon.sourceforge.net/) v9.8.0.14 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License 2.0.
 - [JSON.simple](https://cliftonlabs.github.io/json-simple/) v3.0.2 by Yidong Fang, Chris Nokleberg, Dave Hughes, and Davin Loegering, Apache License 2.0.
 - [Java LAME](https://github.com/nwaldispuehl/java-lame) v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
-- [MEI Common Music Notation Schema](https://github.com/music-encoding/music-encoding) (`mei-CMN.rng`), Educational Community License (ECL) 2.0.
-- parts of `MidiToWavRenderer.java`, an add-on to the [JFugue](http://www.jfugue.org/download.html) library, LGPL license.
 - [Font Awesome](https://fontawesome.com/) v5.2.0 (the free solid icons font `fa-solid-900.ttf`), Fonticons, Inc., [SIL OFL 1.1 License](https://scripts.sil.org/OFL).
 - [Verovio JavaScript Toolkit](https://www.verovio.org/index.xhtml) v2.0.0-dev-c0ae726 by Etienne Darbellay, Jean-François Marti, Laurent Pugin, Rodolfo Zitellini and others, GNU Lesser General Public License (LGPL) 3.0.
+- [Midi2WavRenderer](https://github.com/cemfi/meico/tree/master/src/meico/midi/Midi2AudioRenderer.java) by Karl Helgason, copyright notice in the class header.
+- [Gervill Software Sound Synthesizer](https://sourceforge.net/projects/rasmusdsp/files/gervill/Gervill%201.0/) v1.0.1 by Karl Helgason, GPL 2.0.
 
-We publish meico under GNU LGPL version 3.0 Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
-If you use meico in your project make sure that you do not conflict with any of the above licenses.
+We publish meico under GNU GPL version 3.0 Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
+If you integrate meico with your project make sure that you do not conflict with any of the above licenses.
 

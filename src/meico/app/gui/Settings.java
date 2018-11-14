@@ -42,7 +42,7 @@ public class Settings {
     protected static final String DATA_OBJECT_LABEL = "-fx-fill: lightgray; -fx-font-weight: bold; -fx-line-spacing: 0em;";
     protected static final String WELCOME_MESSAGE_COLOR = "-fx-text-fill: white; -fx-opacity: 0.2;";
     protected static final String WELCOME_MESSAGE_STYLE = Settings.WELCOME_MESSAGE_COLOR + "-fx-font-size: " + (Settings.getSystemFont().getSize() * 1.8) + "pt; -fx-text-alignment: center; -fx-font-weight: normal; -fx-line-spacing: 320.0px;";
-    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   TXT   MIDI   WAV   XSL   SF2   DLS";
+    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   TXT   MIDI   WAV   XSL   RNG   SF2   DLS";
 
     // global layout settings
     protected static boolean makeLogfile = true;                        // make a logfile
@@ -85,6 +85,9 @@ public class Settings {
     // XSL Transform settings
     protected static File xslFile = null;                               // here it is possible to set a default XSLT
     protected static Xslt30Transformer xslTransform = null;             // the actual transformer instance
+
+    // XML schema settings
+    protected static File schema = null;                                // here it is possible to set a default schema
 
     // Score rendering settings
     protected static boolean oneLineScore = false;                      // if true, the score rendering in the WebView will output all music in one line
@@ -318,6 +321,47 @@ public class Settings {
         FlowPane xsltPane = new FlowPane(spacing, spacing);
         xsltPane.getChildren().addAll(xsltField, xsltFileButton, noXSLT, xsltLabel);
 
+        // default XML schema
+        TextField schemaField = new TextField((Settings.schema == null) ? "No XML Schema specified" : Settings.schema.getAbsolutePath());
+        schemaField.setMinWidth(Settings.mWidth * 30);
+        schemaField.setMaxWidth(Settings.mWidth * 30);
+        schemaField.setEditable(false);
+        schemaField.setStyle("-fx-background-color: #1a1a1a; -fx-text-fill: grey; -fx-padding: 6px;");
+
+        File originalSchema = Settings.schema;
+
+        Button schemaFileButton = new Button("\uf07c");
+        schemaFileButton.setFont(Settings.getIconFont(Font.getDefault().getSize() +3, app));
+        schemaFileButton.setOnMouseReleased(event -> {
+            FileChooser chooser = new FileChooser();                                    // the file chooser to select file location and name
+            if ((Settings.schema == null) || !Settings.schema.exists())
+                chooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+            else
+                chooser.setInitialDirectory(new File(Settings.schema.getParent()));
+            chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XML Schema files (*.rng)", "*.rng"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
+            File file = chooser.showOpenDialog(stage);
+            if (file != null) {
+                Settings.setSchema(file);
+                schemaField.setText(file.getAbsolutePath());
+            }
+        });
+
+        Button noSchema = new Button("\uf00d");
+        noSchema.setFont(Settings.getIconFont(Font.getDefault().getSize() +3, app));
+        noSchema.setOnMouseReleased(event -> {
+            Settings.setSchema(null);
+            schemaField.setText("No XML Schema specified");
+        });
+
+        Label schemaLabel = new Label("Choose default XML Schema");
+        schemaLabel.setTextFill(Color.GRAY);
+        VBox.setVgrow(schemaLabel, Priority.ALWAYS);
+        schemaLabel.setPadding(new Insets(0, 0, 0, spacing));
+        schemaLabel.setAlignment(Pos.CENTER_LEFT);
+
+        FlowPane schemaPane = new FlowPane(spacing, spacing);
+        xsltPane.getChildren().addAll(schemaField, schemaFileButton, noSchema, schemaLabel);
+
         // JSON pretty print
         CheckBox jsonPretty = new CheckBox("JSON output with pretty print (contains formatting, better readable but takes more memory)");
         jsonPretty.setSelected(Settings.savePitchesWithPrettyPrint);
@@ -363,6 +407,7 @@ public class Settings {
         cancel.setOnMouseReleased(event -> {
             Settings.setSoundbank(originalSoundbank);
             Settings.setXSLT(originalXslt);
+            Settings.setSchema(originalSchema);
             stage.close();
         });
 
@@ -375,7 +420,7 @@ public class Settings {
         container.setStyle(Settings.BACKGROUND_GRAY);
         container.setPadding(new Insets(spacing, spacing, spacing, spacing));
         container.setSpacing(spacing * 1.25);
-        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, soundbankPane, xsltPane, jsonPretty, oneLineScore, latestVerovio, separator3, closePane);
+        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, soundbankPane, xsltPane, schemaPane, jsonPretty, oneLineScore, latestVerovio, separator3, closePane);
 
         Scene scene = new Scene(container/*, 300, 300*/);
 
@@ -467,6 +512,11 @@ public class Settings {
                     if ((Settings.xslFile != null) && !Settings.xslFile.exists())
                         Settings.setXSLT(null);
                     break;
+                case "schema":
+                    Settings.setSchema((line.equals("none")) ? null : new File(line));
+                    if ((Settings.schema != null) && !Settings.schema.exists())
+                        Settings.setSchema(null);
+                    break;
                 default:
                     break;
             }
@@ -493,6 +543,7 @@ public class Settings {
                 + "\n\n# useLatestVerovio\n" + (Settings.useLatestVerovio ? "1" : "0")
                 + "\n\n# soundbank\n" + ((Settings.soundbank == null) ? "default" : Settings.soundbank.getAbsolutePath())
                 + "\n\n# xslt\n" + ((Settings.xslFile == null) ? "none" : Settings.xslFile.getAbsolutePath())
+                + "\n\n# schema\n" + ((Settings.schema == null) ? "none" : Settings.schema.getAbsolutePath())
                 +"\n";
 
         PrintWriter writer;
@@ -722,4 +773,21 @@ public class Settings {
     protected static synchronized File getXslFile() {
         return Settings.xslFile;
     }
+
+    /**
+     * set the default XML schema
+     * @param schema an rng file
+     */
+    protected static synchronized void setSchema(File schema) {
+        Settings.schema = schema;
+    }
+
+    /**
+     * get the file of the default XML schema file
+     * @return
+     */
+    protected static synchronized File getSchema() {
+        return Settings.schema;
+    }
+
 }

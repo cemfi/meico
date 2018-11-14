@@ -78,5 +78,4 @@ public class XSLTransform {
         StackPane p = (StackPane) this.graphicalInstance.getChildren().get(this.graphicalInstance.getChildren().size() - 1);    // switch the light off
         p.setEffect(null);
     }
-
 }

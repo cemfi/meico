@@ -52,8 +52,112 @@
     <exclude name="**/?*.aj"/>
   </patternset>
   
+  <!-- JDK definitions -->
+  
+  <property name="jdk.bin.openjdk_11" value="${jdk.home.openjdk_11}/bin"/>
+  <path id="jdk.classpath.openjdk_11">
+    <fileset dir="${jdk.home.openjdk_11}">
+      <include name="../openjdk-11.0.1!/java.base"/>
+      <include name="../openjdk-11.0.1!/java.compiler"/>
+      <include name="../openjdk-11.0.1!/java.datatransfer"/>
+      <include name="../openjdk-11.0.1!/java.desktop"/>
+      <include name="../openjdk-11.0.1!/java.instrument"/>
+      <include name="../openjdk-11.0.1!/java.logging"/>
+      <include name="../openjdk-11.0.1!/java.management"/>
+      <include name="../openjdk-11.0.1!/java.management.rmi"/>
+      <include name="../openjdk-11.0.1!/java.naming"/>
+      <include name="../openjdk-11.0.1!/java.net.http"/>
+      <include name="../openjdk-11.0.1!/java.prefs"/>
+      <include name="../openjdk-11.0.1!/java.rmi"/>
+      <include name="../openjdk-11.0.1!/java.scripting"/>
+      <include name="../openjdk-11.0.1!/java.se"/>
+      <include name="../openjdk-11.0.1!/java.security.jgss"/>
+      <include name="../openjdk-11.0.1!/java.security.sasl"/>
+      <include name="../openjdk-11.0.1!/java.smartcardio"/>
+      <include name="../openjdk-11.0.1!/java.sql"/>
+      <include name="../openjdk-11.0.1!/java.sql.rowset"/>
+      <include name="../openjdk-11.0.1!/java.transaction.xa"/>
+      <include name="../openjdk-11.0.1!/java.xml"/>
+      <include name="../openjdk-11.0.1!/java.xml.crypto"/>
+      <include name="../openjdk-11.0.1!/jdk.accessibility"/>
+      <include name="../openjdk-11.0.1!/jdk.aot"/>
+      <include name="../openjdk-11.0.1!/jdk.attach"/>
+      <include name="../openjdk-11.0.1!/jdk.charsets"/>
+      <include name="../openjdk-11.0.1!/jdk.compiler"/>
+      <include name="../openjdk-11.0.1!/jdk.crypto.cryptoki"/>
+      <include name="../openjdk-11.0.1!/jdk.crypto.ec"/>
+      <include name="../openjdk-11.0.1!/jdk.crypto.mscapi"/>
+      <include name="../openjdk-11.0.1!/jdk.dynalink"/>
+      <include name="../openjdk-11.0.1!/jdk.editpad"/>
+      <include name="../openjdk-11.0.1!/jdk.hotspot.agent"/>
+      <include name="../openjdk-11.0.1!/jdk.httpserver"/>
+      <include name="../openjdk-11.0.1!/jdk.internal.ed"/>
+      <include name="../openjdk-11.0.1!/jdk.internal.jvmstat"/>
+      <include name="../openjdk-11.0.1!/jdk.internal.le"/>
+      <include name="../openjdk-11.0.1!/jdk.internal.opt"/>
+      <include name="../openjdk-11.0.1!/jdk.internal.vm.ci"/>
+      <include name="../openjdk-11.0.1!/jdk.internal.vm.compiler"/>
+      <include name="../openjdk-11.0.1!/jdk.internal.vm.compiler.management"/>
+      <include name="../openjdk-11.0.1!/jdk.jartool"/>
+      <include name="../openjdk-11.0.1!/jdk.javadoc"/>
+      <include name="../openjdk-11.0.1!/jdk.jcmd"/>
+      <include name="../openjdk-11.0.1!/jdk.jconsole"/>
+      <include name="../openjdk-11.0.1!/jdk.jdeps"/>
+      <include name="../openjdk-11.0.1!/jdk.jdi"/>
+      <include name="../openjdk-11.0.1!/jdk.jdwp.agent"/>
+      <include name="../openjdk-11.0.1!/jdk.jfr"/>
+      <include name="../openjdk-11.0.1!/jdk.jlink"/>
+      <include name="../openjdk-11.0.1!/jdk.jshell"/>
+      <include name="../openjdk-11.0.1!/jdk.jsobject"/>
+      <include name="../openjdk-11.0.1!/jdk.jstatd"/>
+      <include name="../openjdk-11.0.1!/jdk.localedata"/>
+      <include name="../openjdk-11.0.1!/jdk.management"/>
+      <include name="../openjdk-11.0.1!/jdk.management.agent"/>
+      <include name="../openjdk-11.0.1!/jdk.management.jfr"/>
+      <include name="../openjdk-11.0.1!/jdk.naming.dns"/>
+      <include name="../openjdk-11.0.1!/jdk.naming.rmi"/>
+      <include name="../openjdk-11.0.1!/jdk.net"/>
+      <include name="../openjdk-11.0.1!/jdk.pack"/>
+      <include name="../openjdk-11.0.1!/jdk.rmic"/>
+      <include name="../openjdk-11.0.1!/jdk.scripting.nashorn"/>
+      <include name="../openjdk-11.0.1!/jdk.scripting.nashorn.shell"/>
+      <include name="../openjdk-11.0.1!/jdk.sctp"/>
+      <include name="../openjdk-11.0.1!/jdk.security.auth"/>
+      <include name="../openjdk-11.0.1!/jdk.security.jgss"/>
+      <include name="../openjdk-11.0.1!/jdk.unsupported"/>
+      <include name="../openjdk-11.0.1!/jdk.unsupported.desktop"/>
+      <include name="../openjdk-11.0.1!/jdk.xml.dom"/>
+      <include name="../openjdk-11.0.1!/jdk.zipfs"/>
+    </fileset>
+  </path>
+  
+  <property name="project.jdk.home" value="${jdk.home.openjdk_11}"/>
+  <property name="project.jdk.bin" value="${jdk.bin.openjdk_11}"/>
+  <property name="project.jdk.classpath" value="jdk.classpath.openjdk_11"/>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.jax-rs.classpath">
+    <pathelement location="${basedir}/externals/jaxrs-ri-2.27.jar"/>
+  </path>
+  
   
   <!-- Global Libraries -->
+  <!-- Register Custom Compiler Taskdefs -->
+  <property name="javac2.home" value="${idea.home}/lib"/>
+  <path id="javac2.classpath">
+    <fileset dir="${javac2.home}">
+      <include name="javac2.jar"/>
+      <include name="jdom.jar"/>
+      <include name="asm-all*.jar"/>
+      <include name="forms-*.jar"/>
+    </fileset>
+  </path>
+  <target name="register.custom.compilers">
+    <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.classpath"/>
+    <taskdef name="instrumentIdeaExtensions" classname="com.intellij.ant.InstrumentIdeaExtensions" classpathref="javac2.classpath"/>
+  </target>
   
   <!-- Modules -->
   
@@ -63,6 +167,9 @@
   <dirname property="module.meico.basedir" file="${ant.file}"/>
   
   
+  <property name="module.jdk.home.meico" value="${jdk.home.openjdk_11}"/>
+  <property name="module.jdk.bin.meico" value="${jdk.bin.openjdk_11}"/>
+  <property name="module.jdk.classpath.meico" value="jdk.classpath.openjdk_11"/>
   
   <property name="compiler.args.meico" value="-encoding UTF-8 -source 8 -target 8 ${compiler.args}"/>
   
@@ -74,11 +181,19 @@
   </path>
   
   <path id="meico.module.production.classpath">
+    <path refid="${module.jdk.classpath.meico}"/>
     <pathelement location="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <path refid="library.jax-rs.classpath"/>
+    <pathelement location="${basedir}/externals/gervill.jar"/>
+    <pathelement location="${basedir}/externals/javafx.base.jar"/>
+    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
+    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
+    <pathelement location="${basedir}/externals/javafx.media.jar"/>
+    <pathelement location="${basedir}/externals/javafx.web.jar"/>
   </path>
   
   <path id="meico.runtime.production.module.classpath">
@@ -88,15 +203,30 @@
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <path refid="library.jax-rs.classpath"/>
+    <pathelement location="${basedir}/externals/gervill.jar"/>
+    <pathelement location="${basedir}/externals/javafx.base.jar"/>
+    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
+    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
+    <pathelement location="${basedir}/externals/javafx.media.jar"/>
+    <pathelement location="${basedir}/externals/javafx.web.jar"/>
   </path>
   
   <path id="meico.module.classpath">
+    <path refid="${module.jdk.classpath.meico}"/>
     <pathelement location="${meico.output.dir}"/>
     <pathelement location="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <path refid="library.jax-rs.classpath"/>
+    <pathelement location="${basedir}/externals/gervill.jar"/>
+    <pathelement location="${basedir}/externals/javafx.base.jar"/>
+    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
+    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
+    <pathelement location="${basedir}/externals/javafx.media.jar"/>
+    <pathelement location="${basedir}/externals/javafx.web.jar"/>
   </path>
   
   <path id="meico.runtime.module.classpath">
@@ -107,6 +237,13 @@
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <path refid="library.jax-rs.classpath"/>
+    <pathelement location="${basedir}/externals/gervill.jar"/>
+    <pathelement location="${basedir}/externals/javafx.base.jar"/>
+    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
+    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
+    <pathelement location="${basedir}/externals/javafx.media.jar"/>
+    <pathelement location="${basedir}/externals/javafx.web.jar"/>
   </path>
   
   
@@ -128,15 +265,15 @@
   
   <target name="compile.module.meico" depends="compile.module.meico.production,compile.module.meico.tests" description="Compile module meico"/>
   
-  <target name="compile.module.meico.production" description="Compile module meico; production classes">
+  <target name="compile.module.meico.production" depends="register.custom.compilers" description="Compile module meico; production classes">
     <mkdir dir="${meico.output.dir}"/>
-    <javac destdir="${meico.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+    <javac2 destdir="${meico.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.meico}/javac">
       <compilerarg line="${compiler.args.meico}"/>
       <bootclasspath refid="meico.module.bootclasspath"/>
       <classpath refid="meico.module.production.classpath"/>
       <src refid="meico.module.sourcepath"/>
       <patternset refid="excluded.from.compilation.meico"/>
-    </javac>
+    </javac2>
     
     <copy todir="${meico.output.dir}">
       <fileset dir="${module.meico.basedir}/src">
@@ -150,7 +287,7 @@
     </copy>
   </target>
   
-  <target name="compile.module.meico.tests" depends="compile.module.meico.production" description="compile module meico; test classes" unless="skip.tests"/>
+  <target name="compile.module.meico.tests" depends="register.custom.compilers,compile.module.meico.production" description="compile module meico; test classes" unless="skip.tests"/>
   
   <target name="clean.module.meico" description="cleanup module">
     <delete dir="${meico.output.dir}"/>
@@ -177,11 +314,17 @@
     <mkdir dir="${artifact.temp.output.meico.jar}"/>
     <jar destfile="${temp.jar.path.meico.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
       <zipfileset dir="${meico.output.dir}"/>
-      <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
       <zipfileset src="${basedir}/externals/json-simple-3.0.2.jar"/>
       <zipfileset src="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
       <zipfileset src="${basedir}/externals/xom-1.2.11.jar"/>
       <zipfileset src="${basedir}/externals/saxon9he.jar"/>
+      <zipfileset src="${basedir}/externals/gervill.jar"/>
+      <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
+      <zipfileset src="${basedir}/externals/javafx.base.jar"/>
+      <zipfileset src="${basedir}/externals/javafx.controls.jar"/>
+      <zipfileset src="${basedir}/externals/javafx.graphics.jar"/>
+      <zipfileset src="${basedir}/externals/javafx.media.jar"/>
+      <zipfileset src="${basedir}/externals/javafx.web.jar"/>
       <manifest>
         <attribute name="Main-Class" value="meico.app.Main"/>
       </manifest>
