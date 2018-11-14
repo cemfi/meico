@@ -8,7 +8,8 @@ jdk:
   - oraclejdk8
   - openjdk11
   - openjdk10
-#  - openjdk8
+  - openjdk9
+  - openjdk8
 #  - openjdk7
 #addons:
 #  apt:
