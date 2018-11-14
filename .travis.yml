@@ -3,12 +3,12 @@ dist: trusty
 sudo: required
 language: java
 jdk:
-  - oraclejdk10
+  - oraclejdk11
   - oraclejdk9
   - oraclejdk8
   - openjdk11
   - openjdk10
-  - openjdk8
+#  - openjdk8
 #  - openjdk7
 #addons:
 #  apt:
