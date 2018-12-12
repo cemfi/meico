@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import meico.msm.Goto;
+import meico.msm.MsmBase;
 import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
 import meico.msm.Msm;
@@ -267,7 +268,7 @@ public class Mei {
         String report = "Passed.";              // the validation report string, it will be overwritten if validation fails
 
         try {
-            Helper.validateAgainstSchema(this.file, schema);
+            Helper.validateAgainstSchema(this.mei.toXML(), schema);
 //            Helper.validateAgainstSchema(this.file, new URL("http://www.music-encoding.org/schema/current/mei-CMN.rng"));     // this variant takes the schema from the web, the user has to be online for this!
         } catch (SAXException e) {              // invalid mei
             this.validMei = false;
@@ -1575,8 +1576,6 @@ public class Mei {
             return part;                                                                                       // return it
         }
 
-        part = new Element("part");                                                                            // create part element
-
         String label = "";
         if (((Element)staffDef.getParent()).getLocalName().equals("staffGrp"))                                 // if there is a staffGrp as parent element
             if (((Element)staffDef.getParent()).getAttribute("label") != null)                                 // and it has a label
@@ -1590,37 +1589,30 @@ public class Mei {
             }
         }
 
-        if (!label.isEmpty())
-            part.addAttribute(new Attribute("name", label));
-
-
+        String number;
         if (staffDef.getAttribute("n") != null) {
-            part.addAttribute(new Attribute("number", staffDef.getAttributeValue("n")));                       // take the n attribute instead
+            number = staffDef.getAttributeValue("n");                                                           // take the n attribute
         }
-        else {                                                                                                 // otherwise generate an id
-            String id = "meico_" + UUID.randomUUID().toString();                                               // ids of generated parts start with UUID
+        else {                                                                                                  // otherwise generate an id
+            String id = "meico_" + UUID.randomUUID().toString();                                                // ids of generated parts start with UUID
             staffDef.addAttribute(new Attribute("n", id));
-            part.addAttribute(new Attribute("number", id));
+            number = id;
         }
 
-        {
-            Elements ps = this.helper.currentMovement.getChildElements("part");
-            if (ps.size() == 0) {
-                part.addAttribute(new Attribute("midi.channel", "0"));                                              // set midi channel
-                part.addAttribute(new Attribute("midi.port", "0"));                                                 // set midi port
-            }
-            else {
-                Element p = ps.get(ps.size()-1);                                                            // choose last part entry
-                int channel = (Integer.parseInt(p.getAttributeValue("midi.channel")) + 1) % 16;                  // increment channel counter mod 16
-                if ((channel == 9) && this.helper.dontUseChannel10)                                                    // if the drum channel should be avoided
-                    ++channel;                                                                                  // do so
-                int port = (channel == 0) ? (Integer.parseInt(p.getAttributeValue("midi.port")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("midi.port"));	// increment port counter if channels of previous port are full
-                part.addAttribute(new Attribute("midi.channel", Integer.toString(channel)));                          // set midi channel
-                part.addAttribute(new Attribute("midi.port", Integer.toString(port)));                                // set midi port
-            }
+        int midiChannel = 0;
+        int midiPort = 0;
+        Elements ps = this.helper.currentMovement.getChildElements("part");
+        if (ps.size() > 0) {
+            Element p = ps.get(ps.size()-1);                                                                    // choose last part entry
+            midiChannel = (Integer.parseInt(p.getAttributeValue("midi.channel")) + 1) % 16;                     // increment channel counter mod 16
+            if ((midiChannel == 9) && this.helper.dontUseChannel10)                                             // if the drum channel should be avoided
+                ++midiChannel;                                                                                  // do so
+            midiPort = (midiChannel == 0) ? (Integer.parseInt(p.getAttributeValue("midi.port")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("midi.port"));	// increment port counter if channels of previous port are full
         }
 
-        Element dated = new Element("dated");
+        part = MsmBase.makePart(label, number, midiChannel, midiPort);                                          // create part element
+
+        Element dated = part.getFirstChildElement("dated");
         dated.appendChild(new Element("timeSignatureMap"));
         dated.appendChild(new Element("keySignatureMap"));
         dated.appendChild(new Element("markerMap"));
@@ -1630,8 +1622,6 @@ public class Mei {
         miscMap.appendChild(new Element("tupletSpanMap"));
         dated.appendChild(miscMap);
         dated.appendChild(new Element("score"));
-        part.appendChild(new Element("header"));
-        part.appendChild(dated);
         part.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("midi.date") : "0.0"));    // set currentDate of processing
 
         this.helper.currentMovement.appendChild(part);                                                         // insert it into movement

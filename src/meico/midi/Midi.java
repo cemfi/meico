@@ -22,16 +22,17 @@ public class Midi {
     private Sequence sequence = null;       // the midi sequence
 
     /**
-     * the most primitive constructor
+     * the most primitive constructor creates an empty MIDI sequence with default PPQ of 720
      */
-    public Midi() {
+    public Midi() throws InvalidMidiDataException {
+        this(720);
     }
 
     /**
-     * constructor, creates an empty MidiOld instance
+     * constructor, creates an empty MIDI sequence with the given PPQ timing resolution
      */
     public Midi(int ppq) throws InvalidMidiDataException {
-        this.sequence = new Sequence(Sequence.PPQ, 720);
+        this.sequence = new Sequence(Sequence.PPQ, ppq);
     }
 
     /**
@@ -124,6 +125,34 @@ public class Midi {
      */
     public synchronized void setSequence(Sequence sequence) {
         this.sequence = sequence;
+    }
+
+    /**
+     * this getter returns the timing resolution of the Midi sequence (in PPQ) or throws an exception if the timing concept is not PPQ
+     * @return
+     * @throws Exception
+     */
+    public synchronized int getPPQ() throws Exception {
+        if (this.sequence.getDivisionType() == Sequence.PPQ) {
+            return this.sequence.getResolution();
+        }
+        throw new Exception("Error: MIDI timing is in SMTPE, not PPQ!");
+    }
+
+    /**
+     * returns the length of the midi sequence in ticks
+     * @return
+     */
+    public synchronized long getTickLength() {
+        return this.sequence.getTickLength();
+    }
+
+    /**
+     * returns the length of the midi sequence in microseconds
+     * @return
+     */
+    public synchronized long getMicrosecondLength() {
+        return this.sequence.getMicrosecondLength();
     }
 
     /**

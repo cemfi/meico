@@ -360,7 +360,7 @@ public class MidiPlayer {
     }
 
     /**
-     * a setter for the playback position
+     * a setter for the playback position (0.0 start, 1.0 end)
      * @param relativePosition
      */
     public synchronized void setRelativePosition(double relativePosition) {

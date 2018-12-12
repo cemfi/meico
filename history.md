@@ -1,6 +1,15 @@
 ### Version History
 
 
+#### v0.6.1
+- Added new methods to class `meico.midi.Midi`: `getPPQ()`, `getTickLength()` and `getMicrosecondLength`.
+- Minor corrections in the constructor methods of classe `meico.midi.Midi`.
+- Added new method variant of `meico.mei.Helper.validateAgainstSchema()` that takes an input string instead of a file. With this validation does not require the data to be present in the file system.
+- Note: We did some experiments with XML schema files in XSD format. However, meico uses the Saxon 9 HE version which supports only RNG schema files for validation, in contrast to the EE version. Thus, XSD files should be converted to RNG format to be used in meico.
+- Added new class `meico.msm.MsmBase` which forms the base class for MSM and (later on) MPM classes. Hence, class `meico.msm.Msm` is now refactored to extend `MsmBase`.
+    - Method `meico.mei.Mei.makePart()` has been edited to utilize the `makePart()` functionality of `MsmBase`.
+    - Added new method `meico.msm.MsmBase.validate()` to validate the MSM and MPM code against a specified schema. Though, at the moment there is no corresponding schema definition, at least for MSM.
+
 #### v0.6.0
 - Added `System.setProperty("prism.order", "sw");` to method `meico.app.gui.MeicoApp.init()`. This fixes a graphics glitch that occurs every now and then.
 - Meico's MIDI to audio renderer relies on the package `sun.com.media.sound`. However, since Java 9 this package is marked as deprecated. It was still accessible at runtime but is going to disappear from Oracle JDK in the near future. It seems to have disappeared from OpenJDK as well.

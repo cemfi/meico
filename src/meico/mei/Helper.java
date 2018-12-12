@@ -76,6 +76,17 @@ public class Helper {
     }
 
     /**
+     * This method validates an xml string against a schema. If the validation fails it throws an exception.
+     * @param xml
+     * @param schema
+     * @throws SAXException
+     * @throws IOException
+     */
+    public static void validateAgainstSchema(String xml, URL schema) throws SAXException, IOException {
+        (new XMLSyntaxSchemaFactory()).newSchema(schema).newValidator().validate(new StreamSource(new StringReader(xml)));  // create a new validator with the schema and validate the file, if this fails, it throws an exception
+    }
+
+    /**
      *
      * @param ofThis
      * @return

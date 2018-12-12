@@ -30,6 +30,7 @@ import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.ParsingException;
 import nu.xom.ValidityException;
+import org.xml.sax.SAXException;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -392,7 +393,7 @@ public class DataObject extends Group {
             }
         }
         else if (this.data instanceof Msm) {
-            String[] leftItems = {"Show", "Remove Rests", "Expand Repetitions", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Validate", "Remove Rests", "Expand Repetitions", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -460,7 +461,7 @@ public class DataObject extends Group {
             }
         }
         else if (this.data instanceof TxtData) {
-            String[] leftItems = {"Show", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Validate", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -644,39 +645,7 @@ public class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-
-                            Schema activeSchema = this.workspace.getActiveSchema();                                     // get active schema
-                            File schemaFile = (activeSchema != null) ? activeSchema.getFile() : Settings.getSchema();   // is there a schema activated in the workspace or a default schema file?
-
-                            URL schemaURL = null;                                                                       // this is needed for validation, must be != null
-                            if (schemaFile != null) {
-                                try {
-                                    schemaURL = schemaFile.toURI().toURL();
-                                } catch (MalformedURLException e) {
-                                    e.printStackTrace();
-                                    this.workspace.getApp().getStatuspanel().setMessage("Schema " + schemaFile.getAbsolutePath() + " not accessible.");
-                                }
-                            }
-                            else {
-                                this.workspace.getApp().getStatuspanel().setMessage("No Schema activated.");
-                            }
-
-                            if (schemaURL != null) {
-                                Mei mei = (Mei) this.data;
-                                String report = mei.validate(schemaURL);
-                                Platform.runLater(() -> {                                      // the following stuff must be done by the JavaFX thread
-                                    Alert alert = new Alert(Alert.AlertType.INFORMATION);       // a good documentation on JavaFX dialogs: http://code.makery.ch/blog/javafx-dialogs-official/
-                                    alert.setTitle("Validation Report");
-                                    alert.setHeaderText("Validation of " + mei.getFile().getName());
-                                    alert.setContentText(((mei.isValid()) ? "Passed.\n\n" : "Failed.\n\n"));
-                                    TextArea reportArea = new TextArea(report);
-                                    reportArea.setEditable(false);
-                                    reportArea.setWrapText(true);
-                                    alert.getDialogPane().setExpandableContent(reportArea);
-                                    alert.showAndWait();
-                                });
-                            }
-
+                            this.validate();
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -883,6 +852,16 @@ public class DataObject extends Group {
                                     }
                                 });
                             }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Validate":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.validate();
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1385,6 +1364,16 @@ public class DataObject extends Group {
                         this.start(thread);
                     });
                     break;
+                case "Validate":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.validate();
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
                 case "Save":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
@@ -1661,5 +1650,72 @@ public class DataObject extends Group {
      */
     protected synchronized Workspace getWorkspace() {
         return this.workspace;
+    }
+
+    private void validate() {
+        Schema activeSchema = this.workspace.getActiveSchema();                                     // get active schema
+        File schemaFile = (activeSchema != null) ? activeSchema.getFile() : Settings.getSchema();   // is there a schema activated in the workspace or a default schema file?
+
+        URL schemaURL = null;                                                                       // this is needed for validation, must be != null
+        if (schemaFile != null) {
+            try {
+                schemaURL = schemaFile.toURI().toURL();
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+                this.workspace.getApp().getStatuspanel().setMessage("Schema " + schemaFile.getAbsolutePath() + " not accessible.");
+            }
+        }
+        else {
+            this.workspace.getApp().getStatuspanel().setMessage("No Schema activated.");
+        }
+
+        if (schemaURL != null) {
+            String report;
+            boolean isValid;
+            if (this.data instanceof Mei) {
+                Mei mei = (Mei) this.data;
+                report = mei.validate(schemaURL);
+                isValid = mei.isValid();
+            }
+            else if (this.data instanceof Msm) {
+                Msm msm = (Msm) this.data;
+                report = msm.validate(schemaURL);
+                isValid = msm.isValid();
+            }
+            else if (this.data instanceof TxtData) {
+                TxtData txt = (TxtData) this.data;
+                boolean validationSuccess = true;
+                String reportString = "Passed";
+                try {
+                    Helper.validateAgainstSchema(txt.getString(), schemaURL);
+                } catch (SAXException e) {              // invalid
+                    validationSuccess = false;
+                    reportString = "Failed. \n" + e.getMessage();
+                    e.printStackTrace();                // print the full error message
+                } catch (IOException e) {               // missing rng file
+                    validationSuccess = false;
+                    reportString = "Failed.  Missing schema file!";
+                    System.err.println("Validation failed: missing schema file!");
+                }
+                report = "Validation of " + this.getFileName() + ": " + reportString;
+                isValid = validationSuccess;
+            }
+            else {
+                report = "Unknown input datatype.";
+                isValid = false;
+            }
+
+            Platform.runLater(() -> {                                      // the following stuff must be done by the JavaFX thread
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);       // a good documentation on JavaFX dialogs: http://code.makery.ch/blog/javafx-dialogs-official/
+                alert.setTitle("Validation Report");
+                alert.setHeaderText("Validation of " + this.getFileName());
+                alert.setContentText(((isValid) ? "Passed.\n\n" : "Failed.\n\n"));
+                TextArea reportArea = new TextArea(report);
+                reportArea.setEditable(false);
+                reportArea.setWrapText(true);
+                alert.getDialogPane().setExpandableContent(reportArea);
+                alert.showAndWait();
+            });
+        }
     }
 }

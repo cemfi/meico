@@ -10,29 +10,21 @@ import meico.pitches.Key;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.midi.*;
-import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class Msm {
-
-    private File file;
-    private Document msm;                                         // the msm document
-    private boolean msmValidation = false;                        // indicates whether the input file contained valid msm code (true) or not (false); it is also false if no validation has been performed
+public class Msm extends MsmBase {
 
     /**
      * constructor
      */
     public Msm() {
-        this.file = null;
-        this.msm = null;                                            // empty document
-        this.msmValidation = false;
+        super();
     }
 
     /**
@@ -41,9 +33,7 @@ public class Msm {
      * @param msm the msm document of which to instantiate the Msm object
      */
     public Msm(Document msm) {
-        this.file = null;
-        this.msm = msm;
-        this.msmValidation = false;
+        super(msm);
     }
 
     /**
@@ -54,7 +44,7 @@ public class Msm {
      * @throws ParsingException
      */
     public Msm(File file) throws IOException, ParsingException {
-        this(file, false);
+        super(file);
     }
 
     /**
@@ -65,7 +55,7 @@ public class Msm {
      * @throws ParsingException
      */
     public Msm(File file, boolean validate) throws IOException, ParsingException {
-        this.readMsmFile(file, validate);
+        super(file, validate);
     }
 
     /**
@@ -75,7 +65,7 @@ public class Msm {
      * @throws ParsingException
      */
     public Msm(String xml) throws IOException, ParsingException {
-        this(xml, false);
+        super(xml);
     }
 
     /**
@@ -86,12 +76,7 @@ public class Msm {
      * @throws ParsingException
      */
     public Msm(String xml, boolean validate) throws IOException, ParsingException {
-        Builder builder = new Builder(validate);                    // if the validate argument in the Builder constructor is true, the msm should be valid
-        try {
-            this.msm = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
-        } catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
-            this.msm = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        }
+        super(xml, validate);
     }
 
     /**
@@ -101,7 +86,7 @@ public class Msm {
      * @throws ParsingException
      */
     public Msm(InputStream inputStream) throws IOException, ParsingException {
-        this(inputStream, false);
+        super(inputStream);
     }
 
     /**
@@ -112,84 +97,7 @@ public class Msm {
      * @throws ParsingException
      */
     public Msm(InputStream inputStream, boolean validate) throws IOException, ParsingException {
-        Builder builder = new Builder(validate);                    // if the validate argument in the Builder constructor is true, the msm should be valid
-        try {
-            this.msm = builder.build(inputStream);
-        } catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
-            this.msm = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        }
-    }
-
-    /**
-     * reads the data from an MSM file into this object
-     * @param file
-     * @param validate
-     * @throws IOException
-     * @throws ParsingException
-     */
-    protected synchronized void readMsmFile(File file, boolean validate) throws IOException, ParsingException {
-        this.file = file;
-
-        if (!file.exists()) {
-            System.err.println("No such file or directory: " + file.getPath());
-            this.msm = null;
-            this.msmValidation = false;
-            return;
-        }
-
-        // read file into the msm instance of Document
-        Builder builder = new Builder(validate);                  // if the validate argument in the Builder constructor is true, the msm should be valid
-        this.msmValidation = true;                                  // the musicXml code is valid until validation fails (ValidityException)
-        try {
-            this.msm = builder.build(file);
-        } catch (ValidityException e) {                             // in case of a ValidityException (no valid msm code)
-            this.msmValidation = false;                             // set msmValidation false to indicate that the msm code is not valid
-            e.printStackTrace();                                    // output exception message
-            for (int i = 0; i < e.getErrorCount(); i++) {           // output all validity error descriptions
-                System.err.println(e.getValidityError(i));
-            }
-            this.msm = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        }
-    }
-
-    /**
-     * if the msm document is empty return false, else true
-     *
-     * @return false if the msm document is empty, else true
-     */
-    public boolean isValid() {
-        return (this.msmValidation);
-    }
-
-    /**
-     * if the constructor was unable to load the file, the msm document is empty and no further operations
-     *
-     * @return true if the msm document is empty, else false
-     */
-    public  boolean isEmpty() {
-        return (this.msm == null);
-    }
-
-    /**
-     * @return String with the XML code
-     */
-    public String toXML() {
-        return this.msm.toXML();
-    }
-
-    /**
-     * @return the msm document
-     */
-    public Document getDocument() {
-        return this.msm;
-    }
-
-    /**
-     * a setter for the document
-     * @param msmDocument
-     */
-    public synchronized void setDocument(Document msmDocument) {
-        this.msm = msmDocument;
+        super(inputStream, validate);
     }
 
     /**
@@ -259,88 +167,6 @@ public class Msm {
     }
 
     /**
-     * @return the root element of the msm
-     */
-    public Element getRootElement() {
-        if (this.isEmpty())
-            return null;
-        return this.msm.getRootElement();
-    }
-
-    /**
-     * a getter that returns all part elements in the XML tree
-     * @return
-     */
-    public Elements getParts() {
-        return this.getRootElement().getChildElements("part");
-    }
-
-    /**
-     * search the given map for the first element with local-name name at or after the given midi.date
-     * @param name
-     * @param date
-     * @param map
-     * @return
-     */
-    public static Element getElementAtAfter(String name, double date, Element map) {
-        Elements es;
-        if (name.isEmpty())                     // if no specific name given
-            es = map.getChildElements();        // search all elements
-        else                                    // if specific name given
-            es = map.getChildElements(name);    // search only the elements with this name
-
-        for (int i=0; i < es.size(); ++i) {
-            Element e = es.get(i);
-            if ((e.getAttribute("midi.date") != null) && (Double.parseDouble(e.getAttributeValue("midi.date")) >= date))
-                return e;
-        }
-        return null;
-    }
-
-    /**
-     * search the given map and find the first element at or after the given midi.date
-     * @param date
-     * @param map
-     * @return
-     */
-    public static Element getElementAtAfter(double date, Element map) {
-        return Msm.getElementAtAfter("", date, map);
-    }
-
-    /**
-     * search the given map and find the last element with the given local-name name before or at the given midi.date
-     * @param name
-     * @param date
-     * @param map
-     * @return
-     */
-    public static Element getElementBeforeAt(String name, double date, Element map) {
-        Elements es;
-        if (name.isEmpty())                     // if no specific name given
-            es = map.getChildElements();        // search all elements
-        else                                    // if specific name given
-            es = map.getChildElements(name);    // search only the elements with this name
-
-        for (int i=es.size()-1; i >= 0; --i) {
-            Element e = es.get(i);
-            if ((e.getAttribute("midi.date") != null) && (Double.parseDouble(e.getAttributeValue("midi.date")) <= date)) {
-                return e;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * search the given map and find the last element before or at the given midi.date
-     * @param date
-     * @param map
-     * @return
-     */
-    public static Element getElementBeforeAt(double date, Element map) {
-        return Msm.getElementBeforeAt("", date, map);
-    }
-
-    /**
      * removes all rest elements from the score lists;
      * this method is not part of the mei.exportMsm() cleanup procedure as some applications may still need the rests;
      * others who don't, can call this method to remove all rest elements and get a purged msm
@@ -351,21 +177,6 @@ public class Msm {
         Nodes r = this.getRootElement().query("descendant::*[local-name()='rest']");    // select all rest elements
         for (int i = 0; i < r.size(); ++i)
             r.get(i).getParent().removeChild(r.get(i));                                 // remove them
-    }
-
-    /**
-     * this method removes all empty maps (timeSignatureMap, keySignatureMap, markerMap, sequencingMap etc.);
-     * this is to make the msm document a bit smaller and less cluttered
-     */
-    public synchronized void deleteEmptyMaps() {
-        if (this.isEmpty()) return;
-
-        Nodes maps = this.getRootElement().query("descendant::*[contains(local-name(), 'Map')]");   // get all elements in the document that have a substring "Map" in their local-name
-        for (int i=0; i < maps.size(); ++i) {                                           // go through all these elements
-            Element map = (Element)maps.get(i);                                         // the map
-            if (map.getChildCount() == 0)                                               // if the map has no children, it is empty
-                map.getParent().removeChild(map);                                       // delete it
-        }
     }
 
     /**
@@ -495,41 +306,13 @@ public class Msm {
     }
 
     /**
-     * this getter returns the file
-     *
-     * @return a java File object (this file does not necessarily have to exist in the file system, but may be created there when writing the file with writeMsm())
-     */
-    public File getFile() {
-        return this.file;
-    }
-
-    /**
-     * with this setter a new filename can be set
-     *
-     * @param filename the filename including the full path and .msm extension
-     */
-    public synchronized void setFile(String filename) {
-        this.file = new File(filename);
-    }
-
-    /**
      * writes the msm document to an msm file at this.file (it must be != null);
      * if there is already an msm file with this name, it is replaces!
      *
      * @return true if success, false if an error occured
      */
     public boolean writeMsm() {
-        if (this.file == null) {
-            System.err.println("Cannot write to the file system. Path and filename are not specified.");
-            return false;
-        }
-
-        if (this.isEmpty()) {
-            System.err.println("Empty document, cannot write file.");
-            return false;
-        }
-
-        return this.writeMsm(this.file.getPath());
+        return this.writeFile();
     }
 
     /**
@@ -539,90 +322,7 @@ public class Msm {
      * @return true if success, false if an error occured
      */
     public synchronized boolean writeMsm(String filename) {
-        if (this.isEmpty()) {
-            System.err.println("Empty document, cannot write file.");
-            return false;
-        }
-
-        // create the file in the file system
-        File file = new File(filename);
-        file.getParentFile().mkdirs();                              // ensure that the directory exists
-        try {
-            file.createNewFile();                                   // create the file if it does not already exist
-        } catch (IOException | SecurityException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        // open the FileOutputStream to write to the file
-        FileOutputStream fileOutputStream = null;
-        try {
-            fileOutputStream = new FileOutputStream(file, false);   // open file: second parameter (append) is false because we want to overwrite the file if already existing
-        } catch (FileNotFoundException | NullPointerException | SecurityException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        // serialize the xml code (encoding, layout) and write it to the file via the FileOutputStream
-        boolean returnValue = true;
-        Serializer serializer = null;
-        try {
-            serializer = new Serializer(fileOutputStream, "UTF-8"); // connect serializer with FileOutputStream and specify encoding
-            serializer.setIndent(4);                                // specify indents in xml code
-            serializer.write(this.msm);                             // write data from msm to file
-        } catch (NullPointerException | IOException e) {
-            e.printStackTrace();
-            returnValue = false;
-        }
-
-        // close the FileOutputStream
-        try {
-            fileOutputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            returnValue = false;
-        }
-
-        if (this.file == null)
-            this.file = file;
-
-        return returnValue;
-    }
-
-    /**
-     * transform this MSM via the given xsl file
-     * @param xslt
-     * @return result of the transform as XOM Document instance
-     */
-    public Document xslTransformToDocument(File xslt) {
-        return Helper.xslTransformToDocument(this.msm, xslt);
-    }
-
-    /**
-     * transform this MSM via the given xsl transform
-     * @param transform
-     * @return result of the transform as XOM Document instance
-     */
-    public Document xslTransformToDocument(Xslt30Transformer transform) {
-        return Helper.xslTransformToDocument(this.msm, transform);
-    }
-
-    /**
-     * transform this MSM via the given xsl file
-     * @param xslt
-     * @return result of the transform as String instance
-     */
-    public String xslTransformToString(File xslt) {
-        return Helper.xslTransformToString(this.msm, xslt);
-    }
-
-    /**
-     * transform this MSM via the given xsl transform
-     * @param transform
-     * @return result of the transform as String instance
-     */
-    public String xslTransformToString(Xslt30Transformer transform) {
-        return Helper.xslTransformToString(this.msm, transform);
+        return this.writeFile(filename);
     }
 
     /**
@@ -711,7 +411,7 @@ public class Msm {
         if (this.getFile() == null)                                                                             // if this instance of msm has no file information
             return new Midi(seq);                                                                               // create the Midi instance only with the sequence (the midi file data are initialized as null) and return it
 
-        if (this.file != null) {
+        if (this.getFile() != null) {
             File midiFile = new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mid"); // set the filename extension of the Midi object to "mid"
             return new Midi(seq, midiFile);                                                                         // create and return the Midi object
         }
