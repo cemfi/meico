@@ -13,9 +13,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import net.sf.saxon.s9api.SaxonApiException;
 import nu.xom.ParsingException;
+import org.xml.sax.SAXException;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -151,7 +153,7 @@ public class Workspace extends ScrollPane {
      * @throws IOException
      * @throws UnsupportedAudioFileException
      */
-    private synchronized DataObject makeDataObject(Object data) throws InvalidMidiDataException, ParsingException, IOException, UnsupportedAudioFileException, SaxonApiException {
+    private synchronized DataObject makeDataObject(Object data) throws InvalidMidiDataException, ParsingException, IOException, UnsupportedAudioFileException, SaxonApiException, SAXException, ParserConfigurationException {
         return new DataObject(data, this);
     }
 
@@ -310,7 +312,7 @@ public class Workspace extends ScrollPane {
                             this.container.getChildren().remove(this.welcomeMessage);
                             this.welcomeMessage = null;
                         }
-                    } catch (ParsingException | InvalidMidiDataException | IOException | UnsupportedAudioFileException | SaxonApiException e) {
+                    } catch (ParsingException | InvalidMidiDataException | IOException | UnsupportedAudioFileException | SaxonApiException | SAXException | ParserConfigurationException e) {
                         this.app.getStatuspanel().setMessage(e.toString());
                         e.printStackTrace();
                     }

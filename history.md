@@ -1,6 +1,18 @@
 ### Version History
 
 
+### v0.6.2
+- Updated internal Verovio to v2.0.0-dev-61da81a.
+- Added package and class `meico.xml.XmlBase` as a base class for all XML-based classes in meico.
+    - Refactored class `meico.msm.MsmBase` accordingly.
+    - Class `meico.mei.Mei` has been refactored, too, to extend `XmlBase`.
+    - Disabled fetching of DTD in method `meico.xml.XmlBase.readFromFile()` as this causes problems in XOM preventing parsing XML files with a DOCTYPE declaration.
+- Added floating point support for transpositions in MEI.
+- Added class `meico.musicxml.MusicXml`.
+    - So far, it is just a dummy class that parses uncompressed MusicXML, writes to the file system, offers XSL transform, validation and access to the data ... standard XML functionality in meico. There are currently no export methods to convert to or from MusicXML.
+    - `.musicxml` files can be imported in the GUI app. XSL transform and validation are fully functional.
+    - This will hopefully grow further in the future.
+
 #### v0.6.1
 - Added new methods to class `meico.midi.Midi`: `getPPQ()`, `getTickLength()` and `getMicrosecondLength`.
 - Minor corrections in the constructor methods of classe `meico.midi.Midi`.
@@ -312,7 +324,7 @@
 #### v0.2.13
 - The XSLT-based new conversions from v0.2.12 were redone and generalized for several reasons.
     - Licensing for the stylesheets is unclear/undefined. So they were removed from this repository. They can be obtained from the official [MEI Encoding Tools GitHub](https://github.com/music-encoding/encoding-tools) page.
-    - Packages `musicxml`, `mods`, `marc`, and `mup` where removed from this repository including all contained classes.
+    - Packages `data`, `mods`, `marc`, and `mup` where removed from this repository including all contained classes.
     - The new export methods from v0.2.12 (see table) were replaced by two new, more generic methods in `meico.mei.Mei`: `public Document xslTransformToDocument(File xslt)` and `public String xslTransformToString(File xslt)`. This allows users to apply any XSLT stylesheets and obtain the result either as XOM Document instance or Java String. This should be a more flexible, less restrictive solution. For conversion of an Mei instance `myMei` to MusicXML, the user obtains the file `mei2musicxml.xsl` and calls `myMei.xsltTransformToDocument("path\\to\\mei2musicxml.xsl")`. This returns the resulting Document that can be processed further or written to the file system.
 - New method `writeStringToFile(String string, String filename)` in `meico.mei.Helper`.
 
@@ -326,12 +338,12 @@
     | Conversion               | implemented in method                 | comment                                           |
     |--------------------------|---------------------------------------|---------------------------------------------------|
     | MEI to MusicXML          | `meico.mei.Mei.exportMusicXml()`      | buggy                                             |
-    | MusicXML to MEI (v3.0.0) | `meico.musicxml.MusicXml.exportMei()` | not functional, yet, because of XSLT syntax error |
+    | MusicXML to MEI (v3.0.0) | `meico.data.MusicXml.exportMei()` | not functional, yet, because of XSLT syntax error |
     | MEI to MARC              | `meico.mei.Mei.exportMarc()`          | requires more testing                             |
     | MEI to MODS              | `meico.mei.Mei.exportMods()`          | requires more testing                             |
     | MEI to MUP (v1.0.3)      | `meico.mei.Mei.exportMup()`           | requires more testing                             |
 
-- A series of new Classes has been added accordingly: `meico.musicxml.MusicXml`, `meico.marc.Marc`, `meico.mods.Mods`, and `meico.mup.Mup`.
+- A series of new Classes has been added accordingly: `meico.data.MusicXml`, `meico.marc.Marc`, `meico.mods.Mods`, and `meico.mup.Mup`.
 - Two new helper methods have been added to `meico.mei.Helper`:
     - `public static Document xslTransformToDocument(Document input, Document stylesheet)` and
     - `public static String xslTransformToString(Document input, Document stylesheet)`.

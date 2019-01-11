@@ -11,11 +11,14 @@ import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.midi.*;
 import nu.xom.*;
+import org.xml.sax.SAXException;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
+import java.net.URL;
 import java.util.*;
 
 public class Msm extends MsmBase {
@@ -43,7 +46,7 @@ public class Msm extends MsmBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public Msm(File file) throws IOException, ParsingException {
+    public Msm(File file) throws IOException, ParsingException, SAXException, ParserConfigurationException {
         super(file);
     }
 
@@ -51,11 +54,12 @@ public class Msm extends MsmBase {
      * constructor
      * @param file
      * @param validate
+     * @param schema can be null
      * @throws IOException
      * @throws ParsingException
      */
-    public Msm(File file, boolean validate) throws IOException, ParsingException {
-        super(file, validate);
+    public Msm(File file, boolean validate, URL schema) throws IOException, ParsingException, SAXException, ParserConfigurationException {
+        super(file, validate, schema);
     }
 
     /**
@@ -72,11 +76,12 @@ public class Msm extends MsmBase {
      * constructor
      * @param xml xml code as UTF8 String
      * @param validate validate the code?
+     * @param schema can be null
      * @throws IOException
      * @throws ParsingException
      */
-    public Msm(String xml, boolean validate) throws IOException, ParsingException {
-        super(xml, validate);
+    public Msm(String xml, boolean validate, URL schema) throws IOException, ParsingException {
+        super(xml, validate, schema);
     }
 
     /**
@@ -93,11 +98,12 @@ public class Msm extends MsmBase {
      * constructor
      * @param inputStream read from this input stream
      * @param validate
+     * @param schema can be null
      * @throws IOException
      * @throws ParsingException
      */
-    public Msm(InputStream inputStream, boolean validate) throws IOException, ParsingException {
-        super(inputStream, validate);
+    public Msm(InputStream inputStream, boolean validate, URL schema) throws IOException, ParsingException {
+        super(inputStream, validate, schema);
     }
 
     /**

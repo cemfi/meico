@@ -7,7 +7,9 @@ import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
 import nu.xom.ParsingException;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -149,7 +151,7 @@ public class Main {
         Mei mei;
         try {
             mei = new Mei(meiFile);                                     // read an mei file
-        } catch (IOException | ParsingException e) {
+        } catch (IOException | ParsingException | SAXException | ParserConfigurationException e) {
             System.err.println("Error parsing MEI file.");
             e.printStackTrace();
             return 65;

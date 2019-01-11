@@ -636,20 +636,20 @@ public class Helper {
      * @param scoreStaffDef the scoreDef or staffDef element from mei
      * @return the octave transposition that derives from the clef.dis or clef.dis.place attribute
      */
-    protected static int processClefDis(Element scoreStaffDef) {
-        return 0;
+    protected static double processClefDis(Element scoreStaffDef) {
+        return 0.0;
 
-//        int oct = 0;
+//        double oct = 0.0;
 //        if (scoreStaffDef.getAttribute("clef.dis") != null)  {
 //            switch (scoreStaffDef.getAttributeValue("clef.dis")) {
 //                case "8":
-//                    oct = 12;
+//                    oct = 12.0;
 //                    break;
 //                case "15":
-//                    oct = 24;
+//                    oct = 24.0;
 //                    break;
 //                case "22":
-//                    oct = 32;
+//                    oct = 32.0;
 //            }
 //            if (scoreStaffDef.getAttribute("clef.dis.place") != null) {
 //                switch (scoreStaffDef.getAttributeValue("clef.dis.place")) {
@@ -661,7 +661,7 @@ public class Helper {
 //                }
 //            }
 //            else
-//                oct = 0;
+//                oct = 0.0;
 //        }
 //
 //        return oct;
@@ -945,8 +945,8 @@ public class Helper {
         String pname;                                                   // the attribute strings
         String accid = "";                                              // the accidental string
         String layerId = getLayerId(getLayer(ofThis));                  // get the current layer's id reference
-        int oct = 0;                                                    // octave transposition value
-        int trans = 0;                                                  // transposition
+        double oct = 0.0;                                               // octave transposition value
+        double trans = 0;                                               // transposition
         boolean checkKeySign = false;                                   // is set true
 
         // get the attributes, prefer gesturals
@@ -967,11 +967,11 @@ public class Helper {
 
         // get the octave
         if (ofThis.getAttribute("oct.ges") != null) {                   // look for gestural oct attribute
-            oct = Integer.parseInt(ofThis.getAttributeValue("oct.ges"));
+            oct = Double.parseDouble(ofThis.getAttributeValue("oct.ges"));
         }
         else {
             if (ofThis.getAttribute("oct") != null) {                   // look for non-gestural oct attribute
-                oct = Integer.parseInt(ofThis.getAttributeValue("oct"));
+                oct = Double.parseDouble(ofThis.getAttributeValue("oct"));
             }
             else {
                 Elements octs = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octave
@@ -980,11 +980,11 @@ public class Helper {
                 }
                 for (int i=octs.size()-1; i >= 0; --i) {                                                                          // search from back to front
                     if ((octs.get(i).getAttribute("layer") == null) || octs.get(i).getAttributeValue("layer").equals(layerId)) {  // for a default octave with no layer dependency or a matching layer
-                        oct = Integer.parseInt(octs.get(i).getAttributeValue("oct.default"));                                     // take this value
+                        oct = Double.parseDouble(octs.get(i).getAttributeValue("oct.default"));                                     // take this value
                         break;                                                                                                    // break the for loop
                     }
                 }
-                ofThis.addAttribute(new Attribute("oct", Integer.toString(oct)));                                                 // there was no oct attribute, so fill the gap with the computed value
+                ofThis.addAttribute(new Attribute("oct", Double.toString(oct)));                                                 // there was no oct attribute, so fill the gap with the computed value
             }
         }
 
@@ -1007,7 +1007,7 @@ public class Helper {
                     if ((anAccid.getAttribute("pname") != null)                                     // if it has a pname attribute
                             && (anAccid.getAttributeValue("pname").equals(pname))                   // the same pitch class as ofThis
                             && (anAccid.getAttribute("oct") != null)                                // has an oct attribute
-                            && (anAccid.getAttributeValue("oct").equals(Integer.toString(oct)))) {  // the same octave transposition as ofThis
+                            && (anAccid.getAttributeValue("oct").equals(Double.toString(oct)))) {  // the same octave transposition as ofThis
 
                         // read the accid.ges or accid attribute
                         if (anAccid.getAttribute("accid.ges") != null)
@@ -1101,7 +1101,7 @@ public class Helper {
                     if ((globalTrans.get(i).getAttribute("layer") != null) && !globalTrans.get(i).getAttributeValue("layer").equals(layerId)) {                         // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
                         continue;                                                                                                                                       // continue searching
                     }
-                    trans += Integer.parseInt(globalTrans.get(i).getAttributeValue("semi"));                                                                            // found a transposition that applies
+                    trans += Double.parseDouble(globalTrans.get(i).getAttributeValue("semi"));                                                                          // found a transposition that applies
                     break;                                                                                                                                              // done
                 }
             }
@@ -1117,7 +1117,7 @@ public class Helper {
                     if ((globalAddTrans.get(i).getAttribute("layer") != null) && !globalAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                   // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
                         continue;                                                                                                                                       // continue searching
                     }
-                    trans += Integer.parseInt(globalAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
+                    trans += Double.parseDouble(globalAddTrans.get(i).getAttributeValue("semi"));                                                                       // found a transposition that applies
                 }
             }
             {
@@ -1132,7 +1132,7 @@ public class Helper {
                     if ((localTrans.get(i).getAttribute("layer") != null) && !localTrans.get(i).getAttributeValue("layer").equals(layerId)) {                           // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
                         continue;                                                                                                                                       // continue searching
                     }
-                    trans += Integer.parseInt(localTrans.get(i).getAttributeValue("semi"));                                                                             // found a transposition that applies
+                    trans += Double.parseDouble(localTrans.get(i).getAttributeValue("semi"));                                                                           // found a transposition that applies
                     break;                                                                                                                                              // done
                 }
             }
@@ -1148,7 +1148,7 @@ public class Helper {
                     if ((localAddTrans.get(i).getAttribute("layer") != null) && !localAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                     // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
                         continue;                                                                                                                                       // continue searching
                     }
-                    trans += Integer.parseInt(localAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
+                    trans += Double.parseDouble(localAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
                 }
             }
         }
@@ -1172,8 +1172,8 @@ public class Helper {
         // fill the pitchdata list
         int p1 = (int)(initialPitch + (12 * oct) + trans);  // pitch without accidentals
         int p2 = p1 % 12;                                   // pitch class without accidentals
-        int outputOct = ((p1 - p2) / 12) - 1;               // octave (the lowest octave in midi is -1 in common western notation)
-        String pitchname = "";                              //determine pitchname (may differ from pname because of transposition), here comes the result
+        double outputOct = ((p1 - p2) / 12) - 1;            // octave (the lowest octave in midi is -1 in common western notation)
+        String pitchname = "";                              // determine pitchname (may differ from pname because of transposition), here comes the result
         double outputAcc = accidentals;                     // accidentals for output (have to include accidentals that are introduced by transposition)
         if (trans == 0) pitchname = pname;                  // the trivial case
         else {                                              // because of transposition, thing become a bit more complicated, as accidentals that are introduced by the transposition have to be added to the regular accidentals
@@ -1222,7 +1222,7 @@ public class Helper {
         }
         pitchdata.add(pitchname);
         pitchdata.add(Double.toString(outputAcc));
-        pitchdata.add(Integer.toString(outputOct));
+        pitchdata.add(Double.toString(outputOct));
 
         return pitch;
     }

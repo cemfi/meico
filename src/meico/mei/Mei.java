@@ -7,27 +7,25 @@ package meico.mei;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import meico.msm.Goto;
 import meico.msm.MsmBase;
-import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
 
-public class Mei {
+import javax.xml.parsers.ParserConfigurationException;
 
-    private File file = null;                                       // the source file
-    private Document mei = null;                                    // the mei document
-    private boolean validMei = false;                               // indicates whether the input file contained valid mei code (true) or not (false)
+public class Mei extends meico.xml.XmlBase {
+
     private Helper helper = null;                                   // some variables and methods to make life easier
 
     /**
      * a default constructor that creates an empty Mei instance
      */
     public Mei() {
+        super();
     }
 
     /**
@@ -36,7 +34,7 @@ public class Mei {
      * @param mei the mei document of which to instantiate the MEI object
      */
     public Mei(Document mei) {
-        this.mei = mei;
+        super(mei);
     }
 
     /** constructor; reads the mei file without validation
@@ -45,8 +43,8 @@ public class Mei {
      * @throws IOException
      * @throws ParsingException
      */
-    public Mei(File file) throws IOException, ParsingException {
-        this(file, false, null);
+    public Mei(File file) throws IOException, ParsingException, SAXException, ParserConfigurationException {
+        super(file);
     }
 
     /** constructor
@@ -57,8 +55,8 @@ public class Mei {
      * @throws IOException
      * @throws ParsingException
      */
-    public Mei(File file, boolean validate, URL schema) throws IOException, ParsingException {
-        this.readMeiFile(file, validate, schema);
+    public Mei(File file, boolean validate, URL schema) throws IOException, ParsingException, SAXException, ParserConfigurationException {
+        super(file, validate, schema);
     }
 
     /**
@@ -68,7 +66,7 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(String xml) throws IOException, ParsingException {
-        this(xml, false, null);
+        super(xml);
     }
 
     /**
@@ -80,14 +78,7 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(String xml, boolean validate, URL schema) throws IOException, ParsingException {
-        Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
-        try {
-            this.mei = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
-        } catch (ValidityException e) {                             // in case of a ValidityException (no valid mei code)
-            this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        }
-        if (validate && (schema != null))                           // if the mei file should be validated
-            System.out.println(this.validate(schema));              // do so, the result is stored in this.validMei
+        super(xml, validate, schema);
     }
 
     /**
@@ -97,7 +88,7 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(InputStream inputStream) throws IOException, ParsingException {
-        this(inputStream, false, null);
+        super(inputStream);
     }
 
     /**
@@ -109,206 +100,25 @@ public class Mei {
      * @throws ParsingException
      */
     public Mei(InputStream inputStream, boolean validate, URL schema) throws IOException, ParsingException {
-        if (validate && (schema != null))                           // if the mei file should be validated
-            System.out.println(this.validate(schema));              // do so, the result is stored in this.validMei
-        Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
-        try {
-            this.mei = builder.build(inputStream);
-        } catch (ValidityException e) {                             // in case of a ValidityException (no valid mei code)
-            this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        }
+        super(inputStream, validate, schema);
     }
 
-    /**
-     * reads the data from an MEI file into this object
-     * @param file
-     * @param validate
-     * @param schema URL to MEI schema
-     * @throws IOException
-     * @throws ParsingException
-     */
-    protected synchronized void readMeiFile(File file, boolean validate, URL schema) throws IOException, ParsingException {
-        this.file = file;
-
-        if (!file.exists()) {
-            this.mei = null;
-            this.validMei = false;
-//            System.err.println("No such file or directory: " + file.getPath());
-            throw new IOException("No such file or directory: " + file.getPath());
-        }
-
-        // read file into the mei instance of Document
-        Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
-//        this.validMei = true;                                       // the mei code is valid until validation fails (ValidityException)
-        try {
-            this.mei = builder.build(file);
-        }
-        catch (ValidityException e) {                               // in case of a ValidityException (no valid mei code)
-//            this.validMei = false;                                  // set validMei false to indicate that the mei code is not valid
-//            e.printStackTrace();                                    // output exception message
-//            for (int i=0; i < e.getErrorCount(); i++) {             // output all validity error descriptions
-//                System.err.println(e.getValidityError(i));
-//            }
-            this.mei = e.getDocument();                             // make the XOM Document anyway, we may nonetheless be able to work with it
-        }
-
-        if (validate && (schema != null))                           // if the mei file should be validated
-            System.out.println(this.validate(schema));              // do so, the result is stored in this.validMei
-    }
-
-    /** returns the File object from which the mei data originates
-     *
-     * @return the File object
-     */
-    public File getFile() {
-        return this.file;
-    }
-
-    /**
-     * a setter to change the file
-     * @param file
-     */
-    public synchronized void setFile(File file) {
-        this.file = file;
-    }
-
-    /**
-     * with this setter a new filename can be set
-     *
-     * @param filename the filename including the full path and .mei extension
-     */
-    public synchronized void setFile(String filename) {
-        this.file = new File(filename);
-    }
-    /** writes the mei document to a ...-meico.mei file at the same location as the original mei file; this method is mainly relevant for debug output after calling exportMsm()
-     *
+    /** 
+     * writes the mei document to a ...-meico.mei file at the same location as the original mei file; this method is mainly relevant for debug output after calling exportMsm()
      * @return true if success, false if an error occured
      */
     public boolean writeMei() {
-        String filename = this.file.getPath();
-        filename = Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-meico.mei";   // replace the file extension ".mei" by "-meico.mei"
-        return this.writeMei(filename);
+        String filename = Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-meico.mei";   // replace the file extension ".mei" by "-meico.mei"
+        return this.writeFile(filename);
     }
 
-    /** writes the mei document to a file (filename should include the path and the extension .mei); this method is mainly relevant for debug output after calling exportMsm()
-     *
+    /** 
+     * writes the mei document to a file (filename should include the path and the extension .mei); this method is mainly relevant for debug output after calling exportMsm()
      * @param filename the filename string including the complete path!
-     *
      * @return true if success, false if an error occured
      */
     public boolean writeMei(String filename) {
-        // create the file in the file system
-        File file = new File(filename);
-        file.getParentFile().mkdirs();                              // ensure that the directory exists
-        try {
-            file.createNewFile();                                   // create the file if it does not already exist
-        } catch (IOException | SecurityException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        // open the FileOutputStream to write to the file
-        FileOutputStream fileOutputStream = null;
-        try {
-            fileOutputStream = new FileOutputStream(file, false);   // open file: second parameter (append) is false because we want to overwrite the file if already existing
-        } catch (SecurityException | FileNotFoundException | NullPointerException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        // serialize the xml code (encoding, layout) and write it to the file via the FileOutputStream
-        boolean returnValue = true;
-        Serializer serializer = null;
-        try {
-            serializer = new Serializer(fileOutputStream, "UTF-8"); // connect serializer with FileOutputStream and specify encoding
-            serializer.setIndent(4);                                // specify indents in xml code
-            serializer.write(this.mei);                             // write data from mei to file
-        } catch (IOException | NullPointerException e) {
-            e.printStackTrace();
-            returnValue = false;
-        }
-
-        // close the FileOutputStream
-        try {
-            fileOutputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            returnValue = false;
-        }
-
-        if (this.file == null)
-            this.file = file;
-
-        return returnValue;
-    }
-
-    /** if the constructor was unable to load the file, the mei document is empty and no further operations
-     *
-     * @return true if the mei document is empty, otherwise false
-     */
-    public boolean isEmpty() {
-        return (this.mei == null);
-    }
-
-    /**
-     * @return true if the validation of the mei file (see constructor method) succeeded and false if failed
-     */
-    public boolean isValid() {
-        return this.validMei;
-    }
-
-    /**
-     * validate the data loaded into this.file and return whether it is proper mei according to mei-CMN.rng
-     * @return
-     */
-    public synchronized String validate(URL schema) {
-        if (this.isEmpty()) return "No MEI data present to be validated";    // no file, no validation
-
-        this.validMei = true;                   // it is valid until the validator throws an exception
-        String report = "Passed.";              // the validation report string, it will be overwritten if validation fails
-
-        try {
-            Helper.validateAgainstSchema(this.mei.toXML(), schema);
-//            Helper.validateAgainstSchema(this.file, new URL("http://www.music-encoding.org/schema/current/mei-CMN.rng"));     // this variant takes the schema from the web, the user has to be online for this!
-        } catch (SAXException e) {              // invalid mei
-            this.validMei = false;
-            report = "Failed. \n" + e.getMessage();
-            e.printStackTrace();                // print the full error message
-//            System.err.println(e.getMessage()); // print only the validation error message, not the complete stackTrace
-        } catch (IOException e) {               // missing rng file
-            this.validMei = false;
-            report = "Failed.  Missing schema file!";
-//            e.printStackTrace();
-            System.err.println("Validation failed: missing schema file!");
-        }
-//        System.out.println("Validation of " + this.file.getName() + ": " + this.validMei);  // command line output of the result
-        report = "Validation of " + this.file.getName() + ": " + report;
-        return report;                          // return the result
-    }
-
-    /**
-     * @return String with the XML code
-     */
-    public String toXML() {
-        return this.mei.toXML();
-    }
-
-    /**
-     * @return the mei XOM Document instance
-     */
-    public Document getDocument() {
-        if (this.isEmpty())
-            return null;
-        return this.mei;
-    }
-
-    /**
-     * @return root element of the mei document or null
-     */
-    public Element getRootElement() {
-        if (this.isEmpty())
-            return null;
-        return this.mei.getRootElement();
+        return this.writeFile(filename);
     }
 
     /**
@@ -318,9 +128,9 @@ public class Mei {
         if (this.isEmpty())
             return null;
 
-        Element e = this.mei.getRootElement().getFirstChildElement("meiHead");
+        Element e = this.getRootElement().getFirstChildElement("meiHead");
         if (e == null)
-            e = this.mei.getRootElement().getFirstChildElement("meiHead", this.mei.getRootElement().getNamespaceURI());
+            e = this.getRootElement().getFirstChildElement("meiHead", this.getRootElement().getNamespaceURI());
 
         return e;
     }
@@ -356,47 +166,11 @@ public class Mei {
         if (this.isEmpty())
             return null;
 
-        Element e = this.mei.getRootElement().getFirstChildElement("music");
+        Element e = this.getRootElement().getFirstChildElement("music");
         if (e == null)
-            e = this.mei.getRootElement().getFirstChildElement("music", this.mei.getRootElement().getNamespaceURI());
+            e = this.getRootElement().getFirstChildElement("music", this.getRootElement().getNamespaceURI());
 
         return e;
-    }
-
-    /**
-     * transform this MEI via the given xsl file
-     * @param xslt
-     * @return result of the transform as XOM Document instance
-     */
-    public Document xslTransformToDocument(File xslt) {
-        return Helper.xslTransformToDocument(this.mei, xslt);
-    }
-
-    /**
-     * transform this MEI via the given xsl transform
-     * @param transform
-     * @return result of the transform as XOM Document instance
-     */
-    public Document xslTransformToDocument(Xslt30Transformer transform) {
-        return Helper.xslTransformToDocument(this.mei, transform);
-    }
-
-    /**
-     * transform this MEI via the given xsl file
-     * @param xslt
-     * @return result of the transform as String instance
-     */
-    public String xslTransformToString(File xslt) {
-        return Helper.xslTransformToString(this.mei, xslt);
-    }
-
-    /**
-     * transform this MEI via the given xsl transform
-     * @param transform
-     * @return result of the transform as String instance
-     */
-    public String xslTransformToString(Xslt30Transformer transform) {
-        return Helper.xslTransformToString(this.mei, transform);
     }
 
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv; the thime resolution (pulses per quarter note) is 720 by default or more if required (for very short note durations)
@@ -451,7 +225,7 @@ public class Mei {
 
         Document orig = null;
         if (cleanup)
-            orig = (Document)this.mei.copy();                                   // the document will be altered during conversion, thus we keep the original to restore it after the process
+            orig = (Document)this.data.copy();                                   // the document will be altered during conversion, thus we keep the original to restore it after the process
 
 //        long t = System.currentTimeMillis();
         this.resolveTieElements();                                              // first resolve the ties in case they are affected by the copyof resolution which comes next
@@ -472,7 +246,7 @@ public class Mei {
 
         // cleanup
         if (cleanup){
-            this.mei = orig;                                                    // restore the unaltered version of the mei data
+            this.data = orig;                                                    // restore the unaltered version of the mei data
             Helper.msmCleanup(msms);                                            // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
         }
 
@@ -1010,12 +784,12 @@ public class Mei {
         }
 
         {   // if there is a transposition (we only support the trans.semi attribute, not trans.diat)
-            int trans = 0;
-            trans = (scoreDef.getAttribute("trans.semi") == null) ? 0 : Integer.parseInt(scoreDef.getAttributeValue("trans.semi"));
+            double trans = 0;
+            trans = (scoreDef.getAttribute("trans.semi") == null) ? 0.0 : Double.parseDouble(scoreDef.getAttributeValue("trans.semi"));
             trans += Helper.processClefDis(scoreDef);
             Element d = new Element("transposition");                                               // create a transposition entry
-            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString())); // add the current date
-            d.addAttribute(new Attribute("semi", Integer.toString(trans)));                         // copy the value or write "0" for no transposition (this is to cancel previous entries)
+            d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));          // add the current date
+            d.addAttribute(new Attribute("semi", Double.toString(trans)));                          // copy the value or write "0" for no transposition (this is to cancel previous entries)
             Helper.copyId(scoreDef, d);                                                             // copy the id
             Helper.addToMap(d, this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap"));   // make an entry in the miscMap
         }
@@ -1067,11 +841,11 @@ public class Mei {
 
 
         {   // if there is a transposition (we only support the trans.semi attribute, not trans.diat)
-            int trans = 0;
-            trans = (staffDef.getAttribute("trans.semi") == null) ? 0 : Integer.parseInt(staffDef.getAttributeValue("trans.semi"));
+            double trans = 0;
+            trans = (staffDef.getAttribute("trans.semi") == null) ? 0.0 : Double.parseDouble(staffDef.getAttributeValue("trans.semi"));
             trans += Helper.processClefDis(staffDef);
             Element d = new Element("transposition");                                                       // create a transposition entry
-            d.addAttribute(new Attribute("semi", Integer.toString(trans)));                                 // copy the value or write "0" for no transposition (this is to cancel previous entries)
+            d.addAttribute(new Attribute("semi", Double.toString(trans)));                                  // copy the value or write "0" for no transposition (this is to cancel previous entries)
             d.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));
             Helper.copyId(staffDef, d);                                                                     // copy the id
             Helper.addToMap(d, this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make an entry in the miscMap
@@ -2157,11 +1931,11 @@ public class Mei {
         }
 
         // compute the amount of transposition in semitones
-        int result;
+        double result;
         switch (octave.getAttributeValue("dis")) {
-            case "8":  result = 12; break;
-            case "15": result = 24; break;
-            case "22": result = 36; break;
+            case "8":  result = 12.0; break;
+            case "15": result = 24.0; break;
+            case "22": result = 36.0; break;
             default:
                 System.err.println("An invalid octave transposition occured (dis=" + octave.getAttributeValue("dis") + ").");
                 return;
@@ -2179,7 +1953,7 @@ public class Mei {
         Element s = new Element("addTransposition");                                        // create an addTransposition element (it adds to other transpositions, e.g. from the staffDef or scoreDef)
         Helper.copyId(octave, s);                                                           // copy the id
         s.addAttribute(new Attribute("midi.date", this.helper.getMidiTimeAsString()));      // compute starting date of transposition
-        s.addAttribute(new Attribute("semi", Integer.toString(result)));                    // write the semitone transposition into the element
+        s.addAttribute(new Attribute("semi", Double.toString(result)));                    // write the semitone transposition into the element
 
         // compute duration or store endid for later reference
         double dur = this.helper.computeDuration(octave);                                   // compute duration

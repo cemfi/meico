@@ -42,7 +42,7 @@ public class Settings {
     protected static final String DATA_OBJECT_LABEL = "-fx-fill: lightgray; -fx-font-weight: bold; -fx-line-spacing: 0em;";
     protected static final String WELCOME_MESSAGE_COLOR = "-fx-text-fill: white; -fx-opacity: 0.2;";
     protected static final String WELCOME_MESSAGE_STYLE = Settings.WELCOME_MESSAGE_COLOR + "-fx-font-size: " + (Settings.getSystemFont().getSize() * 1.8) + "pt; -fx-text-alignment: center; -fx-font-weight: normal; -fx-line-spacing: 320.0px;";
-    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   TXT   MIDI   WAV   XSL   RNG   SF2   DLS";
+    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   MUSICXML   TXT   MIDI   WAV   XSL   RNG   SF2   DLS";
 
     // global layout settings
     protected static boolean makeLogfile = true;                        // make a logfile
