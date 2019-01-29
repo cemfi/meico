@@ -186,7 +186,7 @@ public class Main {
             mei.writeMei();                             // this outputs an expanded mei file with more xml:id attributes and resolved copyof's
         }
 
-        if (!(msm || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
+        if (!(msm || pitches || chroma || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
 
         // convert mei -> msm -> midi
         System.out.println("Converting MEI to MSM.");

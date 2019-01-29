@@ -1,6 +1,11 @@
 ### Version History
 
 
+### v0.6.3
+- Bugfix in commandline mode `meico.app.Main`. It forgot to make pitch and chroma export.
+- Enhancement in class `meico.mei.Mei` methods `processStaffDef()`, `processStaff()`, `processLayer()` to support nested structures (`staffDef` within `staff` etc.).
+- Updated internal Verovio to v2.1.0-dev-533442f.
+
 ### v0.6.2
 - Updated internal Verovio to v2.0.0-dev-61da81a.
 - Added package and class `meico.xml.XmlBase` as a base class for all XML-based classes in meico.

@@ -489,7 +489,7 @@ public class DataObject extends Group {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {/*"to MEI",*/ "XSL Transform"};
+            String[] rightItems = {/*TODO: "to MEI",*/ "XSL Transform"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);

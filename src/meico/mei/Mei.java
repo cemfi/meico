@@ -806,6 +806,7 @@ public class Mei extends meico.xml.XmlBase {
      * @param staffDef an mei staffDef element
      */
     private void processStaffDef(Element staffDef) {
+        Element parentPart = this.helper.currentPart;                                                       // if we are already in a staff environment, store it, otherwise it is null
         this.helper.currentPart = this.makePart(staffDef);                                                  // create a part element in movement, or get Element pointer if this part exists already
 
         staffDef.addAttribute(new Attribute("midi.date", helper.getMidiTimeAsString()));
@@ -859,7 +860,7 @@ public class Mei extends meico.xml.XmlBase {
         // process the child elements
         this.convert(staffDef);                                     // process the staff's children
         this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
-        this.helper.currentPart = null;                             // after this staff entry and its children are processed, set part to nullptr, because there can be global information between the staff entries in mei
+        this.helper.currentPart = parentPart;                       // after this staff entry and its children are processed, set currentPart back to the parent staff
     }
 
     /** process an mei staff element
@@ -871,6 +872,7 @@ public class Mei extends meico.xml.XmlBase {
         Attribute ref = staff.getAttribute("def");                              // get the part entry, try the def attribute first
         if (ref == null) ref = staff.getAttribute("n");                         // otherwise the n attribute
         Element s = this.helper.getPart((ref == null) ? "" : ref.getValue());   // get the part
+        Element parentPart = this.helper.currentPart;                           // if we are already in a staff environment, store it, otherwise it is null
 
         if (s != null) {
 //            s.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("midi.date") : "0.0"));  // set currentDate of processing
@@ -885,7 +887,7 @@ public class Mei extends meico.xml.XmlBase {
         // everything within the staff will be treated as local to the corresponding part, thanks to helper.currentPart being != null
         this.convert(staff);                                        // process the staff's children
         this.helper.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
-        this.helper.currentPart = null;                             // after this staff entry and its children are processed, set part to nullptr, because there can be global information between the staff entries in mei
+        this.helper.currentPart = parentPart;                       // after this staff entry and its children are processed, set currentPart back to the parent staff
     }
 
     /** process an mei layerDef element
@@ -924,14 +926,16 @@ public class Mei extends meico.xml.XmlBase {
      * @param layer
      */
     private void processLayer(Element layer) {
+        Element parentLayer = this.helper.currentLayer;                                                                 // if we are already in a staff environment, store it, otherwise it is null
         this.helper.currentLayer = layer;                                                                               // keep track of this current layer as long as we process its children
+
         String oldDate = this.helper.currentPart.getAttribute("currentDate").getValue();                                // store currentDate in oldDate for later use
 
         this.convert(layer);                                                                                            // process everything within this environment
 
         layer.addAttribute(new Attribute("currentDate", this.helper.currentPart.getAttribute("currentDate").getValue()));// store the currentDate in the layer element to later determine the latest of these dates as the staff's part's currentDate
         this.helper.accid.clear();                                                                                      // accidentals are valid only within one layer, so forget them
-        this.helper.currentLayer = null;                                                                                // we are done processing this layer, set currentLayer to nullptr
+        this.helper.currentLayer = parentLayer;                                                                         // we are done processing this layer, get back to the parent layer or null
         if (Helper.getNextSiblingElement("layer", layer) != null)                                                       // if there are more layers in this staff environment
             this.helper.currentPart.getAttribute("currentDate").setValue(oldDate);                                      // set back to the old currentDate, because each layer is a parallel to the other layers
         else {                                                                                                          // no further layers in this staff environment, this was the last layer in this staff
