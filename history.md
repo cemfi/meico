@@ -3,6 +3,7 @@
 
 ### v0.6.4
 - Bugfix in `meico.mei.Mei.processAccid()`.
+- Added error catching in methods `meico.mei.Helper.computePitch()` and `meico.mei Helper.computeDuration()`.
 
 
 ### v0.6.3

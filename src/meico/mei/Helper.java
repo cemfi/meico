@@ -674,7 +674,7 @@ public class Helper {
      * @return
      */
     protected Double computeDuration(Element ofThis) {
-        if (!ofThis.getLocalName().equals("bTrem")                  // for what kind of element shall the duration be computed?
+        if ((!ofThis.getLocalName().equals("bTrem")                  // for what kind of element shall the duration be computed?
                 && !ofThis.getLocalName().equals("chord")
                 && !ofThis.getLocalName().equals("fTrem")
                 && !ofThis.getLocalName().equals("halfmRpt")
@@ -684,7 +684,8 @@ public class Helper {
                 && !ofThis.getLocalName().equals("octave")
                 && !ofThis.getLocalName().equals("rest")
                 && !ofThis.getLocalName().equals("tuplet")
-                && !ofThis.getLocalName().equals("space")) {        // if none of these
+                && !ofThis.getLocalName().equals("space"))
+                || (this.currentPart == null)) {        // if none of these
             return 0.0;                                             // return 0.0
         }
 
@@ -961,7 +962,7 @@ public class Helper {
                 checkKeySign = true;                                    // the key signature must be checked for accidentals later on; this is done only when the non-gestural pname attribute has been used
             }
             else {                                                      // if no pitch class specified we cannot do anything
-                return -1;                                              // cancel by returning -1
+                return -1.0;                                            // cancel by returning -1
             }
         }
 
@@ -974,14 +975,16 @@ public class Helper {
                 oct = Double.parseDouble(ofThis.getAttributeValue("oct"));
             }
             else {
-                Elements octs = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octave
-                if (octs.size() == 0) {                                                                                                                                      // if there is none
-                    octs = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octave
-                }
-                for (int i=octs.size()-1; i >= 0; --i) {                                                                          // search from back to front
-                    if ((octs.get(i).getAttribute("layer") == null) || octs.get(i).getAttributeValue("layer").equals(layerId)) {  // for a default octave with no layer dependency or a matching layer
-                        oct = Double.parseDouble(octs.get(i).getAttributeValue("oct.default"));                                     // take this value
-                        break;                                                                                                    // break the for loop
+                if (this.currentPart != null) {
+                    Elements octs = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octave
+                    if (octs.size() == 0) {                                                                                                                                      // if there is none
+                        octs = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octave
+                    }
+                    for (int i = octs.size() - 1; i >= 0; --i) {                                                                          // search from back to front
+                        if ((octs.get(i).getAttribute("layer") == null) || octs.get(i).getAttributeValue("layer").equals(layerId)) {  // for a default octave with no layer dependency or a matching layer
+                            oct = Double.parseDouble(octs.get(i).getAttributeValue("oct.default"));                                     // take this value
+                            break;                                                                                                    // break the for loop
+                        }
                     }
                 }
                 ofThis.addAttribute(new Attribute("oct", Double.toString(oct)));                                                 // there was no oct attribute, so fill the gap with the computed value
@@ -1023,7 +1026,7 @@ public class Helper {
                 }
                 if (checkKeySign) {                                                                                                 // if the note's pitch was defined by a pname attribute and had no local accidentals, we must check the key signature for accidentals
                     // get both, local and global keySignatureMap in the msm document and get the latest keySignature element in there, check its accidentals' pitch attribute if it is of the same pitch class as pname
-                    Element keySigMapLocal = this.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap");// get the local key signature map from mpm
+                    Element keySigMapLocal = (this.currentPart == null) ? null : this.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap");// get the local key signature map from mpm
                     Element keySigMapGlobal = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap");  // get the global key signature map
 
                     Element keySigLocal = null;
@@ -1120,35 +1123,37 @@ public class Helper {
                     trans += Double.parseDouble(globalAddTrans.get(i).getAttributeValue("semi"));                                                                       // found a transposition that applies
                 }
             }
-            {
-                Elements localTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
-                for (int i = localTrans.size() - 1; i >= 0; --i) {                                                                                                      // go through the local transpositions
-                    if ((localTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {// if this transposition element is after ofThis
-                        continue;
+            if (this.currentPart != null) {
+                {
+                    Elements localTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
+                    for (int i = localTrans.size() - 1; i >= 0; --i) {                                                                                                      // go through the local transpositions
+                        if ((localTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {// if this transposition element is after ofThis
+                            continue;
+                        }
+                        if ((localTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {     // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                            break;
+                        }
+                        if ((localTrans.get(i).getAttribute("layer") != null) && !localTrans.get(i).getAttributeValue("layer").equals(layerId)) {                           // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                            continue;                                                                                                                                       // continue searching
+                        }
+                        trans += Double.parseDouble(localTrans.get(i).getAttributeValue("semi"));                                                                           // found a transposition that applies
+                        break;                                                                                                                                              // done
                     }
-                    if ((localTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {     // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
-                        break;
-                    }
-                    if ((localTrans.get(i).getAttribute("layer") != null) && !localTrans.get(i).getAttributeValue("layer").equals(layerId)) {                           // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
-                        continue;                                                                                                                                       // continue searching
-                    }
-                    trans += Double.parseDouble(localTrans.get(i).getAttributeValue("semi"));                                                                           // found a transposition that applies
-                    break;                                                                                                                                              // done
                 }
-            }
-            {
-                Elements localAddTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
-                for (int i = localAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
-                    if ((localAddTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
-                        continue;
+                {
+                    Elements localAddTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
+                    for (int i = localAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
+                        if ((localAddTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
+                            continue;
+                        }
+                        if ((localAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                            continue;
+                        }
+                        if ((localAddTrans.get(i).getAttribute("layer") != null) && !localAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                     // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                            continue;                                                                                                                                       // continue searching
+                        }
+                        trans += Double.parseDouble(localAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
                     }
-                    if ((localAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
-                        continue;
-                    }
-                    if ((localAddTrans.get(i).getAttribute("layer") != null) && !localAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                     // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
-                        continue;                                                                                                                                       // continue searching
-                    }
-                    trans += Double.parseDouble(localAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
                 }
             }
         }
