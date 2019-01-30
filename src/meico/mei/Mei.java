@@ -1194,11 +1194,11 @@ public class Mei extends meico.xml.XmlBase {
 
         if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null)) {    // if there is a local time signature map that is not empty
             Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");                                           // get the timeSignature elements
-            dur1 = this.helper.computeMeasureLength(Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));    // compute the measure's (preliminary) length from the time signature
+            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator")));    // compute the measure's (preliminary) length from the time signature
         }
         else if (this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null) {   // if there is a global time signature map
             Elements es = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");        // get the timeSignature elements
-            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator")));  // compute the measure's (preliminary) length from the time signature
+            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator")));  // compute the measure's (preliminary) length from the time signature
         }
 
         measure.addAttribute(new Attribute("midi.dur", Double.toString(dur1)));                                 // add attribute midi.dur and store the official (time signature defined) duration in it (this will be adapted some lines below if necessary)
@@ -1735,7 +1735,7 @@ public class Mei extends meico.xml.XmlBase {
                 first.addAttribute(new Attribute("midi.date", this.helper.currentPart.getAttributeValue("currentDate")));  // draw date of first  to currentDate
 
                 // set date of the last time signature element to the beginning of currentDate + 1 measure
-                double timeframe2 = (4.0 * this.helper.ppq * Integer.parseInt(first.getAttributeValue("numerator"))) / Integer.parseInt(first.getAttributeValue("denominator"));    // compute the length of one measure of time signature element first
+                double timeframe2 = (4.0 * this.helper.ppq * Double.parseDouble(first.getAttributeValue("numerator"))) / Double.parseDouble(first.getAttributeValue("denominator"));    // compute the length of one measure of time signature element first
                 second.getAttribute("midi.date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // draw date of second time signature element
 
                 // add both instructions to the timeSignatureMap
@@ -1766,12 +1766,12 @@ public class Mei extends meico.xml.XmlBase {
         double tsdate = (timesign > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                     // get the date of the current time signature
 
         // go back measure-wise, check for time signature changes, sum up the measure lengths into the timeframe variable
-        for (int measureCount = (multiRpt.getAttribute("num") == null) ? 1 : Integer.parseInt(multiRpt.getAttributeValue("num")); measureCount > 0; --measureCount) {                   // for each measure
+        for (int measureCount = (multiRpt.getAttribute("num") == null) ? 1 : (int)(Double.parseDouble(multiRpt.getAttributeValue("num"))); measureCount > 0; --measureCount) {                   // for each measure
             timeframe += measureLength;                                                                                                                                                 // add its length to the timeframe for repetition
             while (tsdate >= (currentDate - timeframe)) {                                                                                                                               // if we pass the date of the current time signature (and maybe others, too)
                 --timesign;                                                                                                                                                             // choose predecessor in the ts list
                 tsdate = ((timesign) > 0) ? Double.parseDouble(ts.get(timesign).getAttributeValue("midi.date")) : 0.0;                                                                  // get its date
-                measureLength = ((timesign) > 0) ? this.helper.computeMeasureLength(Integer.parseInt(ts.get(timesign).getAttributeValue("numerator")), Integer.parseInt(ts.get(timesign).getAttributeValue("denominator"))) : this.helper.computeMeasureLength(4, 4);   // draw measureLength
+                measureLength = ((timesign) > 0) ? this.helper.computeMeasureLength(Double.parseDouble(ts.get(timesign).getAttributeValue("numerator")), Double.parseDouble(ts.get(timesign).getAttributeValue("denominator"))) : this.helper.computeMeasureLength(4, 4);   // draw measureLength
             }
         }
 

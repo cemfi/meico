@@ -25,6 +25,7 @@ import meico.midi.Midi;
 import meico.msm.Msm;
 import meico.musicxml.MusicXml;
 import meico.pitches.Pitches;
+import meico.xml.XmlBase;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.Builder;
@@ -156,6 +157,8 @@ public class DataObject extends Group {
 
         String extension = file.getName().substring(index).toLowerCase();   // get the file extension
         switch (extension) {
+            case ".xml":                                    // xml could be anything
+               return readXmlFileToCorrectType(file);       // read the file and find out from its root element what it is
             case ".mei":
                 return new Mei(file);
             case ".msm":
@@ -187,6 +190,35 @@ public class DataObject extends Group {
 //                this.workspace.getApp().getStatuspanel().setMessage("Input file type " + extension + " is not supported by meico.");
                 throw new IOException("File type " + extension + " is not supported by meico.");
         }
+    }
+
+    /**
+     * When an XML file is loaded it has to be identified as MEI, MSM, MusicXML etc. to create the right instance.
+     * @param file
+     * @return
+     */
+    public Object readXmlFileToCorrectType(File file) throws SAXException, ParsingException, ParserConfigurationException, IOException, SaxonApiException {
+        XmlBase xml = new XmlBase(file);                                        // parse the xml file into an instance of XmlBase
+        XmlBase o;                                                              // this will be the output object that has to get the right type
+
+        switch (xml.getRootElement().getLocalName()) {                          // get the name of the root element in the xml tree
+            case "mei":                                                         // seems to be an mei
+                o = new Mei(xml.getDocument());
+                break;
+            case "msm":                                                         // seems to be an msm
+                o = new Msm(xml.getDocument());
+                break;
+            case "score-partwise":                                              // seems to be a musicxml
+                o = new MusicXml(xml.getDocument());
+                break;
+            case "stylesheet":                                                  // seems to be an xslt
+                return new meico.app.gui.XSLTransform(file, this);
+            default:
+                throw new IOException("Meico could not identify the type of data in this XML file as one of its supported types.");
+        }
+
+        o.setFile(file);                                                        // set the file variable
+        return o;                                                               // return the object
     }
 
     /**

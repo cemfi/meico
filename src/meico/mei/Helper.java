@@ -344,8 +344,8 @@ public class Helper {
         }
 
         // get length of one measure (4/4 is default if information is insufficient)
-        int denom = (es.size() == 0) ? 4 : Integer.parseInt(es.get(es.size()-1).getAttributeValue("denominator"));
-        int num = (es.size() == 0) ? 4 : Integer.parseInt(es.get(es.size()-1).getAttributeValue("numerator"));
+        double denom = (es.size() == 0) ? 4 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator"));
+        double num = (es.size() == 0) ? 4 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator"));
 
         return (4.0 * this.ppq * num) / denom;
 
@@ -357,7 +357,7 @@ public class Helper {
      * @param denominator
      * @return
      */
-    protected double computeMeasureLength(double numerator, int denominator) {
+    protected double computeMeasureLength(double numerator, double denominator) {
         return (4.0 * this.ppq * numerator) / denominator;
 
     }
@@ -684,8 +684,8 @@ public class Helper {
                 && !ofThis.getLocalName().equals("octave")
                 && !ofThis.getLocalName().equals("rest")
                 && !ofThis.getLocalName().equals("tuplet")
-                && !ofThis.getLocalName().equals("space"))
-                || (this.currentPart == null)) {        // if none of these
+                && !ofThis.getLocalName().equals("space"))          // if none of these
+                || (this.currentPart == null)) {                    // or ofThis is not in a staff environment
             return 0.0;                                             // return 0.0
         }
 

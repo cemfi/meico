@@ -42,7 +42,7 @@ public class Settings {
     protected static final String DATA_OBJECT_LABEL = "-fx-fill: lightgray; -fx-font-weight: bold; -fx-line-spacing: 0em;";
     protected static final String WELCOME_MESSAGE_COLOR = "-fx-text-fill: white; -fx-opacity: 0.2;";
     protected static final String WELCOME_MESSAGE_STYLE = Settings.WELCOME_MESSAGE_COLOR + "-fx-font-size: " + (Settings.getSystemFont().getSize() * 1.8) + "pt; -fx-text-alignment: center; -fx-font-weight: normal; -fx-line-spacing: 320.0px;";
-    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   MUSICXML   TXT   MIDI   WAV   XSL   RNG   SF2   DLS";
+    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   MUSICXML   XML   TXT   MIDI   WAV   XSL   RNG   SF2   DLS";
 
     // global layout settings
     protected static boolean makeLogfile = true;                        // make a logfile
@@ -168,7 +168,7 @@ public class Settings {
         player.selectedProperty().addListener((observable, oldValue, newValue) -> app.setPlayerAccordion(newValue));
 
         // autoexpanding player
-        CheckBox accordion = new CheckBox("Animate expansion and collapseing of accordion menu items (WebView, player)");
+        CheckBox accordion = new CheckBox("Animate expansion and collapsing of accordion menu items (WebView, player)");
         accordion.setSelected(Settings.accordionAnimations);
         accordion.setTextFill(Color.GRAY);
         accordion.selectedProperty().addListener((observable, oldValue, newValue) -> app.setAccordionAnimation(newValue));

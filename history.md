@@ -1,6 +1,11 @@
 ### Version History
 
 
+### v0.6.5
+- `.xml` import and type recognition now supported: Added method `meico.app.gui.DataObject.readXmlFileToCorrectType()`. It is called when a `.xml` file is loaded. So far, meico rejected to load such files as it was unclear which kind of data it holds. The new method loads it as an `XmlBase` object and reads its root name to find out whether it is an MEI, MSM, MusicXML, or XSLT. An instance of the corresponding type is then created.
+- Added floating point support to time signatures in methods `meico.mei.Helper.getOneMeasureLength()` and in class `meico.mei.Mei` methods `processMeasure()`, `makeTimeSignature()`, `processBeatRpt()`, `processMRpt2()`, and `makeMeasureRest()`.
+
+
 ### v0.6.4
 - Bugfix in `meico.mei.Mei.processAccid()`.
 - Added error catching in methods `meico.mei.Helper.computePitch()` and `meico.mei Helper.computeDuration()`.
