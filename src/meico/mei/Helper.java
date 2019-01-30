@@ -706,7 +706,7 @@ public class Helper {
                 else {                                                                              // check for local and global default durations with and without layer consideration
                     String layerId = getLayerId(getLayer(ofThis));                                  // store the layer id
                     Elements durdefaults = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");                              // get all local default durations
-                    if (durdefaults.size() == 0) {                                                                                                                                      // if there is none
+                    if (durdefaults.size() == 0) {                                                                                                           // if there is none
                         durdefaults = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");// get all global default durations
                     }
                     for (int i=durdefaults.size()-1; i >= 0; --i) {                                                                                 // search from back to front

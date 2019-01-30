@@ -1,6 +1,10 @@
 ### Version History
 
 
+### v0.6.4
+- Bugfix in `meico.mei.Mei.processAccid()`.
+
+
 ### v0.6.3
 - Bugfix in commandline mode `meico.app.Main`. It forgot to make pitch and chroma export.
 - Enhancement in class `meico.mei.Mei` methods `processStaffDef()`, `processStaff()`, `processLayer()` to support nested structures (`staffDef` within `staff` etc.).

@@ -1290,7 +1290,7 @@ public class Mei extends meico.xml.XmlBase {
                 double pitch = this.helper.computePitch(parentNote, pitchdata);         // get the note's pitch
                 if (pitch != -1.0) {                                                    // if there is a meaningful pitch
                     pitchname = Character.toString(pitchdata.get(0).charAt(0));         // get the pitch name without tailoring accidental signs
-                    octave = Integer.toString(Integer.parseInt(pitchdata.get(2)) + 1);  // get the octave value
+                    octave = Double.toString(Double.parseDouble(pitchdata.get(2)) + 1);  // get the octave value
                 }
                 break;                                                                  // stop the for loop
             }
@@ -2306,7 +2306,7 @@ public class Mei extends meico.xml.XmlBase {
         return notResolved;
     }
 
-    /** this method tries to put some "malplaced" elements at the right place in the timeline (e.g., tupletSpans at the end of a measure are placed before their startid element);
+    /** this method tries to put some elements that are not placed "inline" within a layer but at the end of a measure at the right place in the timeline (e.g., tupletSpans at the end of a measure are placed before their startid element);
      * this method works only with startids, tstamps are not resolved as it is impossible to resolve these during the preprocessing - this is left to the postprocessing
      *
      * @return null (no document loaded), an ArrayList with those ids that could not be reordered, or an empty ArrayList if everything went well without reordering
