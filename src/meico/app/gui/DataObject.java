@@ -209,6 +209,7 @@ public class DataObject extends Group {
                 o = new Msm(xml.getDocument());
                 break;
             case "score-partwise":                                              // seems to be a musicxml
+            case "score-timewise":
                 o = new MusicXml(xml.getDocument());
                 break;
             case "stylesheet":                                                  // seems to be an xslt
