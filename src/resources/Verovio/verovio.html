@@ -80,6 +80,7 @@
                 </td>
                 <td style="text-align: center">
                     <div id="page_number" class="page_number"></div>
+                    <!--<button id="saveSVGs" type="button" class="zoombutton" title="save SVGs" onclick="saveSVGs()"><span style="font-size: small;">Save<br>SVGs</span></button>-->
                     <button id="zoomOut" type="button" class="zoombutton" title="zoom out" onclick="zoomOut()"> - </button>
                     <button id="zoomIn" type="button" class="zoombutton" title="zoom in" onclick="zoomIn()"> + </button>
                     <div id="svg_output" style="width: 100%" align="center"></div>
@@ -99,6 +100,7 @@
             var svgElement;
             var width;
             var height;
+            var svg = [];                                               // this array will contain all score pages
             render();
 
             /**
@@ -106,7 +108,7 @@
              */
             function render() {
                 if (oneLineScore) {                                                                                                 // print all music in one line
-                    var svg = vrvToolkit.renderData(data, {format: "mei", type: "svg", noLayout: 1, ignoreLayout: 1, scale: 40});   // this generates an endless system
+                    svg.push(vrvToolkit.renderData(data, {format: "mei", type: "svg", noLayout: 1, ignoreLayout: 1, scale: 40}));   // this generates an endless system
                     var zoomOutButton = document.getElementById("zoomOut").outerHTML;
                     var zoomInButton = document.getElementById("zoomIn").outerHTML;
                     var verovioVersion = document.getElementById("verovio_version").outerHTML;
@@ -128,8 +130,13 @@
                     vrvToolkit.loadData(data);                                                                                      // load the music
                     vrvToolkit.setOptions(options);                                                                                 // set the Verovio options
                     pageCount = vrvToolkit.getPageCount();                                                                          // get the page count
-                    var svg = vrvToolkit.renderPage(page);                                                                          // render a page
-                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+
+                    // render all pages at once and add them to the svg array
+                    for (var p=1; p <= pageCount; ++p) {
+                        svg.push(vrvToolkit.renderPage(p));
+                    }
+
+                    document.getElementById("svg_output").innerHTML = svg[page-1];                                                  // print it
                     updateNavigation();                                                                                             // update page navigation bar
                 }
                 svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
@@ -167,8 +174,7 @@
             function nextPage() {
                 if (page < pageCount) {
                     page++;
-                    var svg = vrvToolkit.renderPage(page);                                                                          // render a page
-                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    document.getElementById("svg_output").innerHTML = svg[page-1];                                                      // print it
                     svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
                     layoutSvg();
                     updateNavigation();
@@ -181,8 +187,7 @@
             function previousPage() {
                 if (page > 1) {
                     page--;
-                    var svg = vrvToolkit.renderPage(page);                                                                          // render a page
-                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    document.getElementById("svg_output").innerHTML = svg[page-1];                                                      // print it
                     svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
                     layoutSvg();
                     updateNavigation();

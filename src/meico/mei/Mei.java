@@ -15,6 +15,9 @@ import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class Mei extends meico.xml.XmlBase {
@@ -2474,7 +2477,7 @@ public class Mei extends meico.xml.XmlBase {
             return 0;
         }
 
-        Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest' or local-name()='mRest' or local-name()='multiRest' or local-name()='chord' or local-name()='tuplet' or local-name()='mdiv' or local-name()='reh' or local-name()='section') and not(@xml:id)]");
+        Nodes e = root.query("descendant::*[(local-name()='measure' or local-name()='note' or local-name()='rest' or local-name()='mRest' or local-name()='multiRest' or local-name()='chord' or local-name()='tuplet' or local-name()='mdiv' or local-name()='reh' or local-name()='section') and not(@xml:id)]");
         for (int i = 0; i < e.size(); ++i) {                                    // go through all the nodes
             String uuid = "meico_" + UUID.randomUUID().toString();              // generate new ids for them
             Attribute a = new Attribute("id", uuid);                            // create an attribute

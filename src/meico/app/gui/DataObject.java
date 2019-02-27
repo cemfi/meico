@@ -34,6 +34,7 @@ import nu.xom.ParsingException;
 import nu.xom.ValidityException;
 import org.xml.sax.SAXException;
 
+import javax.script.ScriptException;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.xml.parsers.ParserConfigurationException;
@@ -840,8 +841,9 @@ public class DataObject extends Group {
 //                            this.getWorkspace().getApp().getHostServices().showDocument(getClass().getResource("/resources/Verovio/verovio.html").toString());  // display score rendering in system standard browser, this is not finished as the content of the HTML is never filled with score data
                             // do Verovio score rendering
                             Platform.runLater(() -> {
+                                Mei mei = (Mei)this.getData();
                                 String verovio = null;                                                          // this will get the HTML code to be shown in the WebView
-                                verovio = VerovioGenerator.generate(((Mei)this.getData()).toXML(), this);       // generate that HTML code
+                                verovio = VerovioGenerator.generate(mei.toXML(), this);                         // generate that HTML code
                                 this.getWorkspace().getApp().getWeb().printContent(verovio, false);             // show it in the WebView
                                 if (this.workspace.getApp().getWebAccordion() != null) {
                                     this.workspace.getApp().getWebAccordion().setText("Score: " + this.label);  // change the title string of the WebView
