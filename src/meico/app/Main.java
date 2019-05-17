@@ -51,6 +51,7 @@ public class Main {
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
+//                System.out.println("[-g] or [--svg]                         convert to SVGs");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
                 System.out.println("[-o] or [--chroma]                      convert to chromas");
                 System.out.println("[-h] or [--pitches]                     convert to pitches");
@@ -75,6 +76,7 @@ public class Main {
         boolean ignoreExpansions = false;
         File xslt = null;
         String xsltOutputExtension = "";
+//        boolean svg = false;
         boolean msm = false;
         boolean chroma = false;
         boolean pitches = false;
@@ -101,6 +103,7 @@ public class Main {
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
+//            if ((args[i].equals("-g")) || (args[i].equals("--svg"))) { svg = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-o")) || (args[i].equals("--chroma"))) { chroma = true; continue; }
             if ((args[i].equals("-h")) || (args[i].equals("--pitches"))) { pitches = true; continue; }
@@ -185,6 +188,12 @@ public class Main {
         if (resolveCopyOfs || addIds) {
             mei.writeMei();                             // this outputs an expanded mei file with more xml:id attributes and resolved copyof's
         }
+
+//        TODO: this is not yet functional
+//        if (svg) {
+//            SvgCollection svgs = mei.exportSvg();
+//            svgs.writeSvgs();
+//        }
 
         if (!(msm || pitches || chroma || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
 

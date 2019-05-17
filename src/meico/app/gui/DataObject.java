@@ -2,6 +2,7 @@ package meico.app.gui;
 
 import javafx.animation.*;
 import javafx.application.Platform;
+import javafx.concurrent.Worker;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -16,6 +17,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Affine;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
+import javafx.scene.web.WebEngine;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import meico.audio.Audio;
@@ -25,6 +27,8 @@ import meico.midi.Midi;
 import meico.msm.Msm;
 import meico.musicxml.MusicXml;
 import meico.pitches.Pitches;
+import meico.svg.Svg;
+import meico.svg.SvgCollection;
 import meico.xml.XmlBase;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Xslt30Transformer;
@@ -34,7 +38,6 @@ import nu.xom.ParsingException;
 import nu.xom.ValidityException;
 import org.xml.sax.SAXException;
 
-import javax.script.ScriptException;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.xml.parsers.ParserConfigurationException;
@@ -230,6 +233,10 @@ public class DataObject extends Group {
     private synchronized String getFileName() {
         if (this.data instanceof Mei)
             return ((Mei)this.data).getFile().getName();
+        else if (this.data instanceof SvgCollection) {
+            SvgCollection svgs = (SvgCollection) this.data;
+            return (svgs.isEmpty()) ? "empty SVG collection" : svgs.getSvgs().get(0).getFile().getName();
+        }
         else if (this.data instanceof Msm)
             return ((Msm)this.data).getFile().getName();
         else if (this.data instanceof Midi)
@@ -259,6 +266,8 @@ public class DataObject extends Group {
         String name = "";
         if (this.data instanceof Mei)
             name = ((Mei)this.data).getTitle();
+        else if (this.data instanceof SvgCollection)
+            name = ((SvgCollection)this.data).getTitle();
         else if (this.data instanceof Msm)
             name = ((Msm)this.data).getTitle();
         return (name.isEmpty()) ? this.getFileName() : name;    // if the name string is (still) empty, return the filename
@@ -434,6 +443,20 @@ public class DataObject extends Group {
                 menu.getChildren().add(item);
             }
         }
+        else if (this.data instanceof SvgCollection) {
+            String[] leftItems = {"Show", "Validate", "Save", "Save As", "Close"};
+            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            for (int i = 0; i < leftItems.length; ++i) {
+                Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+            String[] rightItems = {"XSL Transform"};
+            outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
+            for (int i = 0; i < rightItems.length; ++i) {
+                Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+        }
         else if (this.data instanceof Msm) {
             String[] leftItems = {"Show", "Validate", "Remove Rests", "Expand Repetitions", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
@@ -523,7 +546,7 @@ public class DataObject extends Group {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {/*TODO: "to MEI",*/ "XSL Transform"};
+            String[] rightItems = {/*TODO:"to MEI",*/ "XSL Transform"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -838,12 +861,15 @@ public class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.workspace.getApp().getStatuspanel().setMessage("MEI Score Rendering via Verovio ...");
-//                            this.getWorkspace().getApp().getHostServices().showDocument(getClass().getResource("/resources/Verovio/verovio.html").toString());  // display score rendering in system standard browser, this is not finished as the content of the HTML is never filled with score data
                             // do Verovio score rendering
                             Platform.runLater(() -> {
                                 Mei mei = (Mei)this.getData();
                                 String verovio = null;                                                          // this will get the HTML code to be shown in the WebView
                                 verovio = VerovioGenerator.generate(mei.toXML(), this);                         // generate that HTML code
+
+//                                SvgCollection svgs = ((Mei)this.data).exportSvg(Settings.useLatestVerovio, Settings.oneLineScore);  // do the conversion TODO: these two line would be nicer instead of the stuff below that is only displaying SVGs, but it is not functional, yet
+//                                this.addOneChild(mouseEvent, svgs);                                                                 // add the newly generated SvgCollection to the workspace
+
                                 this.getWorkspace().getApp().getWeb().printContent(verovio, false);             // show it in the WebView
                                 if (this.workspace.getApp().getWebAccordion() != null) {
                                     this.workspace.getApp().getWebAccordion().setText("Score: " + this.label);  // change the title string of the WebView
@@ -854,6 +880,49 @@ public class DataObject extends Group {
                         });
                         this.start(thread);
                     });
+
+                    // TODO: this is an experimental alternative to the code above ... and it is not recommended
+//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+//                        Thread thread = new Thread(() -> {
+//                            RotateTransition ani = this.startComputeAnimation();
+//                            this.workspace.getApp().getStatuspanel().setMessage("MEI to SVG Score Rendering via Verovio ...");
+//
+//                            // do Verovio score rendering
+//                            Platform.runLater(() -> {
+//                                Mei mei = (Mei) this.getData();
+//                                String verovio = null;                                                          // this will get the HTML code to be shown in the WebView
+//                                verovio = VerovioGenerator.generate(mei.toXML(), this);                         // generate that HTML code
+//
+//                                WebEngine webEngine = new WebEngine();
+//                                webEngine.setJavaScriptEnabled(true);
+//                                webEngine.getLoadWorker().stateProperty().addListener((ov, t, t1) -> {                          // create a listener that retreives the result of the conversion when the webEngine is done
+//                                    if (t1 == Worker.State.SUCCEEDED) {
+//                                        SvgCollection svgs = new SvgCollection();                                               // this will get the resulting SVG collection
+//                                        svgs.setTitle("SVG Score: " + mei.getTitle());                                          // set collection title
+//
+//                                        String filename = Helper.getFilenameWithoutExtension(mei.getFile().getPath());          // get the filename without extension
+//                                        int pageCount = (int) webEngine.executeScript("svgs.length");                           // request the number of pages
+//
+//                                        for (int i = 0; i < pageCount; ++i) {                                                   // for each page
+//                                            try {
+//                                                Svg svg = new Svg((String) webEngine.executeScript("getSvgPage(" + i + ")"));   // get its content, i.e. its SVG code
+//                                                svg.setFile(filename + "-" + String.format("%04d", i) + ".svg");                // create filename incl. page numbering
+//                                                svgs.add(svg);                                                                  // add it to the collection
+//                                            } catch (IOException | ParsingException e) {
+//                                                e.printStackTrace();
+//                                            }
+//                                        }
+//
+//                                        this.addOneChild(mouseEvent, svgs);                                                     // add the newly generated SvgCollection to the workspace
+//                                        this.stopComputeAnimation(ani);
+//                                    }
+//                                });
+//
+//                                webEngine.loadContent(verovio, "text/html");
+//                            });
+//                        });
+//                        this.start(thread);
+//                    });
                     break;
                 case "XSL Transform":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
@@ -881,6 +950,117 @@ public class DataObject extends Group {
                                     this.addOneChild(mouseEvent, txt);
                                     this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI: done.");
                                 }
+                            }
+                            else {
+                                this.workspace.getApp().getStatuspanel().setMessage("No XSL Transform activated.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if (this.data instanceof SvgCollection) {    // txt file-specific commands
+            switch (command) {
+                case "Show":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            Platform.runLater(() -> {
+                                if (this.workspace.getApp().getWeb() != null) {
+                                    String html = VerovioGenerator.generate((SvgCollection)this.data, Settings.oneLineScore, this);
+                                    this.getWorkspace().getApp().getWeb().printContent(html, false);             // webEngine, do your job
+
+                                    if (this.workspace.getApp().getWebAccordion() != null) {
+                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    }
+                                }
+                            });
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Validate":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.validate();
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Save":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            SvgCollection svgs = (SvgCollection)this.data;
+                            if (!svgs.isEmpty()) {
+                                this.workspace.getApp().getStatuspanel().setMessage("Saving SVG data " + ((svgs.writeSvgs()) ? ("to " + svgs.get(0).getFile().getAbsolutePath() + " ...") : "failed."));
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Save As":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        SvgCollection svgs = (SvgCollection) this.data;
+                        FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
+                        File initialDir = new File(svgs.get(0).getFile().getParent());  // get the directory of the object's source file
+                        if (!initialDir.exists())                                       // if that does not exist
+                            initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
+                        chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
+                        chooser.setInitialFileName(svgs.get(0).getFile().getName());    // set the initial filename
+                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("SVG files (*.svg)", "*.svg"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
+                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        if (file != null) {                                             // if it returns a file to save the data, do the save operation
+                            Thread thread = new Thread(() -> {
+                                RotateTransition ani = this.startComputeAnimation();
+                                this.workspace.getApp().getStatuspanel().setMessage("Saving SVG data " + ((svgs.writeSvgs(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + " ...") : "failed."));
+                                this.stopComputeAnimation(ani);
+                            });
+                            this.start(thread);
+                        }
+                    });
+                    break;
+//                case "Close":
+//                    break;
+                case "XSL Transform":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to SVG ...");
+                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            String xslFilename = "";
+                            Xslt30Transformer xslt = null;
+                            if (activeXslt != null) {
+                                xslFilename = activeXslt.getFile().getName();
+                                xslt = activeXslt.getTransform();
+                            }
+                            else {
+                                if ((Settings.xslFile != null) && (Settings.xslTransform != null)) {
+                                    xslFilename = Settings.getXslFile().getName();
+                                    xslt = Settings.getXslTransform();
+                                }
+                            }
+                            if (xslt != null) {
+                                SvgCollection svgs = (SvgCollection)this.data;
+                                ArrayList<TxtData> txts = new ArrayList<>();
+                                for (int i=0; i < svgs.size(); ++i) {
+                                    Svg svg = svgs.get(i);
+                                    String string = svg.xslTransformToString(xslt);
+                                    if (string != null) {
+                                        txts.add(new TxtData(string, new File(Helper.getFilenameWithoutExtension(svg.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt")));    // do the xsl transform
+                                        this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to SVG: done.");
+                                    }
+                                }
+                                this.addSeveralChildren(mouseEvent, txts);
                             }
                             else {
                                 this.workspace.getApp().getStatuspanel().setMessage("No XSL Transform activated.");
@@ -1852,6 +2032,18 @@ public class DataObject extends Group {
                 Mei mei = (Mei) this.data;
                 report = mei.validate(schemaURL);
                 isValid = mei.isValid();
+            }
+            else if (this.data instanceof SvgCollection) {
+                String rep = "";
+                boolean valid = true;
+                SvgCollection svgs = (SvgCollection) this.data;
+                for (int i=0; i < svgs.size(); ++i) {
+                    Svg svg = svgs.get(i);
+                    rep = rep.concat("\n\n---" + "Validation Report for " + svg.getFile().getName() + "------------------------\n\n" + svg.validate(schemaURL));
+                    valid = valid && svg.isValid();
+                }
+                report = rep;
+                isValid = valid;
             }
             else if (this.data instanceof Msm) {
                 Msm msm = (Msm) this.data;

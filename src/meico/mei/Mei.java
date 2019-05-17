@@ -11,13 +11,11 @@ import java.util.*;
 
 import meico.msm.Goto;
 import meico.msm.MsmBase;
+import meico.svg.SvgCollection;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class Mei extends meico.xml.XmlBase {
@@ -174,6 +172,26 @@ public class Mei extends meico.xml.XmlBase {
             e = this.getRootElement().getFirstChildElement("music", this.getRootElement().getNamespaceURI());
 
         return e;
+    }
+
+    /**
+     * convert MEI to SVG
+     * @return
+     */
+    public SvgCollection exportSvg() {
+        return this.exportSvg(true, false);
+    }
+
+    /**
+     * convert MEI to SVG
+     * TODO: so far, this is just a placeholder, cannot evaluate Verovio in the Nashorn engine, same problem as in MusicXml.exportMei()
+     * @param useLatestVerovio
+     * @param oneLineScore
+     * @return
+     */
+    public SvgCollection exportSvg(boolean useLatestVerovio, boolean oneLineScore) {
+        throw new UnsupportedOperationException("Operation Mei.exportSvg() is not implemented yet.");
+//        return null;
     }
 
     /** converts the mei data into msm format and returns a list of Msm instances, one per movement/mdiv; the thime resolution (pulses per quarter note) is 720 by default or more if required (for very short note durations)

@@ -92,6 +92,7 @@ public class Settings {
     // Score rendering settings
     protected static boolean oneLineScore = false;                      // if true, the score rendering in the WebView will output all music in one line
     protected static boolean useLatestVerovio = true;                   // if set true, meico will try to use the latest online available version of verovio-toolkit.js
+    protected static String scoreFont = "Leipzig";                      // the font used for score rendering
 
     /**
      * this opens a dialog window to edit the preferences settings in meico
@@ -502,6 +503,9 @@ public class Settings {
                 case "useLatestVerovio":
                     Settings.useLatestVerovio = line.equals("1");
                     break;
+                case "scoreFont":
+                    Settings.scoreFont = line;
+                    break;
                 case "soundbank":
                     Settings.setSoundbank((line.equals("default")) ? null : new File(line));
                     if ((Settings.soundbank != null) && !Settings.soundbank.exists())
@@ -541,6 +545,7 @@ public class Settings {
                 + "\n\n# prettyJson\n" + (Settings.savePitchesWithPrettyPrint ? "1" : "0")
                 + "\n\n# oneLineScore\n" + (Settings.oneLineScore ? "1" : "0")
                 + "\n\n# useLatestVerovio\n" + (Settings.useLatestVerovio ? "1" : "0")
+                + "\n\n# scoreFont\n" + Settings.scoreFont
                 + "\n\n# soundbank\n" + ((Settings.soundbank == null) ? "default" : Settings.soundbank.getAbsolutePath())
                 + "\n\n# xslt\n" + ((Settings.xslFile == null) ? "none" : Settings.xslFile.getAbsolutePath())
                 + "\n\n# schema\n" + ((Settings.schema == null) ? "none" : Settings.schema.getAbsolutePath())

@@ -52,7 +52,7 @@ public class MeicoApp extends Application {
 
         // in window mode all the command line output and error messages are redirected to a log file, if a filename is given in Settings
 //        if ((this.getParameters().getUnnamed().size() >= 2) && !(this.getParameters().getUnnamed().get(1).isEmpty())) { // this can be used to deliver the log file name as third parameter in MeicoApp.launch()
-        if (Settings.makeLogfile && !Settings.logfile.isEmpty()) {                                                       // is there a nonempty string?
+        if (Settings.makeLogfile && !Settings.logfile.isEmpty()) {                                                      // is there a nonempty string?
             try {
 //                FileOutputStream log = new FileOutputStream(this.getParameters().getUnnamed().get(1));                  // use the string as filename
                 FileOutputStream log = new FileOutputStream(Settings.logfile);                                          // use the string as filename

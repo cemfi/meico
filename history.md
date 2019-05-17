@@ -1,28 +1,38 @@
 ### Version History
 
 
-### v0.6.6
+#### v0.6.7
+- Reverted changes in `verovio.html` to v0.6.5 as this was more stable. Some experimental suff has been added that does not affect its performance.
+- A new package `meico.svg` with classes to hold SVG data has been added.
+    - It is also integrated in the graphical user interface. 
+    - However, there is no generic SVG export from MEI, yet, even with Verovio.
+- JavaFX dependencies have been updated to version 12.0.1.
+- Internal Verovio update to v2.1.0-dev-b010e32.
+- Added configuration option `scoreFont` (default value is `Leipzig`) to set Verovio's rendering font. To set another font, file `meico.cfg` must be edited. It is no yet built into the preferences page of the GUI.
+
+
+#### v0.6.6
 - Minor revisions in `verovio.html`.
 - Updated internal Verovio to v2.1.0-dev-865f210.
 - Added `measure` elements to the `addIds` functionality of class `meico.mei.Mei`.
 
 
-### v0.6.5
+#### v0.6.5
 - `.xml` import and type recognition now supported: Added method `meico.app.gui.DataObject.readXmlFileToCorrectType()`. It is called when a `.xml` file is loaded. So far, meico rejected to load such files as it was unclear which kind of data it holds. The new method loads it as an `XmlBase` object and reads its root name to find out whether it is an MEI, MSM, MusicXML, or XSLT. An instance of the corresponding type is then created.
 - Added floating point support to time signatures in methods `meico.mei.Helper.getOneMeasureLength()` and in class `meico.mei.Mei` methods `processMeasure()`, `makeTimeSignature()`, `processBeatRpt()`, `processMRpt2()`, and `makeMeasureRest()`.
 
 
-### v0.6.4
+#### v0.6.4
 - Bugfix in `meico.mei.Mei.processAccid()`.
 - Added error catching in methods `meico.mei.Helper.computePitch()` and `meico.mei Helper.computeDuration()`.
 
 
-### v0.6.3
+#### v0.6.3
 - Bugfix in commandline mode `meico.app.Main`. It forgot to make pitch and chroma export.
 - Enhancement in class `meico.mei.Mei` methods `processStaffDef()`, `processStaff()`, `processLayer()` to support nested structures (`staffDef` within `staff` etc.).
 - Updated internal Verovio to v2.1.0-dev-533442f.
 
-### v0.6.2
+#### v0.6.2
 - Updated internal Verovio to v2.0.0-dev-61da81a.
 - Added package and class `meico.xml.XmlBase` as a base class for all XML-based classes in meico.
     - Refactored class `meico.msm.MsmBase` accordingly.

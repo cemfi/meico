@@ -95,27 +95,36 @@
         <script type="text/javascript">
             var vrvToolkit = new verovio.toolkit();                     // create the vrvToolkit
             var data = "MeiCode";                                       // meico will replace this by MEI code
+            var options;
             var page = 1;                                               // the page indicator
             var pageCount = 1;                                          // the page count
             var svgElement;
             var width;
             var height;
-            var svg = [];                                               // this array will contain all score pages
-            render();
+            var svgs = [];
+
+            if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                pageCount = svgs.length;
+                printSvgs();
+            }
+            else {
+                render();
+            }
 
             /**
              * the initial rendering when the html page is opened
              */
             function render() {
                 if (oneLineScore) {                                                                                                 // print all music in one line
-                    svg.push(vrvToolkit.renderData(data, {format: "mei", type: "svg", noLayout: 1, ignoreLayout: 1, scale: 40}));   // this generates an endless system
+                    options = {format: "mei", type: "svg", noLayout: 1, ignoreLayout: 1, scale: 40, font: "Leipzig", noFooter: true};
+                    var svg = vrvToolkit.renderData(data, options);   // this generates an endless system
                     var zoomOutButton = document.getElementById("zoomOut").outerHTML;
                     var zoomInButton = document.getElementById("zoomIn").outerHTML;
                     var verovioVersion = document.getElementById("verovio_version").outerHTML;
                     document.getElementById("page_navigation").parentElement.innerHTML = "<div style='position: fixed; vertical-align: top; background-color: transparent'>" + zoomOutButton + zoomInButton + "</div><br><br>" + svg + "<div style='text-align: left'>" + verovioVersion + "</div>";   // replace the page_navigation by this score, keep the zoom buttons at the top and the Verovio version at the bottom
                 }
                 else {                                                                                                              // page-wise rendering
-                    var options = {
+                    options = {
                         allPages: 0,
                         format: "mei",
                         type: "svg",
@@ -125,17 +134,52 @@
                         landscape: 0,
                         noLayout: 0,
                         ignoreLayout: 0,
-                        scale: 40
+                        scale: 40,
+                        font: "Leipzig",
+                        noFooter: true
                     };
                     vrvToolkit.loadData(data);                                                                                      // load the music
                     vrvToolkit.setOptions(options);                                                                                 // set the Verovio options
                     pageCount = vrvToolkit.getPageCount();                                                                          // get the page count
+                    var svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    updateNavigation();                                                                                             // update page navigation bar
+                }
+                svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
+                width = svgElement.getAttribute("width").slice(0, -2);                                                              // get its width
+                height = svgElement.getAttribute("height").slice(0, -2);                                                            // get its height
+                layoutSvg();
+                document.getElementById("verovio_version").innerText = "Rendered with Verovio JavaScript Toolkit v" + vrvToolkit.getVersion();
+            }
 
-                    // render all pages at once and add them to the svg array
-                    for (var p=1; p <= pageCount; ++p) {
-                        svg.push(vrvToolkit.renderPage(p));
+            /**
+             * this is called from the Java side (in DataObject.java) to request one SVG page, i.e. one element of the svgs array
+             */
+            function getSvgPage(index) {
+                if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                    if ((index >= 0) && (index < svgs.length)) {
+                        return svgs[index];
                     }
+                    return "";
+                }
+                if (oneLineScore) {
+                    vrvToolkit.renderData(data, options);
+                }
+                return vrvToolkit.renderPage(index);
+            }
 
+            /**
+             * display an SVG in the HTML
+             */
+            function printSvgs() {
+                if (oneLineScore) {                                                                                                 // print all music in one line
+                    var zoomOutButton = document.getElementById("zoomOut").outerHTML;
+                    var zoomInButton = document.getElementById("zoomIn").outerHTML;
+                    var verovioVersion = document.getElementById("verovio_version").outerHTML;
+                    document.getElementById("page_navigation").parentElement.innerHTML = "<div style='position: fixed; vertical-align: top; background-color: transparent'>" + zoomOutButton + zoomInButton + "</div><br><br>" + svgs[0] + "<div style='text-align: left'>" + verovioVersion + "</div>";   // replace the page_navigation by this score, keep the zoom buttons at the top and the Verovio version at the bottom
+                }
+                else {                                                                                                              // page-wise rendering
+                    pageCount = svgs.length;                                                                                         // get the page count
                     document.getElementById("svg_output").innerHTML = svg[page-1];                                                  // print it
                     updateNavigation();                                                                                             // update page navigation bar
                 }
@@ -174,8 +218,17 @@
             function nextPage() {
                 if (page < pageCount) {
                     page++;
-                    document.getElementById("svg_output").innerHTML = svg[page-1];                                                      // print it
-                    svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
+
+                    var svg;
+                    if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                        svg = svgs[page];
+                    }
+                    else {
+                        svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                    }
+
+                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    svgElement = document.getElementsByTagName("svg")[0];                                                           // get the svg element in the html tree
                     layoutSvg();
                     updateNavigation();
                 }
@@ -187,8 +240,17 @@
             function previousPage() {
                 if (page > 1) {
                     page--;
-                    document.getElementById("svg_output").innerHTML = svg[page-1];                                                      // print it
-                    svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
+
+                    var svg;
+                    if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                        svg = svgs[page];
+                    }
+                    else {
+                        svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                    }
+
+                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    svgElement = document.getElementsByTagName("svg")[0];                                                           // get the svg element in the html tree
                     layoutSvg();
                     updateNavigation();
                 }
