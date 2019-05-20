@@ -1,5 +1,8 @@
 ### Version History
 
+#### v0.6.8
+- Reverted the JavaFX update from v0.6.7 to keep compatibility to OpenJDK 9.
+
 
 #### v0.6.7
 - Reverted changes in `verovio.html` to v0.6.5 as this was more stable. Some experimental suff has been added that does not affect its performance.

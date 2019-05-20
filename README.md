@@ -85,7 +85,7 @@ Meico makes use of the following third party libraries:
 - [Verovio JavaScript Toolkit](https://www.verovio.org/index.xhtml) v2.1.0-dev-b010e32 by Etienne Darbellay, Jean-François Marti, Laurent Pugin, Rodolfo Zitellini and others, GNU Lesser General Public License (LGPL) 3.0.
 - [Midi2WavRenderer](https://github.com/cemfi/meico/tree/master/src/meico/midi/Midi2AudioRenderer.java) by Karl Helgason, copyright notice in the class header.
 - [Gervill Software Sound Synthesizer](https://sourceforge.net/projects/rasmusdsp/files/gervill/Gervill%201.0/) v1.0.1 by Karl Helgason, GPL 2.0.
-- [JavaFX](https://gluonhq.com/products/javafx/) v12.0.1, GPL 2.0.
+- [JavaFX](https://gluonhq.com/products/javafx/) v11, GPL 2.0.
 
 We publish meico under GNU GPL version 3.0 Meico development is part of the ZenMEM project which is funded by the German Federal Ministry of Education and Research (funding code 01UG1414A–C).
 If you integrate meico with your project make sure that you do not conflict with any of the above licenses.
