@@ -49,6 +49,7 @@ public class Main {
                 System.out.println("[-v argument] or [--validate argument]  validate loaded MEI file against the griven RNG schema definition");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
+                System.out.println("[-n] or [--ignore-repetitions]          meico automatically expands repetition marks, use this option to prevent this step");
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
 //                System.out.println("[-g] or [--svg]                         convert to SVGs");
@@ -73,6 +74,7 @@ public class Main {
         URL schema = null;
         boolean addIds = false;
         boolean resolveCopyOfs = false;
+        boolean ignoreRepetitions = false;
         boolean ignoreExpansions = false;
         File xslt = null;
         String xsltOutputExtension = "";
@@ -102,6 +104,7 @@ public class Main {
             }
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
+            if ((args[i].equals("-n")) || (args[i].equals("--ignore-repetitions"))) { ignoreRepetitions = true; continue; }
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
 //            if ((args[i].equals("-g")) || (args[i].equals("--svg"))) { svg = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
@@ -206,8 +209,10 @@ public class Main {
         }
 
         // instead of using sequencingMaps (which encode repetitions, dacapi etc.) in the msm objects we resolve them and, hence, expand all scores and maps according to the sequencing information
-        for (int i=0; i < msms.size(); ++i) {           // we do this in all msm objects just exported from mei
-            msms.get(i).resolveSequencingMaps();        // this is the function call to do it (be aware: the sequencingMaps are deleted because they no longer apply)
+        if (!ignoreRepetitions) {
+            for (int i = 0; i < msms.size(); ++i) {             // we do this in all msm objects just exported from mei
+                msms.get(i).resolveSequencingMaps();            // this is the function call to do it (be aware: the sequencingMaps are deleted because they no longer apply)
+            }
         }
 
         if (debug) {

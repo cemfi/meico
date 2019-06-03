@@ -1,5 +1,12 @@
 ### Version History
 
+
+#### v0.6.9
+- Added a new commandline option to meico `-n`/`--ignore-repetitions`. This should be used to prevent the expansion of repetition marks. It should solve the situation when expansions and repetitions in MEI are used redundantly and meico (commandline) would do it twice.
+- Fixed bug on the settings window of the gui app (class `meico.app.gui.Settings`). JavaFx's `Spinner` class does not commit a value when changed via text input. Thus, whenever a value (e.g. the tempo) was changed this way, the user had to press ENTER to commit. To fix this an event listener has been added that forces the commit when the value changes even without the need to press ENTER.
+- The window for preferences settings is made resizable and scrollable. This will hopefully workaround the limited window size issue that some users experience on their machines.
+
+
 #### v0.6.8
 - Reverted the JavaFX update from v0.6.7 to keep compatibility to OpenJDK 9.
 

@@ -41,6 +41,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 | `-v FILE`, `--validate FILE`      | validate loaded MEI file against given schema (e.g. `C:\mei-CMN.rng`)                                                               |
 | `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
+| `-n`, `--ignore-repetitions`      | meico automatically expands repetition marks, use this option to prevent this step                                                  |
 | `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
 | `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
 | `-m`, `--msm`                     | convert to MSM                                                                                                                      |

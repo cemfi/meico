@@ -132,6 +132,11 @@ public class Settings {
         Spinner<Integer> windowWidth = new Spinner<>();
         windowWidth.setValueFactory(widthValueFactory);
         windowWidth.setEditable(true);
+        windowWidth.focusedProperty().addListener((observable, oldValue, newValue) -> {   //method to force commit on text input on JavaFx spinners, see https://stackoverflow.com/questions/32340476/manually-typing-in-text-in-javafx-spinner-is-not-updating-the-value-unless-user
+            if (!newValue) {
+                windowWidth.increment(0); // won't change value, but will commit editor
+            }
+        });
         windowWidth.getEditor().setAlignment(Pos.CENTER_RIGHT);
         windowWidth.setPrefWidth(Settings.mWidth * 7);
 
@@ -145,6 +150,11 @@ public class Settings {
         Spinner<Integer> windowHeight = new Spinner<>();
         windowHeight.setValueFactory(heightValueFactory);
         windowHeight.setEditable(true);
+        windowHeight.focusedProperty().addListener((observable, oldValue, newValue) -> {   //method to force commit on text input on JavaFx spinners, see https://stackoverflow.com/questions/32340476/manually-typing-in-text-in-javafx-spinner-is-not-updating-the-value-unless-user
+            if (!newValue) {
+                windowHeight.increment(0); // won't change value, but will commit editor
+            }
+        });
         windowHeight.getEditor().setAlignment(Pos.CENTER_RIGHT);
         windowHeight.setPrefWidth(Settings.mWidth * 7);
 
@@ -197,6 +207,11 @@ public class Settings {
         Spinner<Integer> ppq = new Spinner<>();
         ppq.setValueFactory(timingValueFactory);
         ppq.setEditable(true);
+        ppq.focusedProperty().addListener((observable, oldValue, newValue) -> {   //method to force commit on text input on JavaFx spinners, see https://stackoverflow.com/questions/32340476/manually-typing-in-text-in-javafx-spinner-is-not-updating-the-value-unless-user
+            if (!newValue) {
+                ppq.increment(0); // won't change value, but will commit editor
+            }
+        });
         ppq.getEditor().setAlignment(Pos.CENTER_RIGHT);
         ppq.setPrefWidth(Settings.mWidth * 7);
 
@@ -224,6 +239,11 @@ public class Settings {
         Spinner<Double> tempo = new Spinner<>();
         tempo.setValueFactory(tempoValueFactory);
         tempo.setEditable(true);
+        tempo.focusedProperty().addListener((observable, oldValue, newValue) -> {   //method to force commit on text input on JavaFx spinners, see https://stackoverflow.com/questions/32340476/manually-typing-in-text-in-javafx-spinner-is-not-updating-the-value-unless-user
+            if (!newValue) {
+                tempo.increment(0); // won't change value, but will commit editor
+            }
+        });
         tempo.getEditor().setAlignment(Pos.CENTER_RIGHT);
         tempo.setPrefWidth(Settings.mWidth * 7);
 
@@ -419,20 +439,25 @@ public class Settings {
         // add all elemnts to the container and show the window
         VBox container = new VBox();
         container.setStyle(Settings.BACKGROUND_GRAY);
+        container.setAlignment(Pos.CENTER_LEFT);
         container.setPadding(new Insets(spacing, spacing, spacing, spacing));
         container.setSpacing(spacing * 1.25);
         container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, soundbankPane, xsltPane, schemaPane, jsonPretty, oneLineScore, latestVerovio, separator3, closePane);
 
-        Scene scene = new Scene(container/*, 300, 300*/);
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setStyle(Settings.BACKGROUND_GRAY);
+        scrollPane.setContent(container);
+        Scene scene = new Scene(scrollPane/*, 300, 300*/);
 
-        stage.setMinHeight(790);
-        stage.setMaxHeight(790);
-        stage.setMinWidth(705);
+//        stage.setMinHeight(790);
+        stage.setMaxHeight(795);
+//        stage.setMinWidth(705);
         stage.setMaxWidth(705);
         stage.setTitle("Meico Preferences");
         stage.getIcons().add(new Image(app.getClass().getResource("/resources/graphics/meico_icon_flat.png").toString()));    // add an icon to the window header
         stage.setScene(scene);
-        stage.setResizable(false);
+        stage.sizeToScene();
+        stage.setResizable(true);
         stage.show();
     }
 
