@@ -430,7 +430,7 @@ public class DataObject extends Group {
         Group menu = new Group();
 
         if (this.data instanceof Mei) {
-            String[] leftItems = {"Show", "Validate", "Add IDs", "Resolve Copyofs", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Validate", "Add IDs", "Resolve copyof/sameas", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -740,12 +740,12 @@ public class DataObject extends Group {
                         this.start(thread);
                     });
                     break;
-                case "Resolve Copyofs":
+                case "Resolve copyof/sameas":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            int notResolved = ((Mei)this.data).resolveCopyofs().size();
-                            this.workspace.getApp().getStatuspanel().setMessage("Resolving copyofs: " + ((notResolved == 0) ? "done." :  (notResolved + " could not be resolved.")));
+                            int notResolved = ((Mei)this.data).resolveCopyofsAndSameas().size();
+                            this.workspace.getApp().getStatuspanel().setMessage("Resolving copyof and sameas: " + ((notResolved == 0) ? "done." :  (notResolved + " could not be resolved.")));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);

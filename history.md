@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.6.10
+- Added support for MEI attribute `sameas` to class `meico.mei.Mei` in method `resolveCopyOfs()`. It is interpreted in the same way as attribute `copyof`, i.e. all attributes and children of the referred element are copied over to the referring element.
+    - Added method `meico.mei.Mei.resoveCopyofsAndSameas()` which ultimately just invokes `resolveCopyOfs()` but has a more appropriate naming.
+    - Classes `meico.app.Main` and `meico.app.gui.DataObject` as well as files `README.md` and `documentation.md` have been adapted accordingly.
+
+
 #### v0.6.9
 - Added a new commandline option to meico `-n`/`--ignore-repetitions`. This should be used to prevent the expansion of repetition marks. It should solve the situation when expansions and repetitions in MEI are used redundantly and meico (commandline) would do it twice.
 - Fixed bug on the settings window of the gui app (class `meico.app.gui.Settings`). JavaFx's `Spinner` class does not commit a value when changed via text input. Thus, whenever a value (e.g. the tempo) was changed this way, the user had to press ENTER to commit. To fix this an event listener has been added that forces the commit when the value changes even without the need to press ENTER.

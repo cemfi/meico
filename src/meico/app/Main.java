@@ -48,7 +48,7 @@ public class Main {
                 System.out.println("[-?] or [--help]                        show this help text");
                 System.out.println("[-v argument] or [--validate argument]  validate loaded MEI file against the griven RNG schema definition");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
-                System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
+                System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' and 'sameas' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
                 System.out.println("[-n] or [--ignore-repetitions]          meico automatically expands repetition marks, use this option to prevent this step");
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
@@ -181,8 +181,8 @@ public class Main {
 
         // optional mei processing functions
         if (resolveCopyOfs) {
-            System.out.println("Processing MEI: resolving copyofs.");
-            mei.resolveCopyofs();                       // this call is part of the exportMsm() method but can also be called alone to expand the mei source and write it to the file system
+            System.out.println("Processing MEI: resolving copyof and sameas attributes.");
+            mei.resolveCopyofsAndSameas();              // this call is part of the exportMsm() method but can also be called alone to expand the mei source and write it to the file system
         }
         if (addIds) {
             System.out.println("Processing MEI: adding xml:ids.");

@@ -2140,9 +2140,12 @@ public class Mei extends meico.xml.XmlBase {
         return (int)result;                                                     // else return the int cast of the result
     }
 
-    /** the slacker attribute copyof may occur in the mei document and needs to be resolved before starting the conversion;
+    /**
+     * the slacker attribute copyof may occur in the mei document and needs to be resolved before starting the conversion;
      * this method replaces elements with the copyof attribute by copies of the referred elements;
      * it may also be used to expand an mei document and free it from copyofs;
+     *
+     * this method does also include the processing of attribute sameas, which is similar to copyof
      *
      * @return null (no document loaded), an ArrayList with those ids that could not be resolved, or an empty ArrayList if everything went well
      */
@@ -2153,18 +2156,20 @@ public class Mei extends meico.xml.XmlBase {
         ArrayList<String> notResolved = new ArrayList<String>();                                             // store those ids that are not resolved
         HashMap<Element, String> previousPlaceholders = new HashMap<Element, String>();                               // this is a copy of the placeholders hashmap in the while loop; if it does not change from one iteration to the next, there is a placeholder refering to another placeholder refering back to the first; this cannot be resolved and leads to an infinite loop; this hashmap here is to detect this situation
 
-        System.out.print("Resolving copyofs:");
+        System.out.print("Resolving copyofs and sameas's:");
 
         while (true) {                                                                                  // this loop can only be exited if no placeholders are left (it is possible that multiple runs are necessary when placeholders are within placeholders)
             HashMap<String, Element> elements = new HashMap<String, Element>();                                       // this hashmap will be filled with elements and their ids
             HashMap<Element, String> placeholders = new HashMap<Element, String>();                                   // this hashmap will be filled with placeholder elements that have a copyof attribute and the id in the copyof
 
-            Nodes all = e.query("descendant::*[attribute::copyof or attribute::xml:id]");               // get all elements with a copyof or xml:id attribute
+            Nodes all = e.query("descendant::*[attribute::copyof or attribute::sameas or attribute::xml:id]");  // get all elements with a copyof, sameas or xml:id attribute
             for (int i = 0; i < all.size(); ++i) {                                                      // for each of them
                 Element element = (Element) all.get(i);                                                 // make an Element out of it
 
                 Attribute a = element.getAttribute("copyof");                                           // get the copyof attribute, if there is one
-                if (a != null) {                                                                        // if there is a copyof attribute
+                if (a == null)                                                                          // no copyof attribute?
+                    a = element.getAttribute("sameas");                                                 // then maybe a sameas
+                if (a != null) {                                                                        // if there is a copyof or sameas attribute
                     String copyof = a.getValue();                                                       // get its value
                     if (copyof.charAt(0) == '#') copyof = copyof.substring(1);                          // local references within the document usually start with #; this must be excluded when searching for the id
                     placeholders.put(element, copyof);                                                  // put that entry on the placeholder hashmap
@@ -2186,12 +2191,12 @@ public class Mei extends meico.xml.XmlBase {
                     notResolved.add(placeholder.getKey().toXML());                                      // add all entries to the return list
                     placeholder.getKey().getParent().removeChild(placeholder.getKey());                 // delete all placeholders from the xml, we cannot resolve them anyway
                 }
-                System.err.print(" circular copyof referencing detected, cannot be resolved,");
+                System.err.print(" circular copyof or sameas referencing detected, cannot be resolved,");
                 break;                                                                                  // stop the while loop
             }
             previousPlaceholders = placeholders;
 
-            System.out.print(" " + placeholders.size() + " copyofs ...");
+            System.out.print(" " + placeholders.size() + " copyofs and sameas's ...");
 
             // replace alle placeholders in the xml tree by copies of the source
             for (Map.Entry<Element, String> placeholder : placeholders.entrySet()) {                    // for each placeholder
@@ -2237,6 +2242,14 @@ public class Mei extends meico.xml.XmlBase {
             System.out.println("The following placeholders could not be resolved:\n" + notResolved.toString());
 
         return notResolved;
+    }
+
+    /**
+     * this method resolves all occurrences of attributes copyof and sameas
+     * @return
+     */
+    public synchronized ArrayList<String> resolveCopyofsAndSameas() {
+        return this.resolveCopyofs();
     }
 
     /**

@@ -56,8 +56,8 @@ Similar to `app`, the `choice` element defines one or more alternative readings.
 #### chord
 If the `chord` is child of another `chord` meico will look for its duration data to be used if this inner chord does not define its own duration. If no duration is given from the parent of this `chord` meico will search the child elements for the longest duration and assign it to the `chord`. Chords with a `grace` attribute are ignored at the moment. These will be subject to the further development when ornamentations are addressed.
 
-#### copyof (attribute)
-Many MEI elements do also offer an attribute called `copyof`. It can be used for a "slacker" encoding: Whenever an element is similar to another one it sufficed to write it out only once and then refer to that one later on. Meico resolves these "copyof elements" during preprocessing. Of course, this requires the reference id to be actually existent. MEI does even allow recursive copyof references, i.e. the cofyof refers to another copyof element. Meico can resolve these, too, and it detects circular cases that cannot be resolved because there is no initial element to copy. Resolving a copyof element means that meico will replace it with a deep copy (including all subtrees) of the referred element. During the resolution of copyofs `xml:id` attributes will get duplicated; meico will concatenate it with a newly generated UUID and ensure that each ID ocurs only once.
+#### @copyof
+Many MEI elements do also offer an attribute called `copyof`. It can be used for a "slacker" encoding: Whenever an element is similar to another one it sufficed to write it out only once and then refer to that one later on. Meico resolves these "copyof elements" during preprocessing. Of course, this requires the reference id to be actually existent. MEI does even allow consecutive and recursive copyof references, i.e. the copyof refers to another copyof element or an element that containes further copyof elements. Meico can resolve these, too, and it detects circular cases that cannot be resolved because there is no initial element to copy. Resolving a copyof element means that meico will replace it with a deep copy (including all subtrees) of the referred element. During the resolution of copyofs `xml:id` attributes will get duplicated; meico will concatenate it with a newly generated UUID and ensure that each ID ocurs only once.
 
 #### corr
 A correction, can occur as "standalone" or in the `choice` environment, usually paired with the `sic` element. In both cases, meico processes its children.
@@ -191,6 +191,9 @@ During MEI-to-MSM export meico creates `rest` elements also in MSM and keeps the
 
 #### restore
 There is an ambiguity in the MEI definition: `restore` negates `del` elements in both cases, when the `del` is parent of `restore` and when when `del` is child of `restore`. With meico we follow the latter interpretation, i.e. `restore` negates all `del` children (all, not only the first generation of `del` elements!). Hence, meico will process all contents of such affected deletions.
+
+#### @sameas
+The processing of elements with this attribute is similar to the processing of `@copyof`.
 
 #### scoreDef
 For time signature the following attributes are supported: `meter.count`, `meter.unit`, and `meter.sym`. For key signature meico supportsattributes `key.sig` and `key.sig.mixed`. Further supported attributes are `dur.default`, `octave.default` and `trans.semi`. MIDI-related information are deliberately ignored as meico generates and handles these more consistent and comprehensive. If a `scoreDef` ocurs within a `staff` environment, it is interpreted as a `staffDef`.
