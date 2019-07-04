@@ -318,7 +318,7 @@ public class XmlBase {
     /**
      * @return String with the XML code
      */
-    public String toXML() {
+    public synchronized String toXML() {
         if (this.isEmpty())
             return "";
         return this.data.toXML();

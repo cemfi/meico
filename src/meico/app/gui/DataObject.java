@@ -472,13 +472,13 @@ public class DataObject extends Group {
             }
         }
         else if (this.data instanceof Midi) {
-            String[] leftItems = {"Play", "Save", "Save As", "Close"};
+            String[] leftItems = {"Play", "NoteOffs to NoteOns", "NoteOns to NoteOffs", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to Audio"};
+            String[] rightItems = {"to Audio", "to MSM"};
             outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -1248,6 +1248,26 @@ public class DataObject extends Group {
                 case "Play":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> this.workspace.getApp().getPlayer().play((Midi)this.data));
                     break;
+                case "NoteOffs to NoteOns":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.workspace.getApp().getStatuspanel().setMessage("Converting noteOff to noteOn events: " + (((Midi)this.data).noteOffs2NoteOns()) + " events converted.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "NoteOns to NoteOffs":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.workspace.getApp().getStatuspanel().setMessage("Converting noteOn (with velocity 0) to noteOff events: " + (((Midi)this.data).noteOns2NoteOffs()) + " events converted.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
                 case "Save":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
@@ -1290,6 +1310,21 @@ public class DataObject extends Group {
                             if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 this.addOneChild(mouseEvent, audio);
                                 this.workspace.getApp().getStatuspanel().setMessage("Converting MIDI to audio: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "to MSM":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.workspace.getApp().getStatuspanel().setMessage("Converting MIDI to MSM ...");
+                            Msm msm = ((Midi)this.data).exportMsm();        // do the conversion
+                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                this.addOneChild(mouseEvent, msm);
+                                this.workspace.getApp().getStatuspanel().setMessage("Converting MIDI to MSM: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });

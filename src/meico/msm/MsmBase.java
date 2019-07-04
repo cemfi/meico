@@ -97,14 +97,6 @@ public class MsmBase extends meico.xml.XmlBase {
     }
 
     /**
-     * a getter that returns all part elements in the XML tree
-     * @return
-     */
-    public Elements getParts() {
-        return this.getRootElement().getChildElements("part");
-    }
-
-    /**
      * Generate a "raw" part element with its corresponding attributes and empty "header" and "dated" environments.
      * This element is not added to the document! It is up to the application to do this.
      * @param name
@@ -136,7 +128,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @return the part element just generated
      */
     public static Element makePart(String name, int number, int midiChannel, int midiPort) {
-        return makePart(name, String.valueOf(number), midiChannel, midiPort);
+        return MsmBase.makePart(name, String.valueOf(number), midiChannel, midiPort);
     }
 
     /**

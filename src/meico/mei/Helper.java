@@ -520,7 +520,7 @@ public class Helper {
      *
      * @param msms
      */
-    protected static void msmCleanup(List<Msm> msms) {
+    public static void msmCleanup(List<Msm> msms) {
         for (int i=0; i < msms.size(); ++i) {                       // go through all msm objects in the input list
             msmCleanup(msms.get(i));                                // make the cleanup
         }
@@ -530,7 +530,7 @@ public class Helper {
      *
      * @param msm
      */
-    protected static void msmCleanup(Msm msm) {
+    public static void msmCleanup(Msm msm) {
         // delete all miscMaps
         Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie | descendant::*[attribute::layer]/attribute::layer | descendant::*[local-name()='goto' and attribute::n]/attribute::n");
         for (int i=0; i < n.size(); ++i) {
@@ -935,7 +935,107 @@ public class Helper {
         }
     }
 
-    /** compute midi pitch of an mei note or return -1.0 if failed; the return is a double number that captures microtonality, too; 0.5 is a quarter tone
+    /**
+     * convert a midi pitch value to a pitch name string witout accidental, the accidental will be ecoded in a separate string;
+     * this method is used during MIDI to MSM conversion in class meico.midi.Midi2MSMConverter
+     * @param useSharpInsteadOfFlat use sharp or flat for accidental?
+     * @param midipitch the midi pitch value
+     * @param pnameAccid the output pitch name without accidental, the output accidental string (MSM style)
+     */
+    public static void midi2PnameAndAccid(boolean useSharpInsteadOfFlat, double midipitch, String[] pnameAccid) {
+        if (pnameAccid.length < 2) {
+            System.err.println("Error in method meico.mei.Helper.midi2PnameAndAccid: Array length of pnameAccid should be at least 2.");
+            return;
+        }
+
+        int pitchclass = (int)Math.round(midipitch % 12.0);
+        switch (pitchclass) {
+            case 0:
+                pnameAccid[0] = "C";
+                pnameAccid[1] = "0.0";
+                return;
+            case 1:
+                if (useSharpInsteadOfFlat) {
+                    pnameAccid[0] = "C";
+                    pnameAccid[1] = "1.0";
+                }
+                else {
+                    pnameAccid[0] = "D";
+                    pnameAccid[1] = "-1.0";
+                }
+                return;
+            case 2:
+                pnameAccid[0] = "D";
+                pnameAccid[1] = "0.0";
+                return;
+            case 3:
+                if (useSharpInsteadOfFlat) {
+                    pnameAccid[0] = "D";
+                    pnameAccid[1] = "1.0";
+                }
+                else {
+                    pnameAccid[0] = "E";
+                    pnameAccid[1] = "-1.0";
+                }
+                return;
+            case 4:
+                pnameAccid[0] = "E";
+                pnameAccid[1] = "0.0";
+                return;
+            case 5:
+                pnameAccid[0] = "F";
+                pnameAccid[1] = "0.0";
+                return;
+            case 6:
+                if (useSharpInsteadOfFlat) {
+                    pnameAccid[0] = "F";
+                    pnameAccid[1] = "1.0";
+                }
+                else {
+                    pnameAccid[0] = "G";
+                    pnameAccid[1] = "-1.0";
+                }
+                return;
+            case 7:
+                pnameAccid[0] = "G";
+                pnameAccid[1] = "0.0";
+                return;
+            case 8:
+                if (useSharpInsteadOfFlat) {
+                    pnameAccid[0] = "G";
+                    pnameAccid[1] = "1.0";
+                }
+                else {
+                    pnameAccid[0] = "A";
+                    pnameAccid[1] = "-1.0";
+                }
+                return;
+            case 9:
+                pnameAccid[0] = "A";
+                pnameAccid[1] = "0.0";
+                return;
+            case 10:
+                if (useSharpInsteadOfFlat) {
+                    pnameAccid[0] = "A";
+                    pnameAccid[1] = "1.0";
+                }
+                else {
+                    pnameAccid[0] = "B";
+                    pnameAccid[1] = "-1.0";
+                }
+                return;
+            case 11:
+                pnameAccid[0] = "B";
+                pnameAccid[1] = "0.0";
+                return;
+            default:
+                pnameAccid[0] = "";
+                pnameAccid[1] = "";
+        }
+    }
+
+    /**
+     * compute midi pitch of an mei note or return -1.0 if failed; the return is a double number that captures microtonality, too; 0.5 is a quarter tone
      * parameter pitchdata should be an empty ArrayList<String>, it is filled with pitchname, accidentals and octave of the computed midi pitch for further use
      *
      * @param ofThis
@@ -1000,7 +1100,7 @@ public class Helper {
             if (ofThis.getAttribute("accid") != null) {                 // look for non-gestural accid attribute
                 accid = ofThis.getAttributeValue("accid");              // store the accidental string
                 if (!accid.isEmpty()) {
-                    this.accid.add(ofThis);                             // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure
+//                    this.accid.add(ofThis);                             // if not empty, insert it at the front of the accid list for reference when computing the pitch of later notes in this measure; this is done in Mei.processAccid() and Mei.processNote()
                     checkKeySign = false;
                 }
             }
@@ -1010,7 +1110,7 @@ public class Helper {
                     if ((anAccid.getAttribute("pname") != null)                                     // if it has a pname attribute
                             && (anAccid.getAttributeValue("pname").equals(pname))                   // the same pitch class as ofThis
                             && (anAccid.getAttribute("oct") != null)                                // has an oct attribute
-                            && (anAccid.getAttributeValue("oct").equals(Double.toString(oct)))) {  // the same octave transposition as ofThis
+                            && (Double.parseDouble(anAccid.getAttributeValue("oct")) == oct)) {     // the same octave transposition as ofThis
 
                         // read the accid.ges or accid attribute
                         if (anAccid.getAttribute("accid.ges") != null)
@@ -1177,11 +1277,10 @@ public class Helper {
         // fill the pitchdata list
         int p1 = (int)(initialPitch + (12 * oct) + trans);  // pitch without accidentals
         int p2 = p1 % 12;                                   // pitch class without accidentals
-        double outputOct = ((p1 - p2) / 12) - 1;            // octave (the lowest octave in midi is -1 in common western notation)
-        String pitchname = "";                              // determine pitchname (may differ from pname because of transposition), here comes the result
+        double outputOct = ((double)(p1 - p2) / 12) - 1;    // octave (the lowest octave in midi is -1 in common western notation)
         double outputAcc = accidentals;                     // accidentals for output (have to include accidentals that are introduced by transposition)
-        if (trans == 0) pitchname = pname;                  // the trivial case
-        else {                                              // because of transposition, thing become a bit more complicated, as accidentals that are introduced by the transposition have to be added to the regular accidentals
+        String pitchname = pname;                           // determine pitchname (may differ from pname because of transposition), here comes the result
+        if (trans != 0) {                                   // because of transposition, things become a bit more complicated, as accidentals that are introduced by the transposition have to be added to the regular accidentals
             switch (p2) {
                 case 0:
                     pitchname = "c";

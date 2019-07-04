@@ -168,23 +168,26 @@ public class EventMaker {
     public static final short CC_Poly_Mode_OnOff            = 126;
     public static final short CC_Poly_Mode_On               = 127;
 
-    // if the event type is meta event, use these constants to indicate the metaevent type
-    public static final short META_Sequence_Number          = 0x00;
-    public static final short META_Text_Event               = 0x01;
-    public static final short META_Copyright_Notice         = 0x02;
-    public static final short META_Track_Name               = 0x03;
-    public static final short META_Sequence_Name            = 0x03;
-    public static final short META_Instrument_Name          = 0x04;
-    public static final short META_Lyric                    = 0x05;
-    public static final short META_Marker                   = 0x06;
-    public static final short META_Cue_Point                = 0x07;
-    public static final short META_Midi_Channel_Prefix      = 0x20;
-    public static final short META_End_of_Track             = 0x2F;
-    public static final short META_Set_Tempo                = 0x51;
-    public static final short META_SMTPE_Offset             = 0x54;
-    public static final short META_Time_Signature           = 0x58;
-    public static final short META_Key_Signature            = 0x59;
-    public static final short META_Sequence_specific_Meta_event = 0x7F;
+    // if the event type is meta event, use these constants to indicate the metaevent type (http://somascape.org/midi/tech/mfile.html, https://mido.readthedocs.io/en/latest/meta_message_types.html)
+    public static final short META_Sequence_Number          = 0;        //0x00
+    public static final short META_Text_Event               = 1;        //0x01
+    public static final short META_Copyright_Notice         = 2;        //0x02
+    public static final short META_Track_Name               = 3;        //0x03
+    public static final short META_Sequence_Name            = 3;        //0x03
+    public static final short META_Instrument_Name          = 4;        //0x04
+    public static final short META_Lyric                    = 5;        //0x05
+    public static final short META_Marker                   = 6;        //0x06
+    public static final short META_Cue_Point                = 7;        //0x07
+    public static final short META_Program_Name             = 8;        //0x08
+    public static final short META_Device_Name              = 9;        //0x09
+    public static final short META_Midi_Channel_Prefix      = 32;       //0x20
+    public static final short META_Midi_Port                = 33;       //0x21
+    public static final short META_End_of_Track             = 47;       //0x2F
+    public static final short META_Set_Tempo                = 81;       //0x51
+    public static final short META_SMTPE_Offset             = 84;       //0x54
+    public static final short META_Time_Signature           = 88;       //0x58
+    public static final short META_Key_Signature            = 89;       //0x59
+    public static final short META_Sequence_specific_Meta_event = 127;  //0x7F
 
     // use these constants for program change codes
     public static final short PC_Acoustic_Grand_Piano       = 0;
@@ -316,6 +319,10 @@ public class EventMaker {
     public static final short PC_Applause                   = 126;
     public static final short PC_Gunshot                    = 127;
 
+    // further constants (https://spencerpark.github.io/MellowD/build/docs/docco/src/main/java/cas/cs4tb3/mellowd/TimingEnvironment.html)
+    private static final byte TICKS_PER_METER_CLICK             = 24;   // This constant is the number of ticks that need to pass on the MIDI clock for the metronome to click. This clock is independent from the sequencer clock. Redefining the PPQN should not affect this clock. Therefore we will leave it at the standard 24 ticks per click.
+    private static final byte THIRTY_SECOND_NOTES_PER_QUARTER   =  8;   // This constant appears in the time signature midi message. 1⁄4 consists of 8 1⁄32. There should be no reason to change this.
+
     /**
      * a little helper to convert int numbers into 4-byte arrays
      * @param value
@@ -335,6 +342,24 @@ public class EventMaker {
 //            System.out.format("0x%02X ", b);
 
         return byteArray;
+    }
+
+    /**
+     * convert a short to a byte array
+     * @param value
+     * @return
+     */
+    public static byte[] shortToByteArray(short value) {
+        return new byte[] {(byte) value};
+    }
+
+    /**
+     * convert byte to short ... trivial but good to keep it present
+     * @param b
+     * @return
+     */
+    public static short byteToShort(byte b) {
+        return (short) b;
     }
 
     /**
@@ -388,9 +413,7 @@ public class EventMaker {
         InstrumentsDictionary dict;
         try {
             dict = new InstrumentsDictionary();                                 // initialize instruments dictionary
-        } catch (IOException e) {                        // if there were problems initializing the instruments dictionary
-            return createProgramChange(chan, date, PC_Acoustic_Grand_Piano);    // use Acoustic Grand Piano as default instrument
-        } catch (NullPointerException e) {                        // if there were problems initializing the instruments dictionary
+        } catch (IOException | NullPointerException e) {                        // if there were problems initializing the instruments dictionary
             return createProgramChange(chan, date, PC_Acoustic_Grand_Piano);    // use Acoustic Grand Piano as default instrument
         }
 
@@ -439,9 +462,12 @@ public class EventMaker {
         int p = 1;
         for (; Math.pow(2, p) < denominator; ++p)
             ;
+        byte denom = (byte) p;
+//        byte denom = (byte) (Math.log(denominator) / Math.log(2));    // this is an alternative to the above more efficient code
+        // to decode the denom do the following: (int)(Math.pow(2, (int)message.getData()[1]);
 
         try {
-            return new MidiEvent(new MetaMessage(META_Time_Signature, new byte[] {(byte)numerator, (byte)p, 24, 8}, 4), date);
+            return new MidiEvent(new MetaMessage(META_Time_Signature, new byte[] {(byte)numerator, denom, TICKS_PER_METER_CLICK, THIRTY_SECOND_NOTES_PER_QUARTER}, 4), date);
         } catch (InvalidMidiDataException e) {
             e.printStackTrace();
             return null;
@@ -473,6 +499,22 @@ public class EventMaker {
      * @param name
      * @return
      */
+    public static MidiEvent createTrackName(long date, String name) {
+        byte[] text = name.getBytes();
+        try {
+            return new MidiEvent(new MetaMessage(META_Track_Name, text, text.length), date);
+        } catch (InvalidMidiDataException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * create a instrument name event
+     * @param date
+     * @param name
+     * @return
+     */
     public static MidiEvent createInstrumentName(long date, String name) {
         byte[] text = name.getBytes();
         try {
@@ -499,9 +541,30 @@ public class EventMaker {
         }
     }
 
+    /**
+     * this creates a channel prefix event, it indicates that all subsequent meta messages go to this channel
+     * @param date
+     * @param channel
+     * @return
+     */
     public static MidiEvent createChannelPrefix(long date, short channel) {
         try {
-            return new MidiEvent(new MetaMessage(META_Midi_Channel_Prefix, new byte[] {(byte)channel}, 1), date);
+            return new MidiEvent(new MetaMessage(META_Midi_Channel_Prefix, shortToByteArray(channel), 1), date);
+        } catch (InvalidMidiDataException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * this creates a midi port event
+     * @param date
+     * @param port
+     * @return
+     */
+    public static MidiEvent createMidiPortEvent(long date, short port) {
+        try {
+            return new MidiEvent(new MetaMessage(META_Midi_Port, shortToByteArray(port), 1), date);
         } catch (InvalidMidiDataException e) {
             e.printStackTrace();
             return null;

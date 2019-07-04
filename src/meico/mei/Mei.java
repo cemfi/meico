@@ -190,6 +190,8 @@ public class Mei extends meico.xml.XmlBase {
      * @return
      */
     public SvgCollection exportSvg(boolean useLatestVerovio, boolean oneLineScore) {
+        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MEI data") + " to SVG.");
+
         throw new UnsupportedOperationException("Operation Mei.exportSvg() is not implemented yet.");
 //        return null;
     }
@@ -234,6 +236,8 @@ public class Mei extends meico.xml.XmlBase {
      * @return the list of msm documents (movements) created
      */
     public synchronized List<Msm> exportMsm(int ppq, boolean dontUseChannel10, boolean ignoreExpansions, boolean cleanup) {
+        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MEI data") + " to MSM.");
+
         if (this.isEmpty() || (this.getMusic() == null) || (this.getMusic().getFirstChildElement("body", this.getMusic().getNamespaceURI()) == null))      // if no mei music data available
             return new ArrayList<Msm>();                                        // return empty list
 
@@ -701,58 +705,26 @@ public class Mei extends meico.xml.XmlBase {
      * @return an msm root element (the root of an msm document)
      */
     private Msm makeMovement(Element mdiv) {
-        Element movement = new Element("msm");
-
-        // make the title attribute for this MSM; concatenate work title and movement label
+        // specify the title attribute for this MSM; concatenate work title and movement label
         String titleString = this.getTitle();
         Attribute mdivN = mdiv.getAttribute("n");
         if (mdivN != null) titleString += " - " + mdivN.getValue();
         Attribute mdivLabel = mdiv.getAttribute("label");
         if (mdivLabel != null) titleString += " - " + mdivLabel.getValue();
-        Attribute title = new Attribute("title", titleString);
-        movement.addAttribute(title);
 
         // store the same id at the mei source and the msm, maybe it is needed later on
         String movementId;
         Attribute id = Helper.getAttribute("id", mdiv);
         if (id != null) {                                                           // if mdiv has an id, reuse it
             movementId = id.getValue();                                             // get its value
-            Attribute movementIdAttribute = new Attribute("id", movementId);        // make new Attribute
-            movementIdAttribute.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
-            movement.addAttribute(movementIdAttribute);                             // add it to the movement element
         }
         else {                                                                      // otherwise generate a unique id
             movementId = "meico_" + UUID.randomUUID().toString();                   // generate id string
-            Attribute movementIdAttribute = new Attribute("id", movementId);        // make new Attribute
-            movementIdAttribute.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
             mdiv.addAttribute(new Attribute("id", movementId));                     // add it to the MEI mdiv
-            movement.addAttribute(movementIdAttribute);                             // and to the MSM movement element
         }
 
-        // create global containers
-        Element global = new Element("global");
-        Element dated = new Element("dated");
-        Element header = new Element("header");
+        Msm msm = Msm.createMsm(titleString, movementId, this.helper.ppq);          // create Msm instance
 
-        Element ppq = new Element("pulsesPerQuarter");                              // a global ppq element
-        ppq.addAttribute(new Attribute("ppq", Integer.toString(this.helper.ppq)));  // a default ppq value
-
-        header.appendChild(ppq);
-        dated.appendChild(new Element("timeSignatureMap"));                         // global time signatures
-        dated.appendChild(new Element("keySignatureMap"));                          // global key signatures
-        dated.appendChild(new Element("markerMap"));                                // global rehearsal marks
-        dated.appendChild(new Element("sectionMap"));                               // global map of section structure
-        dated.appendChild(new Element("phraseMap"));                                // global map of phrase structure
-        dated.appendChild(new Element("sequencingMap"));                            // global sequencingMap
-        dated.appendChild(new Element("pedalMap"));                                 // global map for pedal instructions
-        dated.appendChild(new Element("miscMap"));                                  // a temporal map that is filled with content that may be useful during processing but will be deleted in the final MSM
-
-        global.appendChild(header);
-        global.appendChild(dated);
-        movement.appendChild(global);
-
-
-        Msm msm = new Msm(new Document(movement));                                  // create the Msm object
         this.helper.movements.add(msm);                                             // add it to the movements list
         this.helper.reset();                                                        // reset the helper variables
         this.helper.currentMovement = msm.getRootElement();                         // store root of current movement for later reference
@@ -1296,57 +1268,106 @@ public class Mei extends meico.xml.XmlBase {
      * @param accid an accid element
      */
     private void processAccid(Element accid) {
-        Attribute accidAttribute = accid.getAttribute("accid.ges");                     // get the accid.ges attribute
-        if (accidAttribute == null)                                                     // if there is none
-            accidAttribute = accid.getAttribute("accid");                               // get the accid attribute
-        if (accidAttribute == null)                                                     // if also missing
-            return;                                                                     // not enough information to process it, cancel
-
-        // there might be a parent note element relevant to the accid when it misses the ploc and/or oloc attribute, try to find that
-        String pitchname = null;
-        String octave = null;
-        for (Element parentNote = (Element)accid.getParent(); (parentNote != null) && (!parentNote.getLocalName().equals("layer")); parentNote = (Element)parentNote.getParent()) { // check all parent nodes until layer level
-            if (parentNote.getLocalName().equals("note")) {                             // found a note
-                ArrayList<String> pitchdata = new ArrayList<String>();                  // this is to store pitchname, accidentals and octave as additional attributes of the note
-                double pitch = this.helper.computePitch(parentNote, pitchdata);         // get the note's pitch
-                if (pitch != -1.0) {                                                    // if there is a meaningful pitch
-                    pitchname = Character.toString(pitchdata.get(0).charAt(0));         // get the pitch name without tailoring accidental signs
-                    octave = Double.toString(Double.parseDouble(pitchdata.get(2)) + 1);  // get the octave value
-                }
-                break;                                                                  // stop the for loop
+        // find the parental note if there is one
+        Element parentNote = (Element)accid.getParent();                                // the accid might be child of a note, find that note
+        for (; (parentNote != null); parentNote = (Element) parentNote.getParent()) {   // check parental nodes to find a note
+            if (parentNote.getLocalName().equals("note"))                               // found a note
+                break;
+            if (parentNote.getLocalName().equals("layer")) {                            // found a layer, stop searching, there is no note
+                parentNote = null;
+                break;
             }
         }
 
-        // make the accid compatible to note elements (ploc -> pname, oloc -> oct) so it can be added to the helper.accid list and processed in the same way as the notes in there, see method Helper.computePitch()
+        Attribute accidAtt = accid.getAttribute("accid");                               // get the accid attribute
+        Attribute accidGesAtt = accid.getAttribute("accid.ges");                        // get the accid.ges attribute
+        if ((accidAtt == null)) {                                                       // this accid is not visible (hence, it applies only to its parent note)
+            if ((accidGesAtt != null)                                                   // but it has a gestural attribute accid.ges
+                    && (parentNote != null)                                             // and it has a parent note
+                    && (parentNote.getAttribute("accid.ges") == null)) {                // and the parent note has no preexistent accid.ges (if it has one it dominates)
+                parentNote.addAttribute(new Attribute("accid.ges", accidGesAtt.getValue()));    // add the accid.ges attribute to the note
+            }
+            return;                                                                     // done, no need to add this accid to the helper.accid list since it applies only to this parent note or none if no parent note is given
+        }
 
-        // get the pitch that the accid applies to
+        // determin pitchname
         Attribute ploc = accid.getAttribute("ploc");                                    // get the pitch class
-        if (ploc != null)                                                               // if there is a ploc attribute
-            pitchname = ploc.getValue();                                                // take this as pname
-        if (pitchname == null)                                                          // if no ploc was given and no parent note gave valid pitch data
-            return;                                                                     // cancel
-        accid.addAttribute(new Attribute("pname", pitchname));                          // store the ploc/pname value in the pname attribute
+        Attribute oloc = accid.getAttribute("oloc");                                    // get the octave
+        String pname = null;
+        if (ploc != null) {                                                             // first check for a ploc attribute
+            pname = ploc.getValue();                                                    // get its value string
+        } else {                                                                        // if no ploc
+            if (parentNote != null) {                                                   // is there a parent note?
+                if (parentNote.getAttribute("pname") != null) {                         // prefer its pname (untransposed pitch)
+                    pname = parentNote.getAttributeValue("pname");                      // get the pname value string
+                } else {                                                                // only if the notated/untransposed pname is not available
+                    if ((parentNote.getAttribute("pname.ges") != null) && !parentNote.getAttributeValue("pname.ges").equals("none")) {  // try to find a gestural pname
+                        pname = parentNote.getAttributeValue("pname.ges");              // get its value string
+                    } else {                                                            // if the note did not have a pname either
+                        return;                                                         // impossible to assign the accidental to a pitch, the accid is ignored, done
+                    }
+                }
+            }
+            else {                                                                      // not parent note
+                return;                                                                 // impossible to assign the accidental to a pitch, the accid is ignored, done
+            }
+        }
+        accid.addAttribute(new Attribute("pname", pname));                              // store the ploc/pname value in the pname attribute (compatible with note so it can be processed similarly in Helper.computePitch())
 
-        // get the octave that the accid applies to
-        if (accid.getAttribute("oloc") != null)                                         // if there is the equivalent to the oct (octave transposition) attribute in notes
-            octave = accid.getAttributeValue("oloc");                                   // put it into variable octave
-        if (octave != null)                                                             // if either an oloc was given or a parent note provided the octave
-            accid.addAttribute(new Attribute("oct", octave));                           // make an attribute of it
+
+        // determine octave
+        String oct = null;
+        if (oloc != null) {                                                             // first check for the oloc attribute
+            oct = oloc.getValue();                                                      // get its value string
+        } else {                                                                        // if no oloc
+            if (parentNote != null) {                                                   // is there a parent note?
+                if (parentNote.getAttribute("oct") != null) {                           // prefer its oct (untransposed octave)
+                    oct = parentNote.getAttributeValue("oct");                          // get its oct value string
+                } else {
+                    if (parentNote.getAttribute("oct.ges") != null) {                   // try to find a gestural oct
+                        oct = parentNote.getAttributeValue("oct.ges");                  // get its value string
+                    } else {                                                            // no oct.ges on the note
+                        if (this.helper.currentPart != null) {                          // try finding a default octave
+                            Elements octs = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octave
+                            if (octs.size() == 0) {                                                                                                                                             // if there is none
+                                octs = this.helper.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octave
+                            }
+                            for (int i = octs.size() - 1; i >= 0; --i) {                                                                                                                        // search from back to front
+                                if ((octs.get(i).getAttribute("layer") == null) || octs.get(i).getAttributeValue("layer").equals(Helper.getLayerId(Helper.getLayer(accid)))) {                  // for a default octave with no layer dependency or a matching layer
+                                    oct = octs.get(i).getAttributeValue("oct.default");                                                                                                         // take this value
+                                    break;                                                                                                                                                      // break the for loop
+                                }
+                            }
+                            if (oct == null)                                            // if no octave information was found
+                                return;                                                 // this accidental cannot be processed in Helper.computePitch(), so we stop here
+                        }
+                        else {
+                            return;
+                        }
+                    }
+                }
+            }
+            else {
+                return;
+            }
+        }
+        accid.addAttribute(new Attribute("oct", oct));                                  // make an oct attribute and add it to the accidental so it is compatible with note elements an can be processed similarly in Helper.computePitch()
 
         this.helper.addLayerAttribute(accid);                                           // add an attribute that indicates the layer
 
-        this.helper.accid.add(accid);
+        if (accid.getAttribute("accid") != null)                                        // remember this accidental for the rest of the measure only if it is visual, gestural is only for the current note
+            this.helper.accid.add(accid);
     }
-    
+
     /**
     * process MEI dot elements
     * @param dot element
     */
     private void processDot(Element dot) {
         Element parentNote = null;                                                      // this element makes only sense in the context of a note or rest
-        for (Element e = (Element)dot.getParent(); (e != null) && (e.getLocalName().equals("layer")); e = (Element)e.getParent()) { // find the parent note
+        for (Element e = (Element)dot.getParent(); (e != null) && !(e.getLocalName().equals("layer")); e = (Element)e.getParent()) { // find the parent note
             if (e.getLocalName().equals("note") || e.getLocalName().equals("rest")) {   // found a note/rest
-                parentNote = (Element)e;                                                // keep it in variable parentNote
+                parentNote = e;                                                         // keep it in variable parentNote
                 break;                                                                  // stop the for loop
             }
         }
@@ -1363,7 +1384,7 @@ public class Mei extends meico.xml.XmlBase {
             parentNote.addAttribute(new Attribute("childDots", "1"));                   // and set it to 1
     }
 
-    /** make a part entry in xml from an mei staffDef and insert into movement, if it exists already, return it
+    /** make a part entry in xml/msm from an mei staffDef and insert into movement, if it exists already, return it
      *
      * @param staffDef an mei staffDef element
      * @return an msm part element
@@ -1409,18 +1430,11 @@ public class Mei extends meico.xml.XmlBase {
             midiPort = (midiChannel == 0) ? (Integer.parseInt(p.getAttributeValue("midi.port")) + 1) % 256 : Integer.parseInt(p.getAttributeValue("midi.port"));	// increment port counter if channels of previous port are full
         }
 
-        part = MsmBase.makePart(label, number, midiChannel, midiPort);                                          // create part element
+        part = Msm.makePart(label, number, midiChannel, midiPort);                                          // create part element
 
         Element dated = part.getFirstChildElement("dated");
-        dated.appendChild(new Element("timeSignatureMap"));
-        dated.appendChild(new Element("keySignatureMap"));
-        dated.appendChild(new Element("markerMap"));
-        dated.appendChild(new Element("sequencingMap"));
-        dated.appendChild(new Element("pedalMap"));
-        Element miscMap = new Element("miscMap");
+        Element miscMap = dated.getFirstChildElement("miscMap");
         miscMap.appendChild(new Element("tupletSpanMap"));
-        dated.appendChild(miscMap);
-        dated.appendChild(new Element("score"));
         part.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("midi.date") : "0.0"));    // set currentDate of processing
 
         this.helper.currentMovement.appendChild(part);                                                         // insert it into movement
@@ -2054,10 +2068,14 @@ public class Mei extends meico.xml.XmlBase {
         ArrayList<String> pitchdata = new ArrayList<String>();                  // this is to store pitchname, accidentals and octave as additional attributes of the note
         double pitch = this.helper.computePitch(note, pitchdata);               // compute pitch of the note
         if (pitch == -1) return;                                                // if failed, cancel
-        s.addAttribute(new Attribute("midi.pitch", Double.toString(pitch)));         // store resulting pitch in the note
+        s.addAttribute(new Attribute("midi.pitch", Double.toString(pitch)));    // store resulting pitch in the note
         s.addAttribute(new Attribute("pitchname", pitchdata.get(0)));           // store pitchname as additional attribute
         s.addAttribute(new Attribute("accidentals", pitchdata.get(1)));         // store accidentals as additional attribute
         s.addAttribute(new Attribute("octave", pitchdata.get(2)));              // store octave as additional attribute
+
+        if (note.getAttribute("accid") != null) {                               // if the note has a visual accidental
+            this.helper.accid.add(note);                                        // remember the accidental for the rest of the measure (only if it is visual, gestural is only for the current note)
+        }
 
         // compute midi duration
         double dur = this.helper.computeDuration(note);                         // compute note duration in midi ticks

@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import info.debatty.java.stringsimilarity.*;
 
@@ -26,8 +27,24 @@ public class InstrumentsDictionary {
     public static final byte Cosine = 0x08;
     public static final byte Jaccard = 0x09;
     public static final byte SorensenDice = 0x0A;
+    public static final String[] DefaultNames = {"Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honkytonk Piano",
+            "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavinet", "Celesta", "Glockenspiel", "Music Box", "Vibraphone", "Marimba",
+            "Xylophone", "Tubular Bells", "Dulcimer", "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ", "Reed Organ", "Accordion",
+            "Harmonica", "Tango Accordion", "Acoustic Nylon Guitar", "Acoustic Steel Guitar", "Electric Jazz Guitar", "Electric Clean Guitar",
+            "Electric Muted Guitar", "Overdriven Guitar", "Distorted Guitar", "Harmonic Guitar", "Acoustic Bass", "Fingered Electric Bass",
+            "Picked Electric Bass", "Fretless Bass", "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2", "Violin", "Viola", "Cello",
+            "Contrabass", "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani", "String Ensemble 1", "String Ensemble 2",
+            "Synth Strings 1", "Synth Strings 2", "Choir Aahs", "Voice Oohs", "Synth Choir", "Orchestra Hit", "Trumpet", "Trombone", "Tuba",
+            "Muted Trumpet", "French Horn", "Brass Section", "Synth Brass 1", "Synth Brass 2", "Soprano Sax", "Alto Sax", "Tenor Sax",
+            "Baritone Sax", "Oboe", "English Horn", "Bassoon", "Clarinet", "Piccolo", "Flute", "Recorder", "Pan Flute", "Blown Bottle", "Shakuhachi",
+            "Whistle", "Ocarina", "Lead 1 Square", "Lead 2 Sawtooth", "Lead 3 Calliope", "Lead 4 Chiff", "Lead 5 Charang", "Lead 6 Voice", "Lead 7 Fifths",
+            "Lead 8 (Bass + Lead)", "Pad 1 New Age", "Pad 2 Warm", "Pad 3 Polysynth", "Pad 4 Choir", "Pad 5 Bowed", "Pad 6 Metallic", "Pad 7 Halo",
+            "Pad 8 Sweep", "FX 1 Rain", "FX 2 Soundtrack", "FX 3 Crystal", "FX 4 Atmosphere", "FX 5 Brightness", "FX 6 Goblins", "FX 7 Echoes",
+            "FX 8 Scifi", "Sitar", "Banjo", "Shamisen", "Koto", "Kalimba", "Bagpipe", "Fiddle", "Shanai", "Tinkle Bell", "Agogo", "Steel Drums",
+            "Woodblock", "Taiko Drum", "Melodic Tom", "Synth Drum", "Reverse Cymbal", "Guitar Fret Noise", "Breath Noise", "Seashore", "Bird Tweet",
+            "Telephone Ring", "Helicopter", "Applause", "Gunshot"};   // the default instrumental names in general midi in order of the midi program change numbers (used in method getInstrumentName(), e.g. for midi to msm conversion)
 
-    Map<String, Short> dict;
+    private Map<String, Short> dict;
 
     /**
      * The constructor. It reads the dictionary file with all the instrument name strings.
@@ -159,7 +176,7 @@ public class InstrumentsDictionary {
      * @return Levenshtein distance of str1 and str2
      */
     private int levenshtein(String str1, String str2) {
-        int matrix[][] = new int[str1.length() + 1][str2.length() + 1];
+        int[][] matrix = new int[str1.length() + 1][str2.length() + 1];
         for (int i = 0; i < str1.length() + 1; i++) {
             matrix[i][0] = i;
         }
@@ -184,5 +201,39 @@ public class InstrumentsDictionary {
             }
         }
         return matrix[str1.length()][str2.length()];
+    }
+
+    /**
+     * given a program change number, return the instrument's name, i.e. the first string that is associated with this pc number in the dictionary
+     * @param programChangeNumber
+     * @return the instrument's name or an empty string if not found in the dictionary
+     */
+    public static String getInstrumentName(short programChangeNumber) {
+        return InstrumentsDictionary.getInstrumentName(programChangeNumber, false);
+    }
+
+    /**
+     * given a program change number, return the instrument's name
+     * @param programChangeNumber
+     * @param useGmDefaultNames if false the names are taken from the instruments dictionary
+     * @return the instrument's name or an empty string if not found in the dictionary
+     */
+    public static String getInstrumentName(short programChangeNumber, boolean useGmDefaultNames) {
+        if (useGmDefaultNames)
+            return InstrumentsDictionary.DefaultNames[programChangeNumber];
+
+        InstrumentsDictionary dict;
+        try {
+            dict = new InstrumentsDictionary();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return InstrumentsDictionary.DefaultNames[programChangeNumber];
+        }
+
+        for (Map.Entry<String, Short> entry : dict.dict.entrySet()) {
+            if (entry.getValue().equals(programChangeNumber))
+                return entry.getKey();
+        }
+        return "";
     }
 }

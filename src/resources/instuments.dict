@@ -186,6 +186,7 @@ Tango Accordion
 
 % Acoustic Guitar nylon
 # 24
+Acoustic Nylon Guitar
 Acoustic Guitar nylon
 Acoustic Guitar
 Nylon Guitar
@@ -194,22 +195,25 @@ Gitarre
 Gitarre Nylon
 Akustikgitarre
 
-% Acoustic Guitar steel
+% Acoustic Steel Guitar
 # 25
+Acoustic Steel Guitar
 Acoustic Guitar steel
 Steel Guitar
 Guitar steel
 Gitarre Stahl
 
-% Electric Guitar jazz
+% Electric Jazz Guitar
 # 26
+Electronic Jazz Guitar
 Electric Guitar jazz
 Jazz Guitar
 Guitar jazz
 Jazzgitarre
 
-% Electric Guitar clean
+% Electric Clean Guitar
 # 27
+Electronic Clean Guitar
 Electric Guitar clean
 Clean Electric Guitar
 Electric Guitar
@@ -220,8 +224,9 @@ clean E-Gitarre
 cleane E-Gitarre
 E-Gitarre clean
 
-% Electric Guitar muted
+% Electric Muted Guitar
 # 28
+Electronic Muted Guitar
 Electric Guitar muted
 Muted Electric Guitar
 Electrische Gitarre gedämpft
@@ -239,7 +244,7 @@ Overdrive Gitarre
 Rockgitarre
 Rock Guitar
 
-% Distortion Guitar
+% Distorted Guitar
 # 30
 Distortion Guitar
 Distorted Guitar
@@ -251,7 +256,7 @@ elektrische Gitarre verzerrt
 verzerrte elektrische Gitarre
 verzerrte E-Gitarre
 
-% Guitar Harmonics
+% Harmonic Guitar
 # 31
 Guitar Harmonics
 Harmonic Guitar
@@ -471,6 +476,8 @@ Gesang
 Chant
 Soprane
 Soprani
+Superior
+Superius
 Alti
 Tenöre
 Tenore
@@ -495,6 +502,7 @@ Soprano
 Alt
 Alto
 Altus
+Contratenor
 Tenor
 Tenore
 Bass
@@ -541,6 +549,10 @@ Trompette
 Solo Trumpet
 Trumpet Solo
 Bass Trumpet
+Clarino
+Clarini
+Clarino in
+Clarini in
 
 % Trombone
 # 57
@@ -739,6 +751,12 @@ Shakuhachi
 # 78
 Whistle
 Pfeife
+
+% Ocarina
+# 79
+Ocarina
+Gefäßflöte
+Kugelflöte
 
 % Lead 1 square
 # 80

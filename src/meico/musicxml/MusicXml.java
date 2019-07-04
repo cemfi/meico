@@ -135,6 +135,8 @@ public class MusicXml extends meico.xml.XmlBase {
      * TODO: The current implementation based on Verovio does not work! And even if, the conversion of MusicXML features to MEI would be rather limited.
      */
     public Mei exportMei(boolean useOnlineVerovio) {
+        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MusicXml data") + " to MEI.");
+
         ScriptEngineManager manager = new ScriptEngineManager();                // init Script Manager
         ScriptEngine engine = manager.getEngineByName("JavaScript");            // create Script Engine for JavaScript
 

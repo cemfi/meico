@@ -14,6 +14,7 @@ import nu.xom.*;
 import org.xml.sax.SAXException;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 import javax.xml.parsers.ParserConfigurationException;
@@ -107,6 +108,46 @@ public class Msm extends MsmBase {
     }
 
     /**
+     * this creates an initial Msm instance with empty global maps
+     * @param title
+     * @param id an id string for the root element or null, in the latter case a random UUID will be created
+     * @param ppq
+     * @return
+     */
+    public static Msm createMsm(String title, String id, int ppq) {
+        Element root = new Element("msm");                                          // create the root element of the msm/xml tree
+        root.addAttribute(new Attribute("title", title));                           // add a title attribute to it
+
+        Attribute idAttribute = new Attribute("id", (id == null) ? UUID.randomUUID().toString() : id);  // make new id attribute
+        idAttribute.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+        root.addAttribute(idAttribute);                                             // and it to the MSM movement element
+
+        // create global containers
+        Element global = new Element("global");
+        Element dated = new Element("dated");
+        Element header = new Element("header");
+
+        Element ppqElement = new Element("pulsesPerQuarter");                       // a global ppq element
+        ppqElement.addAttribute(new Attribute("ppq", Integer.toString(ppq)));       // add the attribute to the element
+
+        header.appendChild(ppqElement);
+        dated.appendChild(new Element("timeSignatureMap"));                         // global time signatures
+        dated.appendChild(new Element("keySignatureMap"));                          // global key signatures
+        dated.appendChild(new Element("markerMap"));                                // global rehearsal marks
+        dated.appendChild(new Element("sectionMap"));                               // global map of section structure
+        dated.appendChild(new Element("phraseMap"));                                // global map of phrase structure
+        dated.appendChild(new Element("sequencingMap"));                            // global sequencingMap
+        dated.appendChild(new Element("pedalMap"));                                 // global map for pedal instructions
+        dated.appendChild(new Element("miscMap"));                                  // a temporal map that is filled with content that may be useful during processing but will be deleted in the final MSM
+
+        global.appendChild(header);
+        global.appendChild(dated);
+        root.appendChild(global);
+
+        return new Msm(new Document(root));
+    }
+
+    /**
      * This getter method returns the title string from the root element's attribute title. If missing, use the filename without extension or return "".
      * @return
      */
@@ -170,6 +211,61 @@ public class Msm extends MsmBase {
         int minPPQDate = ppq / minDateDif;                          // compute the smallest number of pulses per quarter from the dates
 
         return (minPPQDate > minPPQDur) ? minPPQDate : minPPQDur;   // return the larger number of the above computations
+    }
+
+    /**
+     * Generate a "raw" part element with its corresponding attributes and empty "header" and "dated" environments.
+     * This element is not added to the document! It is up to the application to do this.
+     * @param name
+     * @param number
+     * @param midiChannel
+     * @param midiPort
+     * @return the part element just generated
+     */
+    public static Element makePart(String name, String number, int midiChannel, int midiPort) {
+        Element part = MsmBase.makePart(name, number, midiChannel, midiPort);
+
+        // add some MSM-specific maps to the dated environment
+        Element dated = part.getFirstChildElement("dated");
+        dated.appendChild(new Element("timeSignatureMap"));
+        dated.appendChild(new Element("keySignatureMap"));
+        dated.appendChild(new Element("markerMap"));
+        dated.appendChild(new Element("sequencingMap"));
+        dated.appendChild(new Element("pedalMap"));
+        Element miscMap = new Element("miscMap");
+        dated.appendChild(miscMap);
+        dated.appendChild(new Element("score"));
+
+        return part;
+    }
+
+    /**
+     * Generate a "raw" part element with its corresponding attributes and empty "header" and "dated" environments.
+     * This element is not added to the document! It is up to the application to do this.
+     * @param name
+     * @param number
+     * @param midiChannel
+     * @param midiPort
+     * @return the part element just generated
+     */
+    public static Element makePart(String name, int number, int midiChannel, int midiPort) {
+        return Msm.makePart(name, String.valueOf(number), midiChannel, midiPort);
+    }
+
+    /**
+     * add the specified part to the xml structure
+     * @param part
+     */
+    public void addPart(Element part) {
+        this.getRootElement().appendChild(part);
+    }
+
+    /**
+     * a getter that returns all part elements in the XML tree
+     * @return
+     */
+    public Elements getParts() {
+        return this.getRootElement().getChildElements("part");
     }
 
     /**
@@ -364,6 +460,8 @@ public class Msm extends MsmBase {
      * @return the midi object created or null if this msm object is empty or something else went wrong
      */
     public Midi exportMidi(double bpm, boolean generateProgramChanges) {
+        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MSM data") + " to MIDI.");
+
         if (this.isEmpty())                                                 // if there is no data
             return null;                                                    // return null
 
@@ -377,53 +475,52 @@ public class Msm extends MsmBase {
             return null;                                                    // return null
         }
 
-        // parse the msm, create MidiEvent objects (MidiMessage object with a tick value), add them to a Sequence object (each TrackOld represents a part)
-        Track track = seq.createTrack();                                    // create the first midi track; it is used for global meta data (tempo, time signature, key signature, marker)
+        // parse the msm, create MidiEvent objects (MidiMessage object with a tick value), add them to a Sequence object (each Track represents a part)
+        Track track = seq.createTrack();                                                                        // create the first midi track; it is used for global meta data (tempo, time signature, key signature, marker)
 
         this.makeInitialTempo(bpm, track);  // this method does not create an exhaustive tempo map; this is left to the performance rendering after extracting a music performance markup structure from mei; however, to specify at least a basic tempo for the midi sequence created here, we generate one tempo event at the beginning with the specified bpm
-        this.parseMarkerMap(this.getRootElement().getFirstChildElement("global"), track);          // parse markerMap
-        this.parseTimeSignatureMap(this.getRootElement().getFirstChildElement("global"), track);   // parse timeSignatureMap
-        this.parseKeySignatureMap(this.getRootElement().getFirstChildElement("global"), track);    // parse keySignatureMap
-//        this.parsePedalMap(this.getRootElement().getFirstChildElement("global"), track);           // parse pedalMap
+        this.parseMarkerMap(this.getRootElement().getFirstChildElement("global"), track);                       // parse markerMap
+        this.parseTimeSignatureMap(this.getRootElement().getFirstChildElement("global"), track);                // parse timeSignatureMap
+        this.parseKeySignatureMap(this.getRootElement().getFirstChildElement("global"), track);                 // parse keySignatureMap
+//        this.parsePedalMap(this.getRootElement().getFirstChildElement("global"), track);                        // parse pedalMap
 
-        // parse the parts
+        // parse the parts, each part becomes a midi track
         for (Element part = this.getRootElement().getFirstChildElement("part"); part != null; part = Helper.getNextSiblingElement("part", part)) {  // go through all parts in the msm document
-            if (part.getAttribute("midi.channel") == null) continue;                                                 // no channel information, cancel this part element's processing and continue with the next part
+            if (part.getAttribute("midi.channel") == null) continue;                                            // no channel information, cancel this part element's processing and continue with the next part
 
-//            { // this stuff is used, when tracks represent ports, not parts!
-//              // select the midi track, or create it if necessary
-//                int port = Integer.parseInt(part.getAttributeValue("midi.port"));                                    // the port number
-//                while ((seq.getTracks().length - 1) < port) seq.createTrack();                                  // create as many tracks as necessary, so that the port number corresponds to the track number in seq (port 0 = seq.getTracks().[0])
-//                track = seq.getTracks()[port];                                                                  // select the track
-//            }
-
+            // create and prepare the midi channel from the part
             track = seq.createTrack();                                                                          // create a new midi track for this part and write all further data into it
 
+            short port = 0;
+            if (part.getAttribute("midi.port") != null)                                                         // if midi port is specified in MSM (should be)
+                port = Short.parseShort(part.getAttributeValue("midi.port"));                                   // get the port number
+            MidiEvent portEvent = EventMaker.createMidiPortEvent(0, port);                                      // create midi event
+            track.add(portEvent);                                                                               // add it to the track
+
+            short chan = Short.parseShort(part.getAttributeValue("midi.channel"));                              // get the MIDI channel number
+            MidiEvent channelPrefix = EventMaker.createChannelPrefix(0, chan);                                  // create a channel prefix event that says all subsequent meta messages go to this channel
+            track.add(channelPrefix);                                                                           // add the event to the track
+
             // parse the score, keySignatureMap, timeSignatureMap, markerMap to midi
-            this.partName(part, track, generateProgramChanges);                                                         // scan the part attribute name for a known string to create a gm program change and instrument name event
+            this.processPartName(part, track, chan, generateProgramChanges);                                    // scan the part attribute name for a known string to create a gm program change and instrument name event
 
-            // the following meta events seem to be supported only on the master track (i.e., track 0, the global) but not in the other tracks
-//            this.parseKeySignatureMap(part, track);                                                             // parse keySignatureMap
-//            this.parseTimeSignatureMap(part, track);                                                            // parse timeSignatureMap
-//            this.parseMarkerMap(part, track);                                                                   // parse markerMap
-//            this.parsePedalMap(part, track);                                                                      // parse pedalMap
+            // if there are local meta events to be generated
+            this.parseKeySignatureMap(part, track);                                                             // parse keySignatureMap
+            this.parseTimeSignatureMap(part, track);                                                            // parse timeSignatureMap
+            this.parseMarkerMap(part, track);                                                                   // parse markerMap
+//            this.parsePedalMap(part, track);                                                                    // parse pedalMap
 
-            this.parseScore(part, track);                                                       // parse score
+            this.processScore(part, track);                                                                     // parse score
         }
 
         // TODO: AllNotesOff at the end
 
         // create the meico.Midi object
-        if (this.getFile() == null)                                                                             // if this instance of msm has no file information
-            return new Midi(seq);                                                                               // create the Midi instance only with the sequence (the midi file data are initialized as null) and return it
-
         if (this.getFile() != null) {
-            File midiFile = new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mid"); // set the filename extension of the Midi object to "mid"
-            return new Midi(seq, midiFile);                                                                         // create and return the Midi object
+            File midiFile = new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mid");    // set the filename extension of the Midi object to "mid"
+            return new Midi(seq, midiFile);                                                                     // create and return the Midi object
         }
-        else {
-            return new Midi(seq);
-        }
+        return new Midi(seq);                                                                                   // the MSM has no file information create the Midi instance only from the sequence and with file=null
     }
 
     /**
@@ -450,21 +547,18 @@ public class Msm extends MsmBase {
      * @param track the track that shall correspond to the part
      * @param generateProgramChanges if true, program change events are generated (useful for MIR and as a cheap kind of piano reduction)
      */
-    private void partName(Element part, Track track, boolean generateProgramChanges) {
-        short chan = Short.parseShort(part.getAttributeValue("midi.channel"));
-
+    private void processPartName(Element part, Track track, short channel, boolean generateProgramChanges) {
         if ((part.getAttribute("name") == null) || part.getAttributeValue("name").isEmpty()) {          // if there is no name
             if (generateProgramChanges)
-                track.add(EventMaker.createProgramChange(chan, 0, (short)0));                           // add program change event for Acoustic Grand Piano
-            track.add(EventMaker.createInstrumentName(0, ""));                                          // add an empty instrument name event to the track
+                track.add(EventMaker.createProgramChange(channel, 0, EventMaker.PC_Acoustic_Grand_Piano));  // add program change event for Acoustic Grand Piano
             return;
         }
 
         String name = part.getAttributeValue("name");
 
         if (generateProgramChanges)
-            track.add(EventMaker.createProgramChange(chan, 0, name));                                   // add program change event
-        track.add(EventMaker.createInstrumentName(0, name));                                            // add an instrument name event to the track
+            track.add(EventMaker.createProgramChange(channel, 0, name));                                // add program change event
+        track.add(EventMaker.createTrackName(0, name));                                                 // add track name event to the track
     }
 
     /**
@@ -473,7 +567,7 @@ public class Msm extends MsmBase {
      * @param part  the msm source
      * @param track the midi track
      */
-    private void parseScore(Element part,  Track track) {
+    private void processScore(Element part, Track track) {
         if ((part.getFirstChildElement("dated") == null)
                 || (part.getFirstChildElement("dated").getFirstChildElement("score") == null)
                 || (part.getAttribute("midi.channel") == null))                                                      // if no sufficient information
@@ -509,8 +603,20 @@ public class Msm extends MsmBase {
             return;                                                                                             // cancel
 
         for (Element e = part.getFirstChildElement("dated").getFirstChildElement("keySignatureMap").getFirstChildElement("keySignature"); e != null; e = Helper.getNextSiblingElement("keySignature", e)) {   // go through all elements in the keySignatureMap
-            long date = Math.round(Double.parseDouble(e.getAttributeValue("midi.date")));
-            int accids = (e.getAttribute("accidentals") == null) ? 0 : Integer.parseInt(e.getAttributeValue("accidentals"));
+            long date = Math.round(Double.parseDouble(e.getAttributeValue("midi.date")));                       // get the date of the key signature
+            int accids = 0;
+            for (Element a = e.getFirstChildElement("accidental"); a != null; a = Helper.getNextSiblingElement("accidental", a)) {  // count the accidentals (-=flats +=sharps)
+                if (a.getAttribute("value") != null) {
+                    double value = Double.parseDouble(a.getAttributeValue("value"));
+                    if (value > 1.0) {
+                        accids++;
+                        continue;
+                    }
+                    if (value < 1.0) {
+                        accids--;
+                    }
+                }
+            }
             track.add(EventMaker.createKeySignature(date, accids));
         }
     }
@@ -603,7 +709,7 @@ public class Msm extends MsmBase {
      * @return
      */
     public Pitches exportPitches(Key key) {
-        System.out.print("Generating pitch data: ");
+        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MSM data") + " to pitch data.");
         Pitches pitches = new Pitches(key); // create Pitches object with equal temperament and A = 440 Hz
         pitches.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".json");        // set a filename for the pitches
 

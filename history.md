@@ -1,6 +1,32 @@
 ### Version History
 
 
+#### v0.6.11
+- New conversion option: MIDI to MSM.
+    - New method `meico.midi.Midi.exportMsm()` implemented.
+    - The actual conversion is implemented in class `meico.midi.Midi2MsmConverter`. To use it, instantiate it with its constructor, then invoke convert(), see method `meico.midi.Midi.exportMsm()` for sample code.
+    - Standard MIDI file formats 0, 1 and 2 are supported.
+    - Relevant MIDI events that are parsed into MSM data are: NOTE_OFF, NOTE_ON, PROGRAM_CHANGE, META_Track_Name, META_Instrument_Name, META_Marker, META_Midi_Channel_Prefix, META_Midi_Port, META_Time_Signature, META_Key_Signature. More may be added with future updates, e.g. META_Lyric.  
+    - META_Track_Name and META_Instrument_Name events as well as PROGRAM_CHANGE events are incorporated to create meaningful MSM part names.
+    - New method `midi2PnameAndAccid()` in class `meico.mei.Helper` that converts a MIDI pitch to a pitch name string and an MSM-conform accidentals string.
+    - Added methods `getInstrumentName()` and a String array with the GM standard instrument names to class `meico.midi.InstrumentsDictionary`. Given a program change number, it retruns the instrument's name, i.e. either the standard GM names or the first string that is associated with this program change number in the dictionary.
+    - Made methods `meico.mei.Helper.msmCleanup()` public to be accessible from class `meico.midi.Midi`.
+    - The conversion option for MIDI objects in the graphical user interface has been added in class `meico.app.gui.DataObject`.
+- Updates in class `meico.msm.Msm`:
+    - Class `meico.msm.Msm` got a static method `createMsm()` that creates a minimal `Msm` instance with the basic xml markup. This simplifies the code in method `meico.mei.Mei.makeMovement()`.
+    - Moved method `meico.msm.MsmBase.getParts()` to class `meico.msm.Msm` as it is different in a future implementation of the format MPM (Music Performance Markup).
+    - Added new methods to class `meico.msm.Msm`: `addPart()`, `makePart()`. The latter extends the eponimous methods in class `MsmBase` with some Msm-specific map creations that will be different in MPM. Some adaptations in method `meico.mei.Mei.makePart()` have been done in accordance to this.
+    - The MIDI export in class `meico.msm.Msm` has been extended a little bit.
+- New additions to the instruments dictionary: Superior, Superius, Contratenor, Clarino, Clarino in, Clarini, Clarini in, Ocarina, Gefäßflöte, and Kugelflöte. Many thanks to Richard Freedman for his suggestions.
+- Bugfixes
+    - In method `meico.mei.Helper.computePitch()` the octave of preceding accidentals was not correctly recognized.
+    - `accid` elements that occur in transposing staffs/layers are not assigned to the correct pitches and octaves due to the transposition context. This has been fixed in method `meico.mei.Mei.processAccid()` by adopting the untransposed attributes `pname` and `oct` (non-gestural) from the parent `note`.
+    - In method `meico.mei.Mei.processDot()` an incorrect condition has been corrected.
+    - In method `meico.msm.Msm.parseKeySignatureMap()` the computation of accidentals was corrected.
+- Added some commandline/logfile output to all export methods for better readability.
+- Added some missing MIDI meta messages to class `meico.midi.EventMaker`.
+
+
 #### v0.6.10
 - Added support for MEI attribute `sameas` to class `meico.mei.Mei` in method `resolveCopyOfs()`. It is interpreted in the same way as attribute `copyof`, i.e. all attributes and children of the referred element are copied over to the referring element.
     - Added method `meico.mei.Mei.resoveCopyofsAndSameas()` which ultimately just invokes `resolveCopyOfs()` but has a more appropriate naming.
