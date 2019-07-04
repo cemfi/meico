@@ -12,6 +12,7 @@ Meico is a converter framework for MEI files. MEI offers an invaluable combinati
 - MEI to MSM conversion (with variable time resolution in pulses per quarter, ppq),
 - MSM conversion to MIDI and sequences of chroma and absolute pitch vectors,
 - MIDI to PCM audio and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
+- MIDI to MSM conversion,
 - MEI score rendering (based on Verovio),
 - MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute, conversion of `expansion` elements into "through-composed" MEI code),
 - MSM processing functions (remove rest elements from the score, expand repetitions encoded in the `sequencingMap`),
