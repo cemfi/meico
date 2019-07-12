@@ -80,7 +80,7 @@ Meico makes use of the following third party libraries:
 - [XOM](http://www.xom.nu/) v1.2.11 by Elliotte Rusty Harold, GNU Lesser General Public License (LGPL) version 2.1.
 - [Java-String-Similarity](https://github.com/tdebatty/java-string-similarity) v1.0.0 by Thibault Debatty, MIT license.
 - [Jing](http://www.thaiopensource.com/relaxng/jing.html) v20091111 by James Clark (Thai Open Source Software Center Ltd), see `copying.txt` provided in file `jing-20091111.jar`.
-- [Saxon](http://saxon.sourceforge.net/) v9.8.0.14 HE by James Clark (Thai Open Source Software Center Ltd), Mozilla Public License 2.0.
+- [Saxon](http://saxon.sourceforge.net/) v9.8.0.14 HE by Saxonica (founder Michael Kay), Mozilla Public License 1.0 (MPL), Mozilla Public License 2.0 (MPL 2.0).
 - [JSON.simple](https://cliftonlabs.github.io/json-simple/) v3.0.2 by Yidong Fang, Chris Nokleberg, Dave Hughes, and Davin Loegering, Apache License 2.0.
 - [Java LAME](https://github.com/nwaldispuehl/java-lame) v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
 - [Font Awesome](https://fontawesome.com/) v5.2.0 (the free solid icons font `fa-solid-900.ttf`), Fonticons, Inc., [SIL OFL 1.1 License](https://scripts.sil.org/OFL).
