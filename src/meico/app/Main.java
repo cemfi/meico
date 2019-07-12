@@ -1,20 +1,12 @@
 package meico.app;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.Meico;
 import meico.audio.Audio;
-import meico.mpm.Mpm;
-import meico.mpm.elements.Header;
-import meico.mpm.elements.Part;
-import meico.mpm.elements.Performance;
-import meico.mpm.elements.styles.defs.RubatoDef;
-import meico.mpm.elements.styles.RubatoStyle;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
-import nu.xom.Attribute;
-import nu.xom.Element;
+
 import nu.xom.ParsingException;
 import org.xml.sax.SAXException;
 
@@ -36,41 +28,6 @@ public class Main {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-
-        ////// mpm test ////////////////////////////////////////
-        Mpm mpm = new Mpm();
-        Performance performance1 = null;
-        Performance performance2 = null;
-        Element p2Elt = new Element("performance");
-        p2Elt.addAttribute(new Attribute("name", "test2"));
-        try {
-            performance1 = new Performance("test1");
-            performance2 = new Performance(p2Elt);
-        } catch (InvalidDataException e) {
-            e.printStackTrace();
-        }
-        mpm.addPerformance(performance1);
-        mpm.addPerformance(performance2);
-
-        try {
-            performance1.addPart(new Part("test part", 0, 0, 0));
-        } catch (InvalidDataException e) {
-            e.printStackTrace();
-        }
-
-        performance1.getPart("test part").getHeader().addStyleDef("testStyles", "testStyle1");
-        performance1.getPart("test part").getHeader().addStyleDef("testStyles", "testStyle2");
-        performance1.getPart("test part").getHeader().addStyleType("anotherTestTypeStyles");
-        try {
-            performance1.getPart(0).getHeader().addStyleDef(Header.RUBATO_STYLE, new RubatoStyle("rubaStyle"));
-            ((RubatoStyle)mpm.getPerformance("test1").getPart("test part").getHeader().getStyleDef(Header.RUBATO_STYLE, "rubaStyle")).addRubatoDef(new RubatoDef("rubi", 20.5, 0.6, 0.1, 0.9));
-        } catch (InvalidDataException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println(((RubatoStyle)mpm.getPerformance("test1").getPart("test part").getHeader().getStyleDef(Header.RUBATO_STYLE, "rubaStyle")).getRubatoDef("rubi").getEarlyEnd());
-        ///////////////////////////////////////////////////////////
-
         if (args.length == 0) {                         // if meico.jar is called without command line arguments
 //            Meico.launch("Meico: MEI Converter v" + Meico.version);  // 1st string is the window title (is optional, MeicoApp generates a default title if none is given here)
             Meico.launch();                             // this is the minimal call to launch meico's gui
