@@ -368,6 +368,6 @@ public class Midi2MsmConverter {
      * @return
      */
     private Element makePart(String partName, int port, int channel) {
-        return Msm.makePart(partName, "", channel, port);
+        return Msm.makePart(partName, (port * 16) + channel, channel, port);
     }
 }

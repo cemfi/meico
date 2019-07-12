@@ -11,7 +11,7 @@ import javafx.scene.shape.StrokeLineCap;
  * this represents the parent-child relation of two data objects
  * @author Axel Berndt
  */
-public class DataObjectLine extends Line {
+class DataObjectLine extends Line {
     private DataObject parent;
     private DataObject child;
 

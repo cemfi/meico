@@ -1,10 +1,5 @@
 package meico.msm;
 
-/**
- * This is a helper class for processing MSM sequencingMaps.
- * @author Axel Berndt.
- */
-
 import nu.xom.Attribute;
 import nu.xom.Element;
 import nu.xom.Nodes;
@@ -12,8 +7,11 @@ import nu.xom.Nodes;
 import java.security.InvalidParameterException;
 
 /**
- * this class is used to represent goto elements from msm sequencingMaps, used in methods Msm.applySequencingMapToMap() and Mei.processEnding()
+ * This is a helper class for processing MSM sequencingMaps.
+ * It is used to represent goto elements from msm sequencingMaps, used in methods Msm.applySequencingMapToMap() and Mei.processEnding().
+ * @author Axel Berndt.
  */
+
 public class Goto {
     public double date = 0.0;               // the midi.date attribute
     public double targetDate = 0.0;         // the target.date attribute

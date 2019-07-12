@@ -9,7 +9,7 @@ import java.nio.file.Files;
  * This is a wrapper around Javas String datatype and represents a .txt file, only for the purpose of integration with the meico GUI, i.e. its visualization as a data object.
  * @author Axel Berndt
  */
-public class TxtData {
+class TxtData {
     private File file;                  // the file
     private String string;    // the character string
 

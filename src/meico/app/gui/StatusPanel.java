@@ -10,7 +10,7 @@ import javafx.scene.layout.Priority;
  * This class creates a status bar.
  * @author Axel Berndt
  */
-public class StatusPanel extends HBox {
+class StatusPanel extends HBox {
     private MeicoApp app;                                // this is a link to the parent application
     private TextField message;                           // this text field prints status messages
     private Button clearScreen;                          // this button clears the workspace

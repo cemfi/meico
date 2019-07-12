@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.7.0
+- Fixed license information for Saxon in `README.md`.
+- Made several classes in package `meico.app.gui` package-private as they will never be accessed from outside the package and are not intended to.
+- Made class `meico.msm.MsmBase` abstract and renamed it to `AbstractMsm`.
+- Removed MSM's global header element `pulsesPerQuarter`. Instead an eponimous Attribute has been added to the root note of the MSM.
+
+
 #### v0.6.11
 - New conversion option: MIDI to MSM.
     - New method `meico.midi.Midi.exportMsm()` implemented.

@@ -1,10 +1,5 @@
 package meico.msm;
 
-/**
- * This class is a primitive for Msm and Mpm.
- * @author Axel Berndt.
- */
-
 import nu.xom.*;
 import org.xml.sax.SAXException;
 
@@ -12,12 +7,17 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.URL;
 
-public class MsmBase extends meico.xml.XmlBase {
+/**
+ * This class is a primitive for Msm and Mpm.
+ * @author Axel Berndt.
+ */
+
+public abstract class AbstractMsm extends meico.xml.XmlBase {
 
     /**
      * constructor
      */
-    public MsmBase() {
+    public AbstractMsm() {
         super();
     }
 
@@ -26,7 +26,7 @@ public class MsmBase extends meico.xml.XmlBase {
      *
      * @param document the data as XOM Document
      */
-    public MsmBase(Document document) {
+    public AbstractMsm(Document document) {
         super(document);
     }
 
@@ -37,7 +37,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public MsmBase(File file) throws IOException, ParsingException, SAXException, ParserConfigurationException {
+    public AbstractMsm(File file) throws IOException, ParsingException, SAXException, ParserConfigurationException {
         super(file);
     }
 
@@ -48,7 +48,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public MsmBase(File file, boolean validate, URL schema) throws IOException, ParsingException, SAXException, ParserConfigurationException {
+    public AbstractMsm(File file, boolean validate, URL schema) throws IOException, ParsingException, SAXException, ParserConfigurationException {
         super(file, validate, schema);
     }
 
@@ -58,7 +58,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public MsmBase(String xml) throws IOException, ParsingException {
+    public AbstractMsm(String xml) throws IOException, ParsingException {
         super(xml);
     }
 
@@ -70,7 +70,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public MsmBase(String xml, boolean validate, URL schema) throws IOException, ParsingException {
+    public AbstractMsm(String xml, boolean validate, URL schema) throws IOException, ParsingException {
         super(xml, validate, schema);
     }
 
@@ -80,7 +80,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public MsmBase(InputStream inputStream) throws IOException, ParsingException {
+    public AbstractMsm(InputStream inputStream) throws IOException, ParsingException {
         super(inputStream);
     }
 
@@ -92,7 +92,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public MsmBase(InputStream inputStream, boolean validate, URL schema) throws IOException, ParsingException {
+    public AbstractMsm(InputStream inputStream, boolean validate, URL schema) throws IOException, ParsingException {
         super(inputStream, validate, schema);
     }
 
@@ -128,7 +128,7 @@ public class MsmBase extends meico.xml.XmlBase {
      * @return the part element just generated
      */
     public static Element makePart(String name, int number, int midiChannel, int midiPort) {
-        return MsmBase.makePart(name, String.valueOf(number), midiChannel, midiPort);
+        return AbstractMsm.makePart(name, String.valueOf(number), midiChannel, midiPort);
     }
 
     /**

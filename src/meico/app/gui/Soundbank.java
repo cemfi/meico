@@ -10,7 +10,7 @@ import java.io.File;
  * It is no replacement of javax.sound.midi.Soundbank which meico's MIDIPlayer uses for MIDI synthesis!
  * @author Axel Berndt
  */
-public class Soundbank {
+class Soundbank {
     private DataObject graphicalInstance;
     private File file;                      // the audio file
     private boolean isActive = false;       // will be set true when meico's MIDI synthesis uses it

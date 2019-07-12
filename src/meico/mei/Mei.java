@@ -1,22 +1,21 @@
 package meico.mei;
 
-/**
- * This class holds the mei data from a source file in a XOM Document.
- * @author Axel Berndt.
- */
-
 import java.io.*;
 import java.net.URL;
 import java.util.*;
 
 import meico.msm.Goto;
-import meico.msm.MsmBase;
 import meico.svg.SvgCollection;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+
+/**
+ * This class holds the mei data from a source file in a XOM Document.
+ * @author Axel Berndt.
+ */
 
 public class Mei extends meico.xml.XmlBase {
 

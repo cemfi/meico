@@ -2,6 +2,7 @@ package meico.musicxml;
 
 import meico.mei.Helper;
 import meico.mei.Mei;
+import meico.xml.XmlBase;
 import nu.xom.*;
 import org.xml.sax.SAXException;
 
@@ -23,7 +24,7 @@ import java.net.URLConnection;
  * @author Axel Berndt
  */
 
-public class MusicXml extends meico.xml.XmlBase {
+public class MusicXml extends XmlBase {
 
     /**
      * constructor

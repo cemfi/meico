@@ -28,7 +28,7 @@ import java.io.File;
  * The Player class provides the GUI for audio and Midi playback.
  * @author Axel Berndt
  */
-public class Player extends HBox {
+class Player extends HBox {
     private MeicoApp app;                                   // this is a link to the parent application
 
     private MidiPlayer midiplayer = null;                   // depending on the data to be played back, the Midi or ...

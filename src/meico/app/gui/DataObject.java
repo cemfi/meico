@@ -2,7 +2,6 @@ package meico.app.gui;
 
 import javafx.animation.*;
 import javafx.application.Platform;
-import javafx.concurrent.Worker;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -17,7 +16,6 @@ import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Affine;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
-import javafx.scene.web.WebEngine;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import meico.audio.Audio;
@@ -54,7 +52,7 @@ import java.util.Objects;
  * To add new items/functionality in a radial menu, add its label text to the corresponding array in makeRadialMenu() and add its functionality to setMenuItemInteraction().
  * @author Axel Berndt
  */
-public class DataObject extends Group {
+class DataObject extends Group {
 
     private Workspace workspace;                        // the workspace in which this is displayed
     private Object data;                                // the actual data (Mei, Msm, Pitches, Midi ...)
@@ -891,7 +889,7 @@ public class DataObject extends Group {
 //                            Platform.runLater(() -> {
 //                                Mei mei = (Mei) this.getData();
 //                                String verovio = null;                                                          // this will get the HTML code to be shown in the WebView
-//                                verovio = VerovioGenerator.generate(mei.toXML(), this);                         // generate that HTML code
+//                                verovio = VerovioGenerator.generate(mei.toXml(), this);                         // generate that HTML code
 //
 //                                WebEngine webEngine = new WebEngine();
 //                                webEngine.setJavaScriptEnabled(true);

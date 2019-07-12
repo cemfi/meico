@@ -1,10 +1,5 @@
 package meico.msm;
 
-/**
- * This class holds data in msm format (Musical Sequence Markup).
- * @author Axel Berndt.
- */
-
 import meico.pitches.FeatureVector;
 import meico.pitches.Key;
 import meico.pitches.Pitches;
@@ -22,7 +17,12 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 
-public class Msm extends MsmBase {
+/**
+ * This class holds data in msm format (Musical Sequence Markup).
+ * @author Axel Berndt.
+ */
+
+public class Msm extends AbstractMsm {
 
     /**
      * constructor
@@ -127,10 +127,8 @@ public class Msm extends MsmBase {
         Element dated = new Element("dated");
         Element header = new Element("header");
 
-        Element ppqElement = new Element("pulsesPerQuarter");                       // a global ppq element
-        ppqElement.addAttribute(new Attribute("ppq", Integer.toString(ppq)));       // add the attribute to the element
+        root.addAttribute(new Attribute("pulsesPerQuarter", Integer.toString(ppq)));// add the attribute to the root
 
-        header.appendChild(ppqElement);
         dated.appendChild(new Element("timeSignatureMap"));                         // global time signatures
         dated.appendChild(new Element("keySignatureMap"));                          // global key signatures
         dated.appendChild(new Element("markerMap"));                                // global rehearsal marks
@@ -171,13 +169,21 @@ public class Msm extends MsmBase {
         Attribute ppq;
 
         try {
-            ppq = this.getRootElement().getFirstChildElement("global").getFirstChildElement("header").getFirstChildElement("pulsesPerQuarter").getAttribute("ppq");
+            ppq = this.getRootElement().getAttribute("pulsesPerQuarter");
         }
         catch (NullPointerException ex) {
             return 0;
         }
 
         return Integer.parseInt(ppq.getValue());
+    }
+
+    /**
+     * this getter returns the timing resolution (pulses per quarternote) of the MSM
+     * @return
+     */
+    public int getPulsesPerQuarter() {
+        return this.getPPQ();
     }
 
     /**
@@ -223,7 +229,7 @@ public class Msm extends MsmBase {
      * @return the part element just generated
      */
     public static Element makePart(String name, String number, int midiChannel, int midiPort) {
-        Element part = MsmBase.makePart(name, number, midiChannel, midiPort);
+        Element part = AbstractMsm.makePart(name, number, midiChannel, midiPort);
 
         // add some MSM-specific maps to the dated environment
         Element dated = part.getFirstChildElement("dated");
@@ -466,7 +472,7 @@ public class Msm extends MsmBase {
             return null;                                                    // return null
 
         // create an empty midi sequence
-        int ppq = Integer.parseInt(this.getRootElement().getFirstChildElement("global").getFirstChildElement("header").getFirstChildElement("pulsesPerQuarter").getAttributeValue("ppq"));  // read the ppq resolution from the msm's global/header/pulsesPerQuarter element
+        int ppq = this.getPPQ();
         Sequence seq = null;
         try {
             seq = new Sequence(Sequence.PPQ, ppq);                          // create the midi sequence
@@ -571,15 +577,15 @@ public class Msm extends MsmBase {
         if ((part.getFirstChildElement("dated") == null)
                 || (part.getFirstChildElement("dated").getFirstChildElement("score") == null)
                 || (part.getAttribute("midi.channel") == null))                                                      // if no sufficient information
-            return;                                                                                             // cancel
+            return;                                                                                                  // cancel
 
         int chan = Integer.parseInt(part.getAttributeValue("midi.channel"));                                         // get the midi channel number
 
         for (Element n = part.getFirstChildElement("dated").getFirstChildElement("score").getFirstChildElement("note"); n != null; n = Helper.getNextSiblingElement("note", n)) {   // go through all note elements in score
 //            switch (n.getLocalName()) {
-//                case "rest":                                                                                    // rests are not represented in midi
+//                case "rest":                                                                                       // rests are not represented in midi
 //                    break;
-//                case "note":                                                                                    // for note elements create note_on and note_off events
+//                case "note":                                                                                       // for note elements create note_on and note_off events
                     int pitch = Math.round(Float.parseFloat(n.getAttributeValue("midi.pitch")));                     // Math.round(float) returns int; so far pitches are well captured by number type float
                     long date = Math.round(Double.parseDouble(n.getAttributeValue("midi.date")));                    // Math.round(double) returns long
                     long dur = Math.round(Double.parseDouble(n.getAttributeValue("midi.duration")));

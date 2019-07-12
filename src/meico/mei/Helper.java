@@ -1,10 +1,5 @@
 package meico.mei;
 
-/**
- * This class is used for mei to msm conversion to hold temporary data, used in class Mei.
- * @author Axel Berndt.
- */
-
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +16,11 @@ import org.xml.sax.SAXException;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
+
+/**
+ * This class is used for mei to msm conversion to hold temporary data, used in class Mei.
+ * @author Axel Berndt.
+ */
 
 public class Helper {
 

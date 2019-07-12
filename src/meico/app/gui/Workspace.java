@@ -26,7 +26,7 @@ import java.util.ArrayList;
  * This part of the interface will be the place where all the data is shown, dropped, converted, ...
  * @author Axel Berndt
  */
-public class Workspace extends ScrollPane {
+class Workspace extends ScrollPane {
     private MeicoApp app;                                           // this is a link to the parent application
     private Pane container;                                         // this is the "drawing area", all contents go in here, Pane features a better behavior than Group in this context (resizes only in positive direction, Pane local bounds start always at (0, 0) in top left whereas Group's bounds start at the top-leftmost child at (0+x, 0+y)).
     private StackPane welcomeMessage;

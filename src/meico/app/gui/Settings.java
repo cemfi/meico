@@ -22,7 +22,7 @@ import java.io.*;
  * This provides some basic style definitions.
  * @author Axel Berndt
  */
-public class Settings {
+class Settings {
     // fxml strings to be used in the setStyle() method of JavaFX objects
     protected static final String BACKGROUND_DARKGRAY = "-fx-background-color: #1a1a1a;";
     protected static final String BACKGROUND_GRAY = "-fx-background-color: #2b2b2b;";

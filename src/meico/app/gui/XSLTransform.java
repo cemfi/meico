@@ -14,7 +14,7 @@ import java.io.FileNotFoundException;
  * It is no replacement of nu.xom.xslt.XSLTransform which is actually used when performing an XSL transform.
  * @author Axel Berndt
  */
-public class XSLTransform {
+class XSLTransform {
     private DataObject graphicalInstance;
     private File file;                              // the xsl file
     private Xslt30Transformer transform;

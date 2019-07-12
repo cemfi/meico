@@ -13,7 +13,7 @@ import java.net.URLConnection;
  * This class creates a WebView if Settings.useInternalWebView is set true. Otherwise it will redirect all URL calls to the system's default browser.
  * @author Axel Berndt
  */
-public class WebBrowser extends StackPane {
+class WebBrowser extends StackPane {
     private MeicoApp app;               // the parent application
     private WebEngine webEngine = null;
 

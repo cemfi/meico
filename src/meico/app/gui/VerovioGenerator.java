@@ -9,7 +9,7 @@ import java.io.*;
  * @author Axel Berndt
  */
 
-public class VerovioGenerator {
+class VerovioGenerator {
     /**
      * This method reads the file "/resources/Verovio/verovio.html" from the jar.
      * This file provides the prototype html document. It contains a placeholder "replaceMe" to insert the MEI code.

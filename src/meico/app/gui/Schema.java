@@ -9,7 +9,7 @@ import java.io.File;
  * This represents XML schemas in the meico GUI.
  * @author Axel Berndt
  */
-public class Schema {
+class Schema {
     private DataObject graphicalInstance;
     private File file;                              // the schema file
     private boolean isActive = false;               // will be set true when it is activated for validation
