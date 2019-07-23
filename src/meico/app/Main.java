@@ -2,20 +2,10 @@ package meico.app;
 
 import meico.Meico;
 import meico.audio.Audio;
-import meico.mpm.Mpm;
-import meico.mpm.elements.Header;
-import meico.mpm.elements.Part;
-import meico.mpm.elements.Performance;
-import meico.mpm.elements.styles.MetricalAccentuationStyle;
-import meico.mpm.elements.styles.defs.AccentuationPatternDef;
-import meico.mpm.elements.styles.defs.RubatoDef;
-import meico.mpm.elements.styles.RubatoStyle;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
-import nu.xom.Attribute;
-import nu.xom.Element;
 import nu.xom.ParsingException;
 import org.xml.sax.SAXException;
 
