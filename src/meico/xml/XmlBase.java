@@ -351,6 +351,42 @@ public class XmlBase {
     }
 
     /**
+     * remove all elements with the specified local name from the xml tree
+     * @param localName the elements to be removed
+     * @return the number of elements removed
+     */
+    public int removeAllElements(String localName) {
+        int deletions = 0;                                                                          // count the deletions
+        Nodes ns = this.getRootElement().query("descendant::*[local-name()='" + localName + "']");  // get all elements with the local name
+
+        for (int i = 0; i < ns.size(); ++i) {                                                       // for all nodes found
+            Element parent = (Element)ns.get(i).getParent();                                        // get its parent element
+            if (parent != null) {                                                                   // if it has a parent (does not apply to the root node)
+                parent.removeChild(ns.get(i));                                                      // remove its child
+                deletions++;                                                                        // increase the deletions counter
+            }
+        }
+        return deletions;                                                                           // return the deletions count
+    }
+
+    /**
+     * remove all attributes with the specified name from the xml tree
+     * @param attributeName the attribute name
+     * @return the number of deletions
+     */
+    public int removeAllAttributes(String attributeName) {
+        Nodes ns = this.getRootElement().query("descendant::*[@" + attributeName + "]");    // get all nodes with an attribute of the specified name
+
+        for (int i = 0; i < ns.size(); ++i) {                                               // for all nodes found
+            Element e = (Element)ns.get(i);                                                 // get the node as element
+            Attribute a = e.getAttribute(attributeName);                                    // get the attribute
+            e.removeAttribute(a);                                                           // delete the attribute from the element
+        }
+
+        return ns.size();
+    }
+
+    /**
      * transform the data via the given xsl file
      * @param xslt
      * @return result of the transform as XOM Document instance

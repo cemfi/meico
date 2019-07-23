@@ -6,6 +6,7 @@
 - Made several classes in package `meico.app.gui` package-private as they will never be accessed from outside the package and are not intended to.
 - Made class `meico.msm.MsmBase` abstract and renamed it to `AbstractMsm`.
 - Removed MSM's global header element `pulsesPerQuarter`. Instead an eponimous Attribute has been added to the root note of the MSM.
+- New additions to class `meico.xml.XmlBase`: Methods `removeAllElements(String localName)` and `removeAllAttributes(String attributeName)` can be used for processing of all XML based formats.
 
 
 #### v0.6.11
