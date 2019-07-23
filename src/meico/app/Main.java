@@ -37,39 +37,6 @@ public class Main {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-
-        ////// mpm test ////////////////////////////////////////
-        Mpm mpm = new Mpm();
-        Performance performance1 = Performance.createPerformance("test1");
-        Element p2Elt = new Element("performance");
-
-        p2Elt.addAttribute(new Attribute("name", "test2"));
-        Performance performance2 = Performance.createPerformance(p2Elt);
-
-        mpm.addPerformance(performance1);
-        mpm.addPerformance(performance2);
-
-        performance1.addPart(Part.createPart("test part", 0, 0, 0));
-
-        performance1.getPart("test part").getHeader().addStyleDef("testStyles", "testStyle1");
-        performance1.getPart("test part").getHeader().addStyleDef("testStyles", "testStyle2");
-        performance1.getPart("test part").getHeader().addStyleType("anotherTestTypeStyles");
-
-        performance1.getPart(0).getHeader().addStyleDef(Mpm.RUBATO_STYLE, RubatoStyle.createRubatoStyle("rubaStyle"));
-        Header header = mpm.getPerformance("test1").getPart("test part").getHeader();
-        ((RubatoStyle)header.getStyleDef(Mpm.RUBATO_STYLE, "rubaStyle")).addRubatoDef(RubatoDef.createRubatoDef("rubi", 20.5, 0.6, 0.1, 0.9));
-
-        header.addStyleDef(Mpm.METRICAL_ACCENTUATION_STYLE, MetricalAccentuationStyle.createMetricalAccentuationStyle("my accentuation style"));
-        MetricalAccentuationStyle mas = (MetricalAccentuationStyle) header.getStyleDef(Mpm.METRICAL_ACCENTUATION_STYLE, "my accentuation style");
-        AccentuationPatternDef pattern = AccentuationPatternDef.createAccentuationPatternDef("pattern 1", 4.0);
-        pattern.addAccentuation(1.0, 1.0, -0.5, 0.0);
-        pattern.addAccentuation(3.0, 0.5, -0.5, 0.5);
-        pattern.addAccentuation(2.0, 0.25, -1.0, 0.25);
-        mas.addAccentuationPatternDef(pattern);
-
-        System.out.println(((MetricalAccentuationStyle)performance1.getPart("test part").getHeader().getStyleDef(Mpm.METRICAL_ACCENTUATION_STYLE, "my accentuation style")).getAccentuationPatternDef("pattern 1").toXml());
-        ///////////////////////////////////////////////////////////
-
         if (args.length == 0) {                         // if meico.jar is called without command line arguments
 //            Meico.launch("Meico: MEI Converter v" + Meico.version);  // 1st string is the window title (is optional, MeicoApp generates a default title if none is given here)
             Meico.launch();                             // this is the minimal call to launch meico's gui
