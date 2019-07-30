@@ -78,7 +78,7 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/javafx.base.jar"/>
     <pathelement location="${basedir}/externals/javafx.controls.jar"/>
@@ -93,7 +93,7 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/javafx.base.jar"/>
     <pathelement location="${basedir}/externals/javafx.controls.jar"/>
@@ -108,7 +108,7 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/javafx.base.jar"/>
     <pathelement location="${basedir}/externals/javafx.controls.jar"/>
@@ -124,7 +124,7 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.2.11.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/javafx.base.jar"/>
     <pathelement location="${basedir}/externals/javafx.controls.jar"/>
@@ -204,7 +204,7 @@
       <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
       <zipfileset src="${basedir}/externals/json-simple-3.0.2.jar"/>
       <zipfileset src="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
-      <zipfileset src="${basedir}/externals/xom-1.2.11.jar"/>
+      <zipfileset src="${basedir}/externals/xom-1.3.2.jar"/>
       <zipfileset src="${basedir}/externals/saxon9he.jar"/>
       <zipfileset src="${basedir}/externals/gervill.jar"/>
       <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
