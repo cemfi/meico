@@ -5,6 +5,7 @@ import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.ShortMessage;
 import java.io.IOException;
+import java.math.BigInteger;
 
 /**
  * This helper class provides some useful midi-related functions.
@@ -321,7 +322,7 @@ public class EventMaker {
 
     // further constants (https://spencerpark.github.io/MellowD/build/docs/docco/src/main/java/cas/cs4tb3/mellowd/TimingEnvironment.html)
     private static final byte TICKS_PER_METER_CLICK             = 24;   // This constant is the number of ticks that need to pass on the MIDI clock for the metronome to click. This clock is independent from the sequencer clock. Redefining the PPQN should not affect this clock. Therefore we will leave it at the standard 24 ticks per click.
-    private static final byte THIRTY_SECOND_NOTES_PER_QUARTER   =  8;   // This constant appears in the time signature midi message. 1⁄4 consists of 8 1⁄32. There should be no reason to change this.
+    private static final byte THIRTY_SECOND_NOTES_PER_QUARTER   =  8;   // This constant appears in the time signature midi message. 1/4 consists of 8 1/32. There should be no reason to change this.
 
     /**
      * a little helper to convert int numbers into 4-byte arrays
@@ -342,6 +343,24 @@ public class EventMaker {
 //            System.out.format("0x%02X ", b);
 
         return byteArray;
+    }
+
+    /**
+     * a little helper to convert a byte array into an integer number
+     * @param bytes
+     * @return
+     */
+    public static int byteArrayToInt(byte[] bytes) {
+        return new BigInteger(bytes).intValue();
+
+        // an alternative implementation
+//        int val = 0;
+//        if(bytes.length > 4) throw new RuntimeException("Byte array is too big to fit in int.");
+//        for (int i = 0; i < bytes.length; i++) {
+//            val=val<<8;
+//            val=val|(bytes[i] & 0xFF);
+//        }
+//        return val;
     }
 
     /**
@@ -372,6 +391,11 @@ public class EventMaker {
      * @return
      */
     public static MidiEvent createNoteOff(int chan, long date, int pitch, int vel) {
+        if (vel > 127)
+            vel = 127;
+        else if (vel < 0)
+            vel = 0;
+
         MidiEvent e;
         try {
             e = new MidiEvent(new ShortMessage(NOTE_OFF, chan, pitch, vel), date);
@@ -392,6 +416,11 @@ public class EventMaker {
      * @return
      */
     public static MidiEvent createNoteOn(int chan, long date, int pitch, int vel) {
+        if (vel > 127)
+            vel = 127;
+        else if (vel < 0)
+            vel = 0;
+
         MidiEvent e;
         try {
             e = new MidiEvent(new ShortMessage(NOTE_ON, chan, pitch, vel), date);
@@ -430,6 +459,28 @@ public class EventMaker {
     public static MidiEvent createProgramChange(int chan, long date, short programNumber) {
         try {
             return new MidiEvent(new ShortMessage(PROGRAM_CHANGE, chan, programNumber, 0), date);
+        } catch (InvalidMidiDataException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * create a control change event
+     * @param chan
+     * @param date
+     * @param controllerNumber
+     * @param controllerValue
+     * @return
+     */
+    public static MidiEvent createControlChange(int chan, long date, int controllerNumber, int controllerValue) {
+        if (controllerValue > 127)
+            controllerValue = 127;
+        else if (controllerValue < 0)
+            controllerValue = 0;
+
+        try {
+            return new MidiEvent(new ShortMessage(CONTROL_CHANGE, chan, controllerNumber, controllerValue), date);
         } catch (InvalidMidiDataException e) {
             e.printStackTrace();
             return null;

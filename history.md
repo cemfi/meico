@@ -1,6 +1,73 @@
 ### Version History
 
 
+#### v0.7.0 Music Performance Markup (MPM) API Integration
+- Updated XOM to version 1.3.2. Updated the Ant script `build.xml` accordingly.
+- New format added: Music Performance Markup (MPM):
+    - The corresponding package is `meico.mpm`. This package contains the full API to generate, edit, store and parse MPM data and render them to expressive MIDI sequences.
+    - Added several overloaded methods `meico.mei.Mei.exportMsmMpm()` which return two lists, one with  the MSMs, the other with the corresponding MPMs.
+    - New methods in class `meico.mei.Mei`: 
+        - `processDynam()` and `addDynamicsToMpm()` are used for converting MEI elements `dynam` and `hairpin` to MPM. 
+        - `processTempo()` and `addTempoToMpm()` are used for converting MEI `tempo` elements to MPM.
+        - `processArtic()` and `addArticulationToMPM()` are used for converting MEI articulation data (in elements `artic`, `note` and `chord`) to MPM.
+        - `processBreath()` is used for converting MEI `breath` elements to MPM.
+        - `processSlur()` and `meico.mei.Helper.checkSlurs()` are used to convert MEI `slur` elements to MEI `slur` attributes and ultimately to MPM legato articulations.
+    - Meico's processing of MEI `note` and `chord` elements has been extended to support articulation, i.e. attributes `artic` and `artic.ges`.
+    - New additions in class `meico.mei.Helper`: `mpmPostprocessing()`, list `tstamp2s`, `parseTempo()`, `updateMpmNoteidsAfterResolvingRepetitions()`.
+    - Added MPM to the graphical user interface via class `meico.app.gui.DataObject`.
+    - In MEI tempo is mostly associated only to the staff where it is printed even though it applies to all parts. There are several ways to encode the association, e.g. by `part="%all"`. If such is not specified meico will create only a local MPM `tempoMap`. The resulting performance will sound "surprising" as the parts become asynchronous. To cope with this in the way it might have been intended (all parts follow the same `tempoMap`) the GUI representation of an MPM object offers the option to make all local tempi global, i.e. merge all local tempo maps into one global tempo map.
+    - Resolving `sequencingMap` in the GUI is also applied to the sibling MPM object.
+    - The commandline application in class `meico.app.Main` has been extended accordingly.
+- To preserve conformity between MSM and MPM the following MSM attributes have been renamed: `midi.date` into `date`, `midi.duration` into `duration`, `end` into `date.end`.
+- New additions to class `meico.msm.Msm`: 
+    - `renderMidi()` holds the actual algorithm that is invoked by the `exportMidi()` method and is extended by methods for generating MIDI from expressive data (e.g., milliseconds dates that have been computed from class `meico.mpm.elements.Performance`).
+    - `exportExpressiveMidi()` is used to generate and export expressive MIDI data.
+    - `parseChannelVolumeMap()` is used to render a part's `channelVolumeMap` into a sequence of MIDI channelVolume control change messages. That map is generated during performance rendering in method `meico.mpm.elements.Performance.perform()` and added to augmented MSM that it returns.
+    - `parseProgramChangeMap()`, these maps can be used to add MIDI program change events and to keep consistency when the MSM is generated from a MIDI file; the method generates the corresponding MIDI events during MSM-to-MIDI export.
+    - `convertPulsesPerQuarter()`/`convertPPQ()` is used to match the timing basis of the MSM object with the timing basis of a performance. It can be used in other contexts as well to change an MSM's timing basis.
+    - `fitVelocities()`, `computeSemicircleCompression()`, `computePartwiseCompression` are used when the range of velocity values goes beyond the MIDI specification \[0, 127\]. 
+- Changed the method signature of `meico.mei.Mei.convert()` to void. The result of the conversion is accessed via `meico.mei.Helper.movements` anyway. Method `meico.mei.Mei.exportMsm()` has been adapted accordingly.
+- MEI preprocessing before conversion to MSM/MPM got an additional method `meico.mei.Mei.removeRendElements()`. This replaces all `rend` elements by their contents which reduces on-the-fly processing effort. These elements are an optional intermediate layer and not relevant for this particular conversion.
+- Added class `AbstractXmlSubtree` to package `meico.xml`.
+- Added package `meico.supplementary` for classes that are not specific to but useful across several other classes. 
+    - First addition to this package is class `KeyValue` that represents data tuplets.
+    - Second addition is class `RandomNumberProvider`. It offers several distribution types: uniform, Gaussian, triangular, Brownian, Compensating Triangular, and distribution list. The provider generates a consistent series of pseudo random numbers that is accessed via an index. The index can be floating point, this returns a linear interpolation of the neighboring integer index positions. The randomization can be reseeded. The random number series can be exported as `meico.audio.Audio` object and, thus, stored to the file system as `.wav` or `.mp3` file. 
+- Moved activation and deactivation methods and flag from classes `meico.app.gui.Schema`, `meico.app.gui.Soundbank`, `meico.app.gui.XSLTransform` to class `meico.app.gui.DataObject` as they all do the same and non-activatable data objects can simply ignore this functionality. Respective code in class `meico.app.gui.Workspace` has been adapted.
+- Applied slide changes to the graphical user interface's color scheme of data objects (which is computed in `meico.app.gui.Settings.classToColor()`) for better discriminability of different types of data objects.
+- New additions to class `meico.mei.Helper`: `indexNotesAndChords()`, `getCurrentTimeSignature()`, `tstampToTicks()`, `computeControlEventTiming()`, `parseTempo()`, `reorderMeasureContent()`, `isSameLayer()`, `getStaff()`, `getStaffId()`, `checkSlurs()`, `addSlurId()`.
+- Methods `meico.mei.Mei.reorderElements()` and `resolveTieElements()` have been removed. 
+    - They did not take care of critical apparatus, `choice`, etc. The mechanism to reorder MEI control events according to attribute `startid` has been integrated with method `meico.mei.Mei.processMeasure`/`meico.mei.Helper.reorderMeasureContent()` and `meico.mei.Helper.computeControlEventTiming()`. This solves the aforementioned problem and is more efficient than the preprocessing procedure was. 
+    - Processing of MEI `tie` elements has been redone with methods `meico.mei.Mei.processTie()`, `meico.mei.Helper.getTie()` and `checkTies()` and integrated with methods `meico.mei.Mei.processNote()` and `processChord()`.
+- Method `meico.mei.Helper.computeDuration()` has been made more flexible. So far, it refused to compute anything as long as the MEI element was not within a `staff` environment. This, however, is only necessary if the element has no `dur` attribute. If that attribute is present the duration can be computed even outside of the `staff` environment - as the method does now.
+- Enahncements in method `meico.mei.Helper.computePitch()`: 
+    - Bugfix: The end of transpositions included the first note after the transposition.
+    - Enhancement: For transpositions and octavings attribute `layer` is now taken into account, even if multiple layers are specified in it.
+- The signature of methods `meico.mei.Helper.copyId()` has changed. They produce a return value which is the Attribute they generate. 
+- Method `meico.mei.Mei.makeMovement()` has been extended. It will now keep a link to the corresponding `work` element in `meiHead/workList`. This is used during conversion to find time signature and tempo information if missing at the respective point in the `music` environment. After converting the contents of the `mdiv` method `makeMovement()` checks the existence of a global initial tempo in MPM. If missing, it is generated from the `work`'s `tempo` element (if there is one).
+- Methods `meico.mei.Mei.processPhrase()`, `processPedal()`, `processOctave()`, `processTupletSpan()` have been redone. The processing of the corresponding MEI elements supports now attributes `tstamp.ges`, `tstamp`, `startid`, `dur`, `tstamp2.ges`, `tstamp2`, `endid`, `part` and `staff`.
+- MEI elements `oLayer` and `oStaff` have been added to the processing in method `meico.mei.Mei.convert()`. They are processed by the same routines as MEI `layer` and `staff` elements.
+- Method `meico.msm.Msm.applySequencingMapToMap()` has been updated to update also attributes `date.end`.
+- New additions to class `meico.audio.Audio`:
+    - `convertByteArray2DoubleArray()` makes analyses of audio data more convenient as it converts `Audio` object's byte array into an array of doubles between -1.0 and 1.0.
+    - `convertDoubleArray2ByteArray()` converts an input double array into a byte array.
+- Bugfix in method `meico.audio.Audio.convertByteArray2AudioInputStream()`: The computation of the length of the `AudioInputStream` did not take the number of channels from `AudioFormat` into account. This is fixed.
+- Time consumption analysis and commandline/logfile output have been added to all export methods.
+- Additions to the instruments dictionary: `Oboe d'amore`, `Oboe da caccia` and all clarinet names with an appended `" in"` so it matches better with, e.g., `Clarinet in E` and will not be confused with `Clarino in`.
+- Method `meico.mei.Mei.processMeasure()` has been extended. After processing its contents and if the measure's length does not confirm the underlying time signature, intermediate `timeSignature` entries are added to the global MSM `timeSignatureMap` so that it follows the measure's timing.
+- Method `meico.msm.resolveSequencingMaps()` did not expand global maps so far. This has been added. It will now also return a HashMap with the `xml:id` strings that have been extended to avoid multiple IDs in one XML document. This HashMap is used to update the `noteid` attributes in MPM `articulationMap`s because the repetitions are also expanded in MPM (if there is one that is linked to the MSM).
+- Method `meico.mei.Helper.cloneElement()` does now also clone the namespace URI.
+- In method `meico.app.gui.DataObject.addSeveralChildren()`, which is executed whenever more than one data object is created, a slight spiral effect has been added so that the overlapping of circles is a bit reduced. 
+- In class `meico.app.gui.DataObject`, method `reloadMei()` has been renamed to `reload()` and extended so that it can also be used to reload MSM and MPM data. This functionality has also been added to the GUI, i.e. the radial menu of both object types.
+- New additions to class `meico.midi.EventMaker`: 
+    - method `createControlChange()`,
+    - method `byteArrayToInt()`.
+- In class `meico.midiMidi2MsmConverter` in method `processShortEvent()` noteOn velocity has been added to the MSM `note` elements, so it can be further incorporated in MPM performance rendering (as far as it is not overwritten by a `dynamicsMap`).
+- New Addition to class `meico.midi.Midi`: method `getTempoMap()` parses the MIDI sequence, collects all tempo events and generates an MPM `tempoMap` from it.
+- In package `meico.app` a new class has been added, called `Humanizer`. It demos a little bit of the MPM functionality by generating some basic humanizing and applying it to a Midi object. It is also integrated in the graphical user interface, just import or create a MIDI object and to the click the new option "Humanize (experimental)" on the right part of its radial menu.
+- Added the full JavaDoc of meico to the repository.
+- Verovio update to v2.4.0-dev-facbfa6.
+
+
 #### v0.6.12
 - Fixed license information for Saxon in `README.md`. Thanks to Peter Stadler!
 - Made several classes in package `meico.app.gui` package-private as they will never be accessed from outside the package and are not intended to.
@@ -119,7 +186,7 @@
 - Updated copyright notice in class `meico.midi.Midi2AudioRenderer` and the license information in `README.md`.
 
 
-#### v0.5.5
+#### v0.5.5 Verovio Integration
 - Added a welcome message in the workspace: `"Drop your files here: MEI, MSM, TXT, MIDI, WAV, XSL, SF2, DLS."` and a file drop icon. This should clarify the first step of meico's usage to every beginner and provides a list of file formats that can be imported. The whole thing is responsive to window height, i.e. resizing the window will adjust the scale of the message. It will disappear after successfully dropping/importing the first file.
 - In class `meico.app.gui.Settings` there were some InputStreams that have not been closed. This has been fixed.
 - Disabled the option to switch off the internal WebView. Not all information shown internally can be forwarded to an external browser.

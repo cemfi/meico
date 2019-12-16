@@ -7,6 +7,7 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
+import javafx.scene.effect.Glow;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -18,22 +19,28 @@ import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
+import meico.app.Humanizer;
 import meico.audio.Audio;
 import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.midi.Midi;
+import meico.mpm.Mpm;
+import meico.mpm.elements.Part;
+import meico.mpm.elements.Performance;
+import meico.mpm.elements.maps.ArticulationMap;
+import meico.mpm.elements.maps.DynamicsMap;
+import meico.mpm.elements.maps.GenericMap;
+import meico.mpm.elements.maps.TempoMap;
 import meico.msm.Msm;
 import meico.musicxml.MusicXml;
 import meico.pitches.Pitches;
+import meico.supplementary.KeyValue;
 import meico.svg.Svg;
 import meico.svg.SvgCollection;
 import meico.xml.XmlBase;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Xslt30Transformer;
-import nu.xom.Builder;
-import nu.xom.Document;
-import nu.xom.ParsingException;
-import nu.xom.ValidityException;
+import nu.xom.*;
 import org.xml.sax.SAXException;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -44,6 +51,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -62,6 +70,7 @@ class DataObject extends Group {
     private boolean menuActive = false;
     private ArrayList<DataObjectLine> lines = new ArrayList<>();    // the list of connections lines to child data objects that were exported from this one
     private ArrayList<Thread> threads = new ArrayList<>();
+    private boolean isActive = false;               // will be set true when it is activated for transformations
 
     /**
      * constructor
@@ -165,6 +174,8 @@ class DataObject extends Group {
                 return new Mei(file);
             case ".msm":
                 return new Msm(file);
+            case ".mpm":
+                return new Mpm(file);
             case ".mid":
                 return new Midi(file);
             case ".wav":
@@ -179,9 +190,9 @@ class DataObject extends Group {
             case ".sf2":
                 return new meico.app.gui.Soundbank(file, this);
             case ".xsl":
-                return new meico.app.gui.XSLTransform(file, this);
+                return new meico.app.gui.XSLTransform(file);
             case ".rng":
-                return new meico.app.gui.Schema(file, this);
+                return new meico.app.gui.Schema(file);
             case ".txt":
                 return new TxtData(file);
             case ".musicxml":
@@ -210,12 +221,15 @@ class DataObject extends Group {
             case "msm":                                                         // seems to be an msm
                 o = new Msm(xml.getDocument());
                 break;
+            case "mpm":                                                         // seems to be an mpm
+                o = new Mpm(xml.getDocument());
+                break;
             case "score-partwise":                                              // seems to be a musicxml
             case "score-timewise":
                 o = new MusicXml(xml.getDocument());
                 break;
             case "stylesheet":                                                  // seems to be an xslt
-                return new meico.app.gui.XSLTransform(file, this);
+                return new meico.app.gui.XSLTransform(file);
             default:
                 throw new IOException("Meico could not identify the type of data in this XML file as one of its supported types.");
         }
@@ -237,6 +251,10 @@ class DataObject extends Group {
         }
         else if (this.data instanceof Msm)
             return ((Msm)this.data).getFile().getName();
+        else if (this.data instanceof Mpm)
+            return ((Mpm)this.data).getFile().getName();
+        else if (this.data instanceof Performance)
+            return ((Performance)this.data).getName();      // performances have no filename
         else if (this.data instanceof Midi)
             return ((Midi)this.data).getFile().getName();
         else if (this.data instanceof Audio)
@@ -253,7 +271,7 @@ class DataObject extends Group {
             return ((TxtData)this.data).getFile().getName();
         else if (this.data instanceof MusicXml)
             return ((MusicXml)this.data).getFile().getName();
-        return "unknown";
+        return "no filename";
     }
 
     /**
@@ -268,6 +286,8 @@ class DataObject extends Group {
             name = ((SvgCollection)this.data).getTitle();
         else if (this.data instanceof Msm)
             name = ((Msm)this.data).getTitle();
+        else if (this.data instanceof Performance)
+            name = ((Performance)this.data).getName();
         return (name.isEmpty()) ? this.getFileName() : name;    // if the name string is (still) empty, return the filename
     }
 
@@ -324,7 +344,7 @@ class DataObject extends Group {
             e.consume();
         });
 
-        // double clicks are a quick and convenient way to activate and deactivate soundbanks and xslts and to play back midi and audio data
+        // double clicks are a quick and convenient way to activate and deactivate soundbanks, xslts, performances and to play back midi and audio data
         this.getChildren().get(this.getChildren().size() - 1).setOnMouseClicked(e -> {
             if(e.getClickCount() == 2){
                 if (this.data instanceof Midi) {
@@ -337,12 +357,14 @@ class DataObject extends Group {
                     Thread thread = new Thread(() -> {
                         RotateTransition ani = this.startComputeAnimation();
                         meico.app.gui.Soundbank soundbank = (meico.app.gui.Soundbank)this.data;
-                        if (!soundbank.isActive()) {
+                        if (!this.isActive()) {
                             this.workspace.silentDeactivationOfAllSoundbanks();
                             soundbank.activate();
+                            this.activate();
                         }
                         else {
                             soundbank.deactivate();
+                            this.deactivate();
                         }
                         this.stopComputeAnimation(ani);
                     });
@@ -351,13 +373,12 @@ class DataObject extends Group {
                 else if (this.data instanceof XSLTransform) {
                     Thread thread = new Thread(() -> {
                         RotateTransition ani = this.startComputeAnimation();
-                        meico.app.gui.XSLTransform xsltransform = (meico.app.gui.XSLTransform) this.data;
-                        if (!xsltransform.isActive()) {
+                        if (!this.isActive()) {
                             this.workspace.deactivateAllXSLTs();
-                            xsltransform.activate();
+                            this.activate();
                         }
                         else {
-                            xsltransform.deactivate();
+                            this.deactivate();
                         }
                         this.stopComputeAnimation(ani);
                     });
@@ -366,13 +387,26 @@ class DataObject extends Group {
                 else if (this.data instanceof Schema) {
                     Thread thread = new Thread(() -> {
                         RotateTransition ani = this.startComputeAnimation();
-                        meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
-                        if (!schema.isActive()) {
+                        if (!this.isActive()) {
                             this.workspace.deactivateAllSchemas();
-                            schema.activate();
+                            this.activate();
                         }
                         else {
-                            schema.deactivate();
+                            this.deactivate();
+                        }
+                        this.stopComputeAnimation(ani);
+                    });
+                    this.start(thread);
+                }
+                else if (this.data instanceof Performance) {
+                    Thread thread = new Thread(() -> {
+                        RotateTransition ani = this.startComputeAnimation();
+                        if (!this.isActive()) {
+                            this.workspace.deactivateAllPerformances();
+                            this.activate();
+                        }
+                        else {
+                            this.deactivate();
                         }
                         this.stopComputeAnimation(ani);
                     });
@@ -429,13 +463,13 @@ class DataObject extends Group {
 
         if (this.data instanceof Mei) {
             String[] leftItems = {"Show", "Validate", "Add IDs", "Resolve copyof/sameas", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to MSM", "to MIDI", "to Audio", "Score Rendering", "XSL Transform"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
+            String[] rightItems = {"to MSM & MPM", "to MIDI", "to Audio", "Score Rendering", "XSL Transform"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -443,41 +477,63 @@ class DataObject extends Group {
         }
         else if (this.data instanceof SvgCollection) {
             String[] leftItems = {"Show", "Validate", "Save", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
             String[] rightItems = {"XSL Transform"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
         }
         else if (this.data instanceof Msm) {
-            String[] leftItems = {"Show", "Validate", "Remove Rests", "Expand Repetitions", "Save", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            String[] leftItems = {"Show", "Validate", "Remove Rests", "Expand Repetitions", "Reload", "Save", "Save As", "Close"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to MIDI", "to Chroma", "to Absolute Pitches", "XSL Transform"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
+            String[] rightItems = {"to MIDI", "to Expressive MIDI", "to Chroma", "to Absolute Pitches", "XSL Transform"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
         }
-        else if (this.data instanceof Midi) {
-            String[] leftItems = {"Play", "NoteOffs to NoteOns", "NoteOns to NoteOffs", "Save", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+        else if (this.data instanceof Mpm) {
+            String[] leftItems = {"Show", "Validate", "Make Tempo Global", "Make Dynamics Global", "Reload", "Save", "Save As", "Close"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to Audio", "to MSM"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
+            String[] rightItems = {"get Performances", "XSL Transform"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
+            for (int i = 0; i < rightItems.length; ++i) {
+                Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+        }
+        else if (this.data instanceof Performance) {
+            String[] leftItems = {"Show", "Activate", "Deactivate", "Add Humanizing", "Close"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
+            for (int i = 0; i < leftItems.length; ++i) {
+                Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+        }
+        else if (this.data instanceof Midi) {
+            String[] leftItems = {"Play", "NoteOffs to NoteOns", "NoteOns to NoteOffs", "Save", "Save As", "Close"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
+            for (int i = 0; i < leftItems.length; ++i) {
+                Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+            String[] rightItems = {"to Audio", "to MSM", "Humanize (experimental)"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -485,7 +541,7 @@ class DataObject extends Group {
         }
         else if (this.data instanceof Audio) {
             String[] leftItems = {"Play", "Save (mp3)", "Save (wav)", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -493,7 +549,7 @@ class DataObject extends Group {
         }
         else if (this.data instanceof Pitches) {
             String[] leftItems = {"Show", "Save", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -501,7 +557,7 @@ class DataObject extends Group {
         }
         else if (this.data instanceof meico.app.gui.Soundbank) {
             String[] leftItems = {"Activate", "Deactivate", "Set As Default", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -509,7 +565,7 @@ class DataObject extends Group {
         }
         else if (this.data instanceof meico.app.gui.XSLTransform) {
             String[] leftItems = {"Activate", "Deactivate", "Set As Default", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -517,7 +573,7 @@ class DataObject extends Group {
         }
         else if (this.data instanceof meico.app.gui.Schema) {
             String[] leftItems = {"Activate", "Deactivate", "Set As Default", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -525,13 +581,13 @@ class DataObject extends Group {
         }
         else if (this.data instanceof TxtData) {
             String[] leftItems = {"Show", "Validate", "Save", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
             String[] rightItems = {"XSL Transform"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -539,13 +595,13 @@ class DataObject extends Group {
         }
         else if (this.data instanceof MusicXml) {
             String[] leftItems = {"Show", "Validate", "Save", "Save As", "Close"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(leftItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
             String[] rightItems = {/*TODO:"to MEI",*/ "XSL Transform"};
-            outerRadius = innerRadius + this.computevisualLengthOfLongestString(rightItems);
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
@@ -693,23 +749,23 @@ class DataObject extends Group {
 
         // the close command is similar for all types of data objects, hence it is defined here only once
         if (command.equals("Close")) {
-            this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> this.workspace.remove(this));
+            this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> this.getWorkspace().remove(this));
             return;
         }
 
         // object type-specific commands
-        if (this.data instanceof Mei) {             // MEI-specific commands
+        if (this.getData() instanceof Mei) {             // MEI-specific commands
             switch (command) {
                 case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            if (this.workspace.getApp().getWeb() != null) {
+                            if (this.getWorkspace().getApp().getWeb() != null) {
                                 Platform.runLater(() -> {
-                                    this.workspace.getApp().getWeb().printContent((Helper.prettyXml(((Mei) this.data).toXML())), true);
-                                    if (this.workspace.getApp().getWebAccordion() != null) {
-                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
-                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    this.getWorkspace().getApp().getWeb().printContent((Helper.prettyXml(((Mei) this.getData()).toXML())), true);
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
                                     }
                                 });
                             }
@@ -732,7 +788,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage(((Mei)this.data).addIds() + " IDs added.");
+                            this.getWorkspace().getApp().getStatuspanel().setMessage(((Mei)this.getData()).addIds() + " IDs added.");
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -742,8 +798,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            int notResolved = ((Mei)this.data).resolveCopyofsAndSameas().size();
-                            this.workspace.getApp().getStatuspanel().setMessage("Resolving copyof and sameas: " + ((notResolved == 0) ? "done." :  (notResolved + " could not be resolved.")));
+                            int notResolved = ((Mei)this.getData()).resolveCopyofsAndSameas().size();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Resolving copyof and sameas: " + ((notResolved == 0) ? "done." :  (notResolved + " could not be resolved.")));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -753,8 +809,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            ((Mei)this.data).resolveExpansions();
-                            this.workspace.getApp().getStatuspanel().setMessage("Resolving expansions: done.");
+                            ((Mei)this.getData()).resolveExpansions();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Resolving expansions: done.");
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -764,7 +820,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.reloadMei();
+                            this.reload();
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -774,7 +830,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving MEI data " + ((((Mei)this.data).writeMei(((Mei)this.data).getFile().getAbsolutePath())) ? ("to " + ((Mei)this.data).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MEI data " + ((((Mei)this.getData()).writeMei(((Mei)this.getData()).getFile().getAbsolutePath())) ? ("to " + ((Mei)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -782,7 +838,7 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        Mei mei = ((Mei)this.data);                                     // the object
+                        Mei mei = ((Mei)this.getData());                                     // the object
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(mei.getFile().getParent());          // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -790,11 +846,11 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(mei.getFile().getName());            // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MEI files (*.mei)", "*.mei"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
                                 RotateTransition ani = this.startComputeAnimation();
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving MEI data " + ((mei.writeMei(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MEI data " + ((mei.writeMei(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                 this.stopComputeAnimation(ani);
                             });
                             this.start(thread);
@@ -803,15 +859,20 @@ class DataObject extends Group {
                     break;
 //                case "Close":
 //                    break;
-                case "to MSM":
+                case "to MSM & MPM":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MEI to MSM ...");
-                            List<Msm> msms = ((Mei)this.data).exportMsm(Settings.Mei2Msm_ppq, Settings.Mei2Msm_dontUseChannel10, Settings.Mei2Msm_ignoreExpansions, Settings.Mei2Msm_msmCleanup);   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
-                                this.addSeveralChildren(mouseEvent, msms);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MEI to MSM: done.");
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to MSM and MPM ...");
+                            KeyValue<List<Msm>, List<Mpm>> mspm = ((Mei)this.getData()).exportMsmMpm(Settings.Mei2Msm_ppq, Settings.Mei2Msm_dontUseChannel10, Settings.Mei2Msm_ignoreExpansions, Settings.Mei2Msm_msmCleanup);   // do the conversion
+                            if (this.getWorkspace() != null) {                                       // it is possible that the data object has been removed from workspace in the meantime
+                                ArrayList<Object> lo = new ArrayList<>();                       // sort the msms and mpms in this list
+                                for (int i = 0; i < mspm.getKey().size(); ++i) {
+                                    lo.add(mspm.getKey().get(i));                               // add msm
+                                    lo.add(mspm.getValue().get(i));                             // add the corresponding mpm right next to the msm
+                                }
+                                this.addSeveralChildren(mouseEvent, lo);
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to MSM and MPM: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -822,14 +883,14 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MEI to MIDI ...");
-                            List<Msm> msms = ((Mei)this.data).exportMsm(Settings.Mei2Msm_ppq, Settings.Mei2Msm_dontUseChannel10, Settings.Mei2Msm_ignoreExpansions, Settings.Mei2Msm_msmCleanup);   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to MIDI ...");
+                            List<Msm> msms = ((Mei)this.getData()).exportMsm(Settings.Mei2Msm_ppq, Settings.Mei2Msm_dontUseChannel10, Settings.Mei2Msm_ignoreExpansions, Settings.Mei2Msm_msmCleanup);   // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 ArrayList<Midi> midis = new ArrayList<>();
                                 for (Msm msm : msms)
                                     midis.add(msm.exportMidi(Settings.Msm2Midi_defaultTempo, Settings.Msm2Midi_generateProgramChanges));
                                 this.addSeveralChildren(mouseEvent, midis);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MEI to MIDI: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to MIDI: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -840,14 +901,14 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MEI to Audio ...");
-                            List<Msm> msms = ((Mei)this.data).exportMsm(Settings.Mei2Msm_ppq, Settings.Mei2Msm_dontUseChannel10, Settings.Mei2Msm_ignoreExpansions, Settings.Mei2Msm_msmCleanup);   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to Audio ...");
+                            List<Msm> msms = ((Mei)this.getData()).exportMsm(Settings.Mei2Msm_ppq, Settings.Mei2Msm_dontUseChannel10, Settings.Mei2Msm_ignoreExpansions, Settings.Mei2Msm_msmCleanup);   // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 ArrayList<Audio> audios = new ArrayList<>();
                                 for (Msm msm : msms)
                                     audios.add(msm.exportMidi(Settings.Msm2Midi_defaultTempo, Settings.Msm2Midi_generateProgramChanges).exportAudio(Settings.soundbank));
                                 this.addSeveralChildren(mouseEvent, audios);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MEI to Audio: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to Audio: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -858,7 +919,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("MEI Score Rendering via Verovio ...");
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("MEI Score Rendering via Verovio ...");
                             // do Verovio score rendering
                             Platform.runLater(() -> {
                                 Mei mei = (Mei)this.getData();
@@ -869,9 +930,9 @@ class DataObject extends Group {
 //                                this.addOneChild(mouseEvent, svgs);                                                                 // add the newly generated SvgCollection to the workspace
 
                                 this.getWorkspace().getApp().getWeb().printContent(verovio, false);             // show it in the WebView
-                                if (this.workspace.getApp().getWebAccordion() != null) {
-                                    this.workspace.getApp().getWebAccordion().setText("Score: " + this.label);  // change the title string of the WebView
-                                    this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                    this.getWorkspace().getApp().getWebAccordion().setText("Score: " + this.label);  // change the title string of the WebView
+                                    this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
                                 }
                             });
                             this.stopComputeAnimation(ani);
@@ -883,7 +944,7 @@ class DataObject extends Group {
 //                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
 //                        Thread thread = new Thread(() -> {
 //                            RotateTransition ani = this.startComputeAnimation();
-//                            this.workspace.getApp().getStatuspanel().setMessage("MEI to SVG Score Rendering via Verovio ...");
+//                            this.getWorkspace().getApp().getStatuspanel().setMessage("MEI to SVG Score Rendering via Verovio ...");
 //
 //                            // do Verovio score rendering
 //                            Platform.runLater(() -> {
@@ -926,8 +987,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI ...");
-                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI ...");
+                            XSLTransform activeXslt = this.getWorkspace().getActiveXSLT();
                             String xslFilename = "";
                             Xslt30Transformer xslt = null;
                             if (activeXslt != null) {
@@ -941,16 +1002,16 @@ class DataObject extends Group {
                                 }
                             }
                             if (xslt != null) {
-                                Mei mei = (Mei)this.data;
+                                Mei mei = (Mei)this.getData();
                                 String string = mei.xslTransformToString(xslt);
                                 if (string != null) {
                                     TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(mei.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
                                     this.addOneChild(mouseEvent, txt);
-                                    this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI: done.");
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI: done.");
                                 }
                             }
                             else {
-                                this.workspace.getApp().getStatuspanel().setMessage("No XSL Transform activated.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("No XSL Transform activated.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -961,20 +1022,20 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof SvgCollection) {    // txt file-specific commands
+        else if (this.getData() instanceof SvgCollection) {    // txt file-specific commands
             switch (command) {
                 case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             Platform.runLater(() -> {
-                                if (this.workspace.getApp().getWeb() != null) {
-                                    String html = VerovioGenerator.generate((SvgCollection)this.data, Settings.oneLineScore, this);
+                                if (this.getWorkspace().getApp().getWeb() != null) {
+                                    String html = VerovioGenerator.generate((SvgCollection)this.getData(), Settings.oneLineScore, this);
                                     this.getWorkspace().getApp().getWeb().printContent(html, false);             // webEngine, do your job
 
-                                    if (this.workspace.getApp().getWebAccordion() != null) {
-                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
-                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
                                     }
                                 }
                             });
@@ -997,9 +1058,9 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            SvgCollection svgs = (SvgCollection)this.data;
+                            SvgCollection svgs = (SvgCollection)this.getData();
                             if (!svgs.isEmpty()) {
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving SVG data " + ((svgs.writeSvgs()) ? ("to " + svgs.get(0).getFile().getAbsolutePath() + " ...") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving SVG data " + ((svgs.writeSvgs()) ? ("to " + svgs.get(0).getFile().getAbsolutePath() + " ...") : "failed."));
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1008,7 +1069,7 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        SvgCollection svgs = (SvgCollection) this.data;
+                        SvgCollection svgs = (SvgCollection) this.getData();
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(svgs.get(0).getFile().getParent());  // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -1016,11 +1077,11 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(svgs.get(0).getFile().getName());    // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("SVG files (*.svg)", "*.svg"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
                                 RotateTransition ani = this.startComputeAnimation();
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving SVG data " + ((svgs.writeSvgs(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + " ...") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving SVG data " + ((svgs.writeSvgs(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + " ...") : "failed."));
                                 this.stopComputeAnimation(ani);
                             });
                             this.start(thread);
@@ -1033,8 +1094,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to SVG ...");
-                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to SVG ...");
+                            XSLTransform activeXslt = this.getWorkspace().getActiveXSLT();
                             String xslFilename = "";
                             Xslt30Transformer xslt = null;
                             if (activeXslt != null) {
@@ -1048,20 +1109,20 @@ class DataObject extends Group {
                                 }
                             }
                             if (xslt != null) {
-                                SvgCollection svgs = (SvgCollection)this.data;
+                                SvgCollection svgs = (SvgCollection)this.getData();
                                 ArrayList<TxtData> txts = new ArrayList<>();
                                 for (int i=0; i < svgs.size(); ++i) {
                                     Svg svg = svgs.get(i);
                                     String string = svg.xslTransformToString(xslt);
                                     if (string != null) {
                                         txts.add(new TxtData(string, new File(Helper.getFilenameWithoutExtension(svg.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt")));    // do the xsl transform
-                                        this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to SVG: done.");
+                                        this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to SVG: done.");
                                     }
                                 }
                                 this.addSeveralChildren(mouseEvent, txts);
                             }
                             else {
-                                this.workspace.getApp().getStatuspanel().setMessage("No XSL Transform activated.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("No XSL Transform activated.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1072,18 +1133,18 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof Msm) {        // MSM-specific commands
+        else if (this.getData() instanceof Msm) {        // MSM-specific commands
             switch (command) {
                 case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            if (this.workspace.getApp().getWeb() != null) {
+                            if (this.getWorkspace().getApp().getWeb() != null) {
                                 Platform.runLater(() -> {
-                                    this.workspace.getApp().getWeb().printContent((Helper.prettyXml(((Msm) this.data).toXML())), true);
-                                    if (this.workspace.getApp().getWebAccordion() != null) {
-                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
-                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    this.getWorkspace().getApp().getWeb().printContent((Helper.prettyXml(((Msm) this.getData()).toXML())), true);
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
                                     }
                                 });
                             }
@@ -1106,8 +1167,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            ((Msm)this.data).removeRests();
-                            this.workspace.getApp().getStatuspanel().setMessage("Rests removed.");
+                            ((Msm)this.getData()).removeRests();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Rests removed.");
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1117,8 +1178,63 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            ((Msm)this.data).resolveSequencingMaps();
-                            this.workspace.getApp().getStatuspanel().setMessage("SequencingMaps resolved, repetitions expanded into trough-composed form.");
+                            Msm msm = (Msm)this.getData();
+                            ArrayList<GenericMap> articulationMaps = new ArrayList<>();
+
+                            // apply the sequencingMaps to MPM data first
+                            for (DataObjectLine line : this.lines) {
+                                DataObject p = line.getPartner(this);
+                                if (p.getData() instanceof Mpm) {
+                                    Element globalSequencingMap = msm.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap");
+                                    for (Performance performance : ((Mpm)p.getData()).getAllPerformances()) {
+                                        if (globalSequencingMap != null) {
+                                            HashMap<String, GenericMap> maps = performance.getGlobal().getDated().getAllMaps();
+                                            for (GenericMap map : maps.values()) {
+                                                map.applySequencingMap(globalSequencingMap);
+                                                if (map instanceof ArticulationMap)     // in articulationMaps the elements have notid attribute that has to be updated after resolving the sequencingmaps in MSM
+                                                    articulationMaps.add(map);          // so keep the articulationMaps for later reference
+                                            }
+                                        }
+                                        Elements msmParts = msm.getParts();
+                                        ArrayList<Part> mpmParts = performance.getAllParts();
+                                        for (int pa=0; pa < performance.size(); ++pa) {
+                                            Element msmPart = msmParts.get(pa);
+                                            Element sequencingMap = msmPart.getFirstChildElement("dated").getFirstChildElement("sequencingMap");
+                                            if (sequencingMap == null) {
+                                                sequencingMap = globalSequencingMap;
+                                                if (sequencingMap == null)
+                                                    continue;
+                                            }
+                                            for (GenericMap map : mpmParts.get(pa).getDated().getAllMaps().values()) {
+                                                map.applySequencingMap(sequencingMap);
+                                                if (map instanceof ArticulationMap)     // in articulationMaps the elements have notid attribute that has to be updated after resolving the sequencingmaps in MSM
+                                                    articulationMaps.add(map);          // so keep the articulationMaps for later reference
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+
+                            // apply the sequencingMaps to MSM data, this will also delete the sequencingMaps
+                            HashMap<String, String> repetitionIDs = msm.resolveSequencingMaps();
+
+                            // update the articulationMap's elements' notid attributes
+                            for (GenericMap map : articulationMaps) {
+                                Helper.updateMpmNoteidsAfterResolvingRepetitions(map, repetitionIDs);
+                            }
+
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("SequencingMaps resolved, repetitions expanded into through-composed form.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Reload":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.reload();
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1128,7 +1244,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving MSM data " + ((((Msm)this.data).writeMsm()) ? ("to " + ((Msm)this.data).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MSM data " + ((((Msm)this.getData()).writeMsm()) ? ("to " + ((Msm)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1136,7 +1252,7 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        Msm msm = ((Msm)this.data);                                     // the object
+                        Msm msm = ((Msm)this.getData());                                     // the object
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(msm.getFile().getParent());          // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -1144,11 +1260,11 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(msm.getFile().getName());            // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MSM files (*.msm)", "*.msm"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
                                 RotateTransition ani = this.startComputeAnimation();
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving MSM data " + ((msm.writeMsm(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MSM data " + ((msm.writeMsm(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                 this.stopComputeAnimation(ani);
                             });
                             this.start(thread);
@@ -1161,11 +1277,32 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MSM to MIDI ...");
-                            Midi midi = ((Msm)this.data).exportMidi(Settings.Msm2Midi_defaultTempo, Settings.Msm2Midi_generateProgramChanges);   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to MIDI ...");
+                            Midi midi = ((Msm)this.getData()).exportMidi(Settings.Msm2Midi_defaultTempo, Settings.Msm2Midi_generateProgramChanges);   // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 this.addOneChild(mouseEvent, midi);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MSM to MIDI: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to MIDI: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "to Expressive MIDI":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to expressive MIDI ...");
+
+                            Performance performance = this.getWorkspace().getActivePerformance();           // find the currently active performance to generate an expressive midi sequence
+                            if (performance != null) {
+                                Midi midi = ((Msm) this.getData()).exportExpressiveMidi(performance, true); // generate the expressive midi
+                                if ((midi != null) && (this.getWorkspace() != null)) {                      // it is possible that the data object has been removed from workspace in the meantime or that no midi object has been generated
+                                    this.addOneChild(mouseEvent, midi);
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to expressive MIDI: done.");
+                                }
+                            } else {
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to expressive MIDI: failed. An MPM performance needs to be activated first.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1176,11 +1313,11 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MSM to Chroma ...");
-                            Pitches chroma = ((Msm)this.data).exportChroma();   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to Chroma ...");
+                            Pitches chroma = ((Msm)this.getData()).exportChroma();   // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 this.addOneChild(mouseEvent, chroma);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MSM to Chroma: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to Chroma: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1191,11 +1328,11 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MSM to absolute pitches ...");
-                            Pitches pitches = ((Msm)this.data).exportPitches();   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to absolute pitches ...");
+                            Pitches pitches = ((Msm)this.getData()).exportPitches();   // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 this.addOneChild(mouseEvent, pitches);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MSM to absolute pitches: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to absolute pitches: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1206,8 +1343,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MSM ...");
-                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MSM ...");
+                            XSLTransform activeXslt = this.getWorkspace().getActiveXSLT();
                             String xslFilename = "";
                             Xslt30Transformer xslt = null;
                             if (activeXslt != null) {
@@ -1221,16 +1358,16 @@ class DataObject extends Group {
                                 }
                             }
                             if (xslt != null) {
-                                Msm msm = (Msm)this.data;
+                                Msm msm = (Msm)this.getData();
                                 String string = msm.xslTransformToString(xslt);
                                 if (string != null) {
                                     TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(msm.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
                                     this.addOneChild(mouseEvent, txt);
-                                    this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MSM: done.");
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MSM: done.");
                                 }
                             }
                             else {
-                                this.workspace.getApp().getStatuspanel().setMessage("No XSL Transform activated.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("No XSL Transform activated.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1241,26 +1378,105 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof Midi) {       // MIDI-specific commands
+        else if (this.getData() instanceof Mpm) {        // MPM-specific commands
             switch (command) {
-                case "Play":
-                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> this.workspace.getApp().getPlayer().play((Midi)this.data));
-                    break;
-                case "NoteOffs to NoteOns":
+                case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting noteOff to noteOn events: " + (((Midi)this.data).noteOffs2NoteOns()) + " events converted.");
+                            if (this.getWorkspace().getApp().getWeb() != null) {
+                                Platform.runLater(() -> {
+                                    this.getWorkspace().getApp().getWeb().printContent((Helper.prettyXml(((Mpm) this.getData()).toXML())), true);
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    }
+                                });
+                            }
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
                     });
                     break;
-                case "NoteOns to NoteOffs":
+                case "Validate":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting noteOn (with velocity 0) to noteOff events: " + (((Midi)this.data).noteOns2NoteOffs()) + " events converted.");
+                            this.validate();
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Make Tempo Global":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Merging all local tempo maps into the global ...");
+
+                            ArrayList<Performance> performances = ((Mpm)this.getData()).getAllPerformances();
+                            for (Performance performance : performances) {
+                                TempoMap globalTempoMap = (TempoMap) performance.getGlobal().getDated().getMap(Mpm.TEMPO_MAP);
+                                if (globalTempoMap == null)
+                                    globalTempoMap = (TempoMap) performance.getGlobal().getDated().addMap(Mpm.TEMPO_MAP);
+
+                                ArrayList<Part> parts = performance.getAllParts();
+                                for (Part part : parts) {
+                                    TempoMap localTempoMap = (TempoMap) part.getDated().getMap(Mpm.TEMPO_MAP);
+                                    if (localTempoMap != null) {
+                                        ArrayList<KeyValue<Double, Element>> es = localTempoMap.getAllElements();
+                                        for (KeyValue<Double, Element> e : es) {
+                                            e.getValue().detach();
+                                            globalTempoMap.addElement(e.getValue());
+                                        }
+                                        part.getDated().removeMap(Mpm.TEMPO_MAP);
+                                    }
+                                }
+                            }
+
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Merging all local tempo maps into the global: done.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Make Dynamics Global":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Merging all local dynamics maps into the global ...");
+
+                            ArrayList<Performance> performances = ((Mpm)this.getData()).getAllPerformances();
+                            for (Performance performance : performances) {
+                                DynamicsMap globalDynamicsMap = (DynamicsMap) performance.getGlobal().getDated().getMap(Mpm.DYNAMICS_MAP);
+                                if (globalDynamicsMap == null)
+                                    globalDynamicsMap = (DynamicsMap) performance.getGlobal().getDated().addMap(Mpm.DYNAMICS_MAP);
+
+                                ArrayList<Part> parts = performance.getAllParts();
+                                for (Part part : parts) {
+                                    DynamicsMap localDynamicsMap = (DynamicsMap) part.getDated().getMap(Mpm.DYNAMICS_MAP);
+                                    if (localDynamicsMap != null) {
+                                        ArrayList<KeyValue<Double, Element>> es = localDynamicsMap.getAllElements();
+                                        for (KeyValue<Double, Element> e : es) {
+                                            e.getValue().detach();
+                                            globalDynamicsMap.addElement(e.getValue());
+                                        }
+                                        part.getDated().removeMap(Mpm.DYNAMICS_MAP);
+                                    }
+                                }
+                            }
+
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Merging all local dynamics maps into the global: done.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Reload":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.reload();
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1270,7 +1486,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving MIDI data " + ((((Midi)this.data).writeMidi()) ? ("to " + ((Midi)this.data).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MPM data " + ((((Mpm)this.getData()).writeMpm()) ? ("to " + ((Mpm)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1278,7 +1494,181 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        Midi midi = ((Midi)this.data);                                  // the object
+                        Mpm mpm = ((Mpm)this.getData());                                     // the object
+                        FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
+                        File initialDir = new File(mpm.getFile().getParent());          // get the directory of the object's source file
+                        if (!initialDir.exists())                                       // if that does not exist
+                            initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
+                        chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
+                        chooser.setInitialFileName(mpm.getFile().getName());            // set the initial filename
+                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MPM files (*.mpm)", "*.mpm"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
+                        if (file != null) {                                             // if it returns a file to save the data, do the save operation
+                            Thread thread = new Thread(() -> {
+                                RotateTransition ani = this.startComputeAnimation();
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MPM data " + ((mpm.writeMpm(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.stopComputeAnimation(ani);
+                            });
+                            this.start(thread);
+                        }
+                    });
+                    break;
+//                case "Close":
+//                    break;
+                case "get Performances":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Extracting Performances from MPM ...");
+                            ArrayList<DataObject> performanceObjects = this.addSeveralChildren(mouseEvent, ((Mpm) this.getData()).getAllPerformances());
+                            for (DataObject performanceObject : performanceObjects)
+                                this.getWorkspace().addToPerformances(performanceObject);
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Extracting Performances from MPM: done, " + performanceObjects.size() + " performances found.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "XSL Transform":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MPM ...");
+                            XSLTransform activeXslt = this.getWorkspace().getActiveXSLT();
+                            String xslFilename = "";
+                            Xslt30Transformer xslt = null;
+                            if (activeXslt != null) {
+                                xslFilename = activeXslt.getFile().getName();
+                                xslt = activeXslt.getTransform();
+                            }
+                            else {
+                                if ((Settings.xslFile != null) && (Settings.xslTransform != null)) {
+                                    xslFilename = Settings.getXslFile().getName();
+                                    xslt = Settings.getXslTransform();
+                                }
+                            }
+                            if (xslt != null) {
+                                Mpm mpm = (Mpm)this.getData();
+                                String string = mpm.xslTransformToString(xslt);
+                                if (string != null) {
+                                    TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(mpm.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
+                                    this.addOneChild(mouseEvent, txt);
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MPM: done.");
+                                }
+                            }
+                            else {
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("No XSL Transform activated.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if (this.getData() instanceof Performance) {        // Performance-specific commands
+            switch (command) {
+                case "Show":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            if (this.getWorkspace().getApp().getWeb() != null) {
+                                Platform.runLater(() -> {
+                                    this.getWorkspace().getApp().getWeb().printContent((Helper.prettyXml(((Performance) this.getData()).toXml())), true);
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    }
+                                });
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Activate":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            if (!this.isActive()) {
+                                this.getWorkspace().deactivateAllPerformances();
+                                this.activate();
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Deactivate":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            if (this.isActive()) {
+                                this.deactivate();
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Add Humanizing":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Adding basic humanizing data to the performance ...");
+                            Humanizer.addHumanizing((Performance) this.getData());
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Adding basic humanizing data to the performance: done.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+//                case "Close":
+//                    break;
+                default:
+                    break;
+            }
+        }
+        else if (this.getData() instanceof Midi) {       // MIDI-specific commands
+            switch (command) {
+                case "Play":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> this.getWorkspace().getApp().getPlayer().play((Midi)this.getData()));
+                    break;
+                case "NoteOffs to NoteOns":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting noteOff to noteOn events: " + (((Midi)this.getData()).noteOffs2NoteOns()) + " events converted.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "NoteOns to NoteOffs":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting noteOn (with velocity 0) to noteOff events: " + (((Midi)this.getData()).noteOns2NoteOffs()) + " events converted.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Save":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MIDI data " + ((((Midi)this.getData()).writeMidi()) ? ("to " + ((Midi)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Save As":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Midi midi = ((Midi)this.getData());                             // the object
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(midi.getFile().getParent());         // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -1286,11 +1676,11 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(midi.getFile().getName());           // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MIDI files (*.mid)", "*.mid"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
                                 RotateTransition ani = this.startComputeAnimation();
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving MIDI data " + ((midi.writeMidi(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MIDI data " + ((midi.writeMidi(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                 this.stopComputeAnimation(ani);
                             });
                             this.start(thread);
@@ -1303,11 +1693,11 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MIDI to audio ...");
-                            Audio audio = ((Midi)this.data).exportAudio(this.workspace.getActiveSoundbank());   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MIDI to audio ...");
+                            Audio audio = ((Midi)this.getData()).exportAudio(this.getWorkspace().getActiveSoundbank());   // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 this.addOneChild(mouseEvent, audio);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MIDI to audio: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MIDI to audio: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1318,11 +1708,26 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MIDI to MSM ...");
-                            Msm msm = ((Midi)this.data).exportMsm();        // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MIDI to MSM ...");
+                            Msm msm = ((Midi)this.getData()).exportMsm();        // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 this.addOneChild(mouseEvent, msm);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MIDI to MSM: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MIDI to MSM: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Humanize (experimental)":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Adding humanizing to MIDI data ...");
+                            Midi midi = Humanizer.humanize((Midi)this.getData());
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                this.addOneChild(mouseEvent, midi);
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Adding humanizing to MIDI data: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1333,19 +1738,19 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof Audio) {      // Audio-specific commands
+        else if (this.getData() instanceof Audio) {      // Audio-specific commands
             switch (command) {
                 case "Play":
-                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> this.workspace.getApp().getPlayer().play((Audio)this.data));
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> this.getWorkspace().getApp().getPlayer().play((Audio)this.getData()));
                     break;
                 case "Save (mp3)":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving audio data as MP3 ...");
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data as MP3 ...");
                             RotateTransition ani = this.startComputeAnimation();
-                            boolean success = ((Audio)this.data).writeMp3();
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving audio data as MP3 " + ((success) ? ("to " + Helper.getFilenameWithoutExtension(((Audio) this.data).getFile().getAbsolutePath()) + ".mp3.") : "failed."));
+                            boolean success = ((Audio)this.getData()).writeMp3();
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data as MP3 " + ((success) ? ("to " + Helper.getFilenameWithoutExtension(((Audio) this.getData()).getFile().getAbsolutePath()) + ".mp3.") : "failed."));
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1355,11 +1760,11 @@ class DataObject extends Group {
                 case "Save (wav)":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving audio data ...");
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data ...");
                             RotateTransition ani = this.startComputeAnimation();
-                            boolean success = ((Audio)this.data).writeAudio();
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving audio data " + ((success) ? ("to " + ((Audio) this.data).getFile().getAbsolutePath() + ".") : "failed."));
+                            boolean success = ((Audio)this.getData()).writeAudio();
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data " + ((success) ? ("to " + ((Audio) this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1368,7 +1773,7 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        Audio audio = ((Audio)this.data);                               // the object
+                        Audio audio = ((Audio)this.getData());                               // the object
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(audio.getFile().getParent());        // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -1376,7 +1781,7 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(audio.getFile().getName());          // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Wave files (*.wav)", "*.wav"), new FileChooser.ExtensionFilter("MP3 files (*.mp3)", "*.mp3"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             String type = file.getName();
                             type = type.substring(type.lastIndexOf(".")).toLowerCase();
@@ -1384,12 +1789,12 @@ class DataObject extends Group {
 //                                case ".wav":  // default behavior
 //                                    break;
                                 case ".mp3": {
-                                    this.workspace.getApp().getStatuspanel().setMessage("Saving audio data as MP3 ...");
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data as MP3 ...");
                                     Thread thread = new Thread(() -> {
                                         RotateTransition ani = this.startComputeAnimation();
                                         boolean success = audio.writeMp3(file.getAbsolutePath());
-                                        if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
-                                            this.workspace.getApp().getStatuspanel().setMessage("Saving audio data as MP3" + ((success) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                        if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data as MP3" + ((success) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                         }
                                         this.stopComputeAnimation(ani);
                                     });
@@ -1397,12 +1802,12 @@ class DataObject extends Group {
                                     break;
                                 }
                                 default: {
-                                    this.workspace.getApp().getStatuspanel().setMessage("Saving audio data ...");
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data ...");
                                     Thread thread = new Thread(() -> {
                                         RotateTransition ani = this.startComputeAnimation();
                                         boolean success = audio.writeAudio(file.getAbsolutePath());
-                                        if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
-                                            this.workspace.getApp().getStatuspanel().setMessage("Saving audio data " + ((success) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                        if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving audio data " + ((success) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                         }
                                         this.stopComputeAnimation(ani);
                                     });
@@ -1419,18 +1824,18 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof Pitches) {    // Pitches-specific commands
+        else if (this.getData() instanceof Pitches) {    // Pitches-specific commands
             switch (command) {
                 case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            if (this.workspace.getApp().getWeb() != null) {
+                            if (this.getWorkspace().getApp().getWeb() != null) {
                                 Platform.runLater(() -> {
-                                    this.workspace.getApp().getWeb().printContent(((Pitches) this.data).getAsString(true), true);
-                                    if (this.workspace.getApp().getWebAccordion() != null) {
-                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
-                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    this.getWorkspace().getApp().getWeb().printContent(((Pitches) this.getData()).getAsString(true), true);
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
                                     }
                                 });
                             }
@@ -1443,7 +1848,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving JSON data " + ((((Pitches)this.data).writePitches(Settings.savePitchesWithPrettyPrint)) ? ("to " + ((Pitches)this.data).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving JSON data " + ((((Pitches)this.getData()).writePitches(Settings.savePitchesWithPrettyPrint)) ? ("to " + ((Pitches)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1451,7 +1856,7 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        Pitches pitches = ((Pitches)this.data);                         // the object
+                        Pitches pitches = ((Pitches)this.getData());                         // the object
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(pitches.getFile().getParent());      // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -1459,11 +1864,11 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(pitches.getFile().getName());        // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("JSON files (*.json)", "*.json"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
                                 RotateTransition ani = this.startComputeAnimation();
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving pitch data " + ((pitches.writePitches(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving pitch data " + ((pitches.writePitches(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                 this.stopComputeAnimation(ani);
                             });
                             this.start(thread);
@@ -1476,13 +1881,13 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof meico.app.gui.Soundbank) {    // Soundbank-specific commands
+        else if (this.getData() instanceof meico.app.gui.Soundbank) {    // Soundbank-specific commands
             switch (command) {
                 case "Set As Default":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.Soundbank soundbank = (meico.app.gui.Soundbank)this.data;
+                            meico.app.gui.Soundbank soundbank = (meico.app.gui.Soundbank)this.getData();
                             Settings.setSoundbank(soundbank.getFile());
                             this.stopComputeAnimation(ani);
                         });
@@ -1493,10 +1898,11 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.Soundbank soundbank = (meico.app.gui.Soundbank)this.data;
-                            if (!soundbank.isActive()) {
-                                this.workspace.silentDeactivationOfAllSoundbanks();
+                            meico.app.gui.Soundbank soundbank = (meico.app.gui.Soundbank)this.getData();
+                            if (!this.isActive()) {
+                                this.getWorkspace().silentDeactivationOfAllSoundbanks();
                                 soundbank.activate();
+                                this.activate();
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1507,9 +1913,10 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.Soundbank soundbank = (meico.app.gui.Soundbank)this.data;
-                            if (soundbank.isActive()) {
+                            meico.app.gui.Soundbank soundbank = (meico.app.gui.Soundbank)this.getData();
+                            if (this.isActive()) {
                                 soundbank.deactivate();
+                                this.deactivate();
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1522,13 +1929,13 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof meico.app.gui.XSLTransform) {    // XSLT-specific commands
+        else if (this.getData() instanceof meico.app.gui.XSLTransform) {    // XSLT-specific commands
             switch (command) {
                 case "Set As Default":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.XSLTransform xsltransform = (meico.app.gui.XSLTransform) this.data;
+                            meico.app.gui.XSLTransform xsltransform = (meico.app.gui.XSLTransform) this.getData();
                             Settings.setXSLT(xsltransform.getFile());
                             this.stopComputeAnimation(ani);
                         });
@@ -1539,10 +1946,9 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.XSLTransform xsltransform = (meico.app.gui.XSLTransform) this.data;
-                            if (!xsltransform.isActive()) {
-                                this.workspace.deactivateAllXSLTs();
-                                xsltransform.activate();
+                            if (!this.isActive()) {
+                                this.getWorkspace().deactivateAllXSLTs();
+                                this.activate();
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1553,9 +1959,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.XSLTransform xsltransform = (meico.app.gui.XSLTransform) this.data;
-                            if (xsltransform.isActive()) {
-                                xsltransform.deactivate();
+                            if (this.isActive()) {
+                                this.deactivate();
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1568,13 +1973,13 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof meico.app.gui.Schema) {    // XML schema-specific commands
+        else if (this.getData() instanceof meico.app.gui.Schema) {    // XML schema-specific commands
             switch (command) {
                 case "Set As Default":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
+                            meico.app.gui.Schema schema = (meico.app.gui.Schema) this.getData();
                             Settings.setSchema(schema.getFile());
                             this.stopComputeAnimation(ani);
                         });
@@ -1585,10 +1990,9 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
-                            if (!schema.isActive()) {
-                                this.workspace.deactivateAllSchemas();
-                                schema.activate();
+                            if (!this.isActive()) {
+                                this.getWorkspace().deactivateAllSchemas();
+                                this.activate();
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1599,9 +2003,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            meico.app.gui.Schema schema = (meico.app.gui.Schema) this.data;
-                            if (schema.isActive()) {
-                                schema.deactivate();
+                            if (this.isActive()) {
+                                this.deactivate();
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1614,18 +2017,18 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof TxtData) {    // txt file-specific commands
+        else if (this.getData() instanceof TxtData) {    // txt file-specific commands
             switch (command) {
                 case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             Platform.runLater(() -> {
-                                if (this.workspace.getApp().getWeb() != null) {
-                                    this.workspace.getApp().getWeb().printContent(((TxtData) this.data).getString(), true);
-                                    if (this.workspace.getApp().getWebAccordion() != null) {
-                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
-                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                if (this.getWorkspace().getApp().getWeb() != null) {
+                                    this.getWorkspace().getApp().getWeb().printContent(((TxtData) this.getData()).getString(), true);
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
                                     }
                                 }
                             });
@@ -1648,7 +2051,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving TXT data " + ((((TxtData)this.data).writeTxtData()) ? ("to " + ((TxtData)this.data).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving TXT data " + ((((TxtData)this.getData()).writeTxtData()) ? ("to " + ((TxtData)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1656,7 +2059,7 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        TxtData txt = (TxtData) this.data;
+                        TxtData txt = (TxtData) this.getData();
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(txt.getFile().getParent());          // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -1664,11 +2067,11 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(txt.getFile().getName());            // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
                                 RotateTransition ani = this.startComputeAnimation();
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving pitch data " + ((txt.writeTxtData(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving pitch data " + ((txt.writeTxtData(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                 this.stopComputeAnimation(ani);
                             });
                             this.start(thread);
@@ -1681,8 +2084,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to text data ...");
-                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to text data ...");
+                            XSLTransform activeXslt = this.getWorkspace().getActiveXSLT();
                             String xslFilename = "";
                             Xslt30Transformer xslt = null;
                             if (activeXslt != null) {
@@ -1695,30 +2098,30 @@ class DataObject extends Group {
                                     xslt = Settings.getXslTransform();
                                 }
                             }
-                            if ((xslt != null) && (!((TxtData) this.data).getString().isEmpty())) {
+                            if ((xslt != null) && (!((TxtData) this.getData()).getString().isEmpty())) {
                                 // try interpreting the string as xml data
                                 Builder builder = new Builder(false);                       // we leave the validate argument false as XOM's built-in validator does not support RELAX NG
                                 Document input = null;
                                 try {
-                                    input = builder.build(new ByteArrayInputStream(((TxtData)this.data).getString().getBytes(StandardCharsets.UTF_8)));
+                                    input = builder.build(new ByteArrayInputStream(((TxtData)this.getData()).getString().getBytes(StandardCharsets.UTF_8)));
                                 } catch (ValidityException e) {                             // in case of a ValidityException
                                     input = e.getDocument();                                // make the XOM Document anyway, we may nonetheless be able to work with it
                                 } catch (ParsingException | IOException e) {
-                                    this.workspace.getApp().getStatuspanel().setMessage(e.toString());
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage(e.toString());
                                     e.printStackTrace();
                                     input = null;
                                 }
                                 if (input != null) {
                                     String string = Helper.xslTransformToString(input, xslt);
                                     if (string != null) {
-                                        TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(((TxtData)this.data).getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
+                                        TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(((TxtData)this.getData()).getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
                                         this.addOneChild(mouseEvent, txt);
-                                        this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to text: done.");
+                                        this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to text: done.");
                                     }
                                 }
                             }
                             else {
-                                this.workspace.getApp().getStatuspanel().setMessage("No XSL Transform activated.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("No XSL Transform activated.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1729,18 +2132,18 @@ class DataObject extends Group {
                     break;
             }
         }
-        else if (this.data instanceof MusicXml) {    // txt file-specific commands
+        else if (this.getData() instanceof MusicXml) {    // txt file-specific commands
             switch (command) {
                 case "Show":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            if (this.workspace.getApp().getWeb() != null) {
+                            if (this.getWorkspace().getApp().getWeb() != null) {
                                 Platform.runLater(() -> {
-                                    this.workspace.getApp().getWeb().printContent((Helper.prettyXml(((MusicXml) this.data).toXML())), true);
-                                    if (this.workspace.getApp().getWebAccordion() != null) {
-                                        this.workspace.getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
-                                        this.workspace.getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
+                                    this.getWorkspace().getApp().getWeb().printContent((Helper.prettyXml(((MusicXml) this.getData()).toXML())), true);
+                                    if (this.getWorkspace().getApp().getWebAccordion() != null) {
+                                        this.getWorkspace().getApp().getWebAccordion().setText(this.label);              // change the title string of the WebView
+                                        this.getWorkspace().getApp().getWebAccordion().setExpanded(true);                // auto-expand the WebAccordion
                                     }
                                 });
                             }
@@ -1763,7 +2166,7 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Saving MusicXML data " + ((((MusicXml)this.data).writeMusicXml()) ? ("to " + ((MusicXml)this.data).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MusicXML data " + ((((MusicXml)this.getData()).writeMusicXml()) ? ("to " + ((MusicXml)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1771,7 +2174,7 @@ class DataObject extends Group {
                     break;
                 case "Save As":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        MusicXml mxl = ((MusicXml)this.data);                                     // the object
+                        MusicXml mxl = ((MusicXml)this.getData());                                     // the object
                         FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
                         File initialDir = new File(mxl.getFile().getParent());          // get the directory of the object's source file
                         if (!initialDir.exists())                                       // if that does not exist
@@ -1779,11 +2182,11 @@ class DataObject extends Group {
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(mxl.getFile().getName());            // set the initial filename
                         chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MusicXML files (*.musicxml)", "*.musicxml"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.workspace.getApp().getStage());   // show the save dialog
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
                                 RotateTransition ani = this.startComputeAnimation();
-                                this.workspace.getApp().getStatuspanel().setMessage("Saving MSM data " + ((mxl.writeMusicXml(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MSM data " + ((mxl.writeMusicXml(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
                                 this.stopComputeAnimation(ani);
                             });
                             this.start(thread);
@@ -1796,11 +2199,11 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Converting MusicXML to MEI ...");
-                            Mei mei = ((MusicXml)this.data).exportMei(Settings.useLatestVerovio);   // do the conversion
-                            if (this.workspace != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI ...");
+                            Mei mei = ((MusicXml)this.getData()).exportMei(Settings.useLatestVerovio);   // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
                                 this.addOneChild(mouseEvent, mei);
-                                this.workspace.getApp().getStatuspanel().setMessage("Converting MusicXML to MEI: done.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1811,8 +2214,8 @@ class DataObject extends Group {
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI ...");
-                            XSLTransform activeXslt = this.workspace.getActiveXSLT();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI ...");
+                            XSLTransform activeXslt = this.getWorkspace().getActiveXSLT();
                             String xslFilename = "";
                             Xslt30Transformer xslt = null;
                             if (activeXslt != null) {
@@ -1826,16 +2229,16 @@ class DataObject extends Group {
                                 }
                             }
                             if (xslt != null) {
-                                MusicXml mxl = (MusicXml)this.data;
+                                MusicXml mxl = (MusicXml)this.getData();
                                 String string = mxl.xslTransformToString(xslt);
                                 if (string != null) {
                                     TxtData txt = new TxtData(string, new File(Helper.getFilenameWithoutExtension(mxl.getFile().getPath()) + "-" + Helper.getFilenameWithoutExtension(xslFilename) + ".txt"));    // do the xsl transform
                                     this.addOneChild(mouseEvent, txt);
-                                    this.workspace.getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI: done.");
+                                    this.getWorkspace().getApp().getStatuspanel().setMessage("Applying currently active XSLT to MEI: done.");
                                 }
                             }
                             else {
-                                this.workspace.getApp().getStatuspanel().setMessage("No XSL Transform activated.");
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("No XSL Transform activated.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -1850,7 +2253,7 @@ class DataObject extends Group {
 
     /**
      * a generic method to define the interaction of a menu item;
-     * what the item actually does must be provided via parameter action
+     * what the item actually does must be provided via parameter inter
      * @param item
      * @param label
      * @param body
@@ -1916,12 +2319,36 @@ class DataObject extends Group {
     }
 
     /**
-     * after converting MEI to something else, its data is altered, this method is called to get the original version
+     * this method can be called to reload the original data, e.g. when it has been altered
      */
-    private void reloadMei() {
+    private void reload() {
         if (this.data instanceof Mei) {
+            if (!((Mei) this.data).getFile().exists())
+                return;
             try {
                 this.data = new Mei(((Mei) this.data).getFile());
+                this.workspace.getApp().getStatuspanel().setMessage("Data reloaded.");
+            } catch (IOException | ParsingException | SAXException | ParserConfigurationException e) {
+                this.workspace.getApp().getStatuspanel().setMessage(e.toString());
+                e.printStackTrace();
+            }
+        }
+        if (this.data instanceof Msm) {
+            if (!((Msm) this.data).getFile().exists())
+                return;
+            try {
+                this.data = new Msm(((Msm) this.data).getFile());
+                this.workspace.getApp().getStatuspanel().setMessage("Data reloaded.");
+            } catch (IOException | ParsingException | SAXException | ParserConfigurationException e) {
+                this.workspace.getApp().getStatuspanel().setMessage(e.toString());
+                e.printStackTrace();
+            }
+        }
+        if (this.data instanceof Mpm) {
+            if (!((Mpm) this.data).getFile().exists())
+                return;
+            try {
+                this.data = new Mpm(((Mpm) this.data).getFile());
                 this.workspace.getApp().getStatuspanel().setMessage("Data reloaded.");
             } catch (IOException | ParsingException | SAXException | ParserConfigurationException e) {
                 this.workspace.getApp().getStatuspanel().setMessage(e.toString());
@@ -1950,18 +2377,36 @@ class DataObject extends Group {
      * @param mouseEvent
      * @param objects
      */
-    private synchronized void addSeveralChildren(MouseEvent mouseEvent, List objects) {
-        if (objects == null) return;
+    private synchronized ArrayList<DataObject> addSeveralChildren(MouseEvent mouseEvent, List objects) {
+        ArrayList<DataObject> children = new ArrayList<>();
+        DataObject msm = null;
+        if (objects == null) return children;
         Point2D center = this.getCenterPoint();                                                                     // the center coordinated of this data object
         Point2D clickPoint = this.workspace.getContainer().sceneToLocal(mouseEvent.getSceneX(), mouseEvent.getSceneY()); // the click coordinates
         Point2D cn = clickPoint.subtract(center).normalize();                                                       // transformed click coordinates with center shifted to origin and click point vector normalized
         Affine rot = new Affine();                                                                                  // initialize an affine transformation (we need a rotation)
         rot.appendRotation(Settings.multipleDataObjectCreationAngle);                                               // this sets the rotation angle at which multiple data objects are seperated from each other
+        double distance = Settings.newDataObjectDistance;
         for (Object object : objects) {                                                                             // for each output Msm
-            Point2D p = cn.multiply(Settings.newDataObjectDistance).add(center);                                    // from cn go to the actual position at which to display the new data object
-            if (this.makeChild(object, p))
+            Point2D p = cn.multiply(distance).add(center);                                    // from cn go to the actual position at which to display the new data object
+            distance += Settings.dataItemRadius * 0.1;
+            DataObject child = this.makeChild(object, p);
+            if (child != null) {
                 cn = rot.transform(cn);
+                children.add(child);
+                if (child.getData() instanceof Msm) {
+                    msm = child;
+                } else if ((msm != null) && (child.getData() instanceof Mpm)) {
+                    DataObject finalMsm = msm;
+                    Platform.runLater(() -> {                                                                           // add the data object and a connecting line to the workspace (must be done in the JavaFX thread)
+                        DataObjectLine line = this.workspace.addDataObjectLine(finalMsm, child);
+                        finalMsm.lines.add(line);
+                        child.lines.add(line);
+                    });
+                }
+            }
         }
+        return children;
     }
 
     /**
@@ -1972,8 +2417,7 @@ class DataObject extends Group {
      * @param at
      * @return
      */
-    protected synchronized boolean makeChild(Object object, Point2D at) {
-        boolean returnValue = true;
+    protected synchronized DataObject makeChild(Object object, Point2D at) {
         try {
             DataObject dataObject = new DataObject(object, this.workspace);                                     // embed the Msm data in a DataObject instance
             Platform.runLater(() -> {                                                                           // add the data object and a connecting line to the workspace (must be done in the JavaFX thread)
@@ -1982,12 +2426,12 @@ class DataObject extends Group {
                 this.lines.add(line);
                 dataObject.lines.add(line);
             });
+            return dataObject;
         } catch (InvalidMidiDataException | ParsingException | IOException | UnsupportedAudioFileException | SaxonApiException | SAXException | ParserConfigurationException e) {
             this.workspace.getApp().getStatuspanel().setMessage(e.toString());
             e.printStackTrace();
-            returnValue = false;
+            return null;
         }
-        return returnValue;
     }
 
     /**
@@ -2006,15 +2450,14 @@ class DataObject extends Group {
      * @param array
      * @return
      */
-    private synchronized double computevisualLengthOfLongestString(String[] array) {
+    private synchronized double computeVisualLengthOfLongestString(String[] array) {
         int len = 0;
         for (int i = 0; i < array.length; ++i) {
             int s = array[i].length();
             if (s > len)
                 len = s;
         }
-        double length = Settings.mWidth * (len + 2) / 2;
-        return length;
+        return Settings.mWidth * (len + 2) / 2;
     }
 
     /**
@@ -2123,5 +2566,32 @@ class DataObject extends Group {
                 alert.showAndWait();
             });
         }
+    }
+
+    /**
+     * returns true as long as it is activated
+     * @return
+     */
+    protected boolean isActive() {
+        return this.isActive;
+    }
+
+    /**
+     * triggers the usage of this
+     */
+    protected synchronized void activate() {
+        this.isActive = true;
+        StackPane p = (StackPane) this.getChildren().get(this.getChildren().size() - 1);    // make the graphical representation light up
+        Glow glow = new Glow(0.8);
+        p.setEffect(glow);
+    }
+
+    /**
+     * when another data object of this type is activated, this one should to be deactivated
+     */
+    protected synchronized void deactivate() {
+        this.isActive = false;
+        StackPane p = (StackPane) this.getChildren().get(this.getChildren().size() - 1);    // switch the light off
+        p.setEffect(null);
     }
 }

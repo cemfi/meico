@@ -2,6 +2,7 @@ package meico.midi;
 
 import meico.audio.Audio;
 import meico.mei.Helper;
+import meico.mpm.elements.maps.TempoMap;
 import meico.msm.Msm;
 
 import javax.sound.midi.*;
@@ -177,6 +178,29 @@ public class Midi {
             return this.sequence.getResolution();
         }
         throw new Exception("Error: MIDI timing is in SMTPE, not PPQ!");
+    }
+
+    public synchronized TempoMap getTempoMap() {
+        TempoMap tempoMap = TempoMap.createTempoMap();
+        if (tempoMap == null)
+            return null;
+
+        Track[] tracks = this.sequence.getTracks();                                     // get the individual tracks from the sequence
+        for (Track track : tracks) {                                                    // go through all tracks
+            for (int e = 0; e < track.size(); ++e) {                                    // for all the events in the track
+                MidiEvent event = track.get(e);                                         // get the current event
+                if (event.getMessage() instanceof MetaMessage) {                        // if it is a meta message
+                    MetaMessage m = (MetaMessage) event.getMessage();                   // get the message
+                    if (m.getType() == EventMaker.META_Set_Tempo) {                     // if it is a tempo event (that is what we are looking for)
+                        int mpq = EventMaker.byteArrayToInt(m.getData());               // get the milliseconds per quarter note tempo value
+                        double bpm = 60000000.0 / mpq;                                  // compute quarter notes per minute tempo
+                        tempoMap.addTempo(event.getTick(), Double.toString(bpm), 0.25); // add a new tempo element to the MPM tempoMap
+                    }
+                }
+            }
+        }
+
+        return tempoMap;
     }
 
     /**
@@ -416,7 +440,8 @@ public class Midi {
      * @return
      */
     public Audio exportAudio(File soundbankFile) {
-        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MIDI data") + " to audio.");
+        long startTime = System.currentTimeMillis();                            // we measure the time that the conversion consumes
+        System.out.println("\nConverting " + ((this.file != null) ? this.file.getName() : "MIDI data") + " to audio.");
         Midi2AudioRenderer renderer;                // an instance of the renderer
         try {
             renderer = new Midi2AudioRenderer();    // initialize the renderer
@@ -449,6 +474,8 @@ public class Midi {
             e.printStackTrace();
         }
 
+        System.out.println("MIDI to audio conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+
         return audio;                   // return the Audio object
     }
 
@@ -467,7 +494,8 @@ public class Midi {
      * @return
      */
     public Msm exportMsm(boolean useDefaultInstrumentNames, boolean cleanup) {
-        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MIDI data") + " to MSM.");
+        long startTime = System.currentTimeMillis();                            // we measure the time that the conversion consumes
+        System.out.println("\nConverting " + ((this.file != null) ? this.file.getName() : "MIDI data") + " to MSM.");
         int ppq;
         try {
             ppq = this.getPPQ();                                                                            // try to read the ppq value from the MIDI sequence
@@ -494,6 +522,8 @@ public class Midi {
         // cleanup the msm code, remove empty maps
         if (cleanup)
             Helper.msmCleanup(msm);
+
+        System.out.println("MIDI to MSM conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
 
         return msm;                                                                                         // return the result
     }

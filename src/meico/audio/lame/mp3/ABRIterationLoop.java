@@ -2,7 +2,6 @@ package meico.audio.lame.mp3;
 
 /**
  * encode a frame with a desired average bitrate
- * <p/>
  * mt 2000/05/31
  *
  * @author Ken

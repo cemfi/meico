@@ -11,6 +11,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import meico.mpm.elements.Performance;
 import net.sf.saxon.s9api.SaxonApiException;
 import nu.xom.ParsingException;
 import org.xml.sax.SAXException;
@@ -34,6 +35,7 @@ class Workspace extends ScrollPane {
     private ArrayList<DataObject> soundbanks = new ArrayList<>();   // the list of soundbanks that are present in the workspace (they are also contained in this.data)
     private ArrayList<DataObject> xslts = new ArrayList<>();        // the list of XSLTs that are present in the workspace (they are also contained in this.data)
     private ArrayList<DataObject> schemas = new ArrayList<>();      // the list of schemas (RNGs) that are present in the workspace (they are also contained in this.data)
+    private ArrayList<DataObject> performances = new ArrayList<>(); // the list of performances that are present in the workspace
 
     public Workspace(MeicoApp app) {
         super();
@@ -63,6 +65,7 @@ class Workspace extends ScrollPane {
         Label message = new Label(Settings.WELCOME_MESSAGE);    // the welcome message text as label
         message.setFont(Settings.font);                         // set font
         message.setStyle(Settings.WELCOME_MESSAGE_STYLE);       // set style
+        message.setTranslateY(25.0);                            // move it so it fits around the dropIcon
 
         // the file drop icon
         Label dropIcon = new Label("\uf56f");                   // icon
@@ -121,6 +124,7 @@ class Workspace extends ScrollPane {
         this.soundbanks.clear();
         this.xslts.clear();
         this.schemas.clear();
+        this.performances.clear();
         this.app.getPlayer().setSoundbank(null);
         System.gc();    // force garbage collector to do its job
     }
@@ -138,6 +142,8 @@ class Workspace extends ScrollPane {
             this.xslts.remove(object);
         else if (object.getDataType() == Schema.class)
             this.schemas.remove(object);
+        else if (object.getDataType() == Performance.class)
+            this.performances.remove(object);
 
         this.container.getChildren().remove(object);
         object.clear();
@@ -172,8 +178,8 @@ class Workspace extends ScrollPane {
             this.addToSoundbanks(dataObject);                       // add it also to the soundbanks
         else  if (dataObject.getDataType() == XSLTransform.class)   // if it is an xslt
             this.addToXSLTs(dataObject);                            // add it also to the xslts
-        else  if (dataObject.getDataType() == Schema.class)   // if it is an xslt
-            this.addToSchemas(dataObject);                            // add it also to the xslts
+        else  if (dataObject.getDataType() == Schema.class)   // if it is a performance
+            this.addToSchemas(dataObject);                            // add it also to the performances
     }
 
     /**
@@ -203,7 +209,7 @@ class Workspace extends ScrollPane {
      */
     protected synchronized void silentDeactivationOfAllSoundbanks() {
         for (DataObject o : this.soundbanks) {
-            ((meico.app.gui.Soundbank)o.getData()).silentDeactivation();
+            o.deactivate();
         }
     }
 
@@ -213,9 +219,8 @@ class Workspace extends ScrollPane {
      */
     protected File getActiveSoundbank() {
         for (DataObject o : this.soundbanks) {
-            meico.app.gui.Soundbank s = (meico.app.gui.Soundbank)o.getData();
-            if (s.isActive())
-                return s.getFile();
+            if (o.isActive())
+                return ((meico.app.gui.Soundbank)o.getData()).getFile();
         }
         return Settings.soundbank;
     }
@@ -234,9 +239,8 @@ class Workspace extends ScrollPane {
      */
     protected XSLTransform getActiveXSLT() {
         for (DataObject o : this.xslts) {
-            meico.app.gui.XSLTransform x = (meico.app.gui.XSLTransform)o.getData();
-            if (x.isActive())
-                return x;
+            if (o.isActive())
+                return (XSLTransform) o.getData();
         }
         return null;
     }
@@ -246,7 +250,7 @@ class Workspace extends ScrollPane {
      */
     protected synchronized void deactivateAllXSLTs() {
         for (DataObject o : this.xslts) {
-            ((meico.app.gui.XSLTransform)o.getData()).deactivate();
+            o.deactivate();
         }
     }
 
@@ -264,9 +268,8 @@ class Workspace extends ScrollPane {
      */
     protected Schema getActiveSchema() {
         for (DataObject o : this.schemas) {
-            Schema schema = (Schema)o.getData();
-            if (schema.isActive())
-                return schema;
+            if (o.isActive())
+                return (Schema)o.getData();
         }
         return null;
     }
@@ -276,7 +279,36 @@ class Workspace extends ScrollPane {
      */
     protected synchronized void deactivateAllSchemas() {
         for (DataObject o : this.schemas) {
-            ((Schema)o.getData()).deactivate();
+            o.deactivate();
+        }
+    }
+
+    /**
+     * this adds the given DataObject to the performance list
+     * @param performance
+     */
+    protected synchronized void addToPerformances(DataObject performance) {
+        this.performances.add(performance);
+    }
+
+    /**
+     * returns the Performance DataObject that is currently activated
+     * @return
+     */
+    protected Performance getActivePerformance() {
+        for (DataObject o : this.performances) {
+            if (o.isActive())
+                return (Performance)o.getData();
+        }
+        return null;
+    }
+
+    /**
+     * This deactivates all performances.
+     */
+    protected synchronized void deactivateAllPerformances() {
+        for (DataObject o : this.performances) {
+            o.deactivate();
         }
     }
 

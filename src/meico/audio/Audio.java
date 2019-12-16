@@ -129,9 +129,60 @@ public class Audio {
      * @return
      */
     public synchronized static AudioInputStream convertByteArray2AudioInputStream(byte[] array, AudioFormat format) {
-        ByteArrayInputStream bis = new ByteArrayInputStream(array);             // byte array to ByteArrayInputStream
-        AudioInputStream ais = new AudioInputStream(bis, format, array.length); // byteArrayInputStream to AudioInputStream
-        return ais;                                                             // return it
+        ByteArrayInputStream bis = new ByteArrayInputStream(array);                 // byte array to ByteArrayInputStream
+        AudioInputStream ais = new AudioInputStream(bis, format, (array.length / (2 * format.getChannels()))); // byteArrayInputStream to AudioInputStream
+        return ais;                                                                 // return it
+    }
+
+    /**
+     * This can be used to convert the byte array of an Audio object into an array of doubles between -1.0 and 1.0
+     * which is far more convenient for audio analyses.
+     * @param array
+     * @param format
+     * @return
+     */
+    public synchronized static double[] convertByteArray2DoubleArray(byte[] array, AudioFormat format) {
+        double max16bit = 32768.0;  // TODO: if the audio format is not 16 bit this must be a different value
+
+        // little endian, mono
+        if (format.getChannels() == 1) {        // mono
+            double[] output = new double[array.length / 2];
+            for (int i = 0; i < (array.length / 2); i++)
+                output[i] = ((short) (((array[2 * i + 1] & 0xFF) << 8) | (array[2 * i] & 0xFF))) / max16bit;
+            return output;
+        }
+
+        // little endian, stereo, output is the sum of both channels
+        else if (format.getChannels() == 2) {   // stereo
+            double[] output = new double[array.length / 4];
+            for (int i = 0; i < (array.length / 4); i++) {
+                double left  = ((short) (((array[4 * i + 1] & 0xFF) << 8) | (array[4 * i] & 0xFF))) / max16bit;
+                double right = ((short) (((array[4 * i + 3] & 0xFF) << 8) | (array[4 * i + 2] & 0xFF))) / max16bit;
+                output[i] = (left + right) / 2.0;
+            }
+            return output;
+        }
+
+        // if the audio format is inappropriate
+        return new double[]{};                  // return empty array
+    }
+
+    /**
+     * This method converts an input double array into a byte array.
+     * @param array
+     * @return
+     */
+    public synchronized static byte[] convertDoubleArray2ByteArray(double[] array) {
+        double max16bit = 32768.0;  // TODO: if the audio format is not 16 bit this must be a different value
+
+        // assumes signed PCM, little endian
+        byte[] output = new byte[2 * array.length];
+        for (int i = 0; i < array.length; i++) {
+            int b = (array[i] == 1.0) ? Short.MAX_VALUE : (short) (array[i] * max16bit);
+            output[2 * i] = (byte) b;
+            output[2 * i + 1] = (byte) (b >> 8);      // little endian
+        }
+        return output;
     }
 
     /**
@@ -274,8 +325,8 @@ public class Audio {
      */
     public synchronized boolean writeAudio(String filename) {
         File file = new File(filename);     // create the file with this filename
-        file.getParentFile().mkdirs();                              // ensure that the directory exists
-        return this.writeAudio(file);              // write into it
+        file.getParentFile().mkdirs();      // ensure that the directory exists
+        return this.writeAudio(file);       // write into it
     }
 
     /**
@@ -298,13 +349,15 @@ public class Audio {
             e.printStackTrace();
             return false;
         }
-        AudioInputStream ais = convertByteArray2AudioInputStream(this.audio, this.format);  // convert the audio byte array to an AudioInputStream
+
+        AudioInputStream ais = Audio.convertByteArray2AudioInputStream(this.audio, this.format);  // convert the audio byte array to an AudioInputStream
         try {
-            AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);                            // write to file system
+            AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);                        // write to file system
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
+
         return true;
     }
 
@@ -335,12 +388,12 @@ public class Audio {
     public synchronized boolean writeMp3(File file) {
         if (file == null) {                                                 // if no valid file
             System.err.println("No file specified to write audio data.");   // print error message
-            return false;                                                         // cancel
+            return false;                                                   // cancel
         }
 
-        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        file.getParentFile().mkdirs();                                      // ensure that the directory exists
         try {
-            file.createNewFile();                                   // create the file if it does not already exist
+            file.createNewFile();                                           // create the file if it does not already exist
         } catch (IOException | SecurityException e) {
             e.printStackTrace();
             return false;

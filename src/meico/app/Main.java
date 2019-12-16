@@ -2,10 +2,19 @@ package meico.app;
 
 import meico.Meico;
 import meico.audio.Audio;
+import meico.mpm.Mpm;
+import meico.mpm.elements.Part;
+import meico.mpm.elements.Performance;
+import meico.mpm.elements.maps.ArticulationMap;
+import meico.mpm.elements.maps.GenericMap;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.mei.Mei;
 import meico.msm.Msm;
+import meico.supplementary.KeyValue;
+import meico.supplementary.RandomNumberProvider;
+import nu.xom.Element;
+import nu.xom.Elements;
 import nu.xom.ParsingException;
 import org.xml.sax.SAXException;
 
@@ -15,6 +24,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -27,6 +37,7 @@ public class Main {
      * @param args command line arguments
      */
     public static void main(String[] args) {
+
         if (args.length == 0) {                         // if meico.jar is called without command line arguments
 //            Meico.launch("Meico: MEI Converter v" + Meico.version);  // 1st string is the window title (is optional, MeicoApp generates a default title if none is given here)
             Meico.launch();                             // this is the minimal call to launch meico's gui
@@ -54,13 +65,14 @@ public class Main {
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
 //                System.out.println("[-g] or [--svg]                         convert to SVGs");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
+                System.out.println("[-f] or [--mpm]                         convert to MPM, MIDI output will be expressive");
                 System.out.println("[-o] or [--chroma]                      convert to chromas");
                 System.out.println("[-h] or [--pitches]                     convert to pitches");
-                System.out.println("[-i] or [--midi]                        convert to MIDI (and internally to MSM)");
+                System.out.println("[-i] or [--midi]                        convert to MIDI (raw, no expressive performance, yet)");
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
                 System.out.println("[-c] or [--dont-use-channel-10]         do not use channel 10 (drum channel) in MIDI");
                 System.out.println("[-t argument] or [--tempo argument]     set MIDI tempo (bpm), default is 120 bpm");
-                System.out.println("[-w] or [--wav]                         convert to Wave (and internally to MSM and MIDI)");
+                System.out.println("[-w] or [--wav]                         convert to Wave");
                 System.out.println("[-3] or [--mp3]                         convert to MP3");
                 System.out.println("[-s argument] or [--soundbank argument] use a specific sound bank file (.sf2, .dls) for Wave conversion");
                 System.out.println("[-d] or [--debug]                       write additional debug version of MEI and MSM");
@@ -80,6 +92,7 @@ public class Main {
         String xsltOutputExtension = "";
 //        boolean svg = false;
         boolean msm = false;
+        boolean mpm = false;
         boolean chroma = false;
         boolean pitches = false;
         boolean midi = false;
@@ -108,6 +121,7 @@ public class Main {
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
 //            if ((args[i].equals("-g")) || (args[i].equals("--svg"))) { svg = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
+            if ((args[i].equals("-f")) || (args[i].equals("--mpm"))) { mpm = true; continue; }
             if ((args[i].equals("-o")) || (args[i].equals("--chroma"))) { chroma = true; continue; }
             if ((args[i].equals("-h")) || (args[i].equals("--pitches"))) { pitches = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
@@ -201,17 +215,55 @@ public class Main {
         if (!(msm || pitches || chroma || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
 
         // convert mei -> msm -> midi
-        System.out.println("Converting MEI to MSM.");
-        List<Msm> msms = mei.exportMsm(720, dontUseChannel10, ignoreExpansions, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
-        if (msms.isEmpty()) {
-            System.err.println("MSM data could not be created.");
+        System.out.println("Converting MEI to MSM and MPM.");
+        KeyValue<List<Msm>, List<Mpm>> msmpms = mei.exportMsmMpm(720, dontUseChannel10, ignoreExpansions, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
+        if (msmpms.getKey().isEmpty()) {
+            System.err.println("MSM and MPM data could not be created.");
             return 1;
         }
 
         // instead of using sequencingMaps (which encode repetitions, dacapi etc.) in the msm objects we resolve them and, hence, expand all scores and maps according to the sequencing information
         if (!ignoreRepetitions) {
-            for (int i = 0; i < msms.size(); ++i) {             // we do this in all msm objects just exported from mei
-                msms.get(i).resolveSequencingMaps();            // this is the function call to do it (be aware: the sequencingMaps are deleted because they no longer apply)
+            ArrayList<GenericMap> articulationMaps = new ArrayList<>();
+            for (int i=0; i < msmpms.getKey().size(); ++i) {                                                    // for each msm and corresponding mpm
+                Element globalSequencingMap = msmpms.getKey().get(i).getRootElement().getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("sequencingMap");   // get the global sequencingMap of this msm
+                for (Performance performance : msmpms.getValue().get(i).getAllPerformances()) {                 // access all performances from the corresponding mpm
+                    // global maps are expanded only by the global sequencingMap
+                    if (globalSequencingMap != null) {
+                        HashMap<String, GenericMap> maps = performance.getGlobal().getDated().getAllMaps();
+                        for (GenericMap map : maps.values()) {
+                            map.applySequencingMap(globalSequencingMap);
+                            if (map instanceof ArticulationMap)     // in articulationMaps the elements have notid attribute that has to be updated after resolving the sequencingmaps in MSM
+                                articulationMaps.add(map);          // so keep the articulationMaps for later reference
+                        }
+                    }
+
+                    // local maps are expanded by either the local sequencingMap, if there is one, or the global sequencingMap
+                    Elements msmParts = msmpms.getKey().get(i).getParts();
+                    ArrayList<Part> mpmParts = performance.getAllParts();
+                    for (int pa = 0; pa < performance.size(); ++pa) {
+                        Element msmPart = msmParts.get(pa);
+                        Element sequencingMap = msmPart.getFirstChildElement("dated").getFirstChildElement("sequencingMap");
+                        if (sequencingMap == null) {
+                            sequencingMap = globalSequencingMap;
+                            if (sequencingMap == null)
+                                continue;
+                        }
+                        for (GenericMap map : mpmParts.get(pa).getDated().getAllMaps().values()) {
+                            map.applySequencingMap(sequencingMap);
+                            if (map instanceof ArticulationMap)     // in articulationMaps the elements have notid attribute that has to be updated after resolving the sequencingmaps in MSM
+                                articulationMaps.add(map);          // so keep the articulationMaps for later reference
+                        }
+                    }
+
+                    // finally, apply the sequencingMaps to MSM data, this will also delete the sequencingMaps, hence it has to be done at the end
+                    HashMap<String, String> repetitionIDs = msmpms.getKey().get(i).resolveSequencingMaps();
+
+                    // update the articulationMap's elements' notid attributes
+                    for (GenericMap map : articulationMaps) {
+                        Helper.updateMpmNoteidsAfterResolvingRepetitions(map, repetitionIDs);
+                    }
+                }
             }
         }
 
@@ -221,18 +273,26 @@ public class Main {
 
         if (msm) {
             System.out.println("Writing MSM to file system: ");
-            for (Msm msm1 : msms) {
+            for (Msm msm1 : msmpms.getKey()) {
                 if (!debug) msm1.removeRests();  // purge the data (some applications may keep the rests from the mei; these should not call this function)
                 msm1.writeMsm();                 // write the msm file to the file system
                 System.out.println("\t" + msm1.getFile().getPath());
             }
         }
 
+        if (mpm) {
+            System.out.println("Writing MPM to file system: ");
+            for (Mpm mpm1 : msmpms.getValue()) {
+                mpm1.writeMpm();                 // write the mpm file to the file system
+                System.out.println("\t" + mpm1.getFile().getPath());
+            }
+        }
+
         if (chroma) {
             System.out.println("Converting MSM to chromas.");
             List<Pitches> chromas = new ArrayList<>();
-            for (int i = 0; i < msms.size(); ++i) {
-                chromas.add(msms.get(i).exportChroma());
+            for (int i = 0; i < msmpms.getKey().size(); ++i) {
+                chromas.add(msmpms.getKey().get(i).exportChroma());
             }
             System.out.println("Writing chroma to file system: ");
             for (int i = 0; i < chromas.size(); ++i) {
@@ -245,8 +305,8 @@ public class Main {
         if (pitches) {
             System.out.println("Converting MSM to pitches.");
             List<Pitches> pitchesList = new ArrayList<>();
-            for (int i = 0; i < msms.size(); ++i) {
-                pitchesList.add(msms.get(i).exportPitches());
+            for (int i = 0; i < msmpms.getKey().size(); ++i) {
+                pitchesList.add(msmpms.getKey().get(i).exportPitches());
             }
             System.out.println("Writing pitches to file system: ");
             for (int i = 0; i < pitchesList.size(); ++i) {
@@ -260,12 +320,15 @@ public class Main {
 
         List<meico.midi.Midi> midis = new ArrayList<>();
         System.out.println("Converting MSM to MIDI.");
-        for (int i = 0; i < msms.size(); ++i) {
-            midis.add(msms.get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
+        for (int i = 0; i < msmpms.getKey().size(); ++i) {
+            midis.add(msmpms.getKey().get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
         }
 
         if (midi) {
             System.out.println("Writing MIDI to file system: ");
+            if (mpm) {
+                // TODO: render expressive performance before converting to midi
+            }
             for (int i = 0; i < midis.size(); ++i) {
                 midis.get(i).writeMidi();    // write midi file to the file system
                 System.out.println("\t" + midis.get(i).getFile().getPath());

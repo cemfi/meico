@@ -13,7 +13,6 @@ import java.io.File;
 class Soundbank {
     private DataObject graphicalInstance;
     private File file;                      // the audio file
-    private boolean isActive = false;       // will be set true when meico's MIDI synthesis uses it
 
     /**
      * constructor
@@ -33,23 +32,10 @@ class Soundbank {
     }
 
     /**
-     * returns true as long as it is used for MIDI synthesis
-     * @return
-     */
-    protected boolean isActive() {
-        return this.isActive;
-    }
-
-    /**
      * triggers the usage of this for MIDI synthesis
      */
-    protected synchronized void activate() {
-        this.isActive = this.graphicalInstance.getWorkspace().getApp().getPlayer().setSoundbank(this.file);
-        if (isActive) {
-            StackPane p = (StackPane) this.graphicalInstance.getChildren().get(this.graphicalInstance.getChildren().size() - 1);    // make the graphical representation light up
-            Glow glow = new Glow(0.8);
-            p.setEffect(glow);
-        }
+    protected synchronized boolean activate() {
+        return this.graphicalInstance.getWorkspace().getApp().getPlayer().setSoundbank(this.file);
     }
 
     /**
@@ -57,15 +43,5 @@ class Soundbank {
      */
     protected synchronized void deactivate() {
         this.graphicalInstance.getWorkspace().getApp().getPlayer().setSoundbank(Settings.soundbank);
-        this.silentDeactivation();
-    }
-
-    /**
-     * switch flags and graphical layout to "off" but do not force the midiplayer to load the default soundbank
-     */
-    protected synchronized void silentDeactivation() {
-        this.isActive = false;
-        StackPane p = (StackPane) this.graphicalInstance.getChildren().get(this.graphicalInstance.getChildren().size() - 1);    // switch the light off
-        p.setEffect(null);
     }
 }

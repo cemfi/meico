@@ -64,12 +64,11 @@ public class Midi2MsmConverter {
 //        System.out.println(Midi.print(this.sequence));
 
         // parse the tracks, make MSM parts of it
-        for (int t=0; t < this.tracks.length; ++t) {                                                    // go through all tracks
-            Track track = this.tracks[t];                                                               // get the current track
+        for (Track track : this.tracks) {                                                               // go through all tracks
             this.currentPart = this.global;
 
             // parse the track and make MSM markup from each midi event
-            for (int e=0; e < track.size(); ++e) {                                                      // for all the events in the track
+            for (int e = 0; e < track.size(); ++e) {                                                    // for all the events in the track
                 MidiEvent event = track.get(e);                                                         // get the current event
                 if (this.processShortEvent(event))                                                      // try processing it as short event
                     continue;
@@ -83,8 +82,8 @@ public class Midi2MsmConverter {
             // close pending noteOns
             double endDate = (double) track.get(track.size() - 1).getTick();                            // get the date of the last event in this track (usually the EndOfTrack meta event)
             for (Element note : this.pendingNotes) {                                                    // for all pending notes
-                double dur = endDate - Double.parseDouble(note.getAttributeValue("midi.date"));         // compute its duration so that it ends at the end of the track
-                note.getAttribute("midi.duration").setValue(Double.toString(dur));                      // set its duration
+                double dur = endDate - Double.parseDouble(note.getAttributeValue("date"));              // compute its duration so that it ends at the end of the track
+                note.getAttribute("duration").setValue(Double.toString(dur));                           // set its duration
             }
             this.pendingNotes.clear();
             this.trackname = "";
@@ -126,6 +125,7 @@ public class Midi2MsmConverter {
                 }
                 break;
             }
+
             case EventMaker.META_Instrument_Name: {
                 if (this.currentPart != this.global) {                                                          // it makes no sense to give the global environment a track or instrument name
                     String name;
@@ -149,7 +149,7 @@ public class Midi2MsmConverter {
 
             case EventMaker.META_Marker: {
                 Element marker = new Element("marker");
-                marker.addAttribute(new Attribute("midi.date", Double.toString((double)event.getTick())));      // get the date of the event
+                marker.addAttribute(new Attribute("date", Double.toString((double)event.getTick())));      // get the date of the event
                 marker.addAttribute(new Attribute("message", new String(m.getData())));                         // get its text
                 Element markerMap = this.currentPart.getFirstChildElement("dated").getFirstChildElement("markerMap");
                 Helper.addToMap(marker, markerMap);                                                             // add marker to markerMap
@@ -194,8 +194,8 @@ public class Midi2MsmConverter {
 
             case EventMaker.META_Time_Signature: {                                                              // decoding time signature messages is well documented at http://somascape.org/midi/tech/mfile.html
                 Element ts = new Element("timeSignature");                                                      // create an element
-                ts.addAttribute(new Attribute("midi.date", Double.toString((double)event.getTick())));          // get the date
-                ts.addAttribute(new Attribute("numerator", Double.toString((double)m.getData()[0])));           // store numerator
+                ts.addAttribute(new Attribute("date", Double.toString((double)event.getTick())));               // get the date
+                ts.addAttribute(new Attribute("numerator", Double.toString(m.getData()[0])));                   // store numerator
                 ts.addAttribute(new Attribute("denominator", Integer.toString((int)(Math.pow(2, (int)m.getData()[1])))));   // store denominator
                 Element tsMap = this.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap");
                 Helper.addToMap(ts, tsMap);                                                                     // add timeSignature to timeSignaturerMap
@@ -204,9 +204,9 @@ public class Midi2MsmConverter {
 
             case EventMaker.META_Key_Signature: {                                                               // decode key signature and make an msm representation of it
                 Element ks = new Element("keySignature");                                                       // create an element
-                ks.addAttribute(new Attribute("midi.date", Double.toString((double) event.getTick())));         // compute date
+                ks.addAttribute(new Attribute("date", Double.toString((double) event.getTick())));              // compute date
                 LinkedList<Element> accidentals = new LinkedList<>();                                           // create an empty list which will be filled with the accidentals of this key signature
-                int accidCount = (int) m.getData()[0];                                                          // this variable holds how many accidentals
+                int accidCount = m.getData()[0];                                                                // this variable holds how many accidentals
 
                 this.useSharpsInsteadOfFlats = accidCount > 0;                                                  // later for encoding pitchnames and accidentals this indicator is used to decide which type of accidentals should be used; the key signature uses flats, hence, these are used as accidentals as well (and vice versa); this may not be the best solution as there can be sharps in a flat key signature, but for the moment it serves our purpose
 
@@ -262,13 +262,13 @@ public class Midi2MsmConverter {
 
         switch(m.getCommand()) {
             case EventMaker.NOTE_OFF: {
-                double pitch = (double) m.getData1();
+                double pitch = m.getData1();
                 for (int i = 0; i < this.pendingNotes.size(); ++i) {                                            // search the pendingNotes list for the first note with the same pitch
                     Element note = this.pendingNotes.get(i);
                     double p = Double.parseDouble(note.getAttributeValue("midi.pitch"));
                     if (pitch == p) {
-                        double dur = ((double) event.getTick()) - Double.parseDouble(note.getAttributeValue("midi.date"));
-                        note.getAttribute("midi.duration").setValue(Double.toString(dur));
+                        double dur = ((double) event.getTick()) - Double.parseDouble(note.getAttributeValue("date"));
+                        note.getAttribute("duration").setValue(Double.toString(dur));
                         this.pendingNotes.remove(i);
                         break;
                     }
@@ -276,16 +276,16 @@ public class Midi2MsmConverter {
                 break;
             }
             case EventMaker.NOTE_ON: {
-                double pitch = (double) m.getData1();
+                double pitch = m.getData1();
                 Element note = new Element("note");
                 String[] pnameAccid = {"", ""};                                                                 // convert midi pitch value to pitchname and accidental strings
                 Helper.midi2PnameAndAccid(this.useSharpsInsteadOfFlats, pitch, pnameAccid);
-                note.addAttribute(new Attribute("midi.date", Double.toString((double) event.getTick())));
+                note.addAttribute(new Attribute("date", Double.toString((double) event.getTick())));
                 note.addAttribute(new Attribute("midi.pitch", Double.toString(pitch)));
-//                note.addAttribute(new Attribute("midi.velocity", Double.toString((double) m.getData2())));    // not represented in msm
                 note.addAttribute(new Attribute("pitchname", pnameAccid[0]));
                 note.addAttribute(new Attribute("accidentals", pnameAccid[1]));
-                note.addAttribute(new Attribute("midi.duration", ""));                                          // to be  added once the corresponding noteOff is found
+                note.addAttribute(new Attribute("duration", ""));                                               // to be  added once the corresponding noteOff is found
+                note.addAttribute(new Attribute("velocity", Double.toString(m.getData2())));                    // read the velocity of the note
                 Helper.addToMap(note, part.getFirstChildElement("dated").getFirstChildElement("score"));
                 this.pendingNotes.add(note);
                 break;
@@ -293,14 +293,29 @@ public class Midi2MsmConverter {
             case EventMaker.POLY_AFTERTOUCH:
                 break;
             case EventMaker.CONTROL_CHANGE:
+                // TODO: add channel volume support ... and many others
                 break;
             case EventMaker.PROGRAM_CHANGE: {
-                Attribute nameAtt = part.getAttribute("name");
-                String instName = InstrumentsDictionary.getInstrumentName((short) m.getData1(), this.useDefaultInstrumentNames);    // generate an instrument name from the program change number using the instruments dictionary
-                if (nameAtt.getValue().equals(this.trackname)) {                                                // if the part has no name or just the track name
-                    nameAtt.setValue(((this.trackname.isEmpty()) ? "" : (this.trackname + ": ")) + instName);   // set the name, keeping the track name at the beginning if there is one
-                } else {                                                                                        // if there is already more than the track name
-                    nameAtt.setValue(nameAtt.getValue() + " - " + instName);                                    // append the instrument name after a separator "-"
+                // generate and fill a programChangeMap
+                Element progChangeMap = part.getFirstChildElement("dated").getFirstChildElement("programChangeMap");
+                if (progChangeMap == null) {
+                    progChangeMap = new Element("programChangeMap");
+                    part.getFirstChildElement("dated").appendChild(progChangeMap);
+                }
+                Element prgCh = new Element("programChange");
+                prgCh.addAttribute(new Attribute("date", Double.toString((double) event.getTick())));
+                prgCh.addAttribute(new Attribute("value", Short.toString((short) m.getData1())));
+                progChangeMap.appendChild(prgCh);
+
+                // generate and extend a part name
+                Attribute nameAtt = part.getAttribute("name");                                                      // get the part's name attribute
+                if (this.trackname.isEmpty()) {
+                    String instName = InstrumentsDictionary.getInstrumentName((short) m.getData1(), this.useDefaultInstrumentNames);    // generate an instrument name from the program change number using the instruments dictionary
+                    if (nameAtt.getValue().equals(this.trackname)) {                                                // if the part has no name or just the track name
+                        nameAtt.setValue(((this.trackname.isEmpty()) ? "" : (this.trackname + ": ")) + instName);   // set the name, keeping the track name at the beginning if there is one
+                    } else {                                                                                        // if there is already more than the track name
+                        nameAtt.setValue(nameAtt.getValue() + " - " + instName);                                    // append the instrument name after a separator "-"
+                    }
                 }
                 break;
             }

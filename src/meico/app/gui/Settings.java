@@ -17,6 +17,7 @@ import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Xslt30Transformer;
 
 import java.io.*;
+import java.util.HashMap;
 
 /**
  * This provides some basic style definitions.
@@ -41,8 +42,8 @@ class Settings {
     protected static final String WORKSPACE = "-fx-background: transparent; -fx-background-color: transparent;" + Settings.SCROLLBAR;
     protected static final String DATA_OBJECT_LABEL = "-fx-fill: lightgray; -fx-font-weight: bold; -fx-line-spacing: 0em;";
     protected static final String WELCOME_MESSAGE_COLOR = "-fx-text-fill: white; -fx-opacity: 0.2;";
-    protected static final String WELCOME_MESSAGE_STYLE = Settings.WELCOME_MESSAGE_COLOR + "-fx-font-size: " + (Settings.getSystemFont().getSize() * 1.8) + "pt; -fx-text-alignment: center; -fx-font-weight: normal; -fx-line-spacing: 320.0px;";
-    protected static final String WELCOME_MESSAGE = "Drop your files here.\nMEI   MSM   MUSICXML   XML   TXT   MIDI   WAV   XSL   RNG   SF2   DLS";
+    protected static final String WELCOME_MESSAGE_STYLE = Settings.WELCOME_MESSAGE_COLOR + "-fx-font-size: " + (Settings.getSystemFont().getSize() * 1.8) + "pt; -fx-text-alignment: center; -fx-font-weight: normal;";
+    protected static final String WELCOME_MESSAGE = "Drop your files here.\n\n\n\n\n\n\n\n\nMEI   MSM   MPM   MUSICXML   MXL   XML\nTXT   MIDI   WAV   XSL   RNG   SF2   DLS";
 
     // global layout settings
     protected static boolean makeLogfile = true;                        // make a logfile
@@ -66,7 +67,7 @@ class Settings {
     protected static double dataItemOpacity = 0.4;                      // opacity of data items
     protected static double dataItemSaturation = 0.6;                   // saturation of data item color
     protected static double newDataObjectDistance = Settings.setNewDataObjectDistance();
-    protected static double multipleDataObjectCreationAngle = 30;       // when more than one data object are created (e.g. MEI->MSM with several mdivs), they are centered arround their parent data object and separated by this angle
+    protected static double multipleDataObjectCreationAngle = 31;       // when more than one data object are created (e.g. MEI->MSM with several mdivs), they are centered arround their parent data object and separated by this angle
 
     // conversion settings
     protected static int Mei2Msm_ppq = 720;                             // the timing resolution of exported MSMs and derivated MIDIs
@@ -679,10 +680,53 @@ class Settings {
      * @return
      */
     protected static synchronized Color classToColor(Object object) {
-        int mixupSeed = 74367;
-        double colorAngle = 150.0;
-        int colorSpread = 360;
-        return Color.hsb(((object.getClass().getSimpleName().hashCode() % mixupSeed) % colorSpread) + colorAngle, Settings.dataItemSaturation, 1.0);
+        double hue;
+        switch (object.getClass().getSimpleName()) {
+            case "Mei":
+                hue = 130.0;
+                break;
+            case "Msm":
+                hue = 220.0;
+                break;
+            case "Mpm":
+                hue = 190.0;
+                break;
+            case "Performance":
+                hue = 40.0;
+                break;
+            case "MusicXml":
+                hue = 150.0;
+                break;
+            case "Midi":
+                hue = 70.0;
+                break;
+            case "Audio":
+                hue = 0.0;
+                break;
+            case "Pitches":
+                hue = 300.0;
+                break;
+            case "TxtData":
+                hue = 20.0;
+                break;
+            case "XSLTransform":
+                hue = 270.0;
+                break;
+            case "Soundbank":
+                hue = 330.0;
+                break;
+            case "Schema":
+                hue = 250.0;
+                break;
+            default:
+                int mixupSeed = 74367;
+                double colorAngle = 150.0;
+                int colorSpread = 360;
+                hue = ((object.getClass().getSimpleName().hashCode() % mixupSeed) % colorSpread) + colorAngle;
+//                System.out.println(object.getClass().getSimpleName() + " - " + object.getClass().getSimpleName().hashCode() + " - " + color.getHue());
+        }
+
+        return Color.hsb(hue, Settings.dataItemSaturation, 1.0);
     }
 
     /**
@@ -746,7 +790,7 @@ class Settings {
      * @return
      */
     protected static synchronized double setNewDataObjectDistance() {
-        return Settings.dataItemRadius * 4.75;
+        return Settings.dataItemRadius * 4.25;
     }
 
     /**

@@ -7,7 +7,7 @@ import meico.app.gui.MeicoApp;
  * @author Axel Berndt
  */
 public class Meico {
-    public static final String version = "0.6.12";
+    public static final String version = "0.7.0";
 
     /**
      * A convenient launcher for the meico gui app.

@@ -105,7 +105,7 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
      * @param midiPort
      * @return the part element just generated
      */
-    public static Element makePart(String name, String number, int midiChannel, int midiPort) {
+    protected static Element makePart(String name, String number, int midiChannel, int midiPort) {
         Element part = new Element("part");
         part.addAttribute(new Attribute("name", name));
         part.addAttribute(new Attribute("number", number));
@@ -132,7 +132,7 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
     }
 
     /**
-     * search the given map for the first element with local-name name at or after the given midi.date
+     * search the given map for the first element with local-name name at or after the given date
      * @param name
      * @param date
      * @param map
@@ -147,14 +147,14 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
 
         for (int i=0; i < es.size(); ++i) {
             Element e = es.get(i);
-            if ((e.getAttribute("midi.date") != null) && (Double.parseDouble(e.getAttributeValue("midi.date")) >= date))
+            if ((e.getAttribute("date") != null) && (Double.parseDouble(e.getAttributeValue("date")) >= date))
                 return e;
         }
         return null;
     }
 
     /**
-     * search the given map and find the first element at or after the given midi.date
+     * search the given map and find the first element at or after the given date
      * @param date
      * @param map
      * @return
@@ -164,7 +164,7 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
     }
 
     /**
-     * search the given map and find the last element with the given local-name name before or at the given midi.date
+     * search the given map and find the last element with the given local-name name before or at the given date
      * @param name
      * @param date
      * @param map
@@ -179,7 +179,7 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
 
         for (int i=es.size()-1; i >= 0; --i) {
             Element e = es.get(i);
-            if ((e.getAttribute("midi.date") != null) && (Double.parseDouble(e.getAttributeValue("midi.date")) <= date)) {
+            if ((e.getAttribute("date") != null) && (Double.parseDouble(e.getAttributeValue("date")) <= date)) {
                 return e;
             }
         }
@@ -187,7 +187,7 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
     }
 
     /**
-     * search the given map and find the last element before or at the given midi.date
+     * search the given map and find the last element before or at the given date
      * @param date
      * @param map
      * @return

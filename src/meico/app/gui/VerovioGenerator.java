@@ -62,7 +62,7 @@ class VerovioGenerator {
         if (!useLatestVerovio || !WebBrowser.isNetAvailable("https://www.verovio.org/javascript/develop/verovio-toolkit.js"))                                                      // if the internal Verovio should be used or no internet connection available
             html = html.replace("https://www.verovio.org/javascript/develop/verovio-toolkit.js", caller.getClass().getResource("/resources/Verovio/verovio-toolkit.js").toExternalForm());  // replace the online reference in the HTML by the local reference
 
-        html = html.replace("oneLineScore", "" + oneLineScore)                                              // the oneLineScore flag is also set
+        html = html.replace("oneLineScore", Boolean.toString(oneLineScore))                                              // the oneLineScore flag is also set
                 .replace("Leipzig", font)
                 .replace("MeiCode", mei.replace("\n", "").replace("\r", "").replace("\"", "\\\""));         // replace the placeholder string "MeiCode" by actual MEI code; that MEI code should be free of linebreaks and quotation marks ("), hence these are replaced before adding it to the html
 
@@ -84,7 +84,7 @@ class VerovioGenerator {
             return "<html>Error: Failed to read prototype HTML. <br><br> " + e.toString() + "</html>";      // print the exception message also to the WebView to give an immediate feedback
         }
 
-        html = html.replace("oneLineScore", "" + oneLineScore);                                             // the oneLineScore flag is also set
+        html = html.replace("oneLineScore", Boolean.toString(oneLineScore));                                             // the oneLineScore flag is also set
 
         String svgCode = "";
         for (int i=0; i < svgs.size(); ++i) {

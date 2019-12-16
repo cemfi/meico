@@ -13,7 +13,7 @@ import java.security.InvalidParameterException;
  */
 
 public class Goto {
-    public double date = 0.0;               // the midi.date attribute
+    public double date = 0.0;               // the date attribute
     public double targetDate = 0.0;         // the target.date attribute
     public String targetId = "";            // the target.id attribute
     public Element target = null;
@@ -47,10 +47,10 @@ public class Goto {
      * @param gt
      */
     public Goto(Element gt) throws InvalidParameterException {
-        Attribute a = gt.getAttribute("midi.date");                                                 // get its midi.date attribute
+        Attribute a = gt.getAttribute("date");                                                 // get its date attribute
         if (a == null)                                                                              // if it has none
-            throw new InvalidParameterException("Missing attribute midi.date in " + gt.toXML());    // the Goto instance cannot be created
-        this.date = Double.parseDouble(gt.getAttributeValue("midi.date"));                          // get the date as double
+            throw new InvalidParameterException("Missing attribute date in " + gt.toXML());    // the Goto instance cannot be created
+        this.date = Double.parseDouble(gt.getAttributeValue("date"));                          // get the date as double
 
         // get its target.id and target element
         if ((gt.getAttribute("target.id") != null) && !gt.getAttributeValue("target.id").isEmpty()) {                   // if there is a nonempty attribute target.id
@@ -69,9 +69,9 @@ public class Goto {
             if (this.target == null)                                                                                        // and there is no target specified otherwise
                 throw new InvalidParameterException("Missing attribute target.date or a valid target.id in " + gt.toXML()); // the Goto instance cannot be created
             try {
-                this.targetDate = Double.parseDouble(this.target.getAttributeValue("midi.date"));                           // get the date from the target
+                this.targetDate = Double.parseDouble(this.target.getAttributeValue("date"));                           // get the date from the target
             } catch (Exception e) {                                                                                         // if it fails
-                throw new InvalidParameterException("The target of " + gt.toXML() + " has no valid attribute midi.date.");  // the Goto instance cannot be created
+                throw new InvalidParameterException("The target of " + gt.toXML() + " has no valid attribute date.");  // the Goto instance cannot be created
             }
         }
         else {                                                                                                              // it has the target.date attribute
@@ -87,7 +87,7 @@ public class Goto {
      */
     public Element toElement() {
         Element gt = new Element("goto");                                           // make a goto element
-        gt.addAttribute(new Attribute("midi.date", Double.toString(date)));         // give it the date
+        gt.addAttribute(new Attribute("date", Double.toString(date)));         // give it the date
         gt.addAttribute(new Attribute("activity", activity));                       // process this goto at the second time, later on ignore it
         gt.addAttribute(new Attribute("target.date", Double.toString(targetDate))); // add the target.date attribute
         gt.addAttribute(new Attribute("target.id", "#" + targetId));                // add the target.id attribute

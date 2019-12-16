@@ -8,6 +8,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.thaiopensource.relaxng.jaxp.XMLSyntaxSchemaFactory;
+import meico.mpm.Mpm;
+import meico.mpm.elements.Part;
+import meico.mpm.elements.Performance;
+import meico.mpm.elements.maps.GenericMap;
+import meico.mpm.elements.maps.data.TempoData;
+import meico.mpm.elements.styles.TempoStyle;
+import meico.mpm.elements.styles.defs.TempoDef;
 import meico.msm.Msm;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.s9api.Serializer;
@@ -21,47 +28,72 @@ import javax.xml.transform.stream.StreamSource;
  * This class is used for mei to msm conversion to hold temporary data, used in class Mei.
  * @author Axel Berndt.
  */
-
 public class Helper {
-
     protected int ppq = 720;                                            // default value for pulses per quarter
     protected int endingCounter = 0;                                    // a counter of ending elements in the mei source
     protected boolean dontUseChannel10 = true;                          // set this flag false if you allow to "misuse" the midi drum channel for other instruments; in standard midi output this produces weird results, but when you work with vst plugins etc. there is no reason to avoid channel 10
-    protected Element currentMovement = null;
+    protected Element currentMsmMovement = null;
+    protected Element currentMdiv = null;
+    protected Element currentWork = null;
     protected Element currentPart = null;                               // this points to the current part element in the msm
     protected Element currentLayer = null;                              // this points to the current layer element in the mei source
     protected Element currentMeasure = null;
     protected Element currentChord = null;
-    protected ArrayList<Element> accid = new ArrayList<Element>();      // holds accidentals that appear within measures to be considered during pitch computation
-    protected ArrayList<Element> endids = new ArrayList<Element>();
-    protected List<Msm> movements = new ArrayList<Msm>();
+    protected ArrayList<Element> accid = new ArrayList<>();             // holds accidentals that appear within measures to be considered during pitch computation
+    protected ArrayList<Element> endids = new ArrayList<>();            // msm and mpm elements that will be terminated at the time position of an mei element with a specified endid
+    protected ArrayList<Element> tstamp2s = new ArrayList<>();          // mpm elements that will be terminated at a position in another measure indicated by attribute tstamp2
+    protected ArrayList<Element> ties = new ArrayList<>();              // a list of pending MEI tie elements
+    protected HashMap<String, Element> allNotesAndChords = new HashMap<>(); // when converting a new mdiv this hashmap is created first to accelarate lookup for notes and chords via xml:id
+    protected Performance currentPerformance = null;                    // a quick link to the current movement's current performance
+    protected List<Msm> movements = new ArrayList<>();                  // this list holds the resulting Msm objects after performing MEI-to-MSM conversion
+    protected List<Mpm> performances = new ArrayList<>();               // this list holds the resulting Mpm objects after performing MEI-to-MSM conversion
 
-    /** constructor
-     *
+    /**
+     * constructor
      */
     protected Helper() {
     }
 
-    /** constructor
-     *
+    /**
+     * constructor
      * @param ppq
      */
     protected Helper(int ppq) {
         this.ppq = ppq;
     }
 
-    /** this method is called when making a new movement
-     *
+    /**
+     * this method is called when making a new movement
      */
     protected void reset() {
         this.endingCounter = 0;
-        this.currentMovement = null;
+        this.currentMsmMovement = null;
+        this.currentMdiv = null;
+        this.currentWork = null;
+        this.currentPerformance = null;
         this.currentPart = null;
         this.currentLayer = null;
         this.currentMeasure = null;
         this.currentChord = null;
         this.accid.clear();
         this.endids.clear();
+        this.tstamp2s.clear();
+        this.ties.clear();
+        this.allNotesAndChords.clear();
+    }
+
+    /**
+     * when a new MEI mdiv is processed this method generates a hashmap of all notes and chords, so we don't have to do it again during processing (e.g. in method isSameLayer() etc.)
+     * @param mdiv
+     */
+    public void indexNotesAndChords(Element mdiv) {
+        this.allNotesAndChords.clear();
+        Nodes nodes = mdiv.query("descendant::*[(local-name()='note' or local-name()='chord') and attribute::xml:id]");
+
+        for (int i=0; i < nodes.size(); ++i) {
+            Element node = (Element) nodes.get(i);
+            this.allNotesAndChords.put(Helper.getAttributeValue("id", node), node);
+        }
     }
 
     /**
@@ -87,7 +119,7 @@ public class Helper {
     }
 
     /**
-     *
+     * get the first child of an xml element
      * @param ofThis
      * @return
      */
@@ -121,6 +153,9 @@ public class Helper {
      * @return
      */
     public static Element getFirstChildElement(String name, Element ofThis) {
+        if (ofThis == null)
+            return null;
+
         for (int i=0; i < ofThis.getChildElements().size(); ++i) {
             if (ofThis.getChildElements().get(i).getLocalName().equals(name)) {
                 return ofThis.getChildElements().get(i);
@@ -129,8 +164,23 @@ public class Helper {
         return null;
     }
 
-    /** get the next sibling element of ofThis irrespective of its name
-     *
+    /**
+     * this method is an alternative to XOM's getChildElements(String name) which sometimes doesn't seem to work
+     * @param name
+     * @param ofThis
+     * @return
+     */
+    public static LinkedList<Element> getAllChildElements(String name, Element ofThis) {
+        if ((ofThis == null) || name.isEmpty()) return null;
+        Nodes e = ofThis.query("child::*[local-name()='" + name + "']");   // find the elements with the localname by an XPath query
+        LinkedList<Element> es = new LinkedList<>();
+        for (int i = 0; i < e.size(); ++i)
+            es.add((Element)e.get(i));
+        return es;
+    }
+
+    /**
+     * get the next sibling element of ofThis irrespective of its name
      * @param ofThis
      * @return
      */
@@ -151,8 +201,8 @@ public class Helper {
         return null;                                                        // ofThis is the final element and has no next sibling
     }
 
-    /** get the next sibling element of ofThis with the given name
-     *
+    /**
+     * get the next sibling element of ofThis with the given name
      * @param name
      * @param ofThis
      * @return
@@ -178,8 +228,8 @@ public class Helper {
         return null;                                                        // ofThis is the final element and has no next sibling
     }
 
-    /** get the previous sibling element of ofThis irrespective of its name
-     *
+    /**
+     * get the previous sibling element of ofThis irrespective of its name
      * @param ofThis
      * @return
      */
@@ -200,8 +250,8 @@ public class Helper {
         return null;                                                        // ofThis is the final element and has no next sibling
     }
 
-    /** get the previous sibling element of ofThis with a specific name
-     *
+    /**
+     * get the previous sibling element of ofThis with a specific name
      * @param name
      * @param ofThis
      * @return
@@ -229,29 +279,29 @@ public class Helper {
 
     /**
      * this method adds element addThis to a timely sequenced list, the map, and ensures the timely order of the elements in the map;
-     * therefore, addThis must contain the attribute "midi.date"; if not, addThis is appended at the end
-     * @param addThis an xml element (should have an attribute midi.date)
-     * @param map a timely sequenced list of elements with attribute midi.date
+     * therefore, addThis must contain the attribute "date"; if not, addThis is appended at the end
+     * @param addThis an xml element (should have an attribute date)
+     * @param map a timely sequenced list of elements with attribute date
      * @return the index of the element in the map or -1 if insertion failed
      */
     public static int addToMap(Element addThis, Element map) {
         if ((map == null) || (addThis == null))                                     // no map or no element to insert
             return -1;                                                              // no insertion
 
-        if (addThis.getAttribute("midi.date") == null) {                            // no attribute midi.date
+        if (addThis.getAttribute("date") == null) {                                 // no attribute date
             map.appendChild(addThis);                                               // simply append addThis to the end of the map
             return map.getChildCount()-1;                                           // and return the index
         }
 
-        Nodes es = map.query("descendant::*[attribute::midi.date]");                // get all elements in the map that have an attribute midi.date
-        if (es.size() == 0) {                                                       // if there are no elements in the map with a midi.date attribute
+        Nodes es = map.query("descendant::*[attribute::date]");                     // get all elements in the map that have an attribute date
+        if (es.size() == 0) {                                                       // if there are no elements in the map with a date attribute
             map.appendChild(addThis);                                               // simply append addThis to the end of the map
             return map.getChildCount()-1;                                           // and return the index
         }
 
-        double date = Double.parseDouble(addThis.getAttributeValue("midi.date"));   // get the date of addThis
+        double date = Double.parseDouble(addThis.getAttributeValue("date"));        // get the date of addThis
         for (int i = es.size()-1; i >= 0; --i) {                                    // go through the elements
-            if (Double.parseDouble(((Element)es.get(i)).getAttributeValue("midi.date")) <= date) {  // if the element directly before date is found
+            if (Double.parseDouble(((Element)es.get(i)).getAttributeValue("date")) <= date) {  // if the element directly before date is found
                 int index = map.indexOf(es.get(i));                                 // get the index of the element just found
                 map.insertChild(addThis, ++index);                                  // insert addThis right after the element
                 return index;                                                       // return the index
@@ -263,8 +313,8 @@ public class Helper {
         return 0;                                                                   // return the index
     }
 
-    /** compute the midi time of an mei element
-     *
+    /**
+     * compute the midi time of an mei element
      * @return
      */
     protected double getMidiTime() {
@@ -272,13 +322,13 @@ public class Helper {
             return Double.parseDouble(this.currentPart.getAttributeValue("currentDate"));   // we have a more precise date somewhere within a measure
 
         if (this.currentMeasure != null)                                                    // if we are within a measure
-            return Double.parseDouble(this.currentMeasure.getAttributeValue("midi.date"));  // take it
+            return Double.parseDouble(this.currentMeasure.getAttributeValue("date"));       // take it
 
-        if (this.currentMovement == null)                                                   // if we are outside of any movement
+        if (this.currentMsmMovement == null)                                                // if we are outside of any movement
             return 0.0;                                                                     // return 0.0
 
         // go through all parts, determine the latest currentDate and return it
-        Elements parts = this.currentMovement.getChildElements("part");                     // get the list of all parts
+        Elements parts = this.currentMsmMovement.getChildElements("part");                  // get the list of all parts
         double latestDate = 0.0;                                                            // here comes the result
         for (int i = parts.size()-1; i >= 0; --i) {                                         // go through that list
             double date = Double.parseDouble(parts.get(i).getAttributeValue("currentDate"));// get the part's date
@@ -288,8 +338,8 @@ public class Helper {
         return latestDate;                                                                  // return the latest date of all parts
     }
 
-    /** compute the midi time of an mei element and return it as String
-     *
+    /**
+     * compute the midi time of an mei element and return it as String
      * @return
      */
     protected String getMidiTimeAsString() {
@@ -297,13 +347,13 @@ public class Helper {
             return this.currentPart.getAttributeValue("currentDate");                       // we have a more precise date somewhere within a measure
 
         if (this.currentMeasure != null)                                                    // if we are within a measure
-            return this.currentMeasure.getAttributeValue("midi.date");                      // take it
+            return this.currentMeasure.getAttributeValue("date");                           // take it
 
-        if (this.currentMovement == null)                                                   // if we are outside of any movement
+        if (this.currentMsmMovement == null)                                                 // if we are outside of any movement
             return "0.0";                                                                   // return 0.0
 
         // go through all parts, determine the latest currentDate and return it
-        Elements parts = this.currentMovement.getChildElements("part");                     // get the list of all parts
+        Elements parts = this.currentMsmMovement.getChildElements("part");                   // get the list of all parts
         double latestDate = 0.0;                                                            // here comes the result
         for (int i = parts.size()-1; i >= 0; --i) {                                         // go through that list
             double date = Double.parseDouble(parts.get(i).getAttributeValue("currentDate"));// get the part's date
@@ -332,38 +382,55 @@ public class Helper {
         return results;                                         // return the resulting list of integers
     }
 
-    /** compute the length of one measure in midi ticks at the currentDate in the currentPart of the currentMovement; if no time signature information available it returns the length of a 4/4 measure
-     *
+    /**
+     * compute the length of one measure in midi ticks at the currentDate in the currentPart of the currentMovement; if no time signature information available it returns the length of a 4/4 measure
      * @return
      */
     protected double getOneMeasureLength() {
+        double[] ts = this.getCurrentTimeSignature();
+        return (4.0 * this.ppq * ts[0]) / ts[1];
+    }
+
+    /**
+     * get the current time signature as tuplet of doubles [numerator, denominator]
+     * @return
+     */
+    protected double[] getCurrentTimeSignature() {
         // get the value of one measure from the local or global timeSignatureMap
-        Elements es = this.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
-        if (es.size() == 0) {                                                                                                                                               // if local map empty
-            es = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");    // get global entries
+        Elements es = null;
+        if (this.currentPart != null)                                                                                                                                           // we are within a part
+            es = this.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");                                     // try to get its timeSignature
+        if ((es == null) || (es.size() == 0))                                                                                                                                   // if we are outside a part or the local map is empty
+            es = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");  // get global entries
+        if ((es.size() == 0) && (this.currentWork != null)) {                                                                                                                   // get the meter element from meiHead
+            Element meter = this.currentWork.getFirstChildElement("meter");
+            if (meter != null) {
+                Attribute count = meter.getAttribute("count");
+                Attribute unit = meter.getAttribute("unit");
+                return new double[]{((count == null) ? 4.0 : Double.parseDouble(count.getValue())), ((unit == null) ? 4.0 : Double.parseDouble(unit.getValue()))};
+            }
         }
 
         // get length of one measure (4/4 is default if information is insufficient)
-        double denom = (es.size() == 0) ? 4 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator"));
-        double num = (es.size() == 0) ? 4 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator"));
+        double denom = (es.size() == 0) ? 4.0 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator"));
+        double num = (es.size() == 0) ? 4.0 : Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator"));
 
-        return (4.0 * this.ppq * num) / denom;
-
+        return new double[]{num, denom};
     }
 
-    /** compute the length of one measure with specified numerator and denominator values (the underlying time signature)
-     *
+    /**
+     * compute the length of one measure with specified numerator and denominator values (the underlying time signature)
      * @param numerator
      * @param denominator
      * @return
      */
-    protected double computeMeasureLength(double numerator, double denominator) {
+    protected double computeMeasureLength (double numerator, double denominator) {
         return (4.0 * this.ppq * numerator) / denominator;
 
     }
 
-    /** create a flat copy of element e including its attributes but not its child elements
-     *
+    /**
+     * create a flat copy of element e including its attributes but not its child elements
      * @param e
      * @return
      */
@@ -371,6 +438,7 @@ public class Helper {
         if (e == null) return null;
 
         Element clone = new Element(e.getLocalName());
+        clone.setNamespaceURI(e.getNamespaceURI());
         for (int i = e.getAttributeCount()-1; i >= 0; --i) {
             clone.addAttribute(new Attribute(e.getAttribute(i).getLocalName(), e.getAttribute(i).getValue()));
         }
@@ -378,8 +446,8 @@ public class Helper {
         return clone;
     }
 
-    /** returns the attribute with the specified name contained in ofThis, or null if that attribute does not exist, namespace is ignored
-     *
+    /**
+     * returns the attribute with the specified name contained in ofThis, or null if that attribute does not exist, namespace is ignored
      * @param name
      * @param ofThis
      * @return
@@ -399,8 +467,8 @@ public class Helper {
         return null;
     }
 
-    /** returns the vale of attribute name in Element ofThis as String, or empty string if attribute does not exist, namespace is ignored
-     *
+    /**
+     * returns the vale of attribute name in Element ofThis as String, or empty string if attribute does not exist, namespace is ignored
      * @param name
      * @param ofThis
      * @return
@@ -411,36 +479,51 @@ public class Helper {
         return a.getValue();
     }
 
-    /**copies the id attribute ofThis into toThis
-     *
+    /**
+     * copies the id attribute ofThis into toThis
      * @param ofThis
      * @param toThis
+     * @return the newly created attribute
      */
-    protected static void copyId(Element ofThis, Element toThis) {
-//        copyIdNoNs(ofThis, toThis);
-        copyIdNs(ofThis, toThis);
+    protected static Attribute copyId(Element ofThis, Element toThis) {
+//        return copyIdNoNs(ofThis, toThis);
+        return copyIdNs(ofThis, toThis);
     }
 
-    /** copies the id attribute from ofThis (if present) into toThis, without namespace
-     *
+    /**
+     * copies the id attribute from ofThis (if present) into toThis, without namespace
      * @param ofThis
      * @param toThis
+     * @return the newly created attribute
      */
-    private static void copyIdNoNs(Element ofThis, Element toThis) {
-        if (getAttribute("id", ofThis) != null) toThis.addAttribute(new Attribute("id", getAttributeValue("id", ofThis)));    // copy the id
+    private static Attribute copyIdNoNs(Element ofThis, Element toThis) {
+        Attribute id = Helper.getAttribute("id", ofThis);
+        if (id != null) {
+            Attribute newId = new Attribute("id", id.getValue());
+            toThis.addAttribute(newId);
+            return newId;
+        }
+        return null;
     }
 
-    /** copies the id attribute from ofThis (if present) into toThis, retaining its namespace
-     *
+    /**
+     * copies the id attribute from ofThis (if present) into toThis, retaining its namespace
      * @param ofThis
      * @param toThis
+     * @return the newly created attribute
      */
-    private static void copyIdNs(Element ofThis, Element toThis) {
-        if (getAttribute("id", ofThis) != null) toThis.addAttribute((Attribute) getAttribute("id", ofThis).copy());    // copy the id including namespace
+    private static Attribute copyIdNs(Element ofThis, Element toThis) {
+        Attribute id = Helper.getAttribute("id", ofThis);
+        if (id != null) {
+            Attribute newId = id.copy();
+            toThis.addAttribute(newId);
+            return newId;
+        }
+        return null;
     }
 
-    /** returns the parent element of ofThis as element or null
-     *
+    /**
+     * returns the parent element of ofThis as element or null
      * @param ofThis
      * @return
      */
@@ -451,15 +534,15 @@ public class Helper {
         return null;
     }
 
-    /** return part entry in current movement or null
-     *
+    /**
+     * return part entry in current movement or null
      * @param id
      * @return
      */
     protected Element getPart(String id) {
         if ((id == null) || (id.isEmpty())) return null;
 
-        Elements parts = this.currentMovement.getChildElements("part");
+        Elements parts = this.currentMsmMovement.getChildElements("part");
 
         for (int i = parts.size()-1; i >= 0; --i) {                 // search all part entries in this movement
             if (parts.get(i).getAttributeValue("number").equals(id) || Helper.getAttributeValue("id", parts.get(i)).equals(id))    // for the id
@@ -476,9 +559,8 @@ public class Helper {
      */
     protected static Element getLayer(Element ofThis) {
         for (Node e = ofThis.getParent(); e != ofThis.getDocument().getRootElement(); e = e.getParent()) {  // search for a layer element among the parents of ofThis
-            if ((e instanceof Element) && (((Element)e).getLocalName().equals("layer"))) {                  // found one
+            if ((e instanceof Element) && (((Element)e).getLocalName().equals("layer")))                    // found one
                 return (Element)e;
-            }
         }
         return null;
     }
@@ -499,6 +581,34 @@ public class Helper {
     }
 
     /**
+     * returns the staff element in the mei tree of ofThis
+     * @param ofThis
+     * @return the staff element or null if ofThis is not in a staff
+     */
+    protected static Element getStaff(Element ofThis) {
+        for (Node e = ofThis.getParent(); e != ofThis.getDocument().getRootElement(); e = e.getParent()) {  // search for a staff element among the parents of ofThis
+            if ((e instanceof Element) && (((Element)e).getLocalName().equals("staff")))                    // found one
+                return (Element)e;
+        }
+        return null;
+    }
+
+    /**
+     * returns the def or n attribute value of an mei staff element or empty string if it is no staff or both attributes are missing
+     * @param staff
+     * @return def, n or empty string
+     */
+    protected static String getStaffId(Element staff) {
+        if ((staff == null) || !staff.getLocalName().equals("staff"))   // if the element is null or no staff
+            return "";                                                  // return empty string
+        if (staff.getAttribute("def") != null)                          // check for the def attribute (preferred over n)
+            return staff.getAttributeValue("def");                      // return its string
+        if (staff.getAttribute("n") != null)                            // check for the n attribute
+            return staff.getAttributeValue("n");                        // return its string
+        return "";                                                      // no def or n attribute, hence, return empty string
+    }
+
+    /**
      * this method writes the layer's ref or n id to a layer attribute and adds that to ofThis
      * @param toThis an element that must be child of a layer element in mei
      */
@@ -511,13 +621,12 @@ public class Helper {
         if (layer.getAttribute("def") != null) {
             toThis.addAttribute(new Attribute("layer", layer.getAttributeValue("def")));
         }
-        else if (layer.getAttribute("n") != null) {
+        else if (layer.getAttribute("n") != null)
             toThis.addAttribute(new Attribute("layer", layer.getAttributeValue("n")));
-        }
     }
 
-    /** cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects (miscMaps, currentDate and tie attributes)
-     *
+    /**
+     * cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects (miscMaps, currentDate and tie attributes)
      * @param msms
      */
     public static void msmCleanup(List<Msm> msms) {
@@ -526,13 +635,13 @@ public class Helper {
         }
     }
 
-    /** make the cleanup of one msm object; this removes all miscMaps, currentDate, tie, and layer attributes
-     *
+    /**
+     * make the cleanup of one msm object; this removes all miscMaps, currentDate, tie, and layer and lots of further non-MSM confrom attributes
      * @param msm
      */
     public static void msmCleanup(Msm msm) {
-        // delete all miscMaps
-        Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie | descendant::*[attribute::layer]/attribute::layer | descendant::*[local-name()='goto' and attribute::n]/attribute::n");
+        // delete all miscMaps and non-msm conform attributes
+        Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie | descendant::*[attribute::layer]/attribute::layer | descendant::*[attribute::endid]/attribute::endid | descendant::*[attribute::tstamp2]/attribute::tstamp2 | descendant::*[local-name()='goto' and attribute::n]/attribute::n");
         for (int i=0; i < n.size(); ++i) {
             if (n.get(i) instanceof Element)
                 n.get(i).getParent().removeChild(n.get(i));
@@ -543,8 +652,222 @@ public class Helper {
         msm.deleteEmptyMaps();
     }
 
-    /** return the first element in the endids list with an endid attribute value that equals id
-     *
+    /**
+     * some mpm data is not in its final state (e.g., dynamics elements with an end attribute), this method makes these final
+     * @param mpms
+     */
+    public static void mpmPostprocessing(List<Mpm> mpms) {
+        for (int i=0; i < mpms.size(); ++i) {                       // go through all mpm objects in the input list
+            mpmPostprocessing(mpms.get(i));                         // do the postprocessing
+        }
+    }
+
+    /**
+     * some mpm data is not in its final state (e.g., dynamics elements with an end attribute), this method makes these final
+     * @param mpm
+     */
+    public static void mpmPostprocessing(Mpm mpm) {
+        ArrayList<GenericMap> maps = new ArrayList<>();
+
+        for (int p=0; p < mpm.size(); ++p) {                                                                                // go through all performances
+            Performance perf = mpm.getPerformance(p);
+
+            // collect all global and local dynamicsMaps and tempoMaps
+            GenericMap aMap = perf.getGlobal().getDated().getMap(Mpm.DYNAMICS_MAP);
+            if (aMap != null)
+                maps.add(aMap);
+
+            aMap = perf.getGlobal().getDated().getMap(Mpm.TEMPO_MAP);
+            if (aMap != null)
+                maps.add(aMap);
+
+            ArrayList<Part> parts = perf.getAllParts();
+            for (int pp=0; pp < perf.size(); ++pp) {                                                                        // go through all parts
+                Part part = parts.get(pp);
+
+                aMap = part.getDated().getMap(Mpm.DYNAMICS_MAP);
+                if (aMap != null)
+                    maps.add(aMap);
+
+                aMap = part.getDated().getMap(Mpm.TEMPO_MAP);
+                if (aMap != null)
+                    maps.add(aMap);
+            }
+        }
+
+        // go through all the maps' elements and finalize them
+        for (GenericMap map : maps) {
+            for (int e=0; e < map.size(); ++e) {
+                Element d = map.getElement(e);
+
+                // handle remaining endid attributes
+                Attribute endid = d.getAttribute("endid");
+                if (endid != null)                                                                                          // if the instruction still has an endid (i.e., it never occured during conversion and the end is unknown)
+                    d.removeAttribute(endid);                                                                               // just remove it, it is not part of the MPM specification
+
+                // handle remaining tstamp2 attributes
+                Attribute tstamp2 = d.getAttribute("tstamp2");
+                if (tstamp2 != null)                                                                                        // if the instruction still has a tstamp2 (i.e., it never occured during conversion and the end is unknown)
+                    d.removeAttribute(tstamp2);                                                                             // just remove it, it is not part of the MPM specification
+
+                Attribute end = d.getAttribute("date.end");
+                if (end != null) {                                                                                          // if it has an end attribute
+                    double endDate = Double.parseDouble(end.getValue());                                                    // get the end date
+                    d.removeAttribute(end);                                                                                 // remove the attribute, it is not part of the MPM specification
+                    Element next = map.getElement(e + 1);                                                                   // get the subsequent element in the map
+                    if ((next == null) || (Double.parseDouble(next.getAttributeValue("date")) > endDate)) {                 // if the end date is before the next instruction in the map or there is no next instruction
+                        Attribute t = d.getAttribute("transition.to");                                                      // is there a transition.to attribute? if not we have nothing meaningful to do here
+                        if (t != null) {                                                                                    // if there is a transition.to
+                            String elementType = d.getLocalName();                                                          // get the type of the element
+                            Element endElement = new Element(elementType, Mpm.MPM_NAMESPACE);                               // create a new instruction
+                            endElement.addAttribute(new Attribute("date", Double.toString(endDate)));                                   // its date is the end date
+
+                            switch (elementType) {
+                                case "dynamics":
+                                    endElement.addAttribute(new Attribute("volume", t.getValue()));                         // its volume is the transition.to value
+                                    break;
+                                case "tempo":
+                                    endElement.addAttribute(new Attribute("bpm", t.getValue()));                            // its bpm is the transition.to value
+                                    break;
+                                default:
+                                    continue;
+                            }
+                            map.addElement(endElement);                                                                     // insert it behind thew current element
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * When articulationMaps are expanded via GenericMap.applySequencingMap() the noteid attribute is not updated.
+     * Therefor, we get a HashMap from Msm.resolveRepetitions() and apply it to the already expanded articulationMap via this method.
+     * It is used in classes meico.app.gui.DataObject and meico.app.Main. At the moment of invoking this method the maps have been expanded and only the noteids need to be updated.
+     * @param map
+     * @param noteIdMappings
+     */
+    public static void updateMpmNoteidsAfterResolvingRepetitions(GenericMap map, HashMap<String, String> noteIdMappings) {
+        for (Map.Entry<String, String> mapping : noteIdMappings.entrySet()) {                                   // for all mappings
+            Nodes ns = map.getXml().query("descendant::*[attribute::noteid = '#" + mapping.getKey() + "']");    // get all elements with the noteid attribute and the specific value
+            if (ns.size() < 2)                                                                                  // if there is none or only one
+                continue;                                                                                       // no need to change that value, the first one keeps the original
+
+            String current = mapping.getKey();                                          // this string will be set to the subsequent values: "originalID" -> "meico_repetition_1_originalID" -> "meico_repetition_2_originalID" -> and so on
+//            System.out.println(ns.get(0).toXML());
+            for (int i = 1; i < ns.size(); ++i) {                                       // iterate through the elements that refer to this noteid starting with the second (the first one keeps its original value)
+                current = noteIdMappings.get(current);                                  // get the next value
+                Attribute a = Helper.getAttribute("noteid", ((Element) ns.get(i)));     // get the attribute
+                a.setValue("#" + current);                                              // set the attribute value
+//                System.out.println(ns.get(i).toXML());
+            }
+//            System.out.println("");
+        }
+    }
+
+
+    /**
+     * helper method to generate MPM TempoData from an MEI tempo element,
+     * only the timing data is not computed here
+     * @param tempo
+     * @return
+     */
+    public TempoData parseTempo(Element tempo) {
+        TempoData tempoData = new TempoData();                                                                      // tempo data to generate an entry in an MPM tempoMap
+
+        // determine numeric tempo if such a value is specified
+        Attribute mm = tempo.getAttribute("mm");
+        if (mm != null)                                                                                             // if there is a Maezel's Metronome value
+            tempoData.bpmString = mm.getValue();                                                                          // take this as the bpm value
+        else {
+            Attribute midiBpm = tempo.getAttribute("midi.bpm");
+//            tempoData.beatLength = 0.25;                                                                          // not necessary because it is initialized with 0.25
+            if (midiBpm != null)                                                                                    // if there is a MIDI bpm attribute (always to the basis of a quarter note)
+                tempoData.bpmString = midiBpm.getValue();                                                                 // take this as bpm value
+            else {
+                Attribute midiMspb = tempo.getAttribute("midi.mspb");
+                if (midiMspb != null)                                                                               // if there is a microseconds per quarter note attribute
+                    tempoData.bpmString = Double.toString((60000000.0 / (Double.parseDouble(midiMspb.getValue()))));      // compute the bpm value from it
+            }
+        }
+
+        // compute beatLength
+        Attribute mmUnit = tempo.getAttribute("mm.unit");
+        tempoData.beatLength = (mmUnit != null) ? Helper.duration2decimal(mmUnit.getValue()) : (1.0 / this.getCurrentTimeSignature()[1]);    // use the specified mm.unit for beatLength or (if missing) use the denominator of the underlying time signature
+        Attribute mmDots = tempo.getAttribute("mm.dots");
+        if (mmDots != null) {                                                                                   // are there dots involved in the beatLength
+            int dots = Integer.parseInt(mmDots.getValue());                                                     // get their number
+            for (double d = tempoData.beatLength; dots > 0; --dots) {                                           // for each dot; variable d holds what has to be added to the beatLength value
+                d /= 2;                                                                                         // half d
+                tempoData.beatLength += d;                                                                      // add to beatLength
+            }
+        }
+
+        // process tempo descriptor, i.e. the value of the MEI element
+        String descriptor = tempo.getValue();                                                                                                               // the textual representation of a tempo instruction
+        if (descriptor.isEmpty()) {                                                                             // if no value/text at this element
+            Attribute label = tempo.getAttribute("label");                                                      // try attribute label
+            if (label != null) descriptor = label.getValue();                                                   // if there is a label attribute, use its value
+        }
+        if (!descriptor.isEmpty()) {                                                                                                                        // a textual instruction is given
+            if (descriptor.contains("rit") || descriptor.contains("rall") || descriptor.contains("largando") || descriptor.contains("calando")) {           // slow down
+                if (tempoData.bpmString == null)
+                    tempoData.bpmString = "?";
+                tempoData.transitionToString = "-";
+            }
+            else if (descriptor.contains("accel") || descriptor.contains("string")) {                                                                       // accelerate
+                if (tempoData.bpmString == null)
+                    tempoData.bpmString = "?";
+                tempoData.transitionToString = "+";
+            }
+            else {                                                                                                                                          // an instantaneous instruction that might be added to the global styleDef
+                TempoStyle tempoStyle = (TempoStyle) this.currentPerformance.getGlobal().getHeader().getStyleDef(Mpm.TEMPO_STYLE, "MEI export");            // get the global tempoSyles/styleDef element
+                if (tempoStyle == null)                                                                                                                     // if there is none
+                    tempoStyle = (TempoStyle) this.currentPerformance.getGlobal().getHeader().addStyleDef(Mpm.TEMPO_STYLE, "MEI export");                   // create one
+
+                if ((tempoStyle != null) && (tempoStyle.getTempoDef(descriptor) == null)) {                                                                 // if there is a descriptor string for this tempo instruction
+                    // use the specified tempo or, if not defined, try to create a default numeric value for the descriptor string
+                    if (tempoData.bpmString == null)
+                        tempoStyle.addTempoDef(TempoDef.createDefaultTempoDef(descriptor));
+                    else
+                        tempoStyle.addTempoDef(TempoDef.createTempoDef(descriptor, Double.parseDouble(tempoData.bpmString)));
+                }
+                tempoData.bpmString = descriptor;
+            }
+        }
+        if (tempoData.bpmString == null) {          // if no textual descriptor and no bpm is given
+            System.err.println("Cannot process MEI element " + tempo.toXML() + ". No text or any of the attributes 'mm', 'midi.bpm', 'midi.mspb', or 'label' is specified.");
+            return null;                            // no sufficient information, cancel
+        }
+
+        if (tempoData.transitionToString != null)
+            tempoData.meanTempoAt = 0.5;            // by default we create a very neutral/mechanico tempo transition, this should be edited by the user/application
+
+        // read the xml:id
+        Attribute id = Helper.getAttribute("id", tempo);
+        tempoData.xmlId = (id == null) ? null : id.getValue();
+
+        return tempoData;
+    }
+
+    /**
+     * this method moves all subtrees of a measure that are non staff subtrees, i.e. they are control event subtrees, to the front as these have to be processed before the staffs
+     * @param measure
+     */
+    protected static void reorderMeasureContent(Element measure) {
+        Elements subtrees = measure.getChildElements();                                         // get all children of the measure
+
+        for (int i = subtrees.size()-1; i >= 0; --i) {                                          // for each child
+            Element subtree = subtrees.get(i);                                                  // get it as element
+            if (subtree.query("descendant-or-self::*[local-name()='staff' or local-name()='oStaff']").size() == 0) {     // if this subtree contains no staff element it is a control event subtree
+                subtree.detach();                                                               // remove it from the measure
+                measure.insertChild(subtree, 0);                                                // and add it at the front of the measure
+            }
+        }
+    }
+
+    /**
+     * return the first element in the endids list with an endid attribute value that equals id
      * @param id
      * @return the index in the endid list or -1 if not found
      */
@@ -556,15 +879,116 @@ public class Helper {
         return -1;
     }
 
-    /** check for pending elements with endid attributes to be finished when the element with this endid is found
-     *
+    /**
+     * check for pending elements with endid attributes to be finished when the element with this endid is found,
+     * note that this will compute the end date including(!) the duration of the element (except for slurs) that endid pointes to, i.e. it includes the endid element
      * @param e
      */
     protected void checkEndid(Element e) {
+        String id = "#" + Helper.getAttributeValue("id", e);                                                                            // get id of the current element
+        for (int j = this.getEndid(id); j >= 0; j = this.getEndid(id)) {                                                                // find all pending elements in the endid list to be finished at this element
+            this.endids.get(j).addAttribute(new Attribute("date.end", Double.toString(this.getMidiTime() + ((this.endids.get(j).getLocalName().equals("slur")) ? 0.0 : this.computeDuration(e)))));  // finish corresponding element, only slurs should not include the duration
+            this.endids.remove(j);                                                                                                      // remove element from list, it is finished
+        }
+    }
+
+    /**
+     * return the first element in the ties list with an endid attribute value that equals id
+     * @param id
+     * @return the index in the ties list or -1 if not found
+     */
+    private int getTie(String id) {
+        for (int i=0; i < this.ties.size(); ++i) {                        // go through the list of pending elements to be ended
+            if (this.ties.get(i).getAttributeValue("endid").equals(id))   // found
+                return i;                                                 // return it
+        }
+        return -1;
+    }
+
+    /**
+     * check for pending ties that might end at this note or chord
+     * @param e an MEI note or chord element
+     */
+    protected void checkTies(Element e) {
         String id = "#" + Helper.getAttributeValue("id", e);                // get id of the current element
-        for (int j = this.getEndid(id); j >= 0; j = this.getEndid(id)) {    // find all pending elements in the endid list to be finished at this element
-            this.endids.get(j).addAttribute(new Attribute("end", Double.toString(this.getMidiTime() + this.computeDuration(e))));     // finish corresponding element
-            this.endids.remove(j);                                          // remove element from list, it is finished
+        for (int j = this.getTie(id); j >= 0; j = this.getTie(id)) {        // find all pending elements in the ties list to be finished at this element
+            Attribute a = this.ties.get(j).getAttribute("tie");             // get its tie attribute if it has one
+            if (a != null) {                                                // if the note has already a tie attribute
+                if (a.getValue().equals("i"))                               // but it says that the tie is initial
+                    a.setValue("m");                                        // make an intermediate tie out of it
+                else if (a.getValue().equals("n"))                          // but it says "no tie"
+                    a.setValue("t");                                        // make a terminal tie out of it
+            }
+            else {                                                          // otherwise the element had no tie attribute
+                this.ties.get(j).addAttribute(new Attribute("tie", "t"));   // hence, we add a terminal tie attribute
+            }
+            this.ties.remove(j);                                            // remove element from list, it is finished
+        }
+    }
+
+    /**
+     * this method is for note elements to check whether one of the pending slurs applies for it
+     * @param e
+     */
+    protected void checkSlurs(Element e) {
+        Elements slurs = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("slur");
+
+        for (int i = slurs.size() - 1; i >= 0; --i) {                                                                                                                   // go through the global slurs
+            if ((slurs.get(i).getAttributeValue("date") != null) && (Double.parseDouble(slurs.get(i).getAttributeValue("date")) > this.getMidiTime())) {                // if this slur element is after e
+                continue;                                                                                                                                               // continue searching
+            }
+            if (slurs.get(i).getAttribute("date.end") != null) {                                                                                                        // if it is before e
+                double endDate = Double.parseDouble(slurs.get(i).getAttributeValue("date.end"));
+                if (endDate < this.getMidiTime()) {                                                                                                                     // if the end date of this slur (if one is specified) is before e
+                    continue;
+                }
+                if (endDate == this.getMidiTime()) {                                                                                                                    // if the end date of this slur (if one is specified) is at e
+                    e.addAttribute(new Attribute("slur", "t"));                                                                                                         // set the slur attribute to terminal
+                    this.addSlurId(slurs.get(i), e);
+                    return;                                                                                                                                             // no need to look for further slurs
+                }
+            }
+            e.addAttribute(new Attribute("slur", "im"));
+            this.addSlurId(slurs.get(i), e);
+        }
+
+        if (this.currentPart != null) {
+            String layerId = getLayerId(getLayer(e));                                                                                                                   // get the current layer's id reference
+            slurs = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("slur");
+
+            for (int i = slurs.size() - 1; i >= 0; --i) {                                                                                                               // go through the local slurs
+                if (!Helper.isSameLayer(slurs.get(i), layerId)) {                                                                                                       // check whether this slur is dedicated to a specific layer but not the current layer (layer of ofThis)
+                    continue;
+                }
+                if ((slurs.get(i).getAttributeValue("date") != null) && (Double.parseDouble(slurs.get(i).getAttributeValue("date")) > this.getMidiTime())) {            // if this slur element is after ofThis
+                    continue;
+                }
+                if (slurs.get(i).getAttribute("date.end") != null) {                                                                                                    // if it is before e
+                    double endDate = Double.parseDouble(slurs.get(i).getAttributeValue("date.end"));
+                    if (endDate < this.getMidiTime()) {                                                                                                                 // if the end date of this slur (if one is specified) is before e
+                        continue;
+                    }
+                    if (endDate == this.getMidiTime()) {                                                                                                                // if the end date of this slur (if one is specified) is at e
+                        e.addAttribute(new Attribute("slur", "t"));                                                                                                     // set the slur attribute to terminal
+                        this.addSlurId(slurs.get(i), e);
+                        return;                                                                                                                                         // no need to look for further slurs
+                    }
+                }
+                e.addAttribute(new Attribute("slur", "im"));
+                this.addSlurId(slurs.get(i), e);
+            }
+        }
+    }
+
+    /**
+     * a helper method to make the code of method checkSlurs() a bit more compact
+     * @param fromThis
+     * @param toThis
+     */
+    private void addSlurId(Element fromThis, Element toThis) {
+        Attribute slurid = Helper.getAttribute("id", fromThis);
+        if (slurid != null) {
+            toThis.addAttribute(new Attribute("slurid", slurid.getValue() + "_meico_" + UUID.randomUUID().toString()));
         }
     }
 
@@ -600,7 +1024,7 @@ public class Helper {
         // create a goto element and insert it into the sequencingMap
         if (makeGoto) {                                                             // if a goto element has to be generated
             Element gt = new Element("goto");                                       // make it
-            gt.addAttribute(new Attribute("midi.date", Double.toString(date)));     // give it the date
+            gt.addAttribute(new Attribute("date", Double.toString(date)));     // give it the date
             gt.addAttribute(new Attribute("activity", "1"));                        // process this goto at the first time, later on ignore it
             gt.addAttribute(new Attribute("target.date", "0"));                     // add the target.date attribute by default initialized with "0" (which means to start from the beginning)
             gt.addAttribute(new Attribute("target.id", ""));                        // add an empty target.id attribute (which means to start from the beginning)
@@ -608,8 +1032,8 @@ public class Helper {
             Nodes ns = sequencingMap.query("descendant::*[local-name()='marker' and (@message='repetition start' or @message='fine')]");  // get all the markers that are repetition start points or fines
             for (int i = ns.size()-1; i >= 0; --i) {                                                                                // check them from back to front and find
                 Element n = (Element)ns.get(i);                                                                                     // the element
-                if (Double.parseDouble(n.getAttributeValue("midi.date")) < date) {                                                  // that has a midi.date right before the goto's midi.date
-                    gt.getAttribute("target.date").setValue(n.getAttributeValue("midi.date"));                                      // take this as jump's target date
+                if (Double.parseDouble(n.getAttributeValue("date")) < date) {                                                  // that has a date right before the goto's date
+                    gt.getAttribute("target.date").setValue(n.getAttributeValue("date"));                                      // take this as jump's target date
                     gt.getAttribute("target.id").setValue("#" + n.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace")); // take this as the jump's target marker
                     break;                                                                                                          // done
                 }
@@ -619,7 +1043,7 @@ public class Helper {
         // generate a marker (potential jump target) and insert it into the sequencingMap
         if (markerMessage != null) {                                                // if a marker should be generated
             Element marker = new Element("marker");                                 // do so
-            marker.addAttribute(new Attribute("midi.date", Double.toString(date))); // give it a midi.date
+            marker.addAttribute(new Attribute("date", Double.toString(date))); // give it a date
             marker.addAttribute(new Attribute("message", markerMessage));           // set its message
             Attribute id = new Attribute("id", "meico_" + UUID.randomUUID().toString());       // give it a UUID
             id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");         // set its namespace to xml
@@ -667,15 +1091,101 @@ public class Helper {
 //        return oct;
     }
 
-    /** compute midi tick duration of a note or rest, if fail return 0.0;
+    /**
+     * convert a tstamp value to midi ticks,
+     * not suited for tstamp2!
+     * @param tstamp
+     * @return
+     */
+    protected double tstampToTicks(String tstamp) {
+        if ((tstamp == null) || tstamp.isEmpty() || (this.currentMeasure == null))      // if there is no tstamp or it is empty or we are outside a measure (tstamps are only meaningful within a measure)
+            return this.getMidiTime();                                                  // just return the current time
+
+        double date = Double.parseDouble(tstamp);                                       // convert the tstamp value to double
+        date = (date < 1.0) ? 0.0 : (date - 1.0);                                       // date == 0.0 is the barline, first beat is at date 1.0, timing-wise both are equal
+
+        double denom = this.getCurrentTimeSignature()[1];                               // get the current denominator
+        double tstampToTicksConversionFactor = (4.0 * this.ppq) / denom;                // multiply a tstamp with this and you get the midi tick value (don't forget to add the measure date!)
+
+        return (date * tstampToTicksConversionFactor) + Double.parseDouble(this.currentMeasure.getAttributeValue("date"));
+    }
+
+    /**
+     * MEI control events are usually placed out of timing at the end of a measure. If they use @startid meico places them right before the referred element. Otherwise the timing has to be computed from @tstamp.ges or @tstamp.
+     * The same is true for the duration of control events. It is computed from @dur, @tstamp2.ges, @tstamp2, or @endid (in this priority).
+     * This method helps in handling this.
+     * @param event the MEI control event
+     * @return an ArrayList of the following form (double date, Double endDate, Attribute tstamp2, Attribute endid), except for date every other entry can be null if no such data is present or applicable! The return value can also be null when the timing should better be computed on the basis of attribute startid, in that case this method does the repositioning of the event automatically and the invoking method should cancel this event's processing right now and get back to this event later on
+     */
+    protected ArrayList<Object> computeControlEventTiming(Element event) {
+        // read the tstamp or, if missing, process startid
+        Attribute att = event.getAttribute("tstamp.ges");
+        if (att == null) {
+            att = event.getAttribute("tstamp");
+            if ((att == null) && (event.getAttribute("dontRepositionMeAgain") == null)) {                           // if there is no tstamp information at all and this element has not yet been repositioned on the basis of startid
+                Attribute startidAtt = event.getAttribute("startid");                                               // try finding a startid attribute
+                if (startidAtt != null) {
+                    String startid = startidAtt.getValue().trim().replace("#", "");                                 // get the id string
+                    Element node = this.allNotesAndChords.get(startid);
+                    if (node != null) {
+                        Element parent = (Element) node.getParent();
+                        event.detach();                                                                             // detach it
+                        parent.insertChild(event, parent.indexOf(node));                                            // and insert it at the position
+//                        event.removeAttribute(startidAtt);                                                          // remove attribute startid so this element is not replaced again when reaching it during the further processing
+                        event.addAttribute(new Attribute("dontRepositionMeAgain", "true"));                         // make an indication that this element has been repositioned on the basis of startid
+                        return null;                                                                                // this control event has been replaced and should be processed later
+                    }
+                }
+            }
+        }
+        String tstamp = (att == null) ? null  : att.getValue();
+        Double date = this.tstampToTicks(tstamp);                   // the midi date of the instruction from tstamp or, if null, the current midi date
+
+        // read dur, tstamp2 or endid
+        Attribute tstamp2 = null;
+        Attribute endid = null;                                     // if no tstamp2 will be found, maybe there is an endid attribute
+        Double endDate = null;                                      // there might be an end date for this event
+        if (event.getAttribute("dur") != null) {                    // if there is a dur attribute
+            endDate = date + this.computeDuration(event);           // compute the duration
+        }
+        else {
+            tstamp2 = event.getAttribute("tstamp2.ges");            // get the tstamp2.ges attribute
+            if (tstamp2 == null)                                    // if no tstamp2.ges
+                tstamp2 = event.getAttribute("tstamp2");            // try finding tstamp2
+            if (tstamp2 != null) {                                  // if a tstamp2.ges or tstamp2 was found
+                String[] ts2 = tstamp2.getValue().split("m\\+");    // the first field of this array sais how many barlines will be crossed, the second is the usual tstamp (e.g., 2m+3.5), if only one field is present it is within this same measure
+                if (ts2.length == 0)                                // if the tstamp2 string is invalid (empty or only "m+")
+                    tstamp2 = null;                                 // ignore this attribute, the next if statement will check for an endid attribute
+                else if (ts2.length == 1) {
+                    endDate = this.tstampToTicks(ts2[0]);
+                    tstamp2 = null;
+                } else if (ts2[0].equals("0")) {
+                    endDate = this.tstampToTicks(ts2[1]);
+                    tstamp2 = null;
+                }
+            }
+            endid = event.getAttribute("endid");                    // store also the endid attribute, if present
+        }
+
+        ArrayList<Object> result = new ArrayList<>();
+        result.add(date);
+        result.add(endDate);
+        result.add(tstamp2);
+        result.add(endid);
+
+        return result;
+    }
+
+    /**
+     * compute midi tick duration of a note or rest, if fail return 0.0;
      * the stuff from data.DURATION.gestural is not supported! Because we need pure note values here.
-     *
      * @param ofThis
      * @return
      */
     protected Double computeDuration(Element ofThis) {
         if ((!ofThis.getLocalName().equals("bTrem")                  // for what kind of element shall the duration be computed?
                 && !ofThis.getLocalName().equals("chord")
+                && !ofThis.getLocalName().equals("dynam")
                 && !ofThis.getLocalName().equals("fTrem")
                 && !ofThis.getLocalName().equals("halfmRpt")
                 && !ofThis.getLocalName().equals("mRest")
@@ -684,8 +1194,7 @@ public class Helper {
                 && !ofThis.getLocalName().equals("octave")
                 && !ofThis.getLocalName().equals("rest")
                 && !ofThis.getLocalName().equals("tuplet")
-                && !ofThis.getLocalName().equals("space"))          // if none of these
-                || (this.currentPart == null)) {                    // or ofThis is not in a staff environment
+                && !ofThis.getLocalName().equals("space"))) {       // if none of these
             return 0.0;                                             // return 0.0
         }
 
@@ -695,7 +1204,10 @@ public class Helper {
 
         { // get basic duration (without dots, tuplets etc.)
             String sdur = "";                                                                       // the dur string
-
+//            if (ofThis.getAttribute("dur.ges") != null) {                                           // if there is a dur.ges attribute
+//                sdur = focus.getAttributeValue("dur.ges");
+//            }
+//            else
             if (ofThis.getAttribute("dur") != null) {                                               // if there is a dur attribute
                 sdur = focus.getAttributeValue("dur");
             }
@@ -705,10 +1217,13 @@ public class Helper {
                     sdur = focus.getAttributeValue("dur");                                          // take this
                 }
                 else {                                                                              // check for local and global default durations with and without layer consideration
+                    if (this.currentPart == null) {                                                 // we have to be in a staff environment for this
+                        return 0.0;                                                                 // if not return 0.0
+                    }
                     String layerId = getLayerId(getLayer(ofThis));                                  // store the layer id
                     Elements durdefaults = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");                              // get all local default durations
                     if (durdefaults.size() == 0) {                                                                                                           // if there is none
-                        durdefaults = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");// get all global default durations
+                        durdefaults = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("dur.default");// get all global default durations
                     }
                     for (int i=durdefaults.size()-1; i >= 0; --i) {                                                                                 // search from back to front
                         if ((durdefaults.get(i).getAttribute("layer") == null) || durdefaults.get(i).getAttributeValue("layer").equals(layerId)) {  // for a default duration with no layer dependency or a matching layer
@@ -761,27 +1276,32 @@ public class Helper {
         }
 
         // tupletSpans
-        Elements tps = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").getChildElements("tupletSpan");     // get all tupletSpans in the map
-        for (int i = tps.size()-1; i >= 0; --i) {                                                                                                               // go through all these tupletSpans, starting with the last
-            if ((tps.get(i).getAttribute("end") != null) && (Double.parseDouble(tps.get(i).getAttributeValue("end")) <= this.getMidiTime())) {                  // if the tupletSpan is already over
-                this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").removeChild(tps.get(i));   // remove this tupletSpan from the map, it is no longer needed
+        LinkedList<Element> tps = new LinkedList<>();
+        if (this.currentPart != null) {                                                                                                                                             // we have to be in a staff environment for this
+            tps = Helper.getAllChildElements("tupletSpan", this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap"));   // get al local tupletSpans
+        } else {
+            tps = Helper.getAllChildElements("tupletSpan", this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap")); // get all globalo tipletSpans
+        }
+
+        for (int i = tps.size() - 1; i >= 0; --i) {                                                                                                             // go through all these tupletSpans, starting with the last
+            Element ts = tps.get(i);
+            if ((ts.getAttribute("date.end") != null) && (Double.parseDouble(ts.getAttributeValue("date.end")) <= this.getMidiTime())) {                        // if the tupletSpan is already over
+                this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").removeChild(ts);           // remove this tupletSpan from the map, it is no longer needed
                 continue;                                                                                                                                       // continue with the previous element in tps
             }
-            if ((Helper.getAttribute("endid", tps.get(i)) != null) && (Helper.getAttribute("id", ofThis) != null) && (Helper.getAttributeValue("endid", tps.get(i)).equals("#" + Helper.getAttributeValue("id", ofThis)))) {   // if the tupletSpan ends with ofThis
-                this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").removeChild(tps.get(i));   // remove this tupletSpan from the map, it is no longer needed
+            if (!Helper.isSameLayer(ts, Helper.getLayerId(this.currentLayer))) {                                                                                 // check whether this is dedicated to a specific layer but not the current layer (layer of ofThis)
+                continue;
             }
-            if ((tps.get(i).getAttribute("layer") != null) && !tps.get(i).getAttributeValue("layer").equals(Helper.getLayerId(this.currentLayer))) {            // if the tupletSpan is dedicated to a particular layer but the current layer is a different one
-                continue;                                                                                                                                       // don't use this tupletSpan here, continue with the next
-            }
-            dur *= Double.parseDouble(tps.get(i).getAttributeValue("numbase")) / Integer.parseInt(tps.get(i).getAttributeValue("num"));                         // scale dur: dur*numbase/num ... this loop does not break here, because of the possibility of tuplets within tuplets
-            // This calculation can come with numeric error. That error is given across to the onset time of succeeding notes. We compensate this error by making a clean currentTime computation with each measure element, so the error does not propagate beyond barlines.
+            if (Double.parseDouble(ts.getAttributeValue("date")) <= this.getMidiTime())                                                                         // make sure the tupletSpan has already started
+                dur *= Double.parseDouble(ts.getAttributeValue("numbase")) / Integer.parseInt(ts.getAttributeValue("num"));                                     // scale dur: dur*numbase/num ... this loop does not break here, because of the possibility of tuplets within tuplets
+                // This calculation can come with numeric error. That error is given through to the onset time of subsequent notes and rests. We compensate this error by making a clean currentTime computation with each measure element, so the error does not propagate beyond barlines.
         }
 
         return dur;
     }
 
-    /** convert the duration string into decimal (e.g., 4 -> 1/4) and returns the result
-     *
+    /**
+     * convert the duration string into decimal (e.g., 4 -&gt; 1/4) and returns the result
      * @param durString
      * @return
      */
@@ -1035,8 +1555,79 @@ public class Helper {
     }
 
     /**
+     * check wether the layer attribute of an MEI control event e contains a layerId
+     * @param e
+     * @param layerId
+     * @return true if it contains the layerId or e has no layer attribute (quasi global to all layers), otherwise false
+     */
+    public static boolean isSameLayer(Element e, String layerId) {
+        if (e.getAttribute("layer") != null) {                                      // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+            String[] layers = e.getAttributeValue("layer").trim().split("\\s+");
+            for (String layer : layers) {
+                if (layer.equals(layerId)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;                                                                // if e is not dedicated to a specific layer, it is dedicated to all layers
+    }
+
+    /**
+     * this is a helper to work with startid and endid in MEI control events
+     * @param startid
+     * @param endid
+     * @return the layer's attribute value def, n or empty string
+     */
+    public String isSameLayer(String startid, String endid) {
+        Element start = this.allNotesAndChords.get(startid.trim().replace("#", ""));
+        if (start == null)
+            return "";
+
+        Element end = this.allNotesAndChords.get(endid.trim().replace("#", ""));
+        if (end == null)
+            return "";
+
+        String startLayerId = Helper.getLayerId(Helper.getLayer(start));    // get the layer of the first element
+        if (startLayerId.isEmpty())                                         // if not defined
+            return "";                                                      // done
+
+        String endLayerId = Helper.getLayerId(Helper.getLayer(end));        // get its layer id
+        if (!startLayerId.equals(endLayerId))                               // if it is not equal to the previous
+            return "";                                                      // done
+
+        return startLayerId;                                                // we reached this point, hence there must be at least two elements with the specified xml:ids, all being in the same layer
+    }
+
+    /**
+     * this is a helper to work with startid and endid in MEI control events
+     * @param startid
+     * @param endid
+     * @return the staff's attribute value def, n or empty string
+     */
+    public String isSameStaff(String startid, String endid) {
+        Element start = this.allNotesAndChords.get(startid.trim().replace("#", ""));
+        if (start == null)
+            return "";
+
+        Element end = this.allNotesAndChords.get(endid.trim().replace("#", ""));
+        if (end == null)
+            return "";
+
+        String startStaffId = Helper.getStaffId(Helper.getStaff(start));    // get the staff of the first element
+        if (startStaffId.isEmpty())                                         // if not defined
+            return "";                                                      // done
+
+        String endStaffId = Helper.getStaffId(Helper.getStaff(end));        // get its staff id
+        if (!startStaffId.equals(endStaffId))                               // if it is not equal to the previous
+            return "";                                                      // done
+
+        return startStaffId;                                                // we reached this point, hence there must be at least two elements with the specified xml:ids, all being in the same staff
+    }
+
+    /**
      * compute midi pitch of an mei note or return -1.0 if failed; the return is a double number that captures microtonality, too; 0.5 is a quarter tone
-     * parameter pitchdata should be an empty ArrayList<String>, it is filled with pitchname, accidentals and octave of the computed midi pitch for further use
+     * parameter pitchdata should be an empty ArrayList&gt;String&lt;, it is filled with pitchname, accidentals and octave of the computed midi pitch for further use
      *
      * @param ofThis
      * @param pitchdata
@@ -1078,7 +1669,7 @@ public class Helper {
                 if (this.currentPart != null) {
                     Elements octs = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octave
                     if (octs.size() == 0) {                                                                                                                                      // if there is none
-                        octs = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octave
+                        octs = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octave
                     }
                     for (int i = octs.size() - 1; i >= 0; --i) {                                                                          // search from back to front
                         if ((octs.get(i).getAttribute("layer") == null) || octs.get(i).getAttributeValue("layer").equals(layerId)) {  // for a default octave with no layer dependency or a matching layer
@@ -1127,7 +1718,7 @@ public class Helper {
                 if (checkKeySign) {                                                                                                 // if the note's pitch was defined by a pname attribute and had no local accidentals, we must check the key signature for accidentals
                     // get both, local and global keySignatureMap in the msm document and get the latest keySignature element in there, check its accidentals' pitch attribute if it is of the same pitch class as pname
                     Element keySigMapLocal = (this.currentPart == null) ? null : this.currentPart.getFirstChildElement("dated").getFirstChildElement("keySignatureMap");// get the local key signature map from mpm
-                    Element keySigMapGlobal = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap");  // get the global key signature map
+                    Element keySigMapGlobal = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("keySignatureMap");  // get the global key signature map
 
                     Element keySigLocal = null;
                     if (keySigMapLocal != null) {
@@ -1154,7 +1745,7 @@ public class Helper {
                     Element keySig = keySigLocal;                                                                                   // start with the local key signature
                     if ((keySig == null)                                                                                            // if no local keySignature
                             || ((keySigGlobal != null)                                                                              // or a global key signature ...
-                            && (Double.parseDouble(keySigLocal.getAttributeValue("midi.date")) < Double.parseDouble(keySigGlobal.getAttributeValue("midi.date"))))) {    // that is later than the local key signature
+                            && (Double.parseDouble(keySigLocal.getAttributeValue("date")) < Double.parseDouble(keySigGlobal.getAttributeValue("date"))))) {    // that is later than the local key signature
                         keySig = keySigGlobal;                                                                                      // take the global
 
                         // Shall the global keySignature element be added to the local map? Yes, this makes a correct msm representation of might be meant in mei. No, this is not what is encoded in mei.
@@ -1193,32 +1784,32 @@ public class Helper {
             // transposition; check for global and local transposition and addTransposition elements in the miscMaps; global and local transpositions add up; so-called addTranspositions (e.g. octaves) also add to the usual transpositions
             // go through all four lists and check for elements that apply here, global and local transpositions add up
             {
-                Elements globalTrans = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
+                Elements globalTrans = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
                 for (int i = globalTrans.size() - 1; i >= 0; --i) {                                                                                                     // go through the global transpositions
-                    if ((globalTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
+                    if ((globalTrans.get(i).getAttributeValue("date") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
                         continue;                                                                                                                                       // continue searching
                     }
-                    if ((globalTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                    if ((globalTrans.get(i).getAttribute("date.end") != null) && (Double.parseDouble(globalTrans.get(i).getAttributeValue("date.end")) <= this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before or at oThis
                         break;                                                                                                                                          // done
                     }
-                    if ((globalTrans.get(i).getAttribute("layer") != null) && !globalTrans.get(i).getAttributeValue("layer").equals(layerId)) {                         // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
-                        continue;                                                                                                                                       // continue searching
+                    if (!Helper.isSameLayer(globalTrans.get(i), layerId)) {                                                                                             // check whether this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                        continue;
                     }
                     trans += Double.parseDouble(globalTrans.get(i).getAttributeValue("semi"));                                                                          // found a transposition that applies
                     break;                                                                                                                                              // done
                 }
             }
             {
-                Elements globalAddTrans = this.currentMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
+                Elements globalAddTrans = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
                 for (int i = globalAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
-                    if ((globalAddTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(globalAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {    // if this transposition element is after ofThis
+                    if ((globalAddTrans.get(i).getAttributeValue("date") != null) && (Double.parseDouble(globalAddTrans.get(i).getAttributeValue("date")) > this.getMidiTime())) {    // if this transposition element is after ofThis
                         continue;
                     }
-                    if ((globalAddTrans.get(i).getAttribute("end") != null) && ((Double.parseDouble(globalAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime()))) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                    if ((globalAddTrans.get(i).getAttribute("date.end") != null) && ((Double.parseDouble(globalAddTrans.get(i).getAttributeValue("date.end")) <= this.getMidiTime()))) {   // if it is before or at ofThis but the end date of this transposition (if one is specified) is before oThis
                         continue;
                     }
-                    if ((globalAddTrans.get(i).getAttribute("layer") != null) && !globalAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                   // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
-                        continue;                                                                                                                                       // continue searching
+                    if (!Helper.isSameLayer(globalAddTrans.get(i), layerId)) {                                                                                          // check whether this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                        continue;
                     }
                     trans += Double.parseDouble(globalAddTrans.get(i).getAttributeValue("semi"));                                                                       // found a transposition that applies
                 }
@@ -1227,14 +1818,14 @@ public class Helper {
                 {
                     Elements localTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("transposition");
                     for (int i = localTrans.size() - 1; i >= 0; --i) {                                                                                                      // go through the local transpositions
-                        if ((localTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {// if this transposition element is after ofThis
+                        if ((localTrans.get(i).getAttributeValue("date") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("date")) > this.getMidiTime())) {// if this transposition element is after ofThis
                             continue;
                         }
-                        if ((localTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {     // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                        if ((localTrans.get(i).getAttribute("date.end") != null) && (Double.parseDouble(localTrans.get(i).getAttributeValue("date.end")) <= this.getMidiTime())) {     // if it is before or at ofThis but the end date of this transposition (if one is specified) is before oThis
                             break;
                         }
-                        if ((localTrans.get(i).getAttribute("layer") != null) && !localTrans.get(i).getAttributeValue("layer").equals(layerId)) {                           // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
-                            continue;                                                                                                                                       // continue searching
+                        if (!Helper.isSameLayer(localTrans.get(i), layerId)) {                                                                                              // check whether this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                            continue;
                         }
                         trans += Double.parseDouble(localTrans.get(i).getAttributeValue("semi"));                                                                           // found a transposition that applies
                         break;                                                                                                                                              // done
@@ -1243,14 +1834,14 @@ public class Helper {
                 {
                     Elements localAddTrans = this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("addTransposition");
                     for (int i = localAddTrans.size() - 1; i >= 0; --i) {                                                                                                  // go through the global addTranspositions
-                        if ((localAddTrans.get(i).getAttributeValue("midi.date") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("midi.date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
+                        if ((localAddTrans.get(i).getAttributeValue("date") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("date")) > this.getMidiTime())) {  // if this transposition element is after ofThis
                             continue;
                         }
-                        if ((localAddTrans.get(i).getAttribute("end") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("end")) < this.getMidiTime())) {   // if it is before ofThis but the end date of this transposition (if one is specified) is before oThis
+                        if ((localAddTrans.get(i).getAttribute("date.end") != null) && (Double.parseDouble(localAddTrans.get(i).getAttributeValue("date.end")) <= this.getMidiTime())) {   // if it is before or at ofThis but the end date of this transposition (if one is specified) is before oThis
                             continue;
                         }
-                        if ((localAddTrans.get(i).getAttribute("layer") != null) && !localAddTrans.get(i).getAttributeValue("layer").equals(layerId)) {                     // if this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
-                            continue;                                                                                                                                       // continue searching
+                        if (!Helper.isSameLayer(localAddTrans.get(i), layerId)) {                                                                                            // check whether this transposition is dedicated to a specific layer but not the current layer (layer of ofThis)
+                            continue;
                         }
                         trans += Double.parseDouble(localAddTrans.get(i).getAttributeValue("semi"));                                                                         // found a transposition that applies
                     }

@@ -895,7 +895,6 @@ public class BitStream {
    * <PRE>
    * copy data out of the internal MP3 bit buffer into a user supplied
    * unsigned char buffer.
-   * <p/>
    * mp3data=0      indicates data in buffer is an id3tags and VBR tags
    * mp3data=1      data is real mp3 frame data.
    * </PRE>
