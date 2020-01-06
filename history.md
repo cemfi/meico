@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.7.1
+- Extended the comandline application `meico.app.Main`, added flag `[-ex], [--expressive]`, so it does export expressive MIDI and audio.
+
+
 #### v0.7.0 Music Performance Markup (MPM) API Integration
 - Updated XOM to version 1.3.2. Updated the Ant script `build.xml` accordingly.
 - New format added: Music Performance Markup (MPM):

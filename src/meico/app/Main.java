@@ -62,13 +62,14 @@ public class Main {
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' and 'sameas' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
                 System.out.println("[-n] or [--ignore-repetitions]          meico automatically expands repetition marks, use this option to prevent this step");
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
+                System.out.println("[-ex] or [--expressive]                 this activate a flag so all MIDI and audio exports are expressive");
                 System.out.println("[-x argument argument] or [--xslt argument argument] apply an XSL transform (first argument) to the MEI source and store the result with file extension defined by second argument");
 //                System.out.println("[-g] or [--svg]                         convert to SVGs");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
-                System.out.println("[-f] or [--mpm]                         convert to MPM, MIDI output will be expressive");
+                System.out.println("[-f] or [--mpm]                         convert to MPM");
                 System.out.println("[-o] or [--chroma]                      convert to chromas");
                 System.out.println("[-h] or [--pitches]                     convert to pitches");
-                System.out.println("[-i] or [--midi]                        convert to MIDI (raw, no expressive performance, yet)");
+                System.out.println("[-i] or [--midi]                        convert to MIDI");
                 System.out.println("[-p] or [--no-program-changes]          suppress program change events in MIDI");
                 System.out.println("[-c] or [--dont-use-channel-10]         do not use channel 10 (drum channel) in MIDI");
                 System.out.println("[-t argument] or [--tempo argument]     set MIDI tempo (bpm), default is 120 bpm");
@@ -96,6 +97,7 @@ public class Main {
         boolean chroma = false;
         boolean pitches = false;
         boolean midi = false;
+        boolean expressive = false;
         boolean wav = false;
         boolean mp3 = false;
         boolean generateProgramChanges = true;
@@ -119,6 +121,7 @@ public class Main {
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
             if ((args[i].equals("-n")) || (args[i].equals("--ignore-repetitions"))) { ignoreRepetitions = true; continue; }
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
+            if ((args[i].equals("-ex")) || (args[i].equals("--expressive"))) { expressive = true; continue; }
 //            if ((args[i].equals("-g")) || (args[i].equals("--svg"))) { svg = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-f")) || (args[i].equals("--mpm"))) { mpm = true; continue; }
@@ -212,9 +215,9 @@ public class Main {
 //            svgs.writeSvgs();
 //        }
 
-        if (!(msm || pitches || chroma || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
+        if (!(msm || mpm || pitches || chroma || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
 
-        // convert mei -> msm -> midi
+        // convert mei -> msm/mpm
         System.out.println("Converting MEI to MSM and MPM.");
         KeyValue<List<Msm>, List<Mpm>> msmpms = mei.exportMsmMpm(720, dontUseChannel10, ignoreExpansions, !debug);    // usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
         if (msmpms.getKey().isEmpty()) {
@@ -319,23 +322,27 @@ public class Main {
         if (!(midi || wav || mp3)) return 0;     // if no further conversion is required, we are done here
 
         List<meico.midi.Midi> midis = new ArrayList<>();
-        System.out.println("Converting MSM to MIDI.");
-        for (int i = 0; i < msmpms.getKey().size(); ++i) {
-            midis.add(msmpms.getKey().get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
+        if (expressive) {
+            System.out.println("Converting MSM and MPM to expressive MIDI.");
+            for (int i = 0; i < msmpms.getKey().size(); ++i) {
+                midis.add(msmpms.getKey().get(i).exportExpressiveMidi(msmpms.getValue().get(i).getPerformance(0), generateProgramChanges));    // convert msm + mpm to expressive midi;
+            }
+        } else {
+            System.out.println("Converting MSM to MIDI.");
+            for (int i = 0; i < msmpms.getKey().size(); ++i) {
+                midis.add(msmpms.getKey().get(i).exportMidi(tempo, generateProgramChanges));    // convert msm to midi
+            }
         }
 
         if (midi) {
             System.out.println("Writing MIDI to file system: ");
-            if (mpm) {
-                // TODO: render expressive performance before converting to midi
-            }
             for (int i = 0; i < midis.size(); ++i) {
-                midis.get(i).writeMidi();    // write midi file to the file system
+                midis.get(i).writeMidi();   // write midi file to the file system
                 System.out.println("\t" + midis.get(i).getFile().getPath());
             }
         }
 
-        if (!(wav || mp3)) return 0;            // if no further conversion is required, we are done here
+        if (!(wav || mp3)) return 0;        // if no further conversion is required, we are done here
 
         List<meico.audio.Audio> audios = new ArrayList<>();
         System.out.println("Converting MIDI to Audio.");
