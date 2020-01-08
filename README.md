@@ -64,7 +64,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
-The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Mpm`, `Midi`, and `Audio` classes are the most important to work with. Class [`meico.app.Main`](https://github.com/cemfi/meico/tree/master/src/meico/app/Main.java) demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). The Javadoc is provided with this repository. 
+The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Mpm`, `Midi`, and `Audio` classes are the most important to work with. Class [`meico.app.Main`](https://github.com/cemfi/meico/tree/master/src/meico/app/Main.java) demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). The [Javadoc](http://cemfi.github.io/meico/) is provided with this repository.
 
 With `meicoPy.py` we have also a demo script that shows the usage of [meico in Python](https://github.com/cemfi/meico/tree/master/meicoPy). We further provide a Python3-based [REST API for meico](https://github.com/cemfi/meico/tree/master/rest). However, both have not been updated for a while!
 
