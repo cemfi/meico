@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.7.2
+- Bugfix in `meico.mei.Mei.addArticulationToMap()` so it really generates articulations.
+
+
 #### v0.7.1
 - Extended the comandline application `meico.app.Main`, added flag `[-ex], [--expressive]`, so it does export expressive MIDI and audio.
 

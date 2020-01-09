@@ -2435,8 +2435,8 @@ public class Mei extends meico.xml.XmlBase {
                     continue;
                 }
                 articulationStyle.addArticulationDef(def);
-                articulationMap.addArticulation(date, artic, "#" + noteid, id);     // generate an articulation for the given id at the given date and with the specific descriptor
             }
+            articulationMap.addArticulation(date, artic, "#" + noteid, id);     // generate an articulation for the given id at the given date and with the specific descriptor
         }
     }
 
