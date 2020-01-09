@@ -12,7 +12,6 @@ public class Meico {
     /**
      * A convenient launcher for the meico gui app.
      * Call it by <code>Meico.launch()</code>.
-     * It uses the default window title and creates no log file.
      */
     public static void launch() {
         MeicoApp.launch(MeicoApp.class);
@@ -20,7 +19,7 @@ public class Meico {
 
     /**
      * A convenient, more elaborate launcher for the meico gui app.
-     * Call it by <code>Meico.launch("My window title", "myLogfile.log")</code>.
+     * Call it by <code>Meico.launch("My window title")</code>.
      * @param windowTitle the window title string
      */
     public static void launch(String windowTitle) {
