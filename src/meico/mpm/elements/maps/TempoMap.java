@@ -71,14 +71,7 @@ public class TempoMap extends GenericMap {
      */
     protected void parseData(Element xml) throws InvalidDataException {
         super.parseData(xml);
-
         this.setType("tempoMap");            // make sure this is really a "tempoMap"
-
-        // make sure it has a startStyle attribute
-        Attribute startStyleAtt = Helper.getAttribute("startStyle", this.getXml());
-        if (startStyleAtt == null) {
-            this.getXml().addAttribute(new Attribute("startStyle", ""));
-        }
     }
 
     /**
@@ -230,7 +223,6 @@ public class TempoMap extends GenericMap {
                 td.xmlId = att.getValue();
 
             // get the style that applies to this date
-            td.styleName = Helper.getAttributeValue("startStyle", this.getXml());
             for (int j = index; j >= 0; --j) {                                      // find the first style switch at or before date
                 Element s = this.elements.get(j).getValue();
                 if (s.getLocalName().equals("style")) {

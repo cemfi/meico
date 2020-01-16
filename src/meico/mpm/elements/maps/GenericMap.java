@@ -549,7 +549,7 @@ public class GenericMap extends AbstractXmlSubtree {
                 return Helper.getAttributeValue("name.ref", list.get(i).getValue());
             }
         }
-        return Helper.getAttributeValue("startStyle", this.getXml());
+        return null;
     }
 
     /**
@@ -580,14 +580,6 @@ public class GenericMap extends AbstractXmlSubtree {
     public GenericStyle getStyleAt(double date, String styleType) {
         String styleName = this.getStyleNameAt(date);
         return this.getStyle(styleType, styleName);
-    }
-
-    /**
-     * set/add the startStyle attribute of the map
-     * @param styleName
-     */
-    public void setStartStyle(String styleName) {
-        this.getXml().addAttribute(new Attribute("startStyle", styleName));
     }
 
     /**

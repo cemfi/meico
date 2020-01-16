@@ -72,20 +72,7 @@ public class ArticulationMap extends GenericMap {
      */
     protected void parseData(Element xml) throws InvalidDataException {
         super.parseData(xml);
-
         this.setType("articulationMap");            // make sure this is really a "articulationMap"
-
-        // make sure it has a startStyle attribute
-        Attribute startStyleAtt = Helper.getAttribute("startStyle", this.getXml());
-        if (startStyleAtt == null) {
-            this.getXml().addAttribute(new Attribute("startStyle", ""));
-        }
-
-        // make sure it has a defaultArticulation attribute
-        Attribute defaultArticulationAtt = Helper.getAttribute("defaultArticulation", this.getXml());
-        if (defaultArticulationAtt == null) {
-            this.getXml().addAttribute(new Attribute("defaultArticulation", ""));
-        }
     }
 
     /**
@@ -232,16 +219,6 @@ public class ArticulationMap extends GenericMap {
     }
 
     /**
-     * set/add the startStyle attribute of the map and the defaultArticulation attribute
-     * @param styleName a reference to a styleDef
-     * @param defaultArticulation a reference to an articulationDef
-     */
-    public void setStartStyle(String styleName, String defaultArticulation) {
-        this.getXml().addAttribute(new Attribute("startStyle", styleName));
-        this.getXml().addAttribute(new Attribute("defaultArticulation", defaultArticulation));
-    }
-
-    /**
      * collect all data that is needed to compute the articulation at the specified date
      * @param date
      * @return an ArrayList of all articulations at the specific date
@@ -380,21 +357,7 @@ public class ArticulationMap extends GenericMap {
                 return;
             }
         }
-
-        att = Helper.getAttribute("startStyle", this.getXml());
-        if (att != null) {
-            ad.styleName = att.getValue();
-            ad.style = (ArticulationStyle) this.getStyle(Mpm.ARTICULATION_STYLE, ad.styleName); // read the articulation style
-        }
-        else
-            ad.styleName = null;
-
-        att = Helper.getAttribute("defaultArticulation", this.getXml());
-        if (att != null) {
-            ad.defaultArticulation = att.getValue();
-            if (ad.style != null)
-                ad.defaultArticulationDef = ad.style.getArticulationDef(ad.defaultArticulation);
-        }
+        ad.styleName = null;
     }
 
     /**
@@ -439,18 +402,9 @@ public class ArticulationMap extends GenericMap {
 
         // create a list of styles/switches
         ArrayList<KeyValue<Double, ArticulationDef>> defaultArticulations = new ArrayList<>();          // an arraylist of (date, default ArticulationDef) tuplets
-        ArticulationStyle aStyle = (ArticulationStyle) this.getStyle(Mpm.ARTICULATION_STYLE, Helper.getAttributeValue("startStyle", this.getXml()));
-        if (aStyle != null) {                                                                       // determine the start style and default articulation
-            ArticulationDef aDef = aStyle.getArticulationDef(Helper.getAttributeValue("defaultArticulation", this.getXml()));
-            if (aDef == null)
-                System.err.println("Warning: attribute " + Helper.getAttribute("defaultArticulation", this.getXml()).toXML() + " in articulationMap refers to an unknown articulationDef.");
-            defaultArticulations.add(new KeyValue<>(0.0, aDef));
-        } else {
-            System.err.println("Warning: attribute " + Helper.getAttribute("startStyle", this.getXml()).toXML() + " in articulationMap refers to an unknown articulation style.");
-        }
-        ArrayList<KeyValue<Double, Element>> styleSwitchList = this.getAllElementsOfType("style");  // collect all style switches and put them into the list
+        ArrayList<KeyValue<Double, Element>> styleSwitchList = this.getAllElementsOfType("style");      // collect all style switches and put them into the list
         for (KeyValue<Double, Element> styleEntry : styleSwitchList) {
-            aStyle = (ArticulationStyle) this.getStyle(Mpm.ARTICULATION_STYLE, Helper.getAttributeValue("name.ref", styleEntry.getValue()));
+            ArticulationStyle aStyle = (ArticulationStyle) this.getStyle(Mpm.ARTICULATION_STYLE, Helper.getAttributeValue("name.ref", styleEntry.getValue()));
             if (aStyle != null) {
                 ArticulationDef aDef = aStyle.getArticulationDef(Helper.getAttributeValue("defaultArticulation", styleEntry.getValue()));
                 if (aDef == null)

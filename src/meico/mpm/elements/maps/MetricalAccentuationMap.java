@@ -71,14 +71,7 @@ public class MetricalAccentuationMap extends GenericMap {
      */
     protected void parseData(Element xml) throws InvalidDataException {
         super.parseData(xml);
-
         this.setType("metricalAccentuationMap");            // make sure this is really a "metricalAccentuationMap"
-
-        // make sure it has a startStyle attribute
-        Attribute startStyleAtt = Helper.getAttribute("startStyle", this.getXml());
-        if (startStyleAtt == null) {
-            this.getXml().addAttribute(new Attribute("startStyle", ""));
-        }
     }
 
     /**
@@ -204,7 +197,7 @@ public class MetricalAccentuationMap extends GenericMap {
                 md.stickToMeasures = Boolean.parseBoolean(att.getValue());
 
             // get the style that applies to this date
-            md.styleName = Helper.getAttributeValue("startStyle", this.getXml());
+            md.styleName = "";
             for (int j = index; j >= 0; --j) {                                  // find the first style switch at or before date
                 Element s = this.elements.get(j).getValue();
                 if (s.getLocalName().equals("style")) {
@@ -310,7 +303,7 @@ public class MetricalAccentuationMap extends GenericMap {
                 double scale = md.scale;
                 double accentuation = md.accentuationPatternDef.getAccentuationAt(beat);                // compute accentuation
 
-                // reduce the scale when it exceeds the (MIDI) limits
+                // reduce the scale when it exceeds the (MIDI) limits, this is treated differently during MSM to expressive MIDI rendering
 //                double lowerVelocityLimit = 0.0;
 //                double upperVelocityLimit = 127.0;
 //                if ((Math.signum(accentuation) > 0.0) && ((velocity + scale) > upperVelocityLimit))

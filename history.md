@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.7.3
+- MPM attributes `startStyle` and `defaultArticulation` have been removed from all `...-Map` elements. Initial styles are indicated by style switches (e.g. `<style date="0.0" name.ref="my initial style"/>` and for articulation maps `<style date="0.0" name.ref="my initial style" defaultArticulation="nonlegato"/>`) at the beginning of of the map. The corresponding code changes are in classes `meico.mei.Mei`, `meico.mpm.maps.ArticulationMap`, `DynamicsMap`, `GenericMap`, `MetricalAccentuationMap`, `RubatoMap`, `TempoMap`.
+- In class `meico.mpm.Mpm` element `referenceMusic` is renamed to `relatedResources` and element `reference` has been renamed to `resource`.
+
+
 #### v0.7.2
 - Bugfix in `meico.mei.Mei.addArticulationToMap()` so it really generates articulations.
 

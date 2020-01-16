@@ -42,7 +42,7 @@ public class Mpm extends AbstractMsm {
     public static final String IMPRECISION_MAP_TONEDURATION     = "imprecisionMap.toneduration";
     public static final String IMPRECISION_MAP_TUNING           = "imprecisionMap.tuning";
 
-    private Element referenceMusic = null;
+    private Element relatedResources = null;
     private ArrayList<Performance> performances = new ArrayList<>();
 
     /**
@@ -150,12 +150,12 @@ public class Mpm extends AbstractMsm {
     private void parseData() {
 //        System.out.println("Parsing MPM data ...");
 
-        // get the link to the referenceMusic tag
-        this.referenceMusic = Helper.getFirstChildElement("referenceMusic", this.getRootElement());
-        if (this.referenceMusic == null) {                                          // if it does not exist
-//            System.out.println("No referenceMusic found. Generating an empty one.");
-            this.referenceMusic = new Element("referenceMusic", Mpm.MPM_NAMESPACE); // create it
-            this.getRootElement().appendChild(this.referenceMusic);                 // and add it to the xml tree
+        // get the link to the relatedResources tag
+        this.relatedResources = Helper.getFirstChildElement("relatedResources", this.getRootElement());
+        if (this.relatedResources == null) {                                          // if it does not exist
+//            System.out.println("No relatedResources found. Generating an empty one.");
+            this.relatedResources = new Element("relatedResources", Mpm.MPM_NAMESPACE); // create it
+            this.getRootElement().appendChild(this.relatedResources);                 // and add it to the xml tree
         }
 
         // parse the performances
@@ -171,37 +171,37 @@ public class Mpm extends AbstractMsm {
     }
 
     /**
-     * a helper method for the constructor Mpm(), it create an initial mpm document with a root and a referenceMusic element
+     * a helper method for the constructor Mpm(), it create an initial mpm document with a root and a relatedResources element
      * @return the root element
      */
     private Element init() {
         Element root = new Element("mpm", Mpm.MPM_NAMESPACE);    // the second string defines the namespace
-        this.referenceMusic = new Element("referenceMusic", Mpm.MPM_NAMESPACE);
-        root.appendChild(this.referenceMusic);
+        this.relatedResources = new Element("relatedResources", Mpm.MPM_NAMESPACE);
+        root.appendChild(this.relatedResources);
         this.data = new Document(root);
         return root;
     }
 
     /**
-     * add a music reference to the referenceMusic list
+     * add a music reference to the relatedResources list
      * @param uri
      * @param type
      * @return a link to the element just added
      */
-    public Element addReferenceMusic(String uri, String type) {
-        Element ref = new Element("reference", Mpm.MPM_NAMESPACE);
+    public Element addRelatedResource(String uri, String type) {
+        Element ref = new Element("resource", Mpm.MPM_NAMESPACE);
         ref.addAttribute(new Attribute("uri", uri));
         ref.addAttribute(new Attribute("type", type));
-        this.referenceMusic.appendChild(ref);
+        this.relatedResources.appendChild(ref);
         return ref;
     }
 
     /**
-     * a getter for the referenceMusic element
+     * a getter for the relatedResources element
      * @return
      */
-    public Element getReferenceMusic() {
-        return this.referenceMusic;
+    public Element getRelatedResources() {
+        return this.relatedResources;
     }
 
     /**

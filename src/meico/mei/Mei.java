@@ -361,12 +361,12 @@ public class Mei extends meico.xml.XmlBase {
             }
             if (mpms.size() == 1) {                                                                                         // if only one msm object (no numbering needed)
                 mpms.get(0).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mpm");                 // replace the file extension mei with msm and make this the filename
-                mpms.get(0).addReferenceMusic(msms.get(0).getFile().getAbsolutePath(), "msm");                              // add the msm to the reference music
+                mpms.get(0).addRelatedResource(msms.get(0).getFile().getAbsolutePath(), "msm");                              // add the msm to the reference music
             }
             else {                                                                                                          // multiple msm objects created (or none)
                 for (int i = 0; i < mpms.size(); ++i) {                                                                     // for each msm object
                     mpms.get(i).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-" + i + ".mpm");   // replace the extension by the number and the .msm extension
-                    mpms.get(i).addReferenceMusic(msms.get(i).getFile().getAbsolutePath(), "msm");                          // add the corresponding msm to the reference music
+                    mpms.get(i).addRelatedResource(msms.get(i).getFile().getAbsolutePath(), "msm");                          // add the corresponding msm to the reference music
                 }
             }
         }
@@ -833,7 +833,7 @@ public class Mei extends meico.xml.XmlBase {
         this.helper.movements.add(msm);                                             // add it to the movements list
 
         Mpm mpm = Mpm.createMpm();                                                  // generate an Mpm object
-        mpm.addReferenceMusic(this.file.getAbsolutePath(), "mei");                  // add the mei as music reference
+        mpm.addRelatedResource(this.file.getAbsolutePath(), "mei");                  // add the mei as music reference
         Performance performance = Performance.createPerformance("MEI export performance");       // generate a Performance object
         if (performance == null) {                                                  // make sure it is not null
             System.err.println("Failed to generate an instance of Performance. Skipping mdiv " + titleString);
@@ -905,7 +905,7 @@ public class Mei extends meico.xml.XmlBase {
                 if (tempoData != null) {
                     if (globalTempoMap == null) {
                         globalTempoMap = this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.TEMPO_MAP);               // make sure there is a global tempoMap
-                        globalTempoMap.setStartStyle("MEI export");                                                                 // set its start style reference
+                        globalTempoMap.addStyleSwitch(0.0, "MEI export");                                                           // set its start style reference
                     }
                     tempoData.startDate = 0.0;
                     ((TempoMap) globalTempoMap).addTempo(tempoData);
@@ -2112,7 +2112,7 @@ public class Mei extends meico.xml.XmlBase {
             dynamicsMap = (DynamicsMap) this.helper.currentPerformance.getGlobal().getDated().getMap(Mpm.DYNAMICS_MAP);     // get the global dynamicsMap
             if (dynamicsMap == null) {                                                                                      // if there is no global dynamicsMap
                 dynamicsMap = (DynamicsMap) this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.DYNAMICS_MAP); // create one
-                dynamicsMap.setStartStyle("MEI export");                                                                    // set its start style reference
+                dynamicsMap.addStyleSwitch(0.0, "MEI export");                                                              // set its start style reference
             }
 
             this.addDynamicsToMpm(dd, dynamicsMap, endid, tstamp2);
@@ -2130,7 +2130,7 @@ public class Mei extends meico.xml.XmlBase {
                 dynamicsMap = (DynamicsMap) part.getDated().getMap(Mpm.DYNAMICS_MAP);               // get the part's dynamicsMap
                 if (dynamicsMap == null) {                                                          // if it has none so far
                     dynamicsMap = (DynamicsMap) part.getDated().addMap(Mpm.DYNAMICS_MAP);           // create it
-                    dynamicsMap.setStartStyle("MEI export");                                        // set the style reference
+                    dynamicsMap.addStyleSwitch(0.0, "MEI export");                                  // set the style reference
                 }
 
                 DynamicsData ddd = dd.clone();
@@ -2219,7 +2219,7 @@ public class Mei extends meico.xml.XmlBase {
             tempoMap = (TempoMap) this.helper.currentPerformance.getGlobal().getDated().getMap(Mpm.TEMPO_MAP);      // get the global tempoMap
             if (tempoMap == null) {                                                                                 // if there is no global tempoMap
                 tempoMap = (TempoMap) this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.TEMPO_MAP);  // create one
-                tempoMap.setStartStyle("MEI export");                                                               // set its start style reference
+                tempoMap.addStyleSwitch(0.0, "MEI export");                                                         // set its start style reference
             }
 
             // add the new tempo instruction
@@ -2238,7 +2238,7 @@ public class Mei extends meico.xml.XmlBase {
                 tempoMap = (TempoMap) part.getDated().getMap(Mpm.TEMPO_MAP);                        // get the part's tempoMap
                 if (tempoMap == null) {                                                             // if it has none so far
                     tempoMap = (TempoMap) part.getDated().addMap(Mpm.TEMPO_MAP);                    // create it
-                    tempoMap.setStartStyle("MEI export");                                           // set the style reference
+                    tempoMap.addStyleSwitch(0.0, "MEI export");                                     // set the style reference
                 }
 
                 TempoData td = tempoData.clone();
@@ -2336,7 +2336,7 @@ public class Mei extends meico.xml.XmlBase {
         ArticulationMap map = (ArticulationMap) part.getDated().getMap(Mpm.ARTICULATION_MAP);                                       // find the local articulationMap
         if (map == null) {                                                                                                          // if there is none
             map = (ArticulationMap) part.getDated().addMap(Mpm.ARTICULATION_MAP);                                                   // create one
-            map.setStartStyle("MEI export", "nonlegato");                                                                           // initialize its attributes
+            map.addStyleSwitch(0.0, "MEI export", "nonlegato");                                                                     // set its initial style
         }
 
         for (Element parent = artic; (parent != null) && (parent != this.getRootElement()); parent = (Element) parent.getParent()) {    // search through the parent elements, start with the element itself becuase it could already be the note or chord itself
@@ -2491,7 +2491,7 @@ public class Mei extends meico.xml.XmlBase {
                         articulationMap = (ArticulationMap) this.helper.currentPerformance.getGlobal().getDated().getMap(Mpm.ARTICULATION_MAP);     // get the global articulationMap
                         if (articulationMap == null) {                                                                                              // if there is no global articulationMap
                             articulationMap = (ArticulationMap) this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.ARTICULATION_MAP); // create one
-                            articulationMap.setStartStyle("MEI export", "defaultArticulation");                                   // set its start style reference
+                            articulationMap.addStyleSwitch(0.0, "MEI export", "defaultArticulation");                   // set its start style reference
                         }
                         this.addArticulationToMap(date, "breath", xmlid, null, articulationMap, articulationStyle);     // add the new articulation instruction
                     }
@@ -2508,7 +2508,7 @@ public class Mei extends meico.xml.XmlBase {
                             articulationMap = (ArticulationMap) part.getDated().getMap(Mpm.ARTICULATION_MAP);           // get the part's articulationMap
                             if (articulationMap == null) {                                                              // if it has none so far
                                 articulationMap = (ArticulationMap) part.getDated().addMap(Mpm.ARTICULATION_MAP);       // create it
-                                articulationMap.setStartStyle("MEI export", "defaultArticulation");                               // set the style reference
+                                articulationMap.addStyleSwitch(0.0, "MEI export", "defaultArticulation");               // set the style reference
                             }
                             this.addArticulationToMap(date, "breath", (xmlid == null) ? null :  ((multiIds) ? (xmlid + "_meico_" + UUID.randomUUID().toString()) : xmlid), null, articulationMap, articulationStyle); // generate and add the new articulation instruction
                             multiIds = true;
