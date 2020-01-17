@@ -249,7 +249,7 @@ public class GenericMap extends AbstractXmlSubtree {
      * @return
      */
     public Element getElement(int index) {
-        if (index >= this.elements.size())
+        if ((index >= this.elements.size()) || (index < 0))
             return null;
 
         return this.elements.get(index).getValue();

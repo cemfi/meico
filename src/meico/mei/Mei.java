@@ -1475,7 +1475,7 @@ public class Mei extends meico.xml.XmlBase {
             durNotTimeSig = true;
         }
 
-        // the measure length does not confirm the time signature, hence we need a new time signature entry at the measure's startDate
+        // the measure length does not confirm the time signature, hence we need a new time signature entry at the measure's startDate and  another one ate the end so the next measure has the official time signature again
         if (durNotTimeSig) {
             double[] numDenom = this.helper.getCurrentTimeSignature();                                          // get the current time signature numerator and denominator
             double num = (dur2 * numDenom[1]) / (this.helper.ppq * 4.0);                                        // from the actual duration of the measure and the denominator of the time signature compute the new numerator
@@ -1490,10 +1490,12 @@ public class Mei extends meico.xml.XmlBase {
             }
 
             tsMap.appendChild(ts);                                                                              // add the new timeSignature element to the global timeSignatureMap
+            Element tsBack = Msm.makeTimeSignature(endDate, numDenom[0], (int)numDenom[1], null);               // generate a timeSignature element to switch back to the official time signature at the end of the measure
+            tsMap.appendChild(tsBack);                                                                          // add it to the map
         }
 
         // go through all msm parts and set the currentDate attribute to endDate
-        Elements parts = this.helper.currentMsmMovement.getChildElements("part");                                  // get all parts
+        Elements parts = this.helper.currentMsmMovement.getChildElements("part");                               // get all parts
         for (int i=0; i < parts.size(); ++i)                                                                    // go through all the parts
             parts.get(i).getAttribute("currentDate").setValue(Double.toString(endDate));                        // set their currentDate attribute
 
@@ -2137,7 +2139,6 @@ public class Mei extends meico.xml.XmlBase {
                 if ((dd.xmlId != null) && multiIDs)
                     ddd.xmlId = dd.xmlId + "_meico_" + UUID.randomUUID().toString();
 
-
                 this.addDynamicsToMpm(ddd, dynamicsMap, endid, tstamp2);
 
                 multiIDs = true;
@@ -2176,11 +2177,15 @@ public class Mei extends meico.xml.XmlBase {
             }
             break;                                                                                          // done, no need to search for further previous dynamics instructions
         }
+        if (dynamicsData.volumeString == null)                                                              // no volume found
+            dynamicsData.volumeString = "?";                                                                // set placeholder volume
 
         int index = dynamicsMap.addDynamics(dynamicsData);                                                  // add it to the map
+        if (index < 0)
+            return index;
         Element dynamics = dynamicsMap.getElement(index);                                                   // get the element just created
         if (dynamicsData.endDate != null) {
-            dynamics.addAttribute(new Attribute("date.end", dynamicsData.endDate.toString()));                           // add the date.end attribute to the element (will be resolved during mpmPostprocessing())
+            dynamics.addAttribute(new Attribute("date.end", dynamicsData.endDate.toString()));              // add the date.end attribute to the element (will be resolved during mpmPostprocessing())
         } else if (tstamp2 != null) {                                                                       // if this element must be terminated in another measure via a tstamp2.ges or tstamp2 attribute
             dynamics.addAttribute(new Attribute("tstamp2", tstamp2.getValue()));                            // add the tstamp2 attribute to the element (must be deleted later!)
             this.helper.tstamp2s.add(dynamics);                                                             // add the element to the helper's tstamp2s list
