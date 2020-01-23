@@ -191,18 +191,18 @@ public class ImprecisionMap extends GenericMap {
      * @param lowerLimit
      * @param upperLimit
      * @param mode the peak of the trtiangle (i.e., highest probability)
-     * @param minValue lower clip border
-     * @param maxValue upper clip border
+     * @param lowerClip lower clip border
+     * @param upperClip upper clip border
      * @return the index at which it has been inserted
      */
-    public int addDistributionTriangular(double date, double lowerLimit, double upperLimit, double mode, double minValue, double maxValue) {
+    public int addDistributionTriangular(double date, double lowerLimit, double upperLimit, double mode, double lowerClip, double upperClip) {
         Element e = new Element("distribution.triangular", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
         e.addAttribute(new Attribute("mode", Double.toString(mode)));
-        e.addAttribute(new Attribute("value.min", Double.toString(minValue)));
-        e.addAttribute(new Attribute("value.max", Double.toString(maxValue)));
+        e.addAttribute(new Attribute("clip.lower", Double.toString(lowerClip)));
+        e.addAttribute(new Attribute("clip.upper", Double.toString(upperClip)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -224,7 +224,7 @@ public class ImprecisionMap extends GenericMap {
         e.addAttribute(new Attribute("stepWidth.max", Double.toString(maxStepWidth)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
-        e.addAttribute(new Attribute("timingBasis.milliseconds", Double.toString(timingBasisMilliseconds)));
+        e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -235,23 +235,23 @@ public class ImprecisionMap extends GenericMap {
      * in this variant of the triangular distribution the mode (triangle peak) is wandering with the random values,
      * this method is an alternative to brownianNoise and is experimental
      * @param date
-     * @param degreeOfCorrelation Must be >= 0.0. To avoid outliers (beyont the lower and upper limit) this value should be >= 1.0. 1.0 keeps the triangle's left and right edge at the lower and upper limit. The greater this value, the narrower is the triangle while wandering around between the limits.
+     * @param degreeOfCorrelation Must be >= 0.0. To avoid outliers (beyond the lower and upper limit) this value should be >= 1.0. 1.0 keeps the triangle's left and right edge at the lower and upper limit. The greater this value, the narrower is the triangle while wandering around between the limits.
      * @param lowerLimit
      * @param upperLimit
-     * @param minValue lower clip border
-     * @param maxValue upper clip border
+     * @param lowerClip lower clip border
+     * @param upperClip upper clip border
      * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
      * @return the index at which it has been inserted
      */
-    public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double minValue, double maxValue, double timingBasisMilliseconds) {
+    public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double timingBasisMilliseconds) {
         Element e = new Element("distribution.correlated.compensatingTriangle", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("degreeOfCorrelation", Double.toString((Math.max(degreeOfCorrelation, 0.0)))));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
-        e.addAttribute(new Attribute("value.min", Double.toString(minValue)));
-        e.addAttribute(new Attribute("value.max", Double.toString(maxValue)));
-        e.addAttribute(new Attribute("timingBasis.milliseconds", Double.toString(timingBasisMilliseconds)));
+        e.addAttribute(new Attribute("clip.lower", Double.toString(lowerClip)));
+        e.addAttribute(new Attribute("clip.upper", Double.toString(upperClip)));
+        e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -268,7 +268,7 @@ public class ImprecisionMap extends GenericMap {
      */
     public int addDistributionList(double date, Element list, double timingBasisMilliseconds) {
         list.addAttribute(new Attribute("date", Double.toString(date)));
-        list.addAttribute(new Attribute("timingBasis.milliseconds", Double.toString(timingBasisMilliseconds)));
+        list.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, list);
         return this.insertElement(kv, false);
@@ -337,16 +337,16 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("mode", Double.toString(data.mode)));
-                if (data.minValue == null) {
-                    System.err.println("Cannot add distribution, minValue not specified.");
+                if (data.lowerClip == null) {
+                    System.err.println("Cannot add distribution, lowerClip not specified.");
                     return -1;
                 }
-                e.addAttribute(new Attribute("value.min", Double.toString(data.minValue)));
-                if (data.maxValue == null) {
-                    System.err.println("Cannot add distribution, maxValue not specified.");
+                e.addAttribute(new Attribute("clip.lower", Double.toString(data.lowerClip)));
+                if (data.upperClip == null) {
+                    System.err.println("Cannot add distribution, upperClip not specified.");
                     return -1;
                 }
-                e.addAttribute(new Attribute("value.max", Double.toString(data.maxValue)));
+                e.addAttribute(new Attribute("clip.upper", Double.toString(data.upperClip)));
                 break;
             case "distribution.correlated.brownianNoise":
                 if (data.maxStepWidth == null) {
@@ -364,7 +364,7 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("limit.upper", Double.toString(data.upperLimit)));
-                e.addAttribute(new Attribute("timingBasis.milliseconds", Double.toString(data.timingBasisMilliseconds)));
+                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
                 break;
             case "distribution.correlated.compensatingTriangle":
                 if (data.lowerLimit == null) {
@@ -382,17 +382,17 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("degreeOfCorrelation", Double.toString((Math.max(data.degreeOfCorrelation, 0.0)))));
-                if (data.minValue == null) {
-                    System.err.println("Cannot add distribution, minValue not specified.");
+                if (data.lowerClip == null) {
+                    System.err.println("Cannot add distribution, lowerClip not specified.");
                     return -1;
                 }
-                e.addAttribute(new Attribute("value.min", Double.toString(data.minValue)));
-                if (data.maxValue == null) {
-                    System.err.println("Cannot add distribution, maxValue not specified.");
+                e.addAttribute(new Attribute("clip.lower", Double.toString(data.lowerClip)));
+                if (data.upperClip == null) {
+                    System.err.println("Cannot add distribution, upperClip not specified.");
                     return -1;
                 }
-                e.addAttribute(new Attribute("value.max", Double.toString(data.maxValue)));
-                e.addAttribute(new Attribute("timingBasis.milliseconds", Double.toString(data.timingBasisMilliseconds)));
+                e.addAttribute(new Attribute("clip.upper", Double.toString(data.upperClip)));
+                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
                 break;
             case "distribution.list":
                 for (int i=0; i < data.distributionList.size(); ++i) {
@@ -400,7 +400,7 @@ public class ImprecisionMap extends GenericMap {
                     m.addAttribute(new Attribute("value", Double.toString(data.distributionList.get(i))));
                     e.appendChild(m);
                 }
-                e.addAttribute(new Attribute("timingBasis.milliseconds", Double.toString(data.timingBasisMilliseconds)));
+                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
                 break;
             default:
                 System.err.println("Cannot add distribution, unknown distribution type.");
@@ -472,15 +472,15 @@ public class ImprecisionMap extends GenericMap {
             if (att != null)
                 dd.lowerLimit = Double.parseDouble(att.getValue());
 
-            att = Helper.getAttribute("value.min", e);
+            att = Helper.getAttribute("clip.lower", e);
             if (att != null)
-                dd.minValue = Double.parseDouble(att.getValue());
+                dd.lowerClip = Double.parseDouble(att.getValue());
 
-            att = Helper.getAttribute("value.max", e);
+            att = Helper.getAttribute("clip.upper", e);
             if (att != null)
-                dd.maxValue = Double.parseDouble(att.getValue());
+                dd.upperClip = Double.parseDouble(att.getValue());
 
-            att = Helper.getAttribute("timingBasis.milliseconds", e);
+            att = Helper.getAttribute("milliseconds.timingBasis", e);
             if (att != null)
                 dd.timingBasisMilliseconds = Double.parseDouble(att.getValue());
 
@@ -548,7 +548,7 @@ public class ImprecisionMap extends GenericMap {
                     random = RandomNumberProvider.createRandomNumberProvider_gaussianDistribution(dd.standardDeviation, dd.lowerLimit, dd.upperLimit);
                     break;
                 case "distribution.triangular":
-                    random = RandomNumberProvider.createRandomNumberProvider_triangularDistribution(dd.lowerLimit, dd.upperLimit, dd.mode, dd.minValue, dd.maxValue);
+                    random = RandomNumberProvider.createRandomNumberProvider_triangularDistribution(dd.lowerLimit, dd.upperLimit, dd.mode, dd.lowerClip, dd.upperClip);
                     break;
                 case "distribution.correlated.brownianNoise": {
                         Double imprecisionValueHandover = ImprecisionMap.getHandoverValue(random, ddPrev, dd);    // before we go on with this distribution element we need to provide a handover value from the previous
@@ -558,7 +558,7 @@ public class ImprecisionMap extends GenericMap {
                     break;
                 case "distribution.correlated.compensatingTriangle": {
                         Double imprecisionValueHandover = ImprecisionMap.getHandoverValue(random, ddPrev, dd);    // before we go on with this distribution element we need to provide a handover value from the previous
-                        random = RandomNumberProvider.createRandomNumberProvider_compensatingTriangleDistribution(dd.degreeOfCorrelation, dd.lowerLimit, dd.upperLimit, dd.minValue, dd.maxValue);
+                        random = RandomNumberProvider.createRandomNumberProvider_compensatingTriangleDistribution(dd.degreeOfCorrelation, dd.lowerLimit, dd.upperLimit, dd.lowerClip, dd.upperClip);
                         ImprecisionMap.doHandover(imprecisionValueHandover, random);    // let this imprecision element start where the previous ended
                     }
                     break;
@@ -581,7 +581,7 @@ public class ImprecisionMap extends GenericMap {
                             break;
                         case "distribution.triangular":
                         case "distribution.correlated.compensatingTriangle":
-                            dd.timingBasisMilliseconds = dd.maxValue - dd.minValue;
+                            dd.timingBasisMilliseconds = dd.upperClip - dd.lowerClip;
                             break;
                         case "distribution.list":
                             KeyValue<Double, Double> minMax = dd.getMinAndMaxValueInDistributionList();

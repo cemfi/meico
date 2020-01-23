@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.7.5
+- Some refactoring of MPM attributes to be compliant with the schema definition.
+- In the GUI app, when an MPM is reloaded and its performances are displayed on the workspace, these performance objects do not update together with the MPM and, thus, are no longer consistent with their parent. This is confusing to the user. Hence, they are removed now and newly created from the updated data.
+
+
 #### v0.7.4
 - Enhancement in method `meico.mei.Mei.processMeasure()`. If a measure does not comply with the underlying time signature meico needs to add another `timeSignature` element in the `timeSignatureMap`. However, the subsequent measure may comply with the original time signature. Hence, at the end of the non-compliant measure meico should switch back to the original time signature. This is what it does now.
 - Minor stability fix in method `meico.mei.Mei.addDynamicsToMpm()`.

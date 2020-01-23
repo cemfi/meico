@@ -1477,6 +1477,23 @@ class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.reload();
+                            boolean performancesOnWorkspace = false;
+                            for (DataObjectLine l : this.lines) {
+                                DataObject o = l.getPartner(this);
+                                if (o.getData() instanceof Performance) {
+                                    performancesOnWorkspace = true;
+                                    Platform.runLater(() -> this.getWorkspace().remove(o));
+                                }
+                            }
+                            if (performancesOnWorkspace) {
+                                Point2D center = this.getCenterPoint();                 // the center coordinated of this data object
+                                double distance = Settings.newDataObjectDistance;
+                                double x = center.getX() + distance;
+                                double y = center.getY();
+                                ArrayList<DataObject> performanceObjects = this.addSeveralChildren(x, y, ((Mpm) this.getData()).getAllPerformances());
+                                for (DataObject performanceObject : performanceObjects)
+                                    this.getWorkspace().addToPerformances(performanceObject);
+                            }
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -2372,23 +2389,34 @@ class DataObject extends Group {
         this.makeChild(data, p);
     }
 
+
     /**
      * adding more than one descendants requires them to be spread around their parent, this is done here
      * @param mouseEvent
      * @param objects
      */
     private synchronized ArrayList<DataObject> addSeveralChildren(MouseEvent mouseEvent, List objects) {
+        return this.addSeveralChildren(mouseEvent.getSceneX(), mouseEvent.getSceneY(), objects);
+    }
+
+    /**
+     * adding more than one descendants requires them to be spread around their parent, this is done here
+     * @param x
+     * @param y
+     * @param objects
+     */
+    private synchronized ArrayList<DataObject> addSeveralChildren(double x, double y, List objects) {
         ArrayList<DataObject> children = new ArrayList<>();
         DataObject msm = null;
         if (objects == null) return children;
-        Point2D center = this.getCenterPoint();                                                                     // the center coordinated of this data object
-        Point2D clickPoint = this.workspace.getContainer().sceneToLocal(mouseEvent.getSceneX(), mouseEvent.getSceneY()); // the click coordinates
-        Point2D cn = clickPoint.subtract(center).normalize();                                                       // transformed click coordinates with center shifted to origin and click point vector normalized
-        Affine rot = new Affine();                                                                                  // initialize an affine transformation (we need a rotation)
-        rot.appendRotation(Settings.multipleDataObjectCreationAngle);                                               // this sets the rotation angle at which multiple data objects are seperated from each other
+        Point2D center = this.getCenterPoint();                                                     // the center coordinated of this data object
+        Point2D clickPoint = this.workspace.getContainer().sceneToLocal(x, y);                      // the click coordinates
+        Point2D cn = clickPoint.subtract(center).normalize();                                       // transformed click coordinates with center shifted to origin and click point vector normalized
+        Affine rot = new Affine();                                                                  // initialize an affine transformation (we need a rotation)
+        rot.appendRotation(Settings.multipleDataObjectCreationAngle);                               // this sets the rotation angle at which multiple data objects are seperated from each other
         double distance = Settings.newDataObjectDistance;
-        for (Object object : objects) {                                                                             // for each output Msm
-            Point2D p = cn.multiply(distance).add(center);                                    // from cn go to the actual position at which to display the new data object
+        for (Object object : objects) {                                                             // for each output Msm
+            Point2D p = cn.multiply(distance).add(center);                                          // from cn go to the actual position at which to display the new data object
             distance += Settings.dataItemRadius * 0.1;
             DataObject child = this.makeChild(object, p);
             if (child != null) {
@@ -2398,7 +2426,7 @@ class DataObject extends Group {
                     msm = child;
                 } else if ((msm != null) && (child.getData() instanceof Mpm)) {
                     DataObject finalMsm = msm;
-                    Platform.runLater(() -> {                                                                           // add the data object and a connecting line to the workspace (must be done in the JavaFX thread)
+                    Platform.runLater(() -> {                                                       // add the data object and a connecting line to the workspace (must be done in the JavaFX thread)
                         DataObjectLine line = this.workspace.addDataObjectLine(finalMsm, child);
                         finalMsm.lines.add(line);
                         child.lines.add(line);

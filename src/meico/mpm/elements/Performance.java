@@ -344,7 +344,7 @@ public class Performance extends AbstractXmlSubtree {
 
         clone.convertPPQ(this.getPPQ());  // ppq check and convert if necessary (for all attributes date, date.end and duration)
 
-        // process global msm maps
+        // get global msm maps
         RubatoMap globalRubatoMap = (RubatoMap) this.getGlobal().getDated().getMap(Mpm.RUBATO_MAP);                                         // get the global rubatoMap
         TempoMap globalTempoMap = (TempoMap) this.getGlobal().getDated().getMap(Mpm.TEMPO_MAP);                                             // get the global tempoMap
         AsynchronyMap globalAsynchronyMap = (AsynchronyMap) this.getGlobal().getDated().getMap(Mpm.ASYNCHRONY_MAP);                         // get the global asynchronyMap
@@ -355,8 +355,8 @@ public class Performance extends AbstractXmlSubtree {
         DynamicsMap globalDynamicsMap = (DynamicsMap) this.getGlobal().getDated().getMap(Mpm.DYNAMICS_MAP);                                 // get the global dynamicsMap
         MetricalAccentuationMap glbalMetricalAccentuationMap = (MetricalAccentuationMap) this.getGlobal().getDated().getMap(Mpm.METRICAL_ACCENTUATION_MAP); // get the global metricalAccentuationMap
         ArticulationMap globalArticulationMap = (ArticulationMap) this.getGlobal().getDated().getMap(Mpm.ARTICULATION_MAP);                 // get the global articulationMap
-        ArrayList<GenericMap> maps = new ArrayList<>();
-        ArrayList<KeyValue<Double, Element>> cleanupList = new ArrayList<>();
+        ArrayList<GenericMap> maps = new ArrayList<>();                                                                                     // maps to be processed
+        ArrayList<KeyValue<Double, Element>> cleanupList = new ArrayList<>();                                                               // maps that need cleanup at the end
 
         // the imprecisionMaps need millisecond dates, hence we add them to the maps list and the cleanup list so the millisseconds attributes are deleted afterwards
         if (globalImprecisionMap_timing != null) {

@@ -28,8 +28,8 @@ public class DistributionData {
     public Double lowerLimit = null;
     public Double upperLimit = null;
 
-    public Double minValue = null;
-    public Double maxValue = null;
+    public Double lowerClip = null;
+    public Double upperClip = null;
 
     public Double timingBasisMilliseconds = null;
 
@@ -54,8 +54,8 @@ public class DistributionData {
         clone.mode = this.mode;
         clone.lowerLimit = this.lowerLimit;
         clone.upperLimit = this.upperLimit;
-        clone.minValue = this.minValue;
-        clone.maxValue = this.maxValue;
+        clone.lowerClip = this.lowerClip;
+        clone.upperClip = this.upperClip;
         clone.timingBasisMilliseconds = this.timingBasisMilliseconds;
         clone.distributionList = new ArrayList<>(this.distributionList);
 
