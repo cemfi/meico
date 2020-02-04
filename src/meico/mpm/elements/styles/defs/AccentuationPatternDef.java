@@ -21,6 +21,7 @@ public class AccentuationPatternDef extends AbstractDef {
     /**
      * constructor creates an empty accentuationPatternDef
      * @param name
+     * @param length
      * @throws InvalidDataException
      */
     private AccentuationPatternDef(String name, double length) throws InvalidDataException {

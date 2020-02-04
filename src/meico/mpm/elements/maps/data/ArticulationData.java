@@ -87,31 +87,6 @@ public class ArticulationData {
         if (this.articulationDef != null)
             dateChanged = this.articulationDef.articulateNote(note);
 
-        // now apply local modifiers
-        Attribute durationAtt = Helper.getAttribute("duration", note);
-        if (durationAtt != null) {      // duration modifiers can only be applied if there is a duration attribute
-            if (this.absoluteDurationMs != null) {
-                note.addAttribute(new Attribute("articulation.absoluteDurationMs", Double.toString(this.absoluteDurationMs)));
-            } else {                    // the symbolic duration changes can be ignored if an absolute milliseconds duration is specified
-                if (this.absoluteDuration != null) {
-                    durationAtt.setValue(Double.toString(this.absoluteDuration));
-                }
-                if (this.relativeDuration != 1.0) {
-                    durationAtt.setValue(Double.toString(Double.parseDouble(durationAtt.getValue()) * this.relativeDuration));
-                }
-                if (this.absoluteDurationChange != 0.0) {
-                    double dur = Double.parseDouble(durationAtt.getValue());
-                    double durNew = dur + this.absoluteDurationChange;
-                    for (double reduce = 2.0; durNew >= 0.0; reduce *= 2.0)     // as long as the duration change causes the duration to become 0.0 or negative
-                        durNew = dur + (this.absoluteDurationChange / reduce);  // reduce the change by 50%
-                    durationAtt.setValue(Double.toString(durNew));
-                }
-            }
-            if (this.absoluteDurationChangeMs != 0.0) {
-                note.addAttribute(new Attribute("articulation.absoluteDurationChangeMs", Double.toString(this.absoluteDurationChangeMs)));
-            }
-        }
-
         Attribute dateAtt = Helper.getAttribute("date", note);
         if (dateAtt != null) {          // date modifiers require the presence of a date attribute
             if (this.absoluteDelay != 0.0) {
@@ -120,6 +95,31 @@ public class ArticulationData {
             }
             if (this.absoluteDelayMs != 0.0) {
                 note.addAttribute(new Attribute("articulation.absoluteDelayMs", Double.toString(this.absoluteDelayMs)));
+            }
+        }
+
+        // now apply local modifiers
+        Attribute durationAtt = Helper.getAttribute("duration", note);
+        if (durationAtt != null) {      // duration modifiers can only be applied if there is a duration attribute
+            double duration = Double.parseDouble(durationAtt.getValue());
+            if (this.absoluteDurationMs != null) {
+                note.addAttribute(new Attribute("articulation.absoluteDurationMs", Double.toString(this.absoluteDurationMs)));
+            } else {                    // the symbolic duration changes can be ignored if an absolute milliseconds duration is specified
+                if (this.absoluteDuration != null) {
+                    durationAtt.setValue(Double.toString(this.absoluteDuration));
+                }
+                if (this.relativeDuration != 1.0) {
+                    durationAtt.setValue(Double.toString(duration * this.relativeDuration));
+                }
+                if (this.absoluteDurationChange != 0.0) {
+                    double durNew = duration + this.absoluteDurationChange;
+                    for (double reduce = 2.0; durNew >= 0.0; reduce *= 2.0)     // as long as the duration change causes the duration to become 0.0 or negative
+                        durNew = duration + (this.absoluteDurationChange / reduce);  // reduce the change by 50%
+                    durationAtt.setValue(Double.toString(durNew));
+                }
+            }
+            if (this.absoluteDurationChangeMs != 0.0) {
+                note.addAttribute(new Attribute("articulation.absoluteDurationChangeMs", Double.toString(this.absoluteDurationChangeMs)));
             }
         }
 

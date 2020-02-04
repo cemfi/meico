@@ -31,6 +31,8 @@ public class DistributionData {
     public Double lowerClip = null;
     public Double upperClip = null;
 
+    public Long seed = null;
+
     public Double timingBasisMilliseconds = null;
 
     public ArrayList<Double> distributionList = new ArrayList<>();
@@ -56,6 +58,7 @@ public class DistributionData {
         clone.upperLimit = this.upperLimit;
         clone.lowerClip = this.lowerClip;
         clone.upperClip = this.upperClip;
+        clone.seed = this.seed;
         clone.timingBasisMilliseconds = this.timingBasisMilliseconds;
         clone.distributionList = new ArrayList<>(this.distributionList);
 

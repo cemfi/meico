@@ -155,10 +155,25 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionUniform(double date, double lowerLimit, double upperLimit) {
+        return this.addDistributionUniform(date, lowerLimit, upperLimit, null);
+    }
+
+    /**
+     * add a distribution.uniform element to the map
+     * @param date
+     * @param lowerLimit
+     * @param upperLimit
+     * @param seed
+     * @return the index at which it has been inserted
+     */
+    public int addDistributionUniform(double date, double lowerLimit, double upperLimit, Long seed) {
         Element e = new Element("distribution.uniform", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
+
+        if (seed != null)
+            e.addAttribute(new Attribute("seed", Long.toString(seed)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -174,11 +189,28 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionGaussian(double date, double standardDeviation, double lowerLimit, double upperLimit) {
+        return this.addDistributionGaussian(date, standardDeviation, lowerLimit, upperLimit, null);
+    }
+
+    /**
+     * add a distribution.gaussian element to the map,
+     * this is a gaussian distribution (expectation value for the offset is 0.0; asynchrony should be used to shift it elsewhere)
+     * @param date
+     * @param standardDeviation
+     * @param lowerLimit
+     * @param upperLimit
+     * @param seed
+     * @return the index at which it has been inserted
+     */
+    public int addDistributionGaussian(double date, double standardDeviation, double lowerLimit, double upperLimit, Long seed) {
         Element e = new Element("distribution.gaussian", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("deviation.standard", Double.toString(standardDeviation)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
+
+        if (seed != null)
+            e.addAttribute(new Attribute("seed", Long.toString(seed)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -196,6 +228,22 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionTriangular(double date, double lowerLimit, double upperLimit, double mode, double lowerClip, double upperClip) {
+        return this.addDistributionTriangular(date, lowerLimit, upperLimit, mode, lowerClip, upperClip, null);
+    }
+
+    /**
+     * add a distribution.triangular element to the map,
+     * this specifies a triangular distribution with lower and upper limit, the peak (i.e., highest probability) at the mode value
+     * @param date
+     * @param lowerLimit
+     * @param upperLimit
+     * @param mode the peak of the trtiangle (i.e., highest probability)
+     * @param lowerClip lower clip border
+     * @param upperClip upper clip border
+     * @param seed
+     * @return the index at which it has been inserted
+     */
+    public int addDistributionTriangular(double date, double lowerLimit, double upperLimit, double mode, double lowerClip, double upperClip, Long seed) {
         Element e = new Element("distribution.triangular", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
@@ -203,6 +251,9 @@ public class ImprecisionMap extends GenericMap {
         e.addAttribute(new Attribute("mode", Double.toString(mode)));
         e.addAttribute(new Attribute("clip.lower", Double.toString(lowerClip)));
         e.addAttribute(new Attribute("clip.upper", Double.toString(upperClip)));
+
+        if (seed != null)
+            e.addAttribute(new Attribute("seed", Long.toString(seed)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -219,12 +270,30 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionBrownianNoise(double date, double maxStepWidth, double lowerLimit, double upperLimit, double timingBasisMilliseconds) {
+        return this.addDistributionBrownianNoise(date, maxStepWidth, lowerLimit, upperLimit, timingBasisMilliseconds, null);
+    }
+
+    /**
+     * add a distribution.correlated.brownianNoise element to the map,
+     * this represents Brownian noise, the performance renderer generates this by a random walk algorithm
+     * @param date
+     * @param maxStepWidth the maximum step width in the random walk algorithm
+     * @param lowerLimit
+     * @param upperLimit
+     * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
+     * @param seed
+     * @return the index at which it has been inserted
+     */
+    public int addDistributionBrownianNoise(double date, double maxStepWidth, double lowerLimit, double upperLimit, double timingBasisMilliseconds, Long seed) {
         Element e = new Element("distribution.correlated.brownianNoise", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("stepWidth.max", Double.toString(maxStepWidth)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
         e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
+
+        if (seed != null)
+            e.addAttribute(new Attribute("seed", Long.toString(seed)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -244,6 +313,24 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double timingBasisMilliseconds) {
+        return this.addDistributionCompensatingTriangle(date, degreeOfCorrelation, lowerLimit, upperLimit, lowerClip, upperClip, timingBasisMilliseconds, null);
+    }
+
+    /**
+     * add a distribution.correlated.compensatingTriangle element to the map,
+     * in this variant of the triangular distribution the mode (triangle peak) is wandering with the random values,
+     * this method is an alternative to brownianNoise and is experimental
+     * @param date
+     * @param degreeOfCorrelation Must be >= 0.0. To avoid outliers (beyond the lower and upper limit) this value should be >= 1.0. 1.0 keeps the triangle's left and right edge at the lower and upper limit. The greater this value, the narrower is the triangle while wandering around between the limits.
+     * @param lowerLimit
+     * @param upperLimit
+     * @param lowerClip lower clip border
+     * @param upperClip upper clip border
+     * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
+     * @param seed
+     * @return the index at which it has been inserted
+     */
+    public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double timingBasisMilliseconds, Long seed) {
         Element e = new Element("distribution.correlated.compensatingTriangle", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("degreeOfCorrelation", Double.toString((Math.max(degreeOfCorrelation, 0.0)))));
@@ -252,6 +339,9 @@ public class ImprecisionMap extends GenericMap {
         e.addAttribute(new Attribute("clip.lower", Double.toString(lowerClip)));
         e.addAttribute(new Attribute("clip.upper", Double.toString(upperClip)));
         e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
+
+        if (seed != null)
+            e.addAttribute(new Attribute("seed", Long.toString(seed)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, false);
@@ -303,6 +393,8 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("limit.upper", Double.toString(data.upperLimit)));
+                if (data.seed != null)
+                    e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
             case "distribution.gaussian":
                 if (data.standardDeviation == null) {
@@ -320,6 +412,8 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("limit.upper", Double.toString(data.upperLimit)));
+                if (data.seed != null)
+                    e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
             case "distribution.triangular":
                 if (data.lowerLimit == null) {
@@ -347,6 +441,8 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("clip.upper", Double.toString(data.upperClip)));
+                if (data.seed != null)
+                    e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
             case "distribution.correlated.brownianNoise":
                 if (data.maxStepWidth == null) {
@@ -365,6 +461,8 @@ public class ImprecisionMap extends GenericMap {
                 }
                 e.addAttribute(new Attribute("limit.upper", Double.toString(data.upperLimit)));
                 e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
+                if (data.seed != null)
+                    e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
             case "distribution.correlated.compensatingTriangle":
                 if (data.lowerLimit == null) {
@@ -393,6 +491,8 @@ public class ImprecisionMap extends GenericMap {
                 }
                 e.addAttribute(new Attribute("clip.upper", Double.toString(data.upperClip)));
                 e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
+                if (data.seed != null)
+                    e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
             case "distribution.list":
                 for (int i=0; i < data.distributionList.size(); ++i) {
@@ -479,6 +579,10 @@ public class ImprecisionMap extends GenericMap {
             att = Helper.getAttribute("clip.upper", e);
             if (att != null)
                 dd.upperClip = Double.parseDouble(att.getValue());
+
+            att = Helper.getAttribute("seed", e);
+            if (att != null)
+                dd.seed = Long.parseLong(att.getValue());
 
             att = Helper.getAttribute("milliseconds.timingBasis", e);
             if (att != null)
@@ -568,6 +672,9 @@ public class ImprecisionMap extends GenericMap {
                 default:                                                            // unknown or unimplemented distribution
                     continue;                                                       // continue with the next
             }
+
+            if (dd.seed != null)            // if a specific seed has been defined
+                random.setSeed(dd.seed);    // set it
 
             // make sure that the timing resolution is specified, and if not, compute a reasonable value
             if (dd.timingBasisMilliseconds == null) {

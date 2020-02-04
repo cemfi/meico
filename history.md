@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.7.6
+- Added support for attribute `seed` to the MPM distribution elements and imprecision maps.
+
+
 #### v0.7.5
 - Some refactoring of MPM attributes to be compliant with the schema definition.
 - In the GUI app, when an MPM is reloaded and its performances are displayed on the workspace, these performance objects do not update together with the MPM and, thus, are no longer consistent with their parent. This is confusing to the user. Hence, they are removed now and newly created from the updated data.
