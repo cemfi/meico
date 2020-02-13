@@ -3,6 +3,7 @@ package meico.mpm;
 import meico.mei.Helper;
 import meico.mpm.elements.Performance;
 import meico.msm.AbstractMsm;
+import meico.supplementary.KeyValue;
 import nu.xom.*;
 import org.xml.sax.SAXException;
 
@@ -152,11 +153,11 @@ public class Mpm extends AbstractMsm {
 
         // get the link to the relatedResources tag
         this.relatedResources = Helper.getFirstChildElement("relatedResources", this.getRootElement());
-        if (this.relatedResources == null) {                                          // if it does not exist
+//        if (this.relatedResources == null) {                                          // if it does not exist
 //            System.out.println("No relatedResources found. Generating an empty one.");
-            this.relatedResources = new Element("relatedResources", Mpm.MPM_NAMESPACE); // create it
-            this.getRootElement().appendChild(this.relatedResources);                 // and add it to the xml tree
-        }
+//            this.relatedResources = new Element("relatedResources", Mpm.MPM_NAMESPACE); // create it
+//            this.getRootElement().appendChild(this.relatedResources);                 // and add it to the xml tree
+//        }
 
         // parse the performances
         LinkedList<Element> perfs = Helper.getAllChildElements("performance", this.getRootElement());
@@ -176,8 +177,8 @@ public class Mpm extends AbstractMsm {
      */
     private Element init() {
         Element root = new Element("mpm", Mpm.MPM_NAMESPACE);    // the second string defines the namespace
-        this.relatedResources = new Element("relatedResources", Mpm.MPM_NAMESPACE);
-        root.appendChild(this.relatedResources);
+//        this.relatedResources = new Element("relatedResources", Mpm.MPM_NAMESPACE);
+//        root.appendChild(this.relatedResources);
         this.data = new Document(root);
         return root;
     }
@@ -189,11 +190,67 @@ public class Mpm extends AbstractMsm {
      * @return a link to the element just added
      */
     public Element addRelatedResource(String uri, String type) {
+        if (this.relatedResources == null) {                                            // if the container does not yet exist
+            this.relatedResources = new Element("relatedResources", Mpm.MPM_NAMESPACE); // create it
+            this.getRootElement().appendChild(this.relatedResources);                   // and add it to the xml tree
+        }
+
         Element ref = new Element("resource", Mpm.MPM_NAMESPACE);
         ref.addAttribute(new Attribute("uri", uri));
         ref.addAttribute(new Attribute("type", type));
         this.relatedResources.appendChild(ref);
         return ref;
+    }
+
+    /**
+     * remove the relatedResource entry at the specified index
+     * @param index
+     */
+    public void removeRelatedResource(int index) {
+        if (index >= this.relatedResources.getChildCount())
+            return;
+
+        this.relatedResources.removeChild(index);
+        this.noEmptyRelatedResources();
+    }
+
+    /**
+     * remove the relatedResource entry that holds the specified xml element
+     * @param xml
+     */
+    public void removeRelatedResource(Element xml) {
+        if ((xml.getParent() == null) || (xml.getParent() != this.relatedResources))
+            return;
+
+        this.relatedResources.removeChild(xml);
+        this.noEmptyRelatedResources();
+    }
+
+    /**
+     * remove the relatedResource entry that holds the specified uri attribute
+     * @param uri
+     */
+    public void removeRelatedResource(String uri) {
+        Elements es = this.relatedResources.getChildElements();
+        for (int i = 0; i < es.size(); ++i) {
+            Element e = es.get(i);
+            Attribute a = Helper.getAttribute("uri", e);
+            if (a == null)
+                continue;
+            if (a.getValue().equals(uri))
+                this.relatedResources.removeChild(e);
+        }
+        this.noEmptyRelatedResources();
+    }
+
+    /**
+     * It is not valid to have an empty relatedResources element in the MPM. This method invocation makes sure this does not happen.
+     */
+    private void noEmptyRelatedResources() {
+        if (this.relatedResources.getChildCount() == 0) {               // if relatedResources is empty
+            this.getRootElement().removeChild(this.relatedResources);   // remove it from the document
+            this.relatedResources = null;
+        }
     }
 
     /**

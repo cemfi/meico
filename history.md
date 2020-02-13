@@ -1,6 +1,14 @@
 ### Version History
 
 
+#### v0.7.7
+- Some refactoring in classes `meico.mpm.elements.maps.ImprecisionMap` and `meico.mpm.elements.maps.data.DistributionData` to avoid naming confusion with the MPM specification.
+- Added MPM validation to class `meico.app.gui.DataObject`.
+- In class `meico.mpm.Mpm`
+    - Fix: No generation of an empty element `relatedResources`.
+    - Extension: Methods for the deletion of elements from `relatedResources` have been added.
+
+
 #### v0.7.6
 - Added support for attribute `seed` to the MPM distribution elements and imprecision maps.
 

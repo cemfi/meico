@@ -2554,6 +2554,11 @@ class DataObject extends Group {
                 report = msm.validate(schemaURL);
                 isValid = msm.isValid();
             }
+            else if (this.data instanceof Mpm) {
+                Mpm mpm = (Mpm) this.data;
+                report = mpm.validate(schemaURL);
+                isValid = mpm.isValid();
+            }
             else if (this.data instanceof TxtData) {
                 TxtData txt = (TxtData) this.data;
                 boolean validationSuccess = true;

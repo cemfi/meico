@@ -33,7 +33,7 @@ public class DistributionData {
 
     public Long seed = null;
 
-    public Double timingBasisMilliseconds = null;
+    public Double millisecondsTimingBasis = null;
 
     public ArrayList<Double> distributionList = new ArrayList<>();
 
@@ -59,7 +59,7 @@ public class DistributionData {
         clone.lowerClip = this.lowerClip;
         clone.upperClip = this.upperClip;
         clone.seed = this.seed;
-        clone.timingBasisMilliseconds = this.timingBasisMilliseconds;
+        clone.millisecondsTimingBasis = this.millisecondsTimingBasis;
         clone.distributionList = new ArrayList<>(this.distributionList);
 
         return clone;

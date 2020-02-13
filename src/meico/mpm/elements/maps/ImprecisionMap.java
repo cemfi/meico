@@ -266,11 +266,11 @@ public class ImprecisionMap extends GenericMap {
      * @param maxStepWidth the maximum step width in the random walk algorithm
      * @param lowerLimit
      * @param upperLimit
-     * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
+     * @param millisecondsTimingBasis the timing basis (time steps) of the distribution, changing this value will transpose the distribution
      * @return the index at which it has been inserted
      */
-    public int addDistributionBrownianNoise(double date, double maxStepWidth, double lowerLimit, double upperLimit, double timingBasisMilliseconds) {
-        return this.addDistributionBrownianNoise(date, maxStepWidth, lowerLimit, upperLimit, timingBasisMilliseconds, null);
+    public int addDistributionBrownianNoise(double date, double maxStepWidth, double lowerLimit, double upperLimit, double millisecondsTimingBasis) {
+        return this.addDistributionBrownianNoise(date, maxStepWidth, lowerLimit, upperLimit, millisecondsTimingBasis, null);
     }
 
     /**
@@ -280,17 +280,17 @@ public class ImprecisionMap extends GenericMap {
      * @param maxStepWidth the maximum step width in the random walk algorithm
      * @param lowerLimit
      * @param upperLimit
-     * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
+     * @param millisecondsTimingBasis the timing basis (time steps) of the distribution, changing this value will transpose the distribution
      * @param seed
      * @return the index at which it has been inserted
      */
-    public int addDistributionBrownianNoise(double date, double maxStepWidth, double lowerLimit, double upperLimit, double timingBasisMilliseconds, Long seed) {
+    public int addDistributionBrownianNoise(double date, double maxStepWidth, double lowerLimit, double upperLimit, double millisecondsTimingBasis, Long seed) {
         Element e = new Element("distribution.correlated.brownianNoise", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("stepWidth.max", Double.toString(maxStepWidth)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
-        e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
+        e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(millisecondsTimingBasis)));
 
         if (seed != null)
             e.addAttribute(new Attribute("seed", Long.toString(seed)));
@@ -309,11 +309,11 @@ public class ImprecisionMap extends GenericMap {
      * @param upperLimit
      * @param lowerClip lower clip border
      * @param upperClip upper clip border
-     * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
+     * @param millisecondsTimingBasis the timing basis (time steps) of the distribution, changing this value will transpose the distribution
      * @return the index at which it has been inserted
      */
-    public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double timingBasisMilliseconds) {
-        return this.addDistributionCompensatingTriangle(date, degreeOfCorrelation, lowerLimit, upperLimit, lowerClip, upperClip, timingBasisMilliseconds, null);
+    public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double millisecondsTimingBasis) {
+        return this.addDistributionCompensatingTriangle(date, degreeOfCorrelation, lowerLimit, upperLimit, lowerClip, upperClip, millisecondsTimingBasis, null);
     }
 
     /**
@@ -326,11 +326,11 @@ public class ImprecisionMap extends GenericMap {
      * @param upperLimit
      * @param lowerClip lower clip border
      * @param upperClip upper clip border
-     * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
+     * @param millisecondsTimingBasis the timing basis (time steps) of the distribution, changing this value will transpose the distribution
      * @param seed
      * @return the index at which it has been inserted
      */
-    public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double timingBasisMilliseconds, Long seed) {
+    public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double millisecondsTimingBasis, Long seed) {
         Element e = new Element("distribution.correlated.compensatingTriangle", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("degreeOfCorrelation", Double.toString((Math.max(degreeOfCorrelation, 0.0)))));
@@ -338,7 +338,7 @@ public class ImprecisionMap extends GenericMap {
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
         e.addAttribute(new Attribute("clip.lower", Double.toString(lowerClip)));
         e.addAttribute(new Attribute("clip.upper", Double.toString(upperClip)));
-        e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
+        e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(millisecondsTimingBasis)));
 
         if (seed != null)
             e.addAttribute(new Attribute("seed", Long.toString(seed)));
@@ -353,12 +353,12 @@ public class ImprecisionMap extends GenericMap {
      * the values may have been obtained by measurements of human musicians' performances
      * @param date
      * @param list
-     * @param timingBasisMilliseconds the timing basis (time steps) of the distribution, changing this value will transpose the distribution
+     * @param millisecondsTimingBasis the timing basis (time steps) of the distribution, changing this value will transpose the distribution
      * @return the index at which it has been inserted
      */
-    public int addDistributionList(double date, Element list, double timingBasisMilliseconds) {
+    public int addDistributionList(double date, Element list, double millisecondsTimingBasis) {
         list.addAttribute(new Attribute("date", Double.toString(date)));
-        list.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(timingBasisMilliseconds)));
+        list.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(millisecondsTimingBasis)));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, list);
         return this.insertElement(kv, false);
@@ -460,7 +460,7 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("limit.upper", Double.toString(data.upperLimit)));
-                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
+                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.millisecondsTimingBasis)));
                 if (data.seed != null)
                     e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
@@ -490,7 +490,7 @@ public class ImprecisionMap extends GenericMap {
                     return -1;
                 }
                 e.addAttribute(new Attribute("clip.upper", Double.toString(data.upperClip)));
-                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
+                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.millisecondsTimingBasis)));
                 if (data.seed != null)
                     e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
@@ -500,7 +500,7 @@ public class ImprecisionMap extends GenericMap {
                     m.addAttribute(new Attribute("value", Double.toString(data.distributionList.get(i))));
                     e.appendChild(m);
                 }
-                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.timingBasisMilliseconds)));
+                e.addAttribute(new Attribute("milliseconds.timingBasis", Double.toString(data.millisecondsTimingBasis)));
                 break;
             default:
                 System.err.println("Cannot add distribution, unknown distribution type.");
@@ -586,7 +586,7 @@ public class ImprecisionMap extends GenericMap {
 
             att = Helper.getAttribute("milliseconds.timingBasis", e);
             if (att != null)
-                dd.timingBasisMilliseconds = Double.parseDouble(att.getValue());
+                dd.millisecondsTimingBasis = Double.parseDouble(att.getValue());
 
             Elements measurements = e.getChildElements("measurement");
             for (int j = 0; j < measurements.size(); ++j) {
@@ -677,31 +677,31 @@ public class ImprecisionMap extends GenericMap {
                 random.setSeed(dd.seed);    // set it
 
             // make sure that the timing resolution is specified, and if not, compute a reasonable value
-            if (dd.timingBasisMilliseconds == null) {
+            if (dd.millisecondsTimingBasis == null) {
                 // if we are in the timing domain we have to set the timing resolution so that permutation of subsequent events is avoided
                 if (domain == ImprecisionMap.TIMING) {
                     switch (dd.type) {
                         case "distribution.uniform":
                         case "distribution.gaussian":
                         case "distribution.correlated.brownianNoise":
-                            dd.timingBasisMilliseconds = dd.upperLimit - dd.lowerLimit;
+                            dd.millisecondsTimingBasis = dd.upperLimit - dd.lowerLimit;
                             break;
                         case "distribution.triangular":
                         case "distribution.correlated.compensatingTriangle":
-                            dd.timingBasisMilliseconds = dd.upperClip - dd.lowerClip;
+                            dd.millisecondsTimingBasis = dd.upperClip - dd.lowerClip;
                             break;
                         case "distribution.list":
                             KeyValue<Double, Double> minMax = dd.getMinAndMaxValueInDistributionList();
                             if (minMax != null)
-                                dd.timingBasisMilliseconds = minMax.getValue() - minMax.getKey();
+                                dd.millisecondsTimingBasis = minMax.getValue() - minMax.getKey();
                             break;
                         default:
                             break;
                     }
                 }
                 // if the timing resolution is still null or invalid, set a default value
-                if ((dd.timingBasisMilliseconds == null) || (dd.timingBasisMilliseconds <= 0.0))
-                    dd.timingBasisMilliseconds = 100.0;                             // The human brain has a timing grid of approx. 300ms to react and correct etc. Hopwever, motor variances may occur on affect every note individually. Hence, we set the default timing resolution to this compromise value.
+                if ((dd.millisecondsTimingBasis == null) || (dd.millisecondsTimingBasis <= 0.0))
+                    dd.millisecondsTimingBasis = 100.0;                             // The human brain has a timing grid of approx. 300ms to react and correct etc. Hopwever, motor variances may occur on affect every note individually. Hence, we set the default timing resolution to this compromise value.
             }
 
             // apply distribution to map elements
@@ -725,7 +725,7 @@ public class ImprecisionMap extends GenericMap {
                 switch (domain) {
                     case ImprecisionMap.TIMING: {
                             msDate = Double.parseDouble(msDateAtt.getValue());
-                            index = msDate / dd.timingBasisMilliseconds;
+                            index = msDate / dd.millisecondsTimingBasis;
                             offset = new KeyValue<>(random.getValue(index), msDateAtt);
 
                             // same is necessary for milliseconds.date.end
@@ -740,7 +740,7 @@ public class ImprecisionMap extends GenericMap {
                             Attribute msEndAtt = Helper.getAttribute("milliseconds.date.end", mapEntry.getValue());
                             if (msEndAtt != null) {
                                 msDate = Double.parseDouble(msEndAtt.getValue());
-                                index = msDate / dd.timingBasisMilliseconds;
+                                index = msDate / dd.millisecondsTimingBasis;
                                 offset = new KeyValue<>(random.getValue(index), msEndAtt);
                             } else
                                 continue;
@@ -751,12 +751,12 @@ public class ImprecisionMap extends GenericMap {
                         if (velAtt == null)
                             continue;
                         msDate = Double.parseDouble(msDateAtt.getValue());
-                        index = msDate / dd.timingBasisMilliseconds;
+                        index = msDate / dd.millisecondsTimingBasis;
                         offset = new KeyValue<>(random.getValue(index), velAtt);
                         break;
                     case ImprecisionMap.TUNING:
                         msDate = Double.parseDouble(msDateAtt.getValue());
-                        index = msDate / dd.timingBasisMilliseconds;
+                        index = msDate / dd.millisecondsTimingBasis;
                         Attribute tuneAtt = Helper.getAttribute("tuning.offset", mapEntry.getValue());
                         if (tuneAtt == null) {
                             tuneAtt = new Attribute("tuning.offset", "0.0");
@@ -781,7 +781,7 @@ public class ImprecisionMap extends GenericMap {
                     break;
 
                 double msDate = pd.getKey()[1];
-                double endIndex = (msDate / dd.timingBasisMilliseconds);
+                double endIndex = (msDate / dd.millisecondsTimingBasis);
                 KeyValue<Double, Attribute> offset = new KeyValue<>(random.getValue(endIndex), pd.getValue());
                 ImprecisionMap.addToOffsetsMap(offsets, msDate, offset);    // add the offset and attribute link to the list for further reference
 
@@ -844,7 +844,7 @@ public class ImprecisionMap extends GenericMap {
             return null;
 
         Double ddMsDateEnd = Double.parseDouble(ddMsDateEndAtt.getValue());
-        double endIndex = ddMsDateEnd / ddPrev.timingBasisMilliseconds;
+        double endIndex = ddMsDateEnd / ddPrev.millisecondsTimingBasis;
         return randomPrev.getValue(endIndex);
     }
 
