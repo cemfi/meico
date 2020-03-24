@@ -1,9 +1,10 @@
 package meico.mpm;
 
 import meico.mei.Helper;
+import meico.mpm.elements.metadata.Author;
+import meico.mpm.elements.metadata.Metadata;
 import meico.mpm.elements.Performance;
 import meico.msm.AbstractMsm;
-import meico.supplementary.KeyValue;
 import nu.xom.*;
 import org.xml.sax.SAXException;
 
@@ -43,6 +44,7 @@ public class Mpm extends AbstractMsm {
     public static final String IMPRECISION_MAP_TONEDURATION     = "imprecisionMap.toneduration";
     public static final String IMPRECISION_MAP_TUNING           = "imprecisionMap.tuning";
 
+    private Metadata metadata = null;
     private Element relatedResources = null;
     private ArrayList<Performance> performances = new ArrayList<>();
 
@@ -151,6 +153,9 @@ public class Mpm extends AbstractMsm {
     private void parseData() {
 //        System.out.println("Parsing MPM data ...");
 
+        // parse the metadata
+        this.metadata = Metadata.createMetadata(Helper.getFirstChildElement("metadata", this.getRootElement()));
+
         // get the link to the relatedResources tag
         this.relatedResources = Helper.getFirstChildElement("relatedResources", this.getRootElement());
 //        if (this.relatedResources == null) {                                          // if it does not exist
@@ -181,6 +186,37 @@ public class Mpm extends AbstractMsm {
 //        root.appendChild(this.relatedResources);
         this.data = new Document(root);
         return root;
+    }
+
+    /**
+     * add metadata to the MPM
+     * @param author an Author object or null
+     * @param comment a string or null
+     * @return success
+     */
+    public boolean addMetadata(Author author, String comment) {
+        if (this.metadata != null) {
+            if (author != null)
+                this.metadata.addAuthor(author);
+            if (comment != null)
+                this.metadata.addComment(comment);
+            return true;
+        }
+
+        this.metadata = Metadata.createMetadata(author, comment);
+        if (this.metadata == null)
+            return false;
+
+        this.getRootElement().appendChild(this.metadata.getXml());
+        return true;
+    }
+
+    /**
+     * remove the complete metadata part from this MPM
+     */
+    public void removeMetadata() {
+        this.metadata.getXml().detach();
+        this.metadata = null;
     }
 
     /**
@@ -241,6 +277,14 @@ public class Mpm extends AbstractMsm {
                 this.relatedResources.removeChild(e);
         }
         this.noEmptyRelatedResources();
+    }
+
+    /**
+     * remove the complete relatedResources part from this MPM
+     */
+    public void removeRelatedResources() {
+        this.relatedResources.detach();
+        this.relatedResources = null;
     }
 
     /**

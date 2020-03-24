@@ -1,6 +1,9 @@
 ![](https://github.com/cemfi/meico/blob/master/figures/meico_title_small.png)
 
-[![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg)](https://github.com/cemfi/meico/releases/latest) [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/master/LICENSE) [![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)](https://travis-ci.org/cemfi/meico)
+[![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg)](https://github.com/cemfi/meico/releases/latest) 
+[![documentation](https://img.shields.io/badge/doc-JavaDoc-green.svg)](http://cemfi.github.io/meico/)
+[![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/master/LICENSE) 
+[![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)](https://travis-ci.org/cemfi/meico)
 
 Author: [Axel Berndt](https://github.com/axelberndt)<br>
 MEI support: [Benjamin W. Bohl](https://github.com/bwbohl), [Johannes Kepper](https://github.com/kepper)<br>

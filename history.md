@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.7.8
+- Added MPM metadata support to package `meico.mpm`.
+- The MPM metadata will also be generated during MEI-to-MPM export.
+- Added a JavaDoc shield to `README.md`
+
+
 #### v0.7.7
 - Some refactoring in classes `meico.mpm.elements.maps.ImprecisionMap` and `meico.mpm.elements.maps.data.DistributionData` to avoid naming confusion with the MPM specification.
 - Added MPM validation to class `meico.app.gui.DataObject`.

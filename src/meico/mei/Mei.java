@@ -12,6 +12,7 @@ import meico.mpm.elements.maps.GenericMap;
 import meico.mpm.elements.maps.TempoMap;
 import meico.mpm.elements.maps.data.DynamicsData;
 import meico.mpm.elements.maps.data.TempoData;
+import meico.mpm.elements.metadata.Author;
 import meico.mpm.elements.styles.ArticulationStyle;
 import meico.mpm.elements.styles.DynamicsStyle;
 import meico.mpm.elements.styles.defs.ArticulationDef;
@@ -338,7 +339,7 @@ public class Mei extends meico.xml.XmlBase {
 
         // the list of Msm instances, each one is an mdiv in mei
         LinkedList<Msm> msms = new LinkedList<>(this.helper.movements);         // get the resulting msms for further processing and returning
-        LinkedList<Mpm> mpms = new LinkedList<>(this.helper.performances);      // ret the resulting performance
+        LinkedList<Mpm> mpms = new LinkedList<>(this.helper.performances);      // get the resulting performance
 
         Helper.mpmPostprocessing(mpms);                                         // finalize all mpm data
 
@@ -833,7 +834,8 @@ public class Mei extends meico.xml.XmlBase {
         this.helper.movements.add(msm);                                             // add it to the movements list
 
         Mpm mpm = Mpm.createMpm();                                                  // generate an Mpm object
-        mpm.addRelatedResource(this.file.getAbsolutePath(), "mei");                  // add the mei as music reference
+        mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from '" + this.getFile().getName() + "' using the MEI converter meico.");
+        mpm.addRelatedResource(this.file.getAbsolutePath(), "mei");                 // add the mei as music reference
         Performance performance = Performance.createPerformance("MEI export performance");       // generate a Performance object
         if (performance == null) {                                                  // make sure it is not null
             System.err.println("Failed to generate an instance of Performance. Skipping mdiv " + titleString);
