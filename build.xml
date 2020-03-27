@@ -85,6 +85,7 @@
     <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
     <pathelement location="${basedir}/externals/javafx.media.jar"/>
     <pathelement location="${basedir}/externals/javafx.web.jar"/>
+    <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
   <path id="meico.runtime.production.module.classpath">
@@ -100,6 +101,7 @@
     <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
     <pathelement location="${basedir}/externals/javafx.media.jar"/>
     <pathelement location="${basedir}/externals/javafx.web.jar"/>
+    <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
   <path id="meico.module.classpath">
@@ -115,6 +117,7 @@
     <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
     <pathelement location="${basedir}/externals/javafx.media.jar"/>
     <pathelement location="${basedir}/externals/javafx.web.jar"/>
+    <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
   <path id="meico.runtime.module.classpath">
@@ -131,6 +134,7 @@
     <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
     <pathelement location="${basedir}/externals/javafx.media.jar"/>
     <pathelement location="${basedir}/externals/javafx.web.jar"/>
+    <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
 
@@ -213,6 +217,7 @@
       <zipfileset src="${basedir}/externals/javafx.graphics.jar"/>
       <zipfileset src="${basedir}/externals/javafx.media.jar"/>
       <zipfileset src="${basedir}/externals/javafx.web.jar"/>
+      <zipfileset src="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
       <manifest>
         <attribute name="Main-Class" value="meico.app.Main"/>
       </manifest>
