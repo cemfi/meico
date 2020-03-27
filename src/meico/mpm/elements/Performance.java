@@ -1,6 +1,5 @@
 package meico.mpm.elements;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.midi.Midi;
 import meico.mpm.Mpm;
@@ -31,7 +30,7 @@ public class Performance extends AbstractXmlSubtree {
      *
      * @param name the name of the performance
      */
-    private Performance(String name) throws InvalidDataException {
+    private Performance(String name) throws Exception {
         Element performance = new Element("performance", Mpm.MPM_NAMESPACE);
         Attribute nameAtt = new Attribute("name", name);
         performance.addAttribute(nameAtt);
@@ -44,7 +43,7 @@ public class Performance extends AbstractXmlSubtree {
      *
      * @param xml
      */
-    private Performance(Element xml) throws InvalidDataException {
+    private Performance(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -58,7 +57,7 @@ public class Performance extends AbstractXmlSubtree {
         Performance performance;
         try {
             performance = new Performance(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -75,7 +74,7 @@ public class Performance extends AbstractXmlSubtree {
         Performance performance;
         try {
             performance = new Performance(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -86,16 +85,16 @@ public class Performance extends AbstractXmlSubtree {
      * set the data of this performance, this parses the xml element and generates the according data structure
      *
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate Performance object. XML Element is null.");
+            throw new Exception("Cannot generate Performance object. XML Element is null.");
 
         Attribute name = Helper.getAttribute("name", xml);
         if ((name == null) || name.getValue().isEmpty()) {                          // each performance requires a name, if there is none or it is empty
-            throw new InvalidDataException("Cannot generate Performance object. Attribute name is missing or empty.");  // throw exception
+            throw new Exception("Cannot generate Performance object. Attribute name is missing or empty.");  // throw exception
         }
 
         this.setXml(xml);

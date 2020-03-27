@@ -1,6 +1,5 @@
 package meico.xml;
 
-import com.sun.media.sound.InvalidDataException;
 import nu.xom.Element;
 
 /**
@@ -31,9 +30,9 @@ public abstract class AbstractXmlSubtree {
     /**
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    protected abstract void parseData(Element xml) throws InvalidDataException;
+    protected abstract void parseData(Element xml) throws Exception;
 
     /**
      * @return String with the XML code
