@@ -621,7 +621,7 @@ public class GenericMap extends AbstractXmlSubtree {
     }
 
     /**
-     * This method iterates through all elements of the map. If they have an attribute of the specified name, its value will be replaced according to the hashmap's mappings (current value -> new value). If the current value does not appear in the hashmap it is left unaltered.
+     * This method iterates through all elements of the map. If they have an attribute of the specified name, its value will be replaced according to the hashmap's mappings (current value -&gt; new value). If the current value does not appear in the hashmap it is left unaltered.
      * @param attributeName
      * @param valueMappings
      */

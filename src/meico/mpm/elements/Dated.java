@@ -196,6 +196,7 @@ public class Dated extends AbstractXmlSubtree {
      * Add the specified map to the dated environment.
      * If such a map is already present it will be replaced by the new one.
      * @param map the map to be added
+     * @return
      */
     public GenericMap addMap(GenericMap map) {
         if (map == null)

@@ -1,6 +1,14 @@
 ### Version History
 
 
+#### v0.7.9
+- Method `meico.audio.Audio.convertByteArray2DoubleArray()` has been generalized to also work with sample sizes other than 16 bit. The method will no longer mix the two stereo channels into one, but returns an ArrayList with both channels, one double array each.
+- Replaced the Java LAME sources in package `meico.audio` by external file `net.sourceforge.lame-3.98.4.jar`.
+- In class `meico.audio.Audio` the new method `decodeMp3ToPcm()` has been added. With this, MP3 files can be imported, are decoded to PCM audio and can be stored as WAV files.
+- Methods `writeAudio()` and `writeMp3()` in class `meico.audio.Audio` have been improved to make sure that a wave file is not stored with `.mp3` extension and vice versa.
+- Some minor JavaDocs improvements and `README.md` update.
+
+
 #### v0.7.8
 - Added MPM metadata support to package `meico.mpm`.
 - The MPM metadata will also be generated during MEI-to-MPM export.

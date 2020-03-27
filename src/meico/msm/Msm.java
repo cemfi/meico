@@ -813,14 +813,13 @@ public class Msm extends AbstractMsm {
     }
 
     /**
-     * This method computes a compression of a limited input domain (lowest <= x <= highest) to a limited output domain (limited by min and max).
+     * This method computes a compression of a limited input domain (lowest &le; x &le; highest) to a limited output domain (limited by min and max).
      * It uses a partwise linear mapping. It tries to limit the range of compression depending on how much the limits are broken by lowest and highest value.
      * @param attributes the values to be mapped according to the compession
      * @param lowest
      * @param highest
      * @param min
      * @param max
-     * @return the mapping of x
      */
     private static void computePartwiseCompression(ArrayList<KeyValue<Double, Attribute>> attributes, double lowest, double highest, double min, double max) {
         // on the basis of the lowest and highest value (the extremes of the input domain), compute the range to be compresed, i.e. [lowest, lowerCompMax] and [upperCompMin, highest]

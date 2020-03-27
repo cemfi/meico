@@ -2,9 +2,6 @@ meico
 meico.app
 meico.app.gui
 meico.audio
-meico.audio.lame.lowlevel
-meico.audio.lame.mp3
-meico.audio.lame.mpg
 meico.mei
 meico.midi
 meico.midi.legacy

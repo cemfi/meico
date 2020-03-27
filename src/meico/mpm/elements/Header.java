@@ -53,6 +53,7 @@ public class Header extends AbstractXmlSubtree {
 
     /**
      * header factory
+     * @param xml
      * @return
      */
     public static Header createHeader(Element xml) {
@@ -230,6 +231,7 @@ public class Header extends AbstractXmlSubtree {
      * generate a new empty styleDef in the specified style type/collection
      * @param type if the type doe not exist it will be generated
      * @param name if there is already a styleDef with this name it will be replaced
+     * @return the styleDef just added, this is a GenericStyle object, you should cast it to its specific type before working with it
      */
     public GenericStyle addStyleDef(String type, String name) {
         GenericStyle styleDef;

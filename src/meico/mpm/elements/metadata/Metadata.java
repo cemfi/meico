@@ -20,6 +20,7 @@ public class Metadata extends AbstractXmlSubtree {
     /**
      * this constructor instantiates the Metadata object from an existing xml source handed over as XOM Element
      * @param xml
+     * @throws InvalidDataException
      */
     private Metadata(Element xml) throws InvalidDataException {
         this.parseData(xml);
@@ -29,6 +30,7 @@ public class Metadata extends AbstractXmlSubtree {
      * this constructor creates a new Metadata object from an author and/or comment
      * @param author an Author object or null
      * @param comment a String or null
+     * @throws InvalidDataException
      */
     private Metadata(Author author, String comment) throws InvalidDataException {
         Element metadata = new Element("metadata", Mpm.MPM_NAMESPACE);
@@ -147,6 +149,7 @@ public class Metadata extends AbstractXmlSubtree {
     /**
      * add an author to the metadata
      * @param author
+     * @return the index at which it has been added
      */
     public int addAuthor(Author author) {
         this.getXml().appendChild(author.getXml());
@@ -203,6 +206,7 @@ public class Metadata extends AbstractXmlSubtree {
     /**
      * add a comment to the metadata
      * @param comment
+     * @return the index at which it has been added
      */
     public int addComment(String comment) {
         if (comment == null)

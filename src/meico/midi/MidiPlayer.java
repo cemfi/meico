@@ -52,7 +52,6 @@ public class MidiPlayer {
 
     /**
      * initialize the sequencer for Midi playback;
-     * @return return true if successful, else false
      */
     private void initSequencer() throws MidiUnavailableException {
         if (this.sequencer == null)

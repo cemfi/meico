@@ -1,23 +1,29 @@
 package meico.audio;
 
-import meico.audio.lame.lowlevel.LameDecoder;
-import meico.audio.lame.lowlevel.LameEncoder;
-import meico.audio.lame.mp3.Lame;
-import meico.audio.lame.mp3.MPEGMode;
 import meico.mei.Helper;
+import meico.supplementary.KeyValue;
+import net.sourceforge.lame.lowlevel.LameDecoder;
+import net.sourceforge.lame.lowlevel.LameEncoder;
+import net.sourceforge.lame.mp3.*;
 
 import javax.sound.sampled.*;
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.util.ArrayList;
 
 /**
  * This class represents audio data.
  * @author Axel Berndt.
  */
 public class Audio {
+    private static final String MP3 = "mp3";
+    private static final String WAVE = "wav";
+
     private File file = null;                       // the audio file
     private byte[] audio;                           // the audio data
     private AudioFormat format = null;              // audio format data
+    private String fileType = null;                 // the file format, e.g. "mp3" or "wav"
 
     /**
      * constructor, generates empty instance
@@ -42,33 +48,28 @@ public class Audio {
      * @param file
      */
     public Audio(File file) throws IOException, UnsupportedAudioFileException {
-        String fileExtension = file.getName().substring(file.getName().lastIndexOf("."));   // get the file extension
+        String fileExtension = file.getName().substring(file.getName().lastIndexOf(".") + 1);   // get the file extension
 
         switch (fileExtension.toLowerCase()) {                                              // depending on the file extension the file has to be loaded in a different way
-            case ".wav":                                                                    // this is for wav files
+            case "wav":                                                                    // this is for wav files
                 AudioInputStream stream = loadWavFileToAudioInputStream(file);
                 this.audio = convertAudioInputStream2ByteArray(stream);
                 this.format = stream.getFormat();
                 stream.close();
+                this.file = file;
+                this.fileType = Audio.WAVE;
                 break;
-            case ".mp3":                                                                    // this is for mp3 files
-                LameDecoder decoder = new LameDecoder(file.getCanonicalPath());
-                throw new UnsupportedAudioFileException(file.getName().substring(file.getName().lastIndexOf(".")) + " import is not yet supported.");
-//                InputStream inStream = new FileInputStream(file);
-//                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//                byte[] buffer = new byte[8192];
-//                int bytesRead;
-//                while ((bytesRead = inStream.read(buffer)) > 0) {
-//                    baos.write(buffer, 0, bytesRead);
-//                }
-//                this.audio = baos.toByteArray();
-//                inStream.close();
-//                break;
+            case "mp3":                                                                    // this is for mp3 files
+                KeyValue<AudioFormat, byte[]> decoded = decodeMp3ToPcm(file);
+                this.format = decoded.getKey();
+                this.audio = decoded.getValue();
+//                this.file = new File(Helper.getFilenameWithoutExtension(file.getCanonicalPath()) + ".wav"); // we have pcm data, so we should make sure it is not stored as mp3
+                this.file = file;
+                this.fileType = Audio.MP3;
+                break;
             default:                                                                        // this is for unsupported file formats/extensions
-                throw new UnsupportedAudioFileException(file.getName().substring(file.getName().lastIndexOf(".")) + " is not supported.");
+                throw new UnsupportedAudioFileException(fileExtension.toLowerCase() + " is not supported.");
         }
-
-        this.file = file;
     }
 
     /**
@@ -81,6 +82,7 @@ public class Audio {
         this.audio = convertAudioInputStream2ByteArray(inputStream);
         this.format = inputStream.getFormat();
         this.file = file;
+        this.fileType = file.getName().substring(file.getName().lastIndexOf(".") + 1);
     }
 
     /**
@@ -93,6 +95,7 @@ public class Audio {
         this.audio = audioData;
         this.format = format;
         this.file = file;
+        this.fileType = file.getName().substring(file.getName().lastIndexOf(".") + 1);
     }
 
     /**
@@ -101,8 +104,29 @@ public class Audio {
      * @throws IOException
      * @throws UnsupportedAudioFileException
      */
-    public synchronized static AudioInputStream loadWavFileToAudioInputStream(File file) throws IOException, UnsupportedAudioFileException {
+    public static AudioInputStream loadWavFileToAudioInputStream(File file) throws IOException, UnsupportedAudioFileException {
         return AudioSystem.getAudioInputStream(file);
+    }
+
+    /**
+     * this method decodes an mp3 file to pcm
+     * @param file
+     * @return tuplet with (AudioFormat, pcm byte array)
+     */
+    private static KeyValue<AudioFormat, byte[]> decodeMp3ToPcm(File file) throws IOException {
+        LameDecoder decoder = new LameDecoder(file.getCanonicalPath());
+        ByteBuffer buffer = ByteBuffer.allocate(1152 * 2 * decoder.getChannels());
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        while (decoder.decode(buffer))
+            byteArrayOutputStream.write(buffer.array());
+
+        byte[] pcmByteArray = byteArrayOutputStream.toByteArray();
+        AudioFormat format = new AudioFormat(decoder.getSampleRate(), 16, decoder.getChannels(), true, false);
+
+        decoder.close();
+
+        return new KeyValue<>(format, pcmByteArray);
     }
 
     /**
@@ -110,7 +134,7 @@ public class Audio {
      * @param stream
      * @return
      */
-    public synchronized static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
+    public static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
         byte[] array;
         try {
             array = new byte[(int)(stream.getFrameLength() * stream.getFormat().getFrameSize())];   // initialize the byte array with the length of the stream
@@ -128,7 +152,7 @@ public class Audio {
      * @param format
      * @return
      */
-    public synchronized static AudioInputStream convertByteArray2AudioInputStream(byte[] array, AudioFormat format) {
+    public static AudioInputStream convertByteArray2AudioInputStream(byte[] array, AudioFormat format) {
         ByteArrayInputStream bis = new ByteArrayInputStream(array);                 // byte array to ByteArrayInputStream
         AudioInputStream ais = new AudioInputStream(bis, format, (array.length / (2 * format.getChannels()))); // byteArrayInputStream to AudioInputStream
         return ais;                                                                 // return it
@@ -139,41 +163,46 @@ public class Audio {
      * which is far more convenient for audio analyses.
      * @param array
      * @param format
-     * @return
+     * @return an ArrayList of double arrays, each is an audio channel (stereo sequence is [left, right])
      */
-    public synchronized static double[] convertByteArray2DoubleArray(byte[] array, AudioFormat format) {
-        double max16bit = 32768.0;  // TODO: if the audio format is not 16 bit this must be a different value
+    public static ArrayList<double[]> convertByteArray2DoubleArray(byte[] array, AudioFormat format) {
+        ArrayList<double[]> channelList = new ArrayList<>();
+
+        double max16bit = Math.pow(2, format.getSampleSizeInBits()) / 2.0;      //for 16 bit = 32768.0; division by 2.0 is for shifting the range to half positive, half negative
 
         // little endian, mono
         if (format.getChannels() == 1) {        // mono
             double[] output = new double[array.length / 2];
             for (int i = 0; i < (array.length / 2); i++)
                 output[i] = ((short) (((array[2 * i + 1] & 0xFF) << 8) | (array[2 * i] & 0xFF))) / max16bit;
-            return output;
+            channelList.add(output);
         }
 
         // little endian, stereo, output is the sum of both channels
         else if (format.getChannels() == 2) {   // stereo
-            double[] output = new double[array.length / 4];
+            double[] outputLeft = new double[array.length / 4];
+            double[] outputRight = new double[array.length / 4];
             for (int i = 0; i < (array.length / 4); i++) {
-                double left  = ((short) (((array[4 * i + 1] & 0xFF) << 8) | (array[4 * i] & 0xFF))) / max16bit;
-                double right = ((short) (((array[4 * i + 3] & 0xFF) << 8) | (array[4 * i + 2] & 0xFF))) / max16bit;
-                output[i] = (left + right) / 2.0;
+                outputLeft[i] = ((short) (((array[4 * i + 1] & 0xFF) << 8) | (array[4 * i] & 0xFF))) / max16bit;
+                outputRight[i] = ((short) (((array[4 * i + 3] & 0xFF) << 8) | (array[4 * i + 2] & 0xFF))) / max16bit;
             }
-            return output;
+            channelList.add(outputLeft);
+            channelList.add(outputRight);
         }
 
         // if the audio format is inappropriate
-        return new double[]{};                  // return empty array
+        System.err.println("This audio has " + format.getChannels() + " channels. Only mono and stereo audio are supported.");
+
+        return channelList;
     }
 
     /**
-     * This method converts an input double array into a byte array.
+     * This method converts an input double array into a byte array. It assumes a 16 bit mono encoding.
      * @param array
      * @return
      */
-    public synchronized static byte[] convertDoubleArray2ByteArray(double[] array) {
-        double max16bit = 32768.0;  // TODO: if the audio format is not 16 bit this must be a different value
+    public static byte[] convertDoubleArray2ByteArray(double[] array) {
+        double max16bit = 32768.0;  // TODO: if the audio format is not 16 bit this must be different, see convertByteArray2DoubleArray()
 
         // assumes signed PCM, little endian
         byte[] output = new byte[2 * array.length];
@@ -192,7 +221,7 @@ public class Audio {
      * @return mp3 data as byte array
      */
     public synchronized byte[] encodePcmToMp3(byte[] pcm, AudioFormat format) {
-        LameEncoder encoder = new LameEncoder(format, 256, MPEGMode.STEREO, Lame.QUALITY_HIGH, true);   // bitrate is 256; in this case VBR (=variable bitrate) is true
+        LameEncoder encoder = new LameEncoder(format, 256, MPEGMode.STEREO, Lame.QUALITY_HIGH, false);   // bitrate is 256; in this case VBR (=variable bitrate) is false
 
         ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
         byte[] buffer = new byte[encoder.getPCMBufferSize()];
@@ -232,6 +261,8 @@ public class Audio {
      */
     public synchronized void setFile(File file) {
         this.file = file;
+        this.fileType = file.getName().substring(file.getName().lastIndexOf(".") + 1);
+
     }
 
     /**
@@ -315,11 +346,23 @@ public class Audio {
      * @return true if success, false if an error occurred
      */
     public boolean writeAudio() {
-        return this.writeAudio(this.file);
+        if (this.fileType.equals(Audio.WAVE))
+            return this.writeAudio(this.file);
+
+        // if this was initially no wave file (e.g. mp3 instead) we should change the file extension so we do not store a wave file as ".mp3"
+        String filename;
+        try {
+            filename = Helper.getFilenameWithoutExtension(this.file.getCanonicalPath()) + ".wav";
+        } catch (IOException e) {
+            System.err.println("No file specified to write audio data.");   // print error message
+            return false;                                                   // cancel
+        }
+        return this.writeAudio(filename);
     }
 
     /**
-     * writes the audioStream into a file
+     * writes the audioStream into a file,
+     * this will generate a wave file even if you give it another extension
      * @param filename
      * @return true if success, false if an error occurred
      */
@@ -330,18 +373,21 @@ public class Audio {
     }
 
     /**
-     * write the audio data to the file system
+     * write the audio data to the file system,
+     * this will generate a wave file even if you give it another extension
      * @param file
      * @return true if success, false if an error occurred
      */
     public synchronized boolean writeAudio(File file) {
         if (file == null) {                                                 // if no valid file
             System.err.println("No file specified to write audio data.");   // print error message
-            return false;                                                         // cancel
+            return false;                                                   // cancel
         }
 
-        if (this.file == null)                                              // if no file has been specified, yet
+        if (this.file == null) {                                            // if no file has been specified, yet
             this.file = file;                                               // take this
+            this.fileType = Audio.WAVE;
+        }
 
         try {
             file.createNewFile();                                           // create the file if it does not already exist
@@ -366,11 +412,23 @@ public class Audio {
      * @return true if success, false if an error occurred
      */
     public boolean writeMp3() {
-        return this.writeMp3(Helper.getFilenameWithoutExtension(this.file.getAbsolutePath()) + ".mp3");
+        if (this.fileType.equals(Audio.MP3))
+            return this.writeMp3(Helper.getFilenameWithoutExtension(this.file.getAbsolutePath()) + ".mp3");
+
+        // if this was initially no mp3 file (e.g. wave instead) we should change the file extension so we do not store a wave file as ".wav"
+        String filename;
+        try {
+            filename = Helper.getFilenameWithoutExtension(this.file.getCanonicalPath()) + ".mp3";
+        } catch (IOException e) {
+            System.err.println("No file specified to write audio data.");   // print error message
+            return false;                                                   // cancel
+        }
+        return this.writeMp3(filename);
     }
 
     /**
-     * write audio data as MP3 to the file system with specified filename
+     * write audio data as MP3 to the file system with specified filename,
+     * this will generate an mp3 file even if you give it another extension
      * @param filename
      * @return true if success, false if an error occurred
      */
@@ -381,7 +439,8 @@ public class Audio {
     }
 
     /**
-     * write audio data as MP3 to the file system to specified file
+     * write audio data as MP3 to the file system to specified file,
+     * this will generate an mp3 file even if you give it another extension
      * @param file
      * @return true if success, false if an error occurred
      */
@@ -389,6 +448,11 @@ public class Audio {
         if (file == null) {                                                 // if no valid file
             System.err.println("No file specified to write audio data.");   // print error message
             return false;                                                   // cancel
+        }
+
+        if (this.file == null) {                                            // if no file has been specified, yet
+            this.file = file;                                               // take this
+            this.fileType = Audio.MP3;
         }
 
         file.getParentFile().mkdirs();                                      // ensure that the directory exists

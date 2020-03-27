@@ -304,7 +304,7 @@ public class ImprecisionMap extends GenericMap {
      * in this variant of the triangular distribution the mode (triangle peak) is wandering with the random values,
      * this method is an alternative to brownianNoise and is experimental
      * @param date
-     * @param degreeOfCorrelation Must be >= 0.0. To avoid outliers (beyond the lower and upper limit) this value should be >= 1.0. 1.0 keeps the triangle's left and right edge at the lower and upper limit. The greater this value, the narrower is the triangle while wandering around between the limits.
+     * @param degreeOfCorrelation Must be &ge; 0.0. To avoid outliers (beyond the lower and upper limit) this value should be &ge; 1.0. 1.0 keeps the triangle's left and right edge at the lower and upper limit. The greater this value, the narrower is the triangle while wandering around between the limits.
      * @param lowerLimit
      * @param upperLimit
      * @param lowerClip lower clip border
@@ -321,7 +321,7 @@ public class ImprecisionMap extends GenericMap {
      * in this variant of the triangular distribution the mode (triangle peak) is wandering with the random values,
      * this method is an alternative to brownianNoise and is experimental
      * @param date
-     * @param degreeOfCorrelation Must be >= 0.0. To avoid outliers (beyond the lower and upper limit) this value should be >= 1.0. 1.0 keeps the triangle's left and right edge at the lower and upper limit. The greater this value, the narrower is the triangle while wandering around between the limits.
+     * @param degreeOfCorrelation Must be &ge; 0.0. To avoid outliers (beyond the lower and upper limit) this value should be &ge; 1.0. 1.0 keeps the triangle's left and right edge at the lower and upper limit. The greater this value, the narrower is the triangle while wandering around between the limits.
      * @param lowerLimit
      * @param upperLimit
      * @param lowerClip lower clip border

@@ -48,6 +48,7 @@ public class Global extends AbstractXmlSubtree {
 
     /**
      * global factory
+     * @param xml
      * @return
      */
     public static Global createGlobal(Element xml) {

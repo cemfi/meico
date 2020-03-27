@@ -179,10 +179,8 @@ class DataObject extends Group {
             case ".mid":
                 return new Midi(file);
             case ".wav":
-                return new Audio(file);
             case ".mp3":
-//                this.workspace.getApp().getStatuspanel().setMessage("Input file type .mp3 is not yet supported by meico.");
-                throw new IOException("File type .mp3 is not supported by meico.");
+                return new Audio(file);
             case ".json":
 //                this.workspace.getApp().getStatuspanel().setMessage("Input file type .json is not yet supported by meico.");
                 throw new IOException("File type .json is not supported by meico.");
