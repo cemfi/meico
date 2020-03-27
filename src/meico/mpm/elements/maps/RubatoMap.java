@@ -1,6 +1,5 @@
 package meico.mpm.elements.maps;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.GenericStyle;
@@ -19,18 +18,18 @@ import java.util.ArrayList;
 public class RubatoMap extends GenericMap {
     /**
      * constructor, generates an empty RubatoMap
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private RubatoMap() throws InvalidDataException {
+    private RubatoMap() throws Exception {
         super("rubatoMap");
     }
 
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private RubatoMap(Element xml) throws InvalidDataException {
+    private RubatoMap(Element xml) throws Exception {
         super(xml);
     }
 
@@ -42,7 +41,7 @@ public class RubatoMap extends GenericMap {
         RubatoMap d;
         try {
             d = new RubatoMap();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -58,7 +57,7 @@ public class RubatoMap extends GenericMap {
         RubatoMap d;
         try {
             d = new RubatoMap(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -69,7 +68,7 @@ public class RubatoMap extends GenericMap {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
         this.setType("rubatoMap");            // make sure this is really a "rubatoMap"
     }

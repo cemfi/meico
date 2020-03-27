@@ -1,6 +1,5 @@
 package meico.mpm.elements.styles;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.xml.AbstractXmlSubtree;
@@ -17,9 +16,9 @@ public class GenericStyle extends AbstractXmlSubtree {
     /**
      * constructor, generates an empty styleDef with the specified name
      * @param name
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    protected GenericStyle(String name) throws InvalidDataException {
+    protected GenericStyle(String name) throws Exception {
         Element styleDef = new Element("styleDef", Mpm.MPM_NAMESPACE);
         styleDef.addAttribute(new Attribute("name", name));
         this.parseData(styleDef);
@@ -28,9 +27,9 @@ public class GenericStyle extends AbstractXmlSubtree {
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    protected GenericStyle(Element xml) throws InvalidDataException {
+    protected GenericStyle(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -43,7 +42,7 @@ public class GenericStyle extends AbstractXmlSubtree {
         GenericStyle genericStyle;
         try {
             genericStyle = new GenericStyle(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -59,7 +58,7 @@ public class GenericStyle extends AbstractXmlSubtree {
         GenericStyle genericStyle;
         try {
             genericStyle = new GenericStyle(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -71,13 +70,13 @@ public class GenericStyle extends AbstractXmlSubtree {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate GenericStyleDef object. XML Element is null.");
+            throw new Exception("Cannot generate GenericStyleDef object. XML Element is null.");
 
         this.name = Helper.getAttribute("name", xml);
         if (this.name == null)
-            throw new InvalidDataException("Cannot generate GenericStyleDef object. Missing name attribute.");
+            throw new Exception("Cannot generate GenericStyleDef object. Missing name attribute.");
 
         this.setXml(xml);
 

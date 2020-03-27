@@ -1,6 +1,5 @@
 package meico.mpm.elements.styles;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.elements.styles.defs.DynamicsDef;
 import nu.xom.Element;
@@ -20,18 +19,18 @@ public class DynamicsStyle extends GenericStyle {
     /**
      * this constructor generates an empty styleDef for dynamicsDefs to be added subsequently
      * @param name
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private DynamicsStyle(String name) throws InvalidDataException {
+    private DynamicsStyle(String name) throws Exception {
         super(name);
     }
 
     /**
      * this constructor generates the object from xml input
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private DynamicsStyle(Element xml) throws InvalidDataException {
+    private DynamicsStyle(Element xml) throws Exception {
         super(xml);
     }
 
@@ -44,7 +43,7 @@ public class DynamicsStyle extends GenericStyle {
         DynamicsStyle dynamicsStyle;
         try {
             dynamicsStyle = new DynamicsStyle(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -60,7 +59,7 @@ public class DynamicsStyle extends GenericStyle {
         DynamicsStyle dynamicsStyle;
         try {
             dynamicsStyle = new DynamicsStyle(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -71,7 +70,7 @@ public class DynamicsStyle extends GenericStyle {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
 
         this.dynamicsDefs = new HashMap<>();

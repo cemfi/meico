@@ -1,6 +1,5 @@
 package meico.mpm.elements.styles.defs;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.supplementary.KeyValue;
@@ -22,9 +21,9 @@ public class AccentuationPatternDef extends AbstractDef {
      * constructor creates an empty accentuationPatternDef
      * @param name
      * @param length
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private AccentuationPatternDef(String name, double length) throws InvalidDataException {
+    private AccentuationPatternDef(String name, double length) throws Exception {
         Element e = new Element("accentuationPatternDef", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("name", name));
         e.addAttribute(new Attribute("length", Double.toString(length)));
@@ -34,9 +33,9 @@ public class AccentuationPatternDef extends AbstractDef {
     /**
      * contructor to create a AccentuationPatternDef instance from the xml
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private AccentuationPatternDef(Element xml) throws InvalidDataException {
+    private AccentuationPatternDef(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -50,7 +49,7 @@ public class AccentuationPatternDef extends AbstractDef {
         AccentuationPatternDef accentuationPatternDef;
         try {
             accentuationPatternDef = new AccentuationPatternDef(name, length);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -66,7 +65,7 @@ public class AccentuationPatternDef extends AbstractDef {
         AccentuationPatternDef accentuationPatternDef;
         try {
             accentuationPatternDef = new AccentuationPatternDef(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -77,14 +76,14 @@ public class AccentuationPatternDef extends AbstractDef {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate AccentuationPatternDef object. XML Element is null.");
+            throw new Exception("Cannot generate AccentuationPatternDef object. XML Element is null.");
 
         // parse the dynamicsDef element
         this.name = Helper.getAttribute("name", xml);                       // get its name attribute
         if (this.name == null) {                                            // if no name
-            throw new InvalidDataException("Cannot generate AccentuationPatternDef object. Missing name attribute.");
+            throw new Exception("Cannot generate AccentuationPatternDef object. Missing name attribute.");
         }
 
         this.setXml(xml);

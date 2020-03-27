@@ -1,6 +1,5 @@
 package meico.mpm.elements.metadata;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mpm.Mpm;
 import meico.xml.AbstractXmlSubtree;
 import nu.xom.Element;
@@ -20,9 +19,9 @@ public class Metadata extends AbstractXmlSubtree {
     /**
      * this constructor instantiates the Metadata object from an existing xml source handed over as XOM Element
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Metadata(Element xml) throws InvalidDataException {
+    private Metadata(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -30,9 +29,9 @@ public class Metadata extends AbstractXmlSubtree {
      * this constructor creates a new Metadata object from an author and/or comment
      * @param author an Author object or null
      * @param comment a String or null
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Metadata(Author author, String comment) throws InvalidDataException {
+    private Metadata(Author author, String comment) throws Exception {
         Element metadata = new Element("metadata", Mpm.MPM_NAMESPACE);
 
         if (author != null)
@@ -56,7 +55,7 @@ public class Metadata extends AbstractXmlSubtree {
         Metadata metadata;
         try {
             metadata = new Metadata(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -72,7 +71,7 @@ public class Metadata extends AbstractXmlSubtree {
         Metadata metadata;
         try {
             metadata = new Metadata(author, null);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -88,7 +87,7 @@ public class Metadata extends AbstractXmlSubtree {
         Metadata metadata;
         try {
             metadata = new Metadata(null, comment);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -105,7 +104,7 @@ public class Metadata extends AbstractXmlSubtree {
         Metadata metadata;
         try {
             metadata = new Metadata(author, comment);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -115,12 +114,12 @@ public class Metadata extends AbstractXmlSubtree {
     /**
      * parse the xml and set the class variables
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate Metadata object. XML Element is null.");
+            throw new Exception("Cannot generate Metadata object. XML Element is null.");
 
         this.setXml(xml);
 
@@ -143,7 +142,7 @@ public class Metadata extends AbstractXmlSubtree {
         }
 
         if ((this.authors.size() + this.comments.size()) == 0)
-            throw new InvalidDataException("Cannot generate Metadata object. It must contain at least one author or comment");
+            throw new Exception("Cannot generate Metadata object. It must contain at least one author or comment");
     }
 
     /**

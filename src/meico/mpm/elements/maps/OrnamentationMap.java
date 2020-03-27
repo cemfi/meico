@@ -1,6 +1,5 @@
 package meico.mpm.elements.maps;
 
-import com.sun.media.sound.InvalidDataException;
 import nu.xom.Element;
 
 /**
@@ -10,18 +9,18 @@ import nu.xom.Element;
 public class OrnamentationMap extends GenericMap {
     /**
      * constructor, generates an empty OrnamentationMap
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private OrnamentationMap() throws InvalidDataException {
+    private OrnamentationMap() throws Exception {
         super("ornamentationMap");
     }
 
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private OrnamentationMap(Element xml) throws InvalidDataException {
+    private OrnamentationMap(Element xml) throws Exception {
         super(xml);
     }
 
@@ -33,7 +32,7 @@ public class OrnamentationMap extends GenericMap {
         OrnamentationMap d;
         try {
             d = new OrnamentationMap();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -49,7 +48,7 @@ public class OrnamentationMap extends GenericMap {
         OrnamentationMap d;
         try {
             d = new OrnamentationMap(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -60,7 +59,7 @@ public class OrnamentationMap extends GenericMap {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
         this.setType("ornamentationMap");            // make sure this is really a "ornamentationMap"
     }

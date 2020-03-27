@@ -1,12 +1,10 @@
 package meico.mpm.elements;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.*;
 import meico.xml.AbstractXmlSubtree;
 import nu.xom.Element;
-import nu.xom.Elements;
 import nu.xom.Nodes;
 
 import java.util.HashMap;
@@ -21,18 +19,18 @@ public class Header extends AbstractXmlSubtree {
 
     /**
      * constructor
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Header() throws InvalidDataException {
+    private Header() throws Exception {
         this.parseData(new Element("header", Mpm.MPM_NAMESPACE));
     }
 
     /**
      * this constructor instantiates the Header object from an existing xml source handed over as XOM Element
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Header(Element xml) throws InvalidDataException {
+    private Header(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -44,7 +42,7 @@ public class Header extends AbstractXmlSubtree {
         Header header;
         try {
             header = new Header();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -60,7 +58,7 @@ public class Header extends AbstractXmlSubtree {
         Header header;
         try {
             header = new Header(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -72,9 +70,9 @@ public class Header extends AbstractXmlSubtree {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate Header object. XML Element is null.");
+            throw new Exception("Cannot generate Header object. XML Element is null.");
 
         this.setXml(xml);
 

@@ -1,6 +1,5 @@
 package meico.mpm.elements;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.xml.AbstractXmlSubtree;
@@ -27,9 +26,9 @@ public class Part extends AbstractXmlSubtree {
      * @param number
      * @param midiChannel
      * @param midiPort
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Part(String name, int number, int midiChannel, int midiPort) throws InvalidDataException {
+    private Part(String name, int number, int midiChannel, int midiPort) throws Exception {
         Element part = new Element("part", Mpm.MPM_NAMESPACE);
         part.addAttribute(new Attribute("name", name));
         part.addAttribute(new Attribute("number", Integer.toString(number)));
@@ -42,7 +41,7 @@ public class Part extends AbstractXmlSubtree {
      * this constructor instantiates the MpmGlobal object from an existing xml source handed over as XOM Element
      * @param xml
      */
-    private Part(Element xml) throws InvalidDataException {
+    private Part(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -58,7 +57,7 @@ public class Part extends AbstractXmlSubtree {
         Part part;
         try {
             part = new Part(name, number, midiChannel, midiPort);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -74,7 +73,7 @@ public class Part extends AbstractXmlSubtree {
         Part part;
         try {
             part = new Part(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -86,30 +85,30 @@ public class Part extends AbstractXmlSubtree {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate Part object. XML Element is null.");
+            throw new Exception("Cannot generate Part object. XML Element is null.");
 
         this.name = Helper.getAttribute("name", xml);
         if (this.name == null) {                                                                                        // each part requires a name, if there is none
             this.name = new Attribute("name", "");                                                                      // generate an empty name attribute
             this.getXml().addAttribute(this.name);                                                                      // and add it to the element
-//            throw new InvalidDataException("Cannot generate MpmPart object. Attribute name is missing.");               // throw exception
+//            throw new Exception("Cannot generate MpmPart object. Attribute name is missing.");               // throw exception
         }
 
         Attribute number = Helper.getAttribute("number", xml);
         if ((number == null) || number.getValue().isEmpty()) {                                                          // each part requires a number, if there is none or it is empty
-            throw new InvalidDataException("Cannot generate Part object. Attribute number is missing or empty.");       // throw exception
+            throw new Exception("Cannot generate Part object. Attribute number is missing or empty.");       // throw exception
         }
 
         Attribute midiChannelAtt = Helper.getAttribute("midi.channel", xml);
         if ((midiChannelAtt == null) || midiChannelAtt.getValue().isEmpty()) {                                          // each part requires a midi.channel, if there is none or it is empty
-            throw new InvalidDataException("Cannot generate Part object. Attribute midi.channel is missing or empty."); // throw exception
+            throw new Exception("Cannot generate Part object. Attribute midi.channel is missing or empty."); // throw exception
         }
 
         Attribute midiPortAtt = Helper.getAttribute("midi.port", xml);
         if ((midiPortAtt == null) || midiPortAtt.getValue().isEmpty()) {                                                // each part requires a midi.port, if there is none or it is empty
-            throw new InvalidDataException("Cannot generate Part object. Attribute midi.port is missing or empty.");    // throw exception
+            throw new Exception("Cannot generate Part object. Attribute midi.port is missing or empty.");    // throw exception
         }
 
         this.setXml(xml);
@@ -141,7 +140,7 @@ public class Part extends AbstractXmlSubtree {
         }
 
         if (this.dated == null)
-            throw new InvalidDataException("Cannot generate Part object. Failed to generate Dated object.");
+            throw new Exception("Cannot generate Part object. Failed to generate Dated object.");
 
         this.dated.setEnvironment(this.global, this);                                                                   // link the global and local environment
     }

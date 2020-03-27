@@ -1,6 +1,5 @@
 package meico.mpm.elements.styles;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.elements.styles.defs.RubatoDef;
 import nu.xom.Element;
@@ -20,18 +19,18 @@ public class RubatoStyle extends GenericStyle {
     /**
      * this constructor generates an empty styleDef for rubatoDefs to be added subsequently
      * @param name
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private RubatoStyle(String name) throws InvalidDataException {
+    private RubatoStyle(String name) throws Exception {
         super(name);
     }
 
     /**
      * this constructor generates the object from xml input
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private RubatoStyle(Element xml) throws InvalidDataException {
+    private RubatoStyle(Element xml) throws Exception {
         super(xml);
     }
 
@@ -44,7 +43,7 @@ public class RubatoStyle extends GenericStyle {
         RubatoStyle rubatoStyle;
         try {
             rubatoStyle = new RubatoStyle(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -60,7 +59,7 @@ public class RubatoStyle extends GenericStyle {
         RubatoStyle rubatoStyle;
         try {
             rubatoStyle = new RubatoStyle(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -71,7 +70,7 @@ public class RubatoStyle extends GenericStyle {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
 
         this.rubatoDefs = new HashMap<>();

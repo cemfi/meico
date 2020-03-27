@@ -1,6 +1,5 @@
 package meico.mpm.elements.styles.defs;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import nu.xom.Attribute;
@@ -31,9 +30,9 @@ public class ArticulationDef extends AbstractDef {
     /**
      * constructor, creates an empty/initial ArticulationDef
      * @param name
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private ArticulationDef(String name) throws InvalidDataException {
+    private ArticulationDef(String name) throws Exception {
         Element e = new Element("articulationDef", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("name", name));
         this.parseData(e);
@@ -42,9 +41,9 @@ public class ArticulationDef extends AbstractDef {
     /**
      * contructor to create a ArticulationDef instance from xml
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private ArticulationDef(Element xml) throws InvalidDataException {
+    private ArticulationDef(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -57,7 +56,7 @@ public class ArticulationDef extends AbstractDef {
         ArticulationDef articulationDef;
         try {
             articulationDef = new ArticulationDef(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -73,7 +72,7 @@ public class ArticulationDef extends AbstractDef {
         ArticulationDef articulationDef;
         try {
             articulationDef = new ArticulationDef(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -85,13 +84,13 @@ public class ArticulationDef extends AbstractDef {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate ArticulationDef object. XML Element is null.");
+            throw new Exception("Cannot generate ArticulationDef object. XML Element is null.");
 
         this.name = Helper.getAttribute("name", xml);
         if (this.name == null)
-            throw new InvalidDataException("Cannot generate ArticulationDef object. Missing name attribute.");
+            throw new Exception("Cannot generate ArticulationDef object. Missing name attribute.");
 
         this.setXml(xml);
 

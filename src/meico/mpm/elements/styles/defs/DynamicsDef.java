@@ -1,6 +1,5 @@
 package meico.mpm.elements.styles.defs;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import nu.xom.Attribute;
@@ -17,9 +16,9 @@ public class DynamicsDef extends AbstractDef {
      * constructor to create a DynamicsDef from its name and value
      * @param name
      * @param value
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private DynamicsDef(String name, double value) throws InvalidDataException {
+    private DynamicsDef(String name, double value) throws Exception {
         Element e = new Element("dynamicsDef", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("name", name));
         e.addAttribute(new Attribute("value", Double.toString(value)));
@@ -29,9 +28,9 @@ public class DynamicsDef extends AbstractDef {
     /**
      * contructor to create a DynamicsDef instance from xml
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private DynamicsDef(Element xml) throws InvalidDataException {
+    private DynamicsDef(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -45,7 +44,7 @@ public class DynamicsDef extends AbstractDef {
         DynamicsDef dynamicsDef;
         try {
             dynamicsDef = new DynamicsDef(name, value);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -61,7 +60,7 @@ public class DynamicsDef extends AbstractDef {
         DynamicsDef dynamicsDef;
         try {
             dynamicsDef = new DynamicsDef(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -72,18 +71,18 @@ public class DynamicsDef extends AbstractDef {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate DynamicsDef object. XML Element is null.");
+            throw new Exception("Cannot generate DynamicsDef object. XML Element is null.");
 
         // parse the dynamicsDef element
             this.name = Helper.getAttribute("name", xml);                                           // get its name attribute
             if (this.name == null) {                                                        // if no name
-                throw new InvalidDataException("Cannot generate DynamicsDef object. Missing name attribute.");
+                throw new Exception("Cannot generate DynamicsDef object. Missing name attribute.");
             }
             Attribute value = Helper.getAttribute("value", xml);                                    // get its value attribute
             if (value == null) {                                                            // if no value
-                throw new InvalidDataException("Cannot generate DynamicsDef object. Missing value attribute.");
+                throw new Exception("Cannot generate DynamicsDef object. Missing value attribute.");
             }
 
         this.setXml(xml);

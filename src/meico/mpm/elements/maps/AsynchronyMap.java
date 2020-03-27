@@ -1,6 +1,5 @@
 package meico.mpm.elements.maps;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.supplementary.KeyValue;
@@ -16,18 +15,18 @@ import java.util.ArrayList;
 public class AsynchronyMap extends GenericMap {
     /**
      * constructor, generates an empty AsynchronyMap
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private AsynchronyMap() throws InvalidDataException {
+    private AsynchronyMap() throws Exception {
         super("asynchronyMap");
     }
 
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private AsynchronyMap(Element xml) throws InvalidDataException {
+    private AsynchronyMap(Element xml) throws Exception {
         super(xml);
     }
 
@@ -39,7 +38,7 @@ public class AsynchronyMap extends GenericMap {
         AsynchronyMap d;
         try {
             d = new AsynchronyMap();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -55,7 +54,7 @@ public class AsynchronyMap extends GenericMap {
         AsynchronyMap d;
         try {
             d = new AsynchronyMap(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -66,7 +65,7 @@ public class AsynchronyMap extends GenericMap {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
         this.setType("asynchronyMap");            // make sure this is really a "asynchronyMap"
     }

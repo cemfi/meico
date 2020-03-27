@@ -1,9 +1,7 @@
 package meico.mpm.elements.styles.defs;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
-import meico.mpm.elements.maps.RubatoMap;
 import meico.supplementary.KeyValue;
 import nu.xom.Attribute;
 import nu.xom.Element;
@@ -22,9 +20,9 @@ public class RubatoDef extends AbstractDef {
     /**
      * constructor, creates an empty rubatoDef
      * @param name
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private RubatoDef(String name) throws InvalidDataException {
+    private RubatoDef(String name) throws Exception {
         Element e = new Element("rubatoDef", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("name", name));
         this.parseData(e);
@@ -37,9 +35,9 @@ public class RubatoDef extends AbstractDef {
      * @param intensity
      * @param lateStart
      * @param earlyEnd
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private RubatoDef(String name, double frameLength, double intensity, double lateStart, double earlyEnd) throws InvalidDataException {
+    private RubatoDef(String name, double frameLength, double intensity, double lateStart, double earlyEnd) throws Exception {
         Element e = new Element("rubatoDef", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("name", name));
         e.addAttribute(new Attribute("frameLength", "" + frameLength));
@@ -52,9 +50,9 @@ public class RubatoDef extends AbstractDef {
     /**
      * contructor to create a RubatoDef instance from the xml
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private RubatoDef(Element xml) throws InvalidDataException {
+    private RubatoDef(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -67,7 +65,7 @@ public class RubatoDef extends AbstractDef {
         RubatoDef rubatoDef;
         try {
             rubatoDef = new RubatoDef(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -87,7 +85,7 @@ public class RubatoDef extends AbstractDef {
         RubatoDef rubatoDef;
         try {
             rubatoDef = new RubatoDef(name, frameLength, intensity, lateStart, earlyEnd);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -103,7 +101,7 @@ public class RubatoDef extends AbstractDef {
         RubatoDef rubatoDef;
         try {
             rubatoDef = new RubatoDef(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -115,13 +113,13 @@ public class RubatoDef extends AbstractDef {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate RubatoDef object. XML Element is null.");
+            throw new Exception("Cannot generate RubatoDef object. XML Element is null.");
 
         this.name = Helper.getAttribute("name", xml);
         if (this.name == null)
-            throw new InvalidDataException("Cannot generate RubatoDef object. Missing name attribute.");
+            throw new Exception("Cannot generate RubatoDef object. Missing name attribute.");
 
         this.setXml(xml);
 
@@ -132,7 +130,7 @@ public class RubatoDef extends AbstractDef {
 
         Attribute frameLength = Helper.getAttribute("frameLength", this.getXml());  // the frameLength attribute is also mandatory
         if (frameLength == null)                                            // if it is missing
-            throw new InvalidDataException("Cannot generate RubatoDef object. Missing attribute frameLength.");
+            throw new Exception("Cannot generate RubatoDef object. Missing attribute frameLength.");
 
         Attribute intensity = Helper.getAttribute("intensity", this.getXml());      // get the intensity attribute
         if (intensity == null) {                                            // if missing

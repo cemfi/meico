@@ -1,6 +1,5 @@
 package meico.mpm.elements;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mpm.Mpm;
 import meico.mpm.elements.maps.*;
 import meico.xml.AbstractXmlSubtree;
@@ -20,18 +19,18 @@ public class Dated extends AbstractXmlSubtree {
 
     /**
      * constructor
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Dated() throws InvalidDataException {
+    private Dated() throws Exception {
         this.parseData(new Element("dated", Mpm.MPM_NAMESPACE));
     }
 
     /**
      * this constructor instantiates the Dated environment object from an existing xml source handed over as XOM Element
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Dated(Element xml) throws InvalidDataException {
+    private Dated(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -43,7 +42,7 @@ public class Dated extends AbstractXmlSubtree {
         Dated dated;
         try {
             dated = new Dated();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -59,7 +58,7 @@ public class Dated extends AbstractXmlSubtree {
         Dated dated;
         try {
             dated = new Dated(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -71,9 +70,9 @@ public class Dated extends AbstractXmlSubtree {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate Dated object. XML Element is null.");
+            throw new Exception("Cannot generate Dated object. XML Element is null.");
 
         this.setXml(xml);
 

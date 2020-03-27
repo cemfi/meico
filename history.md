@@ -7,7 +7,7 @@
 - In class `meico.audio.Audio` the new method `decodeMp3ToPcm()` has been added. With this, MP3 files can be imported, are decoded to PCM audio and can be stored as WAV files.
 - Methods `writeAudio()` and `writeMp3()` in class `meico.audio.Audio` have been improved to make sure that a wave file is not stored with `.mp3` extension and vice versa.
 - Some minor JavaDocs improvements and `README.md` update.
-- Changed some `com.sun.media.sound.InvalidDataException` in classes `meico.mpm.elements.Performance` and `meico.xml.AbstractXmlSubtree` for compatibility with newer Java versions.
+- Changed `com.sun.media.sound.InvalidDataException` by `Exception` for compatibility with newer Java versions.
 
 
 #### v0.7.8

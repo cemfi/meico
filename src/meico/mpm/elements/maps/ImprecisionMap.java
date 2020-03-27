@@ -1,6 +1,5 @@
 package meico.mpm.elements.maps;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.supplementary.KeyValue;
@@ -30,18 +29,18 @@ public class ImprecisionMap extends GenericMap {
      * constructor, generates an empty imprecisionMap,
      * The application should specify the domain before it can be used!
      * @param domain "timing", "dynamics", "toneduration", "tuning" or anything; even is allowed
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private ImprecisionMap(String domain) throws InvalidDataException {
+    private ImprecisionMap(String domain) throws Exception {
         super("imprecisionMap" + ((domain == null) || domain.isEmpty() ? "" : ("." + domain)));
     }
 
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private ImprecisionMap(Element xml) throws InvalidDataException {
+    private ImprecisionMap(Element xml) throws Exception {
         super(xml);
     }
 
@@ -54,7 +53,7 @@ public class ImprecisionMap extends GenericMap {
         ImprecisionMap d;
         try {
             d = new ImprecisionMap(domain);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -70,7 +69,7 @@ public class ImprecisionMap extends GenericMap {
         ImprecisionMap d;
         try {
             d = new ImprecisionMap(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -80,12 +79,12 @@ public class ImprecisionMap extends GenericMap {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
 
         String localname = this.getXml().getLocalName();
         if (!localname.contains("imprecisionMap"))
-            throw new InvalidDataException("Cannot generate ImprecisionMap object. Local name \"" + xml.getLocalName() + "\" must contain the substring \"imprecisionMap\".");
+            throw new Exception("Cannot generate ImprecisionMap object. Local name \"" + xml.getLocalName() + "\" must contain the substring \"imprecisionMap\".");
 
         String[] domain = localname.split(Pattern.quote("."));                                  // the domain is specified after the "." (e.g. imprecisionMap.timing)
         if (domain.length < 2)                                                                  // if there is no "." or nothing the follows it

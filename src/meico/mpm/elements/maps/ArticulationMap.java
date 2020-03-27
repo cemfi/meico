@@ -1,6 +1,5 @@
 package meico.mpm.elements.maps;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.ArticulationStyle;
@@ -20,18 +19,18 @@ import java.util.HashMap;
 public class ArticulationMap extends GenericMap {
     /**
      * constructor, generates an empty ArticulationMap
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private ArticulationMap() throws InvalidDataException {
+    private ArticulationMap() throws Exception {
         super("articulationMap");
     }
 
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private ArticulationMap(Element xml) throws InvalidDataException {
+    private ArticulationMap(Element xml) throws Exception {
         super(xml);
     }
 
@@ -43,7 +42,7 @@ public class ArticulationMap extends GenericMap {
         ArticulationMap d;
         try {
             d = new ArticulationMap();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -59,7 +58,7 @@ public class ArticulationMap extends GenericMap {
         ArticulationMap d;
         try {
             d = new ArticulationMap(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -70,7 +69,7 @@ public class ArticulationMap extends GenericMap {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
         this.setType("articulationMap");            // make sure this is really a "articulationMap"
     }

@@ -1,6 +1,5 @@
 package meico.mpm.elements.styles;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.elements.styles.defs.AccentuationPatternDef;
 import nu.xom.Element;
@@ -20,18 +19,18 @@ public class MetricalAccentuationStyle extends GenericStyle {
     /**
      * this constructor generates an empty styleDef for AccentuationPatternDefs to be added subsequently
      * @param name
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private MetricalAccentuationStyle(String name) throws InvalidDataException {
+    private MetricalAccentuationStyle(String name) throws Exception {
         super(name);
     }
 
     /**
      * this constructor generates the object from xml input
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private MetricalAccentuationStyle(Element xml) throws InvalidDataException {
+    private MetricalAccentuationStyle(Element xml) throws Exception {
         super(xml);
     }
 
@@ -44,7 +43,7 @@ public class MetricalAccentuationStyle extends GenericStyle {
         MetricalAccentuationStyle metricalAccentuationStyle;
         try {
             metricalAccentuationStyle = new MetricalAccentuationStyle(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -60,7 +59,7 @@ public class MetricalAccentuationStyle extends GenericStyle {
         MetricalAccentuationStyle metricalAccentuationStyle;
         try {
             metricalAccentuationStyle = new MetricalAccentuationStyle(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -71,7 +70,7 @@ public class MetricalAccentuationStyle extends GenericStyle {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
 
         this.accentuationPatternDefs = new HashMap<>();

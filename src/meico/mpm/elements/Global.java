@@ -1,6 +1,5 @@
 package meico.mpm.elements;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.xml.AbstractXmlSubtree;
@@ -16,18 +15,18 @@ public class Global extends AbstractXmlSubtree {
 
     /**
      * constructor
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Global() throws InvalidDataException {
+    private Global() throws Exception {
         this.parseData(new Element("global", Mpm.MPM_NAMESPACE));
     }
 
     /**
      * this constructor instantiates the Global object from an existing xml source handed over as XOM Element
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Global(Element xml) throws InvalidDataException {
+    private Global(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -39,7 +38,7 @@ public class Global extends AbstractXmlSubtree {
         Global global;
         try {
             global = new Global();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -55,7 +54,7 @@ public class Global extends AbstractXmlSubtree {
         Global global;
         try {
             global = new Global(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -67,9 +66,9 @@ public class Global extends AbstractXmlSubtree {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate Global object. XML Element is null.");
+            throw new Exception("Cannot generate Global object. XML Element is null.");
 
         this.setXml(xml);
 
@@ -97,7 +96,7 @@ public class Global extends AbstractXmlSubtree {
         }
 
         if (this.dated == null)
-            throw new InvalidDataException("Cannot generate Global object. Failed to generate Dated object.");
+            throw new Exception("Cannot generate Global object. Failed to generate Dated object.");
 
         this.dated.setEnvironment(this, null);      // link the global (and local) environment
     }

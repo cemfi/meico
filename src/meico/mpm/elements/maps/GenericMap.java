@@ -1,6 +1,5 @@
 package meico.mpm.elements.maps;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.GenericStyle;
@@ -28,11 +27,11 @@ public class GenericMap extends AbstractXmlSubtree {
     /**
      * constructor
      * @param type
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    protected GenericMap(String type) throws InvalidDataException {
+    protected GenericMap(String type) throws Exception {
         if (type.isEmpty() || !type.contains("Map")) {
-            throw new InvalidDataException("Cannot generate GenericMap object. Local name \"" + type + "\" must be non-empty and contain the substring \"Map\", e.g. \"tempoMap\".");
+            throw new Exception("Cannot generate GenericMap object. Local name \"" + type + "\" must be non-empty and contain the substring \"Map\", e.g. \"tempoMap\".");
         }
         this.parseData(new Element(type, Mpm.MPM_NAMESPACE));
     }
@@ -40,9 +39,9 @@ public class GenericMap extends AbstractXmlSubtree {
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    protected GenericMap(Element xml) throws InvalidDataException {
+    protected GenericMap(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -55,7 +54,7 @@ public class GenericMap extends AbstractXmlSubtree {
         GenericMap genericMap;
         try {
             genericMap = new GenericMap(name);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -71,7 +70,7 @@ public class GenericMap extends AbstractXmlSubtree {
         GenericMap genericMap;
         try {
             genericMap = new GenericMap(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -83,12 +82,12 @@ public class GenericMap extends AbstractXmlSubtree {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception, Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate GenericMap object. XML Element is null.");
+            throw new Exception("Cannot generate GenericMap object. XML Element is null.");
 
         if (!xml.getLocalName().contains("Map") && !xml.getLocalName().equals("score")) {       // the local name must contain the string "Map" or be equal to "score"; the latter is needed for being able to parse MSM score elements into a GenericMap
-            throw new InvalidDataException("Cannot generate GenericMap object. Local name \"" + xml.getLocalName() + "\" must contain the substring \"Map\", e.g. \"tempoMap\", or be equal to \"score\".");
+            throw new Exception("Cannot generate GenericMap object. Local name \"" + xml.getLocalName() + "\" must contain the substring \"Map\", e.g. \"tempoMap\", or be equal to \"score\".");
         }
 
         this.elements = new ArrayList<>();
@@ -609,7 +608,7 @@ public class GenericMap extends AbstractXmlSubtree {
 
         try {
             this.parseData(newMap);                                 // parse the new map
-        } catch (InvalidDataException e) {                          // if this fails restore the old state
+        } catch (Exception e) {                          // if this fails restore the old state
             e.printStackTrace();
             this.setXml(oldXmlData);
             this.elements = saveCopy;

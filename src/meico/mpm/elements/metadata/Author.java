@@ -1,6 +1,5 @@
 package meico.mpm.elements.metadata;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.xml.AbstractXmlSubtree;
@@ -20,9 +19,9 @@ public class Author extends AbstractXmlSubtree {
     /**
      * this constructor instantiates the Author object from an existing xml source handed over as XOM Element
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private Author(Element xml) throws InvalidDataException {
+    private Author(Element xml) throws Exception {
         this.parseData(xml);
     }
 
@@ -35,7 +34,7 @@ public class Author extends AbstractXmlSubtree {
         Author author;
         try {
             author = new Author(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -69,12 +68,12 @@ public class Author extends AbstractXmlSubtree {
     /**
      * parse the author element and set the according class variables
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
     @Override
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
-            throw new InvalidDataException("Cannot generate Author object. XML Element is null.");
+            throw new Exception("Cannot generate Author object. XML Element is null.");
 
         this.setXml(xml);
 

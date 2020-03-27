@@ -1,6 +1,5 @@
 package meico.mpm.elements.maps;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.DynamicsStyle;
@@ -19,18 +18,18 @@ import java.util.ArrayList;
 public class DynamicsMap extends GenericMap {
     /**
      * constructor, generates an empty dynamicsMap
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private DynamicsMap() throws InvalidDataException {
+    private DynamicsMap() throws Exception {
         super("dynamicsMap");
     }
 
     /**
      * constructor, generates an instance from xml code
      * @param xml
-     * @throws InvalidDataException
+     * @throws Exception
      */
-    private DynamicsMap(Element xml) throws InvalidDataException {
+    private DynamicsMap(Element xml) throws Exception {
         super(xml);
     }
 
@@ -42,7 +41,7 @@ public class DynamicsMap extends GenericMap {
         DynamicsMap d;
         try {
             d = new DynamicsMap();
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -58,7 +57,7 @@ public class DynamicsMap extends GenericMap {
         DynamicsMap d;
         try {
             d = new DynamicsMap(xml);
-        } catch (InvalidDataException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -69,7 +68,7 @@ public class DynamicsMap extends GenericMap {
      * set the data of this object, this parses the xml element and generates the according data structure
      * @param xml
      */
-    protected void parseData(Element xml) throws InvalidDataException {
+    protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
         this.setType("dynamicsMap");            // make sure this is really a "dynamicsMap"
     }
