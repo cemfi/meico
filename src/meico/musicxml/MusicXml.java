@@ -2,6 +2,7 @@ package meico.musicxml;
 
 import meico.mei.Helper;
 import meico.mei.Mei;
+import meico.supplementary.VerovioProvider;
 import meico.xml.XmlBase;
 import nu.xom.*;
 import org.xml.sax.SAXException;
@@ -12,7 +13,6 @@ import javax.script.ScriptException;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.URL;
-import java.net.URLConnection;
 
 /**
  * TODO
@@ -136,82 +136,36 @@ public class MusicXml extends XmlBase {
      * TODO: The current implementation based on Verovio does not work! And even if, the conversion of MusicXML features to MEI would be rather limited.
      */
     public Mei exportMei(boolean useOnlineVerovio) {
-        System.out.println("Converting " + ((this.file != null) ? this.file.getName() : "MusicXml data") + " to MEI.");
+        long startTime = System.currentTimeMillis();                            // we measure the time that the conversion consumes
+        System.out.println("\nConverting " + ((this.file != null) ? this.file.getName() : "MusicXml data") + " to MEI.");
 
         ScriptEngineManager manager = new ScriptEngineManager();                // init Script Manager
         ScriptEngine engine = manager.getEngineByName("JavaScript");            // create Script Engine for JavaScript
 
-        // get Verovio
-        String verovio = (useOnlineVerovio) ? readTextFromURL("https://www.verovio.org/javascript/develop/verovio-toolkit.js") : null;  // if the online version of Verovio is demanded, try to get it
-        if (verovio == null) {                                                  // if online Verovio is not available or the internal Verovio should be used
-            try {
-                verovio = this.readLocalVerovio();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
+        String verovio = (useOnlineVerovio) ? VerovioProvider.getVerovio(this) : VerovioProvider.getLocalVerovio(this); // get the Verovio Toolkit script
+        if (verovio == null) {
+            System.err.println("MusicXML to MEI conversion failed: Verovio Toolkit not available. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+            return null;
         }
 
         engine.put("data", this.toXML());
         Mei mei = null;
 
         try {
-            engine.eval(verovio);                                                                               // this imports Verovio in the script engine's context, however, TODO: this fails
+            engine.eval(verovio);                                                                               // this imports Verovio in the script engine's context, however, TODO: this fails because Verovio requires a browser environment
             String script = "var vrvToolkit = new verovio.toolkit(); var mei = vrvToolkit.getMEI(0, true);";    // getMEI(int:pageNumber, bool:trueMei)
             engine.eval(script);
             mei = new Mei((String)engine.get("mei"));
         } catch (ScriptException | IOException | ParsingException e) {
-            e.printStackTrace();
+            System.err.println("MusicXML to MEI conversion failed: script evaluation failed. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+//            e.printStackTrace();
             return null;
         }
 
         if (this.getFile() != null)
             mei.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mei"); // set the filename extension of the export object to mei
 
+        System.err.println("MusicXML to MEI conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
         return mei;
-    }
-
-    /**
-     * This method reads the file "/resources/Verovio/verovio-toolkit.js" from the jar.
-     * @return
-     * @throws IOException
-     */
-    private String readLocalVerovio() throws IOException {
-        InputStream is = this.getClass().getResourceAsStream("/resources/Verovio/verovio-toolkit.js");  // open input stream
-
-        // source of the following code block: https://stackoverflow.com/questions/309424/how-to-read-convert-an-inputstream-into-a-string-in-java
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = is.read(buffer)) != -1)
-            result.write(buffer, 0, length);
-
-        is.close();                 // close input stream
-        return result.toString();   // return html code as string
-    }
-
-    /**
-     * this method returns all text from a specified URL
-     * source: https://stackoverflow.com/questions/4328711/read-url-to-string-in-few-lines-of-java-code
-     * @param url
-     * @return
-     */
-    public static String readTextFromURL(String url) {
-        try {
-            URL website = new URL(url);
-            URLConnection connection = website.openConnection();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            StringBuilder response = new StringBuilder();
-            String inputLine;
-
-            while ((inputLine = in.readLine()) != null)
-                response.append(inputLine);
-
-            in.close();
-            return response.toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 }

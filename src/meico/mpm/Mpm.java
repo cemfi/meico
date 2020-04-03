@@ -154,7 +154,9 @@ public class Mpm extends AbstractMsm {
 //        System.out.println("Parsing MPM data ...");
 
         // parse the metadata
-        this.metadata = Metadata.createMetadata(Helper.getFirstChildElement("metadata", this.getRootElement()));
+        Element metadata = Helper.getFirstChildElement("metadata", this.getRootElement());
+        if (metadata != null)
+            this.metadata = Metadata.createMetadata(metadata);
 
         // get the link to the relatedResources tag
         this.relatedResources = Helper.getFirstChildElement("relatedResources", this.getRootElement());

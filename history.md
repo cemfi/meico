@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.7.10
+- Class `meico.mpm.Mpm`, when instantiated, parses the XML data and generates an exception if no element `metadata` was found. However, this is no encoding error and should not produce error messages. This has been fixed.
+- Local Verovio update to v2.7.0-dev-02b4f36.
+- Added new class `meico.supplementary.VerovioProvider` to be used in other classes (`Mei`, `MusicXml`) as a convenient handle to get the Verovio Toolkit script.
+
+
 #### v0.7.9
 - Method `meico.audio.Audio.convertByteArray2DoubleArray()` has been generalized to also work with sample sizes other than 16 bit. The method will no longer mix the two stereo channels into one, but returns an ArrayList with both channels, one double array each.
 - Replaced the Java LAME sources in package `meico.audio` by external file `net.sourceforge.lame-3.98.4.jar`.

@@ -132,7 +132,7 @@ public class SvgCollection {
         boolean success = true;
 
         for (int i=0; i < this.svgs.size(); ++i)
-            success = success && svgs.get(i).writeSvg(name + "-" + String.format ("%04d", i) + extension);    // add the page number to the filename, format it as a 4-digit number with leading zeros
+            success = success && svgs.get(i).writeSvg(name + "-" + String.format("%04d", i) + extension);    // add the page number to the filename, format it as a 4-digit number with leading zeros
 
         return success;
     }

@@ -116,7 +116,15 @@
              */
             function render() {
                 if (oneLineScore) {                                                                                                 // print all music in one line
-                    options = {format: "mei", type: "svg", noLayout: 1, ignoreLayout: 1, scale: 40, font: "Leipzig", noFooter: true};
+                    options = {
+                        format: "mei",
+                        type: "svg",
+                        noLayout: 1,
+                        ignoreLayout: 1,
+                        scale: 40,
+                        font: "Leipzig",
+                        noFooter: true
+                    };
                     var svg = vrvToolkit.renderData(data, options);   // this generates an endless system
                     var zoomOutButton = document.getElementById("zoomOut").outerHTML;
                     var zoomInButton = document.getElementById("zoomIn").outerHTML;

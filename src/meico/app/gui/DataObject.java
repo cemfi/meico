@@ -921,12 +921,20 @@ class DataObject extends Group {
                             // do Verovio score rendering
                             Platform.runLater(() -> {
                                 Mei mei = (Mei)this.getData();
+
+                                // generate SVG collection and add it to the workspace TODO: this would be nicer instead of the stuff below that is only displaying SVGs, but it is not functional, yet, because Verovio requires a browser environment
+//                                SvgCollection svgs = ((Mei)this.data).exportSvg(Settings.useLatestVerovio, Settings.oneLineScore);  // do the conversion
+//                                if (!svgs.isEmpty()) {                                                                              // if it actually generated SVGs
+//                                    this.addOneChild(mouseEvent, svgs);                                                             // add the newly generated SvgCollection to the workspace
+//                                    this.getWorkspace().getApp().getStatuspanel().setMessage("MEI Score Rendering via Verovio: done.");
+//                                }
+//                                else {
+//                                    this.getWorkspace().getApp().getStatuspanel().setMessage("MEI Score Rendering via Verovio: failed. No SVGs generated.");
+//                                }
+
+                                // display the score in the WebView
                                 String verovio = null;                                                          // this will get the HTML code to be shown in the WebView
                                 verovio = VerovioGenerator.generate(mei.toXML(), this);                         // generate that HTML code
-
-//                                SvgCollection svgs = ((Mei)this.data).exportSvg(Settings.useLatestVerovio, Settings.oneLineScore);  // do the conversion TODO: these two line would be nicer instead of the stuff below that is only displaying SVGs, but it is not functional, yet
-//                                this.addOneChild(mouseEvent, svgs);                                                                 // add the newly generated SvgCollection to the workspace
-
                                 this.getWorkspace().getApp().getWeb().printContent(verovio, false);             // show it in the WebView
                                 if (this.getWorkspace().getApp().getWebAccordion() != null) {
                                     this.getWorkspace().getApp().getWebAccordion().setText("Score: " + this.label);  // change the title string of the WebView
