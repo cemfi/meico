@@ -1,0 +1,288 @@
+<html>
+    <head>
+        <script src="https://www.verovio.org/javascript/develop/verovio-toolkit.js" type="text/javascript"></script>    <!-- Verovio toolkit -->
+
+        <style>
+            .page_navigation {
+                background: none;
+                color: #1a1a1a;
+                font-family: sans-serif;
+                text-align: center;
+                vertical-align: center;
+                padding: 0;
+                border: none;
+                width: 100%;
+                height: 100%;
+            }
+            .button {
+                background-color: #c5c5c5;
+                border: none;
+                box-shadow: none;
+                color: #ffffff;
+                padding: 0.5em;
+                text-align: center;
+                vertical-align: center;
+                font-family: sans-serif;
+                font-size: x-large;
+                font-weight: bolder;
+                width: 100%;
+                height: 100%;
+                cursor: auto;
+                pointer-events: auto;
+            }
+            .button:hover {
+                background: #d5d5d5;
+            }
+            .button:active {
+                background: #c0c0c0;
+            }
+            .button:disabled {
+                background: #e0e0e0;
+                color: #e0e0e0;
+            }
+            .zoombutton {
+                background-color: #c5c5c5;
+                margin: 2px;
+                border: none;
+                box-shadow: none;
+                color: #ffffff;
+                padding: 0;
+                text-align: center;
+                vertical-align: top;
+                font-family: sans-serif;
+                font-size: x-large;
+                font-weight: bolder;
+                width: 1.9em;
+                height: 1.9em;
+                cursor: auto;
+                pointer-events: auto;
+            }
+            .zoombutton:hover {
+                background: #d5d5d5;
+            }
+            .zoombutton:active {
+                background: #c0c0c0;
+            }
+            .page_number {
+                font-family: sans-serif;
+                text-align: center;
+                font-size: medium;
+                width: 100%;
+            }
+        </style>
+    </head>
+
+    <body style="background-color: #f3f3f3">
+        <table id="page_navigation" class="page_navigation">            <!-- the page navigation -->
+            <tr>
+                <td>
+                    <button id="previous" type="button" class="button" title="previous page" onclick="previousPage()"> < </button>
+                </td>
+                <td style="text-align: center">
+                    <div id="page_number" class="page_number"></div>
+                    <!--<button id="saveSVGs" type="button" class="zoombutton" title="save SVGs" onclick="saveSVGs()"><span style="font-size: small;">Save<br>SVGs</span></button>-->
+                    <button id="zoomOut" type="button" class="zoombutton" title="zoom out" onclick="zoomOut()"> - </button>
+                    <button id="zoomIn" type="button" class="zoombutton" title="zoom in" onclick="zoomIn()"> + </button>
+                    <div id="svg_output" style="width: 100%" align="center"></div>
+                    <div id="verovio_version" style="width: 100%; font-size: small; font-family: sans-serif"></div>
+                </td>
+                <td>
+                    <button id="next" type="button" class="button" title="next page" onclick="nextPage()"> > </button>
+                </td>
+            </tr>
+        </table>
+
+        <script type="text/javascript">
+            var vrvToolkit = new verovio.toolkit();                     // create the vrvToolkit
+            var data = "MeiCode";                                       // meico will replace this by MEI code
+            var options;
+            var page = 1;                                               // the page indicator
+            var pageCount = 1;                                          // the page count
+            var svgElement;
+            var width;
+            var height;
+            var svgs = [];
+
+            if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                pageCount = svgs.length;
+                printSvgs();
+            }
+            else {
+                render();
+            }
+
+            /**
+             * the initial rendering when the html page is opened
+             */
+            function render() {
+                if (oneLineScore) {                                                                                                 // print all music in one line
+                    options = {
+                        format: "mei",
+                        type: "svg",
+                        noLayout: 1,
+                        ignoreLayout: 1,
+                        scale: 40,
+                        font: "Leipzig",
+                        noFooter: true
+                    };
+                    var svg = vrvToolkit.renderData(data, options);   // this generates an endless system
+                    var zoomOutButton = document.getElementById("zoomOut").outerHTML;
+                    var zoomInButton = document.getElementById("zoomIn").outerHTML;
+                    var verovioVersion = document.getElementById("verovio_version").outerHTML;
+                    document.getElementById("page_navigation").parentElement.innerHTML = "<div style='position: fixed; vertical-align: top; background-color: transparent'>" + zoomOutButton + zoomInButton + "</div><br><br>" + svg + "<div style='text-align: left'>" + verovioVersion + "</div>";   // replace the page_navigation by this score, keep the zoom buttons at the top and the Verovio version at the bottom
+                }
+                else {                                                                                                              // page-wise rendering
+                    options = {
+                        allPages: 0,
+                        format: "mei",
+                        type: "svg",
+                        adjustPageHeight: 0,
+                        breaks: "auto",
+                        evenNoteSpacing: 0,
+                        landscape: 0,
+                        noLayout: 0,
+                        ignoreLayout: 0,
+                        scale: 40,
+                        font: "Leipzig",
+                        noFooter: true
+                    };
+                    vrvToolkit.loadData(data);                                                                                      // load the music
+                    vrvToolkit.setOptions(options);                                                                                 // set the Verovio options
+                    pageCount = vrvToolkit.getPageCount();                                                                          // get the page count
+                    var svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    updateNavigation();                                                                                             // update page navigation bar
+                }
+                svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
+                width = svgElement.getAttribute("width").slice(0, -2);                                                              // get its width
+                height = svgElement.getAttribute("height").slice(0, -2);                                                            // get its height
+                layoutSvg();
+                document.getElementById("verovio_version").innerText = "Rendered with Verovio JavaScript Toolkit v" + vrvToolkit.getVersion();
+            }
+
+            /**
+             * this is called from the Java side (in DataObject.java) to request one SVG page, i.e. one element of the svgs array
+             */
+            function getSvgPage(index) {
+                if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                    if ((index >= 0) && (index < svgs.length)) {
+                        return svgs[index];
+                    }
+                    return "";
+                }
+                if (oneLineScore) {
+                    vrvToolkit.renderData(data, options);
+                }
+                return vrvToolkit.renderPage(index);
+            }
+
+            /**
+             * display an SVG in the HTML
+             */
+            function printSvgs() {
+                if (oneLineScore) {                                                                                                 // print all music in one line
+                    var zoomOutButton = document.getElementById("zoomOut").outerHTML;
+                    var zoomInButton = document.getElementById("zoomIn").outerHTML;
+                    var verovioVersion = document.getElementById("verovio_version").outerHTML;
+                    document.getElementById("page_navigation").parentElement.innerHTML = "<div style='position: fixed; vertical-align: top; background-color: transparent'>" + zoomOutButton + zoomInButton + "</div><br><br>" + svgs[0] + "<div style='text-align: left'>" + verovioVersion + "</div>";   // replace the page_navigation by this score, keep the zoom buttons at the top and the Verovio version at the bottom
+                }
+                else {                                                                                                              // page-wise rendering
+                    pageCount = svgs.length;                                                                                         // get the page count
+                    document.getElementById("svg_output").innerHTML = svg[page-1];                                                  // print it
+                    updateNavigation();                                                                                             // update page navigation bar
+                }
+                svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
+                width = svgElement.getAttribute("width").slice(0, -2);                                                              // get its width
+                height = svgElement.getAttribute("height").slice(0, -2);                                                            // get its height
+                layoutSvg();
+                document.getElementById("verovio_version").innerText = "Rendered with Verovio JavaScript Toolkit v" + vrvToolkit.getVersion();
+            }
+
+            /**
+             * set the width and visual appearence of the svg / music sheet
+             */
+            function layoutSvg() {
+                svgElement.setAttribute("width", String(width) + "px");
+                svgElement.setAttribute("height", String(height) + "px");
+
+                if (!oneLineScore) {                                                                                                // for a page-wise score rendering
+                    svgElement.style.backgroundColor = "#fffcf7";                                                                   // set the page's  background color
+                    svgElement.style.margin = "15px";                                                                               // and margin
+                    svgElement.style.boxShadow = "0 2px 15px 1px #c5c5c5";                                                          // and shadow
+                }
+            }
+
+            /**
+             * updates the page number, enables and disables the navigation buttons
+             */
+            function updateNavigation() {
+                document.getElementById("page_number").innerText = "Page " + page + " / " + pageCount;
+                document.getElementById("previous").disabled = (page <= 1);
+                document.getElementById("next").disabled = (page >= pageCount);
+            }
+            /**
+             * go to next page
+             */
+            function nextPage() {
+                if (page < pageCount) {
+                    page++;
+
+                    var svg;
+                    if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                        svg = svgs[page];
+                    }
+                    else {
+                        svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                    }
+
+                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    svgElement = document.getElementsByTagName("svg")[0];                                                           // get the svg element in the html tree
+                    layoutSvg();
+                    updateNavigation();
+                }
+            }
+
+            /**
+             * go to previous page
+             */
+            function previousPage() {
+                if (page > 1) {
+                    page--;
+
+                    var svg;
+                    if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
+                        svg = svgs[page];
+                    }
+                    else {
+                        svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                    }
+
+                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                    svgElement = document.getElementsByTagName("svg")[0];                                                           // get the svg element in the html tree
+                    layoutSvg();
+                    updateNavigation();
+                }
+            }
+
+            /**
+             * zoom the score out
+             */
+            function zoomOut() {
+                width *= 0.9;
+                height *= 0.9;
+                svgElement.setAttribute("width", String(width) + "px");
+                svgElement.setAttribute("height", String(height) + "px");
+            }
+
+            /**
+             * zoom the score in
+             */
+            function zoomIn() {
+                width *= 1.1;
+                height *= 1.1;
+                svgElement.setAttribute("width", String(width) + "px");
+                svgElement.setAttribute("height", String(height) + "px");
+            }
+        </script>
+    </body>
+</html>
