@@ -20,16 +20,11 @@ import meico.mpm.elements.styles.defs.DynamicsDef;
 import meico.supplementary.KeyValue;
 import meico.mpm.elements.Performance;
 import meico.msm.Goto;
-import meico.supplementary.VerovioProvider;
 import meico.svg.SvgCollection;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineFactory;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import javax.xml.parsers.ParserConfigurationException;
 
 /**
@@ -215,29 +210,30 @@ public class Mei extends meico.xml.XmlBase {
         SvgCollection svgs = new SvgCollection();                               // create an svg collection
         svgs.setTitle(this.getTitle());                                         // set the title of the svg collection to the title of this mei
 
-        // this is just a debug output for development
+        // this code block is just a debug output for development
 //        List<ScriptEngineFactory> engines = (new ScriptEngineManager()).getEngineFactories();
 //        for (ScriptEngineFactory f: engines) {
 //            System.out.println(f.getLanguageName()+" "+f.getEngineName()+" "+f.getNames().toString()+" "+f.getLanguageVersion());
 //        }
 
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("JavaScript");
-
-        String verovio = (useOnlineVerovio) ? VerovioProvider.getVerovio(this) : VerovioProvider.getLocalVerovio(this); // get the Verovio Toolkit script
-        if (verovio == null) {                                                  // if this fails
-            System.err.println("MEI to SVG conversion failed: Verovio Toolkit not available. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-            return svgs;                                                        // return empty svgs collection
-        }
-
-        engine.put("mei", this.toXML());
-        try {
-            engine.eval(verovio);   // TODO: this fails because Verovio requires a browser environment
-            // TODO: do the meaningful stuff ...
-        } catch (ScriptException e) {
-            System.err.println("MEI to SVG conversion failed: script evaluation failed. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-            return svgs;
-        }
+        // non-functional code
+//        ScriptEngineManager manager = new ScriptEngineManager();
+//        ScriptEngine engine = manager.getEngineByName("JavaScript");
+//
+//        String verovio = (useOnlineVerovio) ? VerovioProvider.getVerovio(this) : VerovioProvider.getLocalVerovio(this); // get the Verovio Toolkit script
+//        if (verovio == null) {                                                  // if this fails
+//            System.err.println("MEI to SVG conversion failed: Verovio Toolkit not available. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+//            return svgs;                                                        // return empty svgs collection
+//        }
+//
+//        engine.put("mei", this.toXML());
+//        try {
+//            engine.eval(verovio);   // TODO: this fails because Verovio requires a browser environment
+//            // TODO: do the meaningful stuff ...
+//        } catch (ScriptException e) {
+//            System.err.println("MEI to SVG conversion failed: script evaluation failed. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+//            return svgs;
+//        }
 
         System.out.println("MEI to SVG conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
 

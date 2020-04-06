@@ -32,9 +32,9 @@ There are several features open, though. Currently, meico ignores any MEI data t
 
 ### How to use meico?
 
-Meico can be used in several different ways. The jar file (see the [latest release](https://github.com/cemfi/meico/releases/latest)) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.8 (or higher) Runtime Environment installed on your system.
+Meico can be used in several different ways. The file `meicoApp.jar` (see the [latest release](https://github.com/cemfi/meico/releases/latest)) is a standalone runnable Java program. We have tested it under Windows, Mac OS and Linux. The only prerequisite is that you have a Java 1.8 (or higher) Runtime Environment installed on your system.
 
-Starting the standalone jar without any command line options will start the window mode of meico. Simply drag your files into the window. The startup screen lists the supported input file formats. You can find context information on each interface element in the statusbar. If you have several `mdiv` elements (movements) in your MEI document you will get an individual MSM/MPM instance for each movement on conversion. Conversion from MIDI to audio may take some time when it is a long piece. To get better quality sounds than Java's built-in default instruments (those used for Midi playback), we recommend using a higher-quality soundbank, such as one of [these soundfonts](https://sourceforge.net/projects/androidframe/files/soundfonts/). Simply drag and drop them on the workspace and activate them via their menu or double click. XSL files are used in the same way. If you want to apply an XSL Transform to your MEI or other XML data, drop the XSL on the workspace, activate it and transform. Soundfonts and XSLTs can also be set as standard so that this loading procedure is not necessary on the next startup.
+Starting the standalone application `meicoApp.jar` without any command line options will start the window mode. Simply drag your files into the window. The startup screen lists the supported input file formats. You can find context information on each interface element in the statusbar. If you have several `mdiv` elements (movements) in your MEI document you will get an individual MSM/MPM pair for each movement on conversion. Conversion from MIDI to audio may take some time when it is a long piece. To get better quality sounds than Java's built-in default instruments, we recommend using a higher-quality soundbank, such as one of [these soundfonts](https://sourceforge.net/projects/androidframe/files/soundfonts/). Simply drag and drop them into the workspace and activate them via their menu or double click. XSL files are used in the same way. If you want to apply an XSL Transform to your MEI or other XML data, drop the XSL on the workspace, activate it and transform. Soundfonts and XSLTs can also be set as standard so that this loading procedure is not necessary on the next startup.
 
 ![A screenshot of the meico graphical user interface.](https://github.com/cemfi/meico/blob/master/figures/meico-screenshot_01.png)
 
@@ -68,9 +68,7 @@ Usage: `java -jar meico.jar [OPTIONS] FILE`
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
 
-The third way of using meico is as a Java programming library. Its `Mei`, `Msm`, `Mpm`, `Midi`, and `Audio` classes are the most important to work with. Class [`meico.app.Main`](https://github.com/cemfi/meico/tree/master/src/meico/app/Main.java) demonstrates the use of meico (method `commandLineMode()` is best suited as tutorial). The [Javadoc](http://cemfi.github.io/meico/) is provided with this repository.
-
-With `meicoPy.py` we have also a demo script that shows the usage of [meico in Python](https://github.com/cemfi/meico/tree/master/meicoPy). We further provide a Python3-based [REST API for meico](https://github.com/cemfi/meico/tree/master/rest). However, both have not been updated for a while!
+The third way of using meico is as a Java programming library. For this, use the "headless" meico framework `meico.jar` that is free from application-related overhead and dependencies. Its `Mei`, `Msm`, `Mpm`, `Midi`, and `Audio` classes are the most important to work with. In the `meicoApp` branch we demonstrate its use, the [commandline app](https://github.com/cemfi/meico/blob/meicoApp/src/meico/app/Main.java) is probably the best way to start with. A [Javadoc](http://cemfi.github.io/meico/) is provided with this repository.
 
 ### Build Instructions
 
@@ -97,11 +95,8 @@ Meico makes use of the following third party libraries:
 - [Saxon](http://saxon.sourceforge.net/) v9.8.0.14 HE by Saxonica (founder Michael Kay), Mozilla Public License 1.0 (MPL), Mozilla Public License 2.0 (MPL 2.0).
 - [JSON.simple](https://cliftonlabs.github.io/json-simple/) v3.0.2 by Yidong Fang, Chris Nokleberg, Dave Hughes, and Davin Loegering, Apache License 2.0.
 - [Java LAME](https://github.com/nwaldispuehl/java-lame) v3.98.4 by Ken Händel and Nico Waldispühl, GNU LGPL version 3.0.
-- [Font Awesome](https://fontawesome.com/) v5.2.0 (the free solid icons font `fa-solid-900.ttf`), Fonticons, Inc., [SIL OFL 1.1 License](https://scripts.sil.org/OFL).
-- [Verovio JavaScript Toolkit](https://www.verovio.org/index.xhtml) v2.7.0-dev-02b4f36 by Etienne Darbellay, Jean-François Marti, Laurent Pugin, Rodolfo Zitellini and others, GNU Lesser General Public License (LGPL) 3.0.
 - [Midi2WavRenderer](https://github.com/cemfi/meico/tree/master/src/meico/midi/Midi2AudioRenderer.java) by Karl Helgason, copyright notice in the class header.
 - [Gervill Software Sound Synthesizer](https://sourceforge.net/projects/rasmusdsp/files/gervill/Gervill%201.0/) v1.0.1 by Karl Helgason, GPL 2.0.
-- [JavaFX](https://gluonhq.com/products/javafx/) v11.0.2, GPL 2.0.
 
 We publish meico under GNU GPL version 3.0. Meico's development was part of the ZenMEM project funded by the German Federal Ministry of Education and Research (2015-2019, funding code 01UG1414A–C). All MPM-related parts of meico were part of an R&D project that was funded by the [Fritz Thyssen Foundation](https://www.fritz-thyssen-stiftung.de/en/) (2019-2022). If you integrate meico or parts of it with your project make sure that you do not conflict with any of the above licenses.
 

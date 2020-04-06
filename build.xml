@@ -80,11 +80,6 @@
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
-    <pathelement location="${basedir}/externals/javafx.base.jar"/>
-    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
-    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
-    <pathelement location="${basedir}/externals/javafx.media.jar"/>
-    <pathelement location="${basedir}/externals/javafx.web.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
@@ -96,11 +91,6 @@
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
-    <pathelement location="${basedir}/externals/javafx.base.jar"/>
-    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
-    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
-    <pathelement location="${basedir}/externals/javafx.media.jar"/>
-    <pathelement location="${basedir}/externals/javafx.web.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
@@ -112,11 +102,6 @@
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
-    <pathelement location="${basedir}/externals/javafx.base.jar"/>
-    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
-    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
-    <pathelement location="${basedir}/externals/javafx.media.jar"/>
-    <pathelement location="${basedir}/externals/javafx.web.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
@@ -129,11 +114,6 @@
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
     <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
-    <pathelement location="${basedir}/externals/javafx.base.jar"/>
-    <pathelement location="${basedir}/externals/javafx.controls.jar"/>
-    <pathelement location="${basedir}/externals/javafx.graphics.jar"/>
-    <pathelement location="${basedir}/externals/javafx.media.jar"/>
-    <pathelement location="${basedir}/externals/javafx.web.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
   </path>
 
@@ -212,11 +192,6 @@
       <zipfileset src="${basedir}/externals/saxon9he.jar"/>
       <zipfileset src="${basedir}/externals/gervill.jar"/>
       <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
-      <zipfileset src="${basedir}/externals/javafx.base.jar"/>
-      <zipfileset src="${basedir}/externals/javafx.controls.jar"/>
-      <zipfileset src="${basedir}/externals/javafx.graphics.jar"/>
-      <zipfileset src="${basedir}/externals/javafx.media.jar"/>
-      <zipfileset src="${basedir}/externals/javafx.web.jar"/>
       <zipfileset src="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
       <manifest>
         <attribute name="Main-Class" value="meico.app.Main"/>

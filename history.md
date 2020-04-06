@@ -1,6 +1,20 @@
 ### Version History
 
 
+#### v0.8.0
+- Reorganization of the meico programming library and application code as well as its release assets.
+    - Meico is basically a programming library. All content of package `meico.app` is example code for meico's usage in application projects. However, for the graphical meico application certain JavaFX dependencies had to be added to meico which complicated development for other applications that do not rely on JavaFX. Thus, we decided to split the meico code base into the core functionality and the example applications.
+    - The release assets include 
+        - `meico.jar` (the headless core functionality to be used by other development projects) and 
+        - `meicoApp.jar` (the standalone runnable `jar` with the commandline and graphical application, it includes `meico.jar`).
+    - The codebase has been reorganized accordingly.
+        - The `master` branch contains the headless meico, no application code or application-related dependencies. This is all you need to develop your own meico application.
+        - The `meicoApp` branch contains the `meico.app` package and all other demo applications (meicoPy and the REST demo).
+    - Class `meico.Meico` has been stripped down. It no longer contains any launcher code, only meico's current version number. MeicoApp lanches from its own main class `meico.app.Main`.
+    - Class `meico.supplementary.VerovioProvider` as been removed. Verovio cannot be part of the headless meico base. It works only with a browser environment and that is only present in meicoApp (which contains Verovio).
+    - File `README.md` has been updated. Livenses are also a bit different for those who use the headless meico package as JavaFX, Verovio and Font Awesome are used only in meicoApp and not in the base package.
+
+
 #### v0.7.10
 - Class `meico.mpm.Mpm`, when instantiated, parses the XML data and generates an exception if no element `metadata` was found. However, this is no encoding error and should not produce error messages. This has been fixed.
 - Local Verovio update to v2.7.0-dev-02b4f36.

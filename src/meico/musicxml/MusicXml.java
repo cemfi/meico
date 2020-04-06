@@ -1,15 +1,10 @@
 package meico.musicxml;
 
-import meico.mei.Helper;
 import meico.mei.Mei;
-import meico.supplementary.VerovioProvider;
 import meico.xml.XmlBase;
 import nu.xom.*;
 import org.xml.sax.SAXException;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.URL;
@@ -136,36 +131,38 @@ public class MusicXml extends XmlBase {
      * TODO: The current implementation based on Verovio does not work! And even if, the conversion of MusicXML features to MEI would be rather limited.
      */
     public Mei exportMei(boolean useOnlineVerovio) {
-        long startTime = System.currentTimeMillis();                            // we measure the time that the conversion consumes
-        System.out.println("\nConverting " + ((this.file != null) ? this.file.getName() : "MusicXml data") + " to MEI.");
+        return null;
 
-        ScriptEngineManager manager = new ScriptEngineManager();                // init Script Manager
-        ScriptEngine engine = manager.getEngineByName("JavaScript");            // create Script Engine for JavaScript
-
-        String verovio = (useOnlineVerovio) ? VerovioProvider.getVerovio(this) : VerovioProvider.getLocalVerovio(this); // get the Verovio Toolkit script
-        if (verovio == null) {
-            System.err.println("MusicXML to MEI conversion failed: Verovio Toolkit not available. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-            return null;
-        }
-
-        engine.put("data", this.toXML());
-        Mei mei = null;
-
-        try {
-            engine.eval(verovio);                                                                               // this imports Verovio in the script engine's context, however, TODO: this fails because Verovio requires a browser environment
-            String script = "var vrvToolkit = new verovio.toolkit(); var mei = vrvToolkit.getMEI(0, true);";    // getMEI(int:pageNumber, bool:trueMei)
-            engine.eval(script);
-            mei = new Mei((String)engine.get("mei"));
-        } catch (ScriptException | IOException | ParsingException e) {
-            System.err.println("MusicXML to MEI conversion failed: script evaluation failed. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-//            e.printStackTrace();
-            return null;
-        }
-
-        if (this.getFile() != null)
-            mei.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mei"); // set the filename extension of the export object to mei
-
-        System.err.println("MusicXML to MEI conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-        return mei;
+//        long startTime = System.currentTimeMillis();                            // we measure the time that the conversion consumes
+//        System.out.println("\nConverting " + ((this.file != null) ? this.file.getName() : "MusicXml data") + " to MEI.");
+//
+//        ScriptEngineManager manager = new ScriptEngineManager();                // init Script Manager
+//        ScriptEngine engine = manager.getEngineByName("JavaScript");            // create Script Engine for JavaScript
+//
+//        String verovio = (useOnlineVerovio) ? VerovioProvider.getVerovio(this) : VerovioProvider.getLocalVerovio(this); // get the Verovio Toolkit script
+//        if (verovio == null) {
+//            System.err.println("MusicXML to MEI conversion failed: Verovio Toolkit not available. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+//            return null;
+//        }
+//
+//        engine.put("data", this.toXML());
+//        Mei mei = null;
+//
+//        try {
+//            engine.eval(verovio);                                                                               // this imports Verovio in the script engine's context, however, TODO: this fails because Verovio requires a browser environment
+//            String script = "var vrvToolkit = new verovio.toolkit(); var mei = vrvToolkit.getMEI(0, true);";    // getMEI(int:pageNumber, bool:trueMei)
+//            engine.eval(script);
+//            mei = new Mei((String)engine.get("mei"));
+//        } catch (ScriptException | IOException | ParsingException e) {
+//            System.err.println("MusicXML to MEI conversion failed: script evaluation failed. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+////            e.printStackTrace();
+//            return null;
+//        }
+//
+//        if (this.getFile() != null)
+//            mei.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mei"); // set the filename extension of the export object to mei
+//
+//        System.err.println("MusicXML to MEI conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+//        return mei;
     }
 }
