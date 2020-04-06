@@ -1,9 +1,0 @@
-name: meico
-
-channels:
-  - conda-forge
-
-dependencies:
-  - gunicorn
-  - hug
-  - jpype1
