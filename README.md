@@ -40,7 +40,7 @@ Starting the standalone application `meicoApp.jar` without any command line opti
 
 The command line mode expects the following command line options:
 
-Usage: `java -jar meico.jar [OPTIONS] FILE`
+Usage: `java -jar meicoApp.jar [OPTIONS] FILE`
 
 | Option                            | Description                                                                                                                         |
 |-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
