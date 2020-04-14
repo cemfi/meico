@@ -488,7 +488,7 @@ class DataObject extends Group {
             }
         }
         else if (this.data instanceof Msm) {
-            String[] leftItems = {"Show", "Validate", "Remove Rests", "Expand Repetitions", "Reload", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Validate", "Add IDs", "Remove Rests", "Expand Repetitions", "Reload", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -1164,6 +1164,16 @@ class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.validate();
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Add IDs":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage(((Msm)this.getData()).addIds() + " IDs added.");
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
