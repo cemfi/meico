@@ -1229,4 +1229,29 @@ public class Msm extends AbstractMsm {
         }
         return Math.round(Double.parseDouble(dateAtt.getValue()));                                     // Math.round(double) returns long
     }
+
+    /**
+     * this method adds xml:ids to all note and rest elements, as far as they do not have an id
+     * @return the generated ids count
+     */
+    public synchronized int addIds() {
+        System.out.print("Adding IDs to MSM:");
+        Element root = this.getRootElement();
+        if (root == null) {
+            System.err.println(" Error: no root element found");
+            return 0;
+        }
+
+        Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest') and not(@xml:id)]");
+        for (int i = 0; i < e.size(); ++i) {                                    // go through all the nodes
+            String uuid = "meico_" + UUID.randomUUID().toString();              // generate new ids for them
+            Attribute a = new Attribute("id", uuid);                            // create an attribute
+            a.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");      // set its namespace to xml
+            ((Element) e.get(i)).addAttribute(a);                               // add attribute to the node
+        }
+
+        System.out.println(" done");
+
+        return e.size();
+    }
 }

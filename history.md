@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.1
+- New functionality added to class `meico.msm.Msm`: method `addIds()` adds `xml:id` to each `note` and `rest` element that does not have one. MeicoApp has been updated accordingly.
+
+
 #### v0.8.0
 - Reorganization of the meico programming library and application code as well as its release assets.
     - Meico is basically a programming library. All content of package `meico.app` is example code for meico's usage in application projects. However, for the graphical meico application certain JavaFX dependencies had to be added to meico which complicated development for other applications that do not rely on JavaFX. Thus, we decided to split the meico code base into the core functionality and the example applications.

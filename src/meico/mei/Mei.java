@@ -3562,7 +3562,7 @@ public class Mei extends meico.xml.XmlBase {
      * @return the generated ids count
      */
     public synchronized int addIds() {
-        System.out.print("Adding IDs:");
+        System.out.print("Adding IDs to MEI:");
         Element root = this.getRootElement();
         if (root == null) {
             System.err.println(" Error: no root element found");
