@@ -712,9 +712,12 @@ public class Msm extends AbstractMsm {
             track.add(channelPrefix);                                                                           // add the event to the track
 
             // parse the score, keySignatureMap, timeSignatureMap, markerMap to midi
-            if (generateProgramChanges)
-                generateProgramChanges = !this.parseProgramChangeMap(part, track, chan, exportExpressiveMidi);
-            this.processPartName(part, track, chan, generateProgramChanges);                                    // scan the part attribute name for a known string to create a gm program change and instrument name event ... but only if there is no programChangeMap providing an initial program change number
+            boolean reallyGenerateProgramChanges = generateProgramChanges;
+            if (reallyGenerateProgramChanges) {
+                reallyGenerateProgramChanges = !this.parseProgramChangeMap(part, track, chan, exportExpressiveMidi);
+            }
+            this.processPartName(part, track, chan, reallyGenerateProgramChanges);                              // scan the part attribute name for a known string to create a gm program change and instrument name event ... but only if there is no programChangeMap providing an initial program change number
+
 
             // if there are local meta events to be generated
             this.parseKeySignatureMap(part, track, exportExpressiveMidi);                                       // parse keySignatureMap
@@ -916,8 +919,9 @@ public class Msm extends AbstractMsm {
 
         String name = part.getAttributeValue("name");
 
-        if (generateProgramChanges)
+        if (generateProgramChanges) {
             track.add(EventMaker.createProgramChange(channel, 0, name));                                // add program change event
+        }
         track.add(EventMaker.createTrackName(0, name));                                                 // add track name event to the track
     }
 

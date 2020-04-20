@@ -1,11 +1,11 @@
 package meico;
 
 /**
- * This class provides the current version number of meico and a convenient way to launch meico's desktop application.
+ * This class provides the current version number of meico.
  * @author Axel Berndt
  */
 public class Meico {
-    public static final String version = "0.8.1";
+    public static final String version = "0.8.2";
 
     public static void main(String[] args) {
         System.out.println("meico v" + Meico.version);

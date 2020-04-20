@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.2
+- Bugfix in class `meico.msm.Msm`: If the MSM provided a `programChangeMap` for each `part`, only the first was correctly rendered to MIDI. This has been fixed.
+
+
 #### v0.8.1
 - New functionality added to class `meico.msm.Msm`: method `addIds()` adds `xml:id` to each `note` and `rest` element that does not have one. MeicoApp has been updated accordingly.
 
