@@ -76,6 +76,7 @@ class Settings {
     protected static boolean Mei2Msm_msmCleanup = true;
     protected static double Msm2Midi_defaultTempo = 120;                // default tempo of the MIDI sequence in bpm
     protected static boolean Msm2Midi_generateProgramChanges =  true;   // generate program change events
+    protected static boolean OutputExpressiveMsmWhenExpressiveMidiRendering = false; // when an expressive MIDI is generated, internally also an expressive MSM is made; set this flag true to get the expressive MSM
 
     // Pitches settings
     protected static boolean savePitchesWithPrettyPrint = false;        // text formatting of the JSON (if true, it consumes far more memory)
@@ -235,7 +236,7 @@ class Settings {
         expan.setSelected(!Settings.Mei2Msm_ignoreExpansions);
         expan.setTextFill(Color.GRAY);
 
-        // default MIDI temo
+        // default MIDI tempo
         SpinnerValueFactory<Double> tempoValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1, 10000, Settings.Msm2Midi_defaultTempo);
         Spinner<Double> tempo = new Spinner<>();
         tempo.setValueFactory(tempoValueFactory);
@@ -261,6 +262,11 @@ class Settings {
         CheckBox prog = new CheckBox("Generate MIDI program change events, tries to match staff names with instruments in General MIDI (default is checked)");
         prog.setSelected(Settings.Msm2Midi_generateProgramChanges);
         prog.setTextFill(Color.GRAY);
+
+        // expressive MSM output when rendering expressive MIDI
+        CheckBox expressiveMsm = new CheckBox("During expressive MIDI rendering also output the expressive MSM (an MSM enrichted with performance data).");
+        expressiveMsm.setSelected(Settings.OutputExpressiveMsmWhenExpressiveMidiRendering);
+        expressiveMsm.setTextFill(Color.GRAY);
 
         // Default soundbank
         TextField soundbankField = new TextField((Settings.soundbank == null) ? "Java Default Soundbank" : Settings.soundbank.getAbsolutePath());
@@ -417,6 +423,7 @@ class Settings {
             Settings.Mei2Msm_ignoreExpansions = !expan.isSelected();
             Settings.Mei2Msm_dontUseChannel10 = channel10.isSelected();
             Settings.Msm2Midi_generateProgramChanges = prog.isSelected();
+            Settings.OutputExpressiveMsmWhenExpressiveMidiRendering = expressiveMsm.isSelected();
             Settings.Msm2Midi_defaultTempo = tempo.getValue();
             Settings.savePitchesWithPrettyPrint = jsonPretty.isSelected();
             Settings.oneLineScore = oneLineScore.isSelected();
@@ -443,7 +450,7 @@ class Settings {
         container.setAlignment(Pos.CENTER_LEFT);
         container.setPadding(new Insets(spacing, spacing, spacing, spacing));
         container.setSpacing(spacing * 1.25);
-        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, soundbankPane, xsltPane, schemaPane, jsonPretty, oneLineScore, latestVerovio, separator3, closePane);
+        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, expressiveMsm, soundbankPane, xsltPane, schemaPane, jsonPretty, oneLineScore, latestVerovio, separator3, closePane);
 
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setStyle(Settings.BACKGROUND_GRAY);
@@ -517,6 +524,9 @@ class Settings {
                 case "generateProgramChanges":
                     Settings.Msm2Midi_generateProgramChanges = !line.equals("0");
                     break;
+                case "expressiveMsmOutput":
+                    Settings.OutputExpressiveMsmWhenExpressiveMidiRendering = !line.equals("0");
+                    break;
                 case "tempo":
                     Settings.Msm2Midi_defaultTempo = Double.parseDouble(line);
                     break;
@@ -567,6 +577,7 @@ class Settings {
                 + "\n\n# resolveExpansions\n" + (Settings.Mei2Msm_ignoreExpansions ? "0" : "1")
                 + "\n\n# dontUseChannel10\n" + (Settings.Mei2Msm_dontUseChannel10 ? "1" : "0")
                 + "\n\n# generateProgramChanges\n" + (Settings.Msm2Midi_generateProgramChanges ? "1" : "0")
+                + "\n\n# expressiveMsmOutput\n" + (Settings.OutputExpressiveMsmWhenExpressiveMidiRendering ? "1" : "0")
                 + "\n\n# tempo\n" + Settings.Msm2Midi_defaultTempo
                 + "\n\n# prettyJson\n" + (Settings.savePitchesWithPrettyPrint ? "1" : "0")
                 + "\n\n# oneLineScore\n" + (Settings.oneLineScore ? "1" : "0")

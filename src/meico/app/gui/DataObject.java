@@ -1312,9 +1312,16 @@ class DataObject extends Group {
 
                             Performance performance = this.getWorkspace().getActivePerformance();           // find the currently active performance to generate an expressive midi sequence
                             if (performance != null) {
-                                Midi midi = ((Msm) this.getData()).exportExpressiveMidi(performance, true); // generate the expressive midi
+                                Msm msm = (Msm) this.getData();
+                                Msm expressiveMsm = performance.perform(msm);
+                                Midi midi = expressiveMsm.exportExpressiveMidi();
                                 if ((midi != null) && (this.getWorkspace() != null)) {                      // it is possible that the data object has been removed from workspace in the meantime or that no midi object has been generated
-                                    this.addOneChild(mouseEvent, midi);
+                                    ArrayList<Object> objects = new ArrayList<>();
+                                    objects.add(midi);
+                                    if (Settings.OutputExpressiveMsmWhenExpressiveMidiRendering) {
+                                        objects.add(expressiveMsm);
+                                    }
+                                    this.addSeveralChildren(mouseEvent, objects);
                                     this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MSM to expressive MIDI: done.");
                                 }
                             } else {

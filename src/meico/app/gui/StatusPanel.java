@@ -1,5 +1,6 @@
 package meico.app.gui;
 
+import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
@@ -38,7 +39,9 @@ class StatusPanel extends HBox {
      */
     public synchronized void setMessage(String message) {
         if (message != null)
-            this.message.setText(message);
+            Platform.runLater(() -> {               // status panel output should be done in a JavaFX thread
+                this.message.setText(message);
+            });
     }
 
     /**
