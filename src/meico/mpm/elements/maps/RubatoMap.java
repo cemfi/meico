@@ -324,6 +324,7 @@ public class RubatoMap extends GenericMap {
     private static double computeRubatoTransformation(double date, RubatoData rubatoData) {
         double localDate = (date - rubatoData.startDate) % rubatoData.frameLength;      // compute the position of the map element within the rubato frame
         double d = (Math.pow(localDate / rubatoData.frameLength, rubatoData.intensity) * (rubatoData.earlyEnd - rubatoData.lateStart) + rubatoData.lateStart) * rubatoData.frameLength;
+//        System.out.println("Rubato: date=" + date + ", startDate=" + rubatoData.startDate + ", frameLength=" + rubatoData.frameLength + ", localDate=" + localDate + ", d=" + d);
         return date + d - localDate;
     }
 
@@ -382,7 +383,8 @@ public class RubatoMap extends GenericMap {
                         || (!rd.loop && (dateEnd >= (rd.startDate + rd.frameLength))))          // if this is a oneshot rubato and map entry is already after its frame end
                     break;                                                                      // stop here and find the next rubato element first before continuing
 
-                pd.getValue().setValue(Double.toString(RubatoMap.computeRubatoTransformation(dateEnd, rd)));
+                if (dateEnd >= rd.startDate)                                                    // make sure this endDate is not a remnant that was after the previous rubato but before the current
+                    pd.getValue().setValue(Double.toString(RubatoMap.computeRubatoTransformation(dateEnd, rd)));
 
                 pendingDurations.remove(pd);
                 --i;

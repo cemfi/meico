@@ -175,7 +175,7 @@ public class DynamicsData {
 
     /**
      * This method generates a list of [date, volume] tuplets that can be rendered into a sequence of channelVolume events.
-     * @param maxStepSize this sets the maximum step size between two adjacent tuplets
+     * @param maxStepSize this sets the maximum volume step size between two adjacent tuplets
      * @return
      */
     public ArrayList<double[]> getSubNoteDynamicsSegment(double maxStepSize) {
@@ -189,9 +189,9 @@ public class DynamicsData {
         series.add(this.getDateDynamics(0.0));                  // we start with the first value
         series.add(this.getDateDynamics(1.0));                  // and end up with the last value
 
-        // generate further tuplets inbetween each two adjacent tuplets as long as their value difference is greater than maxStepSize; this here is basically a depth-first algorithm
+        // generate further tuplets in-between each two adjacent tuplets as long as their value difference is greater than maxStepSize; this here is basically a depth-first algorithm
         for (int i = 0; i < ts.size() - 1; ++i) {
-            while ((series.get(i+1)[1] - series.get(i)[1]) > maxStepSize) {
+            while (Math.abs(series.get(i+1)[1] - series.get(i)[1]) > maxStepSize) {
                 double t = (ts.get(i) + ts.get(i+1)) * 0.5;
                 ts.add(i+1, t);
                 series.add(i+1, this.getDateDynamics(t));

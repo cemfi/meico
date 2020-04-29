@@ -1004,10 +1004,9 @@ public class Msm extends AbstractMsm {
      * @param exportExpressiveMidi
      */
     private void parseChannelVolumeMap(Element part, Track track, boolean exportExpressiveMidi) {
-        if (!exportExpressiveMidi)      // channelVolumeMap is exported only in expressive MIDI mode
-            return;
-
-        if ((part.getFirstChildElement("dated") == null) || (part.getAttribute("midi.channel") == null))
+        if (!exportExpressiveMidi                               // channelVolumeMap is exported only in expressive MIDI mode
+                || (part.getFirstChildElement("dated") == null)
+                || (part.getAttribute("midi.channel") == null))
             return;
 
         int chan = Integer.parseInt(part.getAttributeValue("midi.channel"));                                        // get the midi channel number

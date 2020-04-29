@@ -399,7 +399,34 @@ public class DynamicsMap extends GenericMap {
             if (dd == null)
                 continue;
 
-            // apply dynamics to map elements
+            if (chanVolMap != null) {                                                           // if we have a non-null channelVolumeMap
+                // generate an MSM representation of the series of volume/expression controller events for sub-note dynamics
+                if (dd.subNoteDynamics && (dynamicsIndex < (this.size() - 1))) {                // if sub-note dyynamics is active for this dynamics instruction and this is not the last dynamics instruction in the dynamicsMap
+                    DynamicsMap.generateSubNoteDynamics(dd, chanVolMap);                        // render this dynamics instruction's curve segment to the channelVolumeMap
+
+                    for (; mapIndex < map.size(); ++mapIndex) {                                 // traverse the map elements
+                        KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);        // get the current map entry
+                        mapEntry.getValue().addAttribute(new Attribute("velocity", "100.0"));   // all velocities are set to 100.0, loudness is controlled via a series of controller events
+                    }
+
+                    continue;
+                }
+
+                // the remainder is for non-sub-note dynamics
+
+                // regardless of constant or continuous dynamics transition, with no sub-note dynamics do this;
+                // and this is also done when we reached the last dynamics instruction because creating a sub-note dynamics series of events until eternity (Double.MAX_DOUBLE) makes no sense;
+                // this way we also ensure that the channelVolume of the MIDI track will always be set to the default value of 100 at the end of the music
+                if (chanVolMap.isEmpty() || !chanVolMap.getLastElement().getAttributeValue("value").equals("100.0")) {
+                    Element e = new Element("volume", Mpm.MPM_NAMESPACE);                   // create an entry in the channelVolumeMap
+                    e.addAttribute(new Attribute("date", Double.toString(dd.startDate)));   // at the date of this non-sub-note dynamics instruction
+                    e.addAttribute(new Attribute("value", "100.0"));                        // set the channel volume slider to default 100
+                    e.addAttribute(new Attribute("mandatory", "true"));                     // make sure this one will mandatorily be rendered to MIDI during MSM to MIDI export
+                    chanVolMap.addElement(e);
+                }
+            }
+
+            // apply dynamics to the map elements' velocity
             for (; mapIndex < map.size(); ++mapIndex) {                             // traverse the map elements
                 KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);    // get the current map entry
 
@@ -409,35 +436,10 @@ public class DynamicsMap extends GenericMap {
 
                 if (mapEntry.getKey() >= dd.endDate)                                // if the current map element is out of the scope of the current dynamics data
                     break;                                                          // stop here and find the next dynamics element first before continuing
-
-                // in case of sub-note dynamics do this;
-                // if we reached the last dynamics instruction creating a sub-note dynamics series of events until eternity (Double.MAX_DOUBLE) makes no sense, so in this case we ignore the sub-note dynamics
-                if (dd.subNoteDynamics && (dynamicsIndex < (this.size() - 1))) {
-                    mapEntry.getValue().addAttribute(new Attribute("velocity", "100.0"));   // all velocities are set to 100.0, loudness is controlled via a series of controller events
-                    continue;
-                }
-
-                // regardless of constant or continuous dynamics transition, with no sub-note dynamics do this;
-                // and this is also done when we reached the last dynamics instruction because creating a sub-note dynamics series of events until eternity (Double.MAX_DOUBLE) makes no sense;
-                // this way we also ensure that the channelVolume of the MIDI track will always be set to the default value of 100 at the end of the music
-                mapEntry.getValue().addAttribute(new Attribute("velocity", Double.toString(dd.getDynamicsAt(mapEntry.getKey()))));  // create and set attribute velocity at the note element
-                if ((chanVolMap != null) && (chanVolMap.size() > 0)) {
-                    Element cv = chanVolMap.getElement(chanVolMap.size() - 1);
-                    Helper.getAttribute("value", cv).setValue("100.0");             // make sure that the last event in the channelVolumeMap is set to default so that velocity dynamics sound on the correct level
-                    cv.addAttribute(new Attribute("mandatory", "true"));            // make sure this one will mandatorily be rendered to MIDI during MSM to MIDI export
-                }
-            }
-
-            // generate an MSM representation of the series of volume/expression controller events for sub-note dynamics
-            if (dd.subNoteDynamics && (chanVolMap != null) && (dynamicsIndex < (this.size() - 1))) {    // if sub-note dyynamics is active for this dynamics instruction, we have a non-null channelVolumeMap, and this is not the last dynamics instruction in the dynamicsMap
-                DynamicsMap.generateSubNoteDynamics(dd, chanVolMap);                // render this dynamics instruction's curve segment to the channelVolumeMap
             }
         }
 
-        if ((chanVolMap != null) && (chanVolMap.size() > 0))                        // if there is sub-note dynamics in the channelVolumeMap
-            return chanVolMap;                                                      // return it
-
-        return null;
+        return chanVolMap;      // return the channelVolumeMap
     }
 
     /**
@@ -469,7 +471,7 @@ public class DynamicsMap extends GenericMap {
 
     /**
      * a helper method for the implementation of sub-note dynamics,
-     * it generates a series channelVolume events (the MSM pendant to the eponimous MIDI events) and adds them to the specified channelVolumeMap,
+     * it generates a series volume events (the MSM pendant to the eponimous MIDI events) and adds them to the specified channelVolumeMap,
      * the basis for this is the specified DynamicsData object
      * @param dynamicsData
      * @param channelVolumeMap
@@ -479,7 +481,7 @@ public class DynamicsMap extends GenericMap {
         ArrayList<Element> es = new ArrayList<>();
 
         for (double[] event : subNoteDynamicsSegment) {
-            Element e = new Element("volume");
+            Element e = new Element("volume", Mpm.MPM_NAMESPACE);
             e.addAttribute(new Attribute("date", Double.toString(event[0])));
             e.addAttribute(new Attribute("value", Double.toString(event[1])));
 //            System.out.println(e.toXML());

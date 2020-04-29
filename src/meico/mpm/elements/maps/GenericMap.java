@@ -243,6 +243,26 @@ public class GenericMap extends AbstractXmlSubtree {
     }
 
     /**
+     * access the first element in the map
+     * @return the first element or null if the map is empty
+     */
+    public Element getFirstElement() {
+        if (this.elements.isEmpty())
+            return null;
+        return this.elements.get(0).getValue();
+    }
+
+    /**
+     * access the last element in the map
+     * @return the last element or null if the map is empty
+     */
+    public Element getLastElement() {
+        if (this.elements.isEmpty())
+            return null;
+        return this.elements.get(this.size() - 1).getValue();
+    }
+
+    /**
      * access an element's xml representation
      * @param index
      * @return
@@ -587,6 +607,14 @@ public class GenericMap extends AbstractXmlSubtree {
      */
     public int size() {
         return this.elements.size();
+    }
+
+    /**
+     * Is the map empty?
+     * @return
+     */
+    public boolean isEmpty() {
+        return this.elements.isEmpty();
     }
 
     /**
