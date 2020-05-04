@@ -1,11 +1,16 @@
 ### Version History
 
 
+#### v0.8.4
+- Another bugfix in method `meico.mpm.elements.maps.DynamicsMap.renderDynamicsToMap()`. Seems like the previous update solved one bug and introduced another.
+- Enhancement in method `meico.mpm.elements.maps.DynamicsMap.getDynamicsDataOf()`. It is now possible to set `subNoteDynamics="true"` even in a constant dynamics segment. This can be useful after a continuous segment to avoid sudden steps of the MIDI channel volume controller.
+
+
 #### v0.8.3
 - Added a new Output option to meicoApp. It is now possible during expressive MIDI rendering to also get an MSM that is enriched with performance data (milliseconds dates, velocities, etc.). This is mostly relevant for debugging purposes with no direct practical use for end users, yet.
 - Changed method `meico.app.gui.StatusPanel.setMessage()` to write the output message not directly but from a JavaFX thread. This should eliminate some of the minor (non-blocking) exceptions that are thrown every now and then.
 - Bugfix in method `meico.mpm.elements.maps.RubatoMap.renderRubatoToMap()` that caused some end date computations to return NaN.
-- Bugfix in method `meico.mpm.elements.maps.data.DynamicsData.getSubNoteDynamicsSegment()` that cause decrescedi not being rendered with sub-note dynamics.
+- Bugfix in method `meico.mpm.elements.maps.data.DynamicsData.getSubNoteDynamicsSegment()` that cause decrescendi not being rendered with sub-note dynamics.
 - Optimizations in method `meico.mpm.elements.maps.DynamicsMap.renderDynamicsToMap()`.
 - New additions to class `meico.mpm.elements.maps.GenericMap`: methods `getFirstElement()`, `getLastElement()` and `isEmpty()`.
 

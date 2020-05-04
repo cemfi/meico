@@ -327,7 +327,7 @@ public class DynamicsMap extends GenericMap {
                 dd.style = (DynamicsStyle) gStyle;
 
             att = Helper.getAttribute("name.ref", e);
-            if (att != null) {                                                                  // name.ref attribute is mandatory
+            if (att != null) {                                                          // name.ref attribute is mandatory
                 dd.dynamicsDefString = att.getValue();
                 dd.dynamicsDef = dd.style.getDynamicsDef(dd.dynamicsDefString);
             }
@@ -350,13 +350,18 @@ public class DynamicsMap extends GenericMap {
                 att = Helper.getAttribute("protraction", e);
                 if (att != null)
                     dd.protraction = DynamicsMap.ensureProtractionBoundaries(Double.parseDouble(att.getValue()));
-
-                att = Helper.getAttribute("subNoteDynamics", e);
-                if (att != null)
-                    dd.subNoteDynamics = Boolean.parseBoolean(att.getValue());
-                else
-                    dd.subNoteDynamics = false;
+            } else {                                                                    // this is to enable sub-note dynamics in constant dynamics segments (quite a special case and of minor practical relevance but with this is is possible)
+                dd.transitionToString = dd.volumeString;
+                dd.transitionTo = dd.volume;
+                dd.curvature = 0.0;
+                dd.protraction = 0.0;
             }
+
+            att = Helper.getAttribute("subNoteDynamics", e);                            // read sub-note dynamics
+            if (att != null)
+                dd.subNoteDynamics = Boolean.parseBoolean(att.getValue());
+            else
+                dd.subNoteDynamics = false;
 
             return dd;
         }
@@ -406,6 +411,11 @@ public class DynamicsMap extends GenericMap {
 
                     for (; mapIndex < map.size(); ++mapIndex) {                                 // traverse the map elements
                         KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);        // get the current map entry
+                        if ((mapEntry.getKey() < dd.startDate)                                  // if this map entry is before the current dynamics
+                                || !mapEntry.getValue().getLocalName().equals("note"))          // or if the map entry is no note element
+                            continue;                                                           // leave it unaltered and go on until we are at or after the dynamics' date and it is a note element
+                        if (mapEntry.getKey() >= dd.endDate)                                    // if the current map element is out of the scope of the current dynamics data
+                            break;                                                              // stop here and find the next dynamics element first before continuing
                         mapEntry.getValue().addAttribute(new Attribute("velocity", "100.0"));   // all velocities are set to 100.0, loudness is controlled via a series of controller events
                     }
 
@@ -418,24 +428,23 @@ public class DynamicsMap extends GenericMap {
                 // and this is also done when we reached the last dynamics instruction because creating a sub-note dynamics series of events until eternity (Double.MAX_DOUBLE) makes no sense;
                 // this way we also ensure that the channelVolume of the MIDI track will always be set to the default value of 100 at the end of the music
                 if (chanVolMap.isEmpty() || !chanVolMap.getLastElement().getAttributeValue("value").equals("100.0")) {
-                    Element e = new Element("volume", Mpm.MPM_NAMESPACE);                   // create an entry in the channelVolumeMap
-                    e.addAttribute(new Attribute("date", Double.toString(dd.startDate)));   // at the date of this non-sub-note dynamics instruction
-                    e.addAttribute(new Attribute("value", "100.0"));                        // set the channel volume slider to default 100
-                    e.addAttribute(new Attribute("mandatory", "true"));                     // make sure this one will mandatorily be rendered to MIDI during MSM to MIDI export
+                    Element e = new Element("volume", Mpm.MPM_NAMESPACE);                       // create an entry in the channelVolumeMap
+                    e.addAttribute(new Attribute("date", Double.toString(dd.startDate)));       // at the date of this non-sub-note dynamics instruction
+                    e.addAttribute(new Attribute("value", "100.0"));                            // set the channel volume slider to default 100
+                    e.addAttribute(new Attribute("mandatory", "true"));                         // make sure this one will mandatorily be rendered to MIDI during MSM to MIDI export
                     chanVolMap.addElement(e);
                 }
             }
 
             // apply dynamics to the map elements' velocity
-            for (; mapIndex < map.size(); ++mapIndex) {                             // traverse the map elements
-                KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);    // get the current map entry
-
-                if ((mapEntry.getKey() < dd.startDate)                              // if this map entry is before the current dynamics
-                    || !mapEntry.getValue().getLocalName().equals("note"))          // or if the map entry is no note element
-                    continue;                                                       // leave it unaltered and go on until we are at or after the dynamics' date and it is a note element
-
-                if (mapEntry.getKey() >= dd.endDate)                                // if the current map element is out of the scope of the current dynamics data
-                    break;                                                          // stop here and find the next dynamics element first before continuing
+            for (; mapIndex < map.size(); ++mapIndex) {                                         // traverse the map elements
+                KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);                // get the current map entry
+                if ((mapEntry.getKey() < dd.startDate)                                          // if this map entry is before the current dynamics
+                    || !mapEntry.getValue().getLocalName().equals("note"))                      // or if the map entry is no note element
+                    continue;                                                                   // leave it unaltered and go on until we are at or after the dynamics' date and it is a note element
+                if (mapEntry.getKey() >= dd.endDate)                                            // if the current map element is out of the scope of the current dynamics data
+                    break;                                                                      // stop here and find the next dynamics element first before continuing
+                mapEntry.getValue().addAttribute(new Attribute("velocity", Double.toString(dd.getDynamicsAt(mapEntry.getKey()))));  // create and set attribute velocity at the note element
             }
         }
 
