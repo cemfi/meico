@@ -61,13 +61,13 @@ Meico converts MEI `artic` elements to MPM `articulation` elements which are the
 | `spiccato`, `spicc`                | absoluteDurationMs = 140.0 <br> absoluteVelocityChange = 25         |
 | `staccato`, `stacc`                | absoluteDurationMs = 160.0 <br> absoluteVelocityChange = -5.0       |
 | `staccatissimo`, `stacciss`        | absoluteDurationMs = 140.0 <br> absoluteVelocityChange = 5.0        |
-| `standardarticulation`             | absoluteDurationChange = -70.0                                      |
+| `standardArticulation`             | absoluteDurationChange = -70.0                                      |
 | `tenuto`, `ten`                    | relativeDuration = 0.9 <br> absoluteVelocityChange = 12.0           |
 | `up bow`, `upbow`                  | no changes                                                          |
 
 This list can be subject to future changes! Combined articulations such as `"ten stacc"` are also supported and deconstructed into the individual MPM representatives. However, the result is that the modifiers of all articulations are applied to the note in the defined order. In case of `"ten stac"` this will not produce a portato! If you mean portato, then use the according denominator and specify its rendition seperately in MEI. Or introduce a new denominator `"myPortato"` and set its modifiers in the MPM `articulationDef` before generating expressive MIDI. 
 
-Articulation `nonlegato` is initially used as default articulation, i.e. the articulation that is applied to all notes with no other, specific articulation.
+Articulation `standardArticulation` is initially used as default articulation, i.e. the articulation that is applied to all notes with no other, specific articulation.
 
 `artic` elements that are children of `note` elements are associated only to these notes. However, `artic` elements that are direct children of `chord` elements are applied to all `note` elements within this `chord` as far as these do not specify their own more local articulation.
 
