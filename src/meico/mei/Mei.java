@@ -21,6 +21,7 @@ import meico.supplementary.KeyValue;
 import meico.mpm.elements.Performance;
 import meico.msm.Goto;
 import meico.svg.SvgCollection;
+import meico.xml.XmlBase;
 import nu.xom.*;
 import meico.msm.Msm;
 import org.xml.sax.SAXException;
@@ -864,9 +865,13 @@ public class Mei extends meico.xml.XmlBase {
         this.helper.movements.add(msm);                                             // add it to the movements list
 
         Mpm mpm = Mpm.createMpm();                                                  // generate an Mpm object
-        mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from '" + this.getFile().getName() + "' using the MEI converter meico.");
-        mpm.addRelatedResource(this.file.getAbsolutePath(), "mei");                 // add the mei as music reference
-        Performance performance = Performance.createPerformance("MEI export performance");       // generate a Performance object
+        if (this.file != null) {
+            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from '" + this.getFile().getName() + "' using the meico MEI converter.");
+            mpm.addRelatedResource(this.file.getAbsolutePath(), "mei");             // add the mei as music reference
+        } else {
+            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from MEI code using the meico MEI converter.");
+        }
+        Performance performance = Performance.createPerformance("MEI export performance");  // generate a Performance object
         if (performance == null) {                                                  // make sure it is not null
             System.err.println("Failed to generate an instance of Performance. Skipping mdiv " + titleString);
             return;

@@ -16,6 +16,7 @@ import meico.mpm.elements.maps.data.TempoData;
 import meico.mpm.elements.styles.TempoStyle;
 import meico.mpm.elements.styles.defs.TempoDef;
 import meico.msm.Msm;
+import meico.supplementary.KeyValue;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.s9api.Serializer;
 import nu.xom.*;
@@ -1307,6 +1308,7 @@ public class Helper {
      */
     public static double duration2decimal(String durString) {
         switch (durString) {
+            case "maxima":return 8.0;
             case "long":  return 4.0;
             case "breve": return 2.0;
             case "1":     return 1.0;
@@ -1323,6 +1325,68 @@ public class Helper {
             case "2048":  return 0.00048828125;
         }
         return 0.0;
+    }
+
+    /**
+     * convert a duration specified in pulses (based on ppq) to decimal format
+     * @param pulses
+     * @param ppq
+     * @return
+     */
+    public static double pulseDuration2decimal(double pulses, int ppq) {
+        return pulses / (ppq * 4.0);
+    }
+
+    /**
+     * generate an HTML Unicode string with the note/rest value and dots according to the specified duration
+     * @param duration
+     * @param isRest
+     * @return
+     */
+    public static String decimalDuration2HtmlUnicode(double duration, boolean isRest) {
+        if (duration < 0.0078125)
+            return isRest ? "rest" : "note";
+        if (duration < 0.015625)
+            return (isRest ? "&#119106;" : "&#119140;") + durationRemainder2UnicodeDots(0.0078125, duration - 0.0078125);
+        if (duration < 0.03125)
+            return (isRest ? "&#119105;" : "&#119139;") + durationRemainder2UnicodeDots(0.015625, duration - 0.015625);
+        if (duration < 0.0625)
+            return (isRest ? "&#119104;" : "&#119138;") + durationRemainder2UnicodeDots(0.03125, duration - 0.03125);
+        if (duration < 0.125)
+            return (isRest ? "&#119103;" : "&#119137;") + durationRemainder2UnicodeDots(0.0625, duration - 0.0625);
+        if (duration < 0.25)
+            return (isRest ? "&#119102;" : "&#119136;") + durationRemainder2UnicodeDots(0.125, duration - 0.125);
+        if (duration < 0.5)
+            return (isRest ? "&#119101;" : "&#119135;") + durationRemainder2UnicodeDots(0.25, duration - 0.25);
+        if (duration < 1.0)
+            return (isRest ? "&#119100;" : "&#119134;") + durationRemainder2UnicodeDots(0.5, duration - 0.5);
+        if (duration < 2.0)
+            return (isRest ? "&#119099;" : "&#119133;") + durationRemainder2UnicodeDots(1.0, duration - 1.0);
+        if (duration < 4.0)
+            return (isRest ? "2 &#119098;" : "&#119132;") + durationRemainder2UnicodeDots(2.0, duration - 2.0);
+        if (duration < 8.0)
+            return (isRest ? "4 &#119098;" : "&#119223;") + durationRemainder2UnicodeDots(4.0, duration - 4.0);
+        if (duration == 8.0)
+            return (isRest ? "8 &#119098;" : "&#119222;");
+        else
+            return isRest ? "rest" : "note";
+    }
+
+    /**
+     * This is a helper method for decimalDuration2HtmlUnicode().
+     * From a decimal duration value, take the undotted note value and the remainder. This method computes the number of dots and
+     * @param undottedNoteValue
+     * @param remainder
+     * @return
+     */
+    private static String durationRemainder2UnicodeDots(double undottedNoteValue, double remainder) {
+        String dots = "";
+        double v = undottedNoteValue / 2.0;
+        for (double r = remainder; (r >= v) && (r >= 0.0078125); v /= 2.0) {
+            dots = dots.concat(".");
+            r -= v;
+        }
+        return dots;
     }
 
     /**
@@ -1356,6 +1420,38 @@ public class Helper {
             case "3qs":  accidentals = 1.5;  break;
         }
         return accidentals;
+    }
+
+    /**
+     * compute the string value of accidental decimal value (1 = 1 semitone)
+     * @param accid double value of accidental
+     * @return the string value of the accidental
+     */
+    public static String accidDecimal2unicodeString(double accid) {
+        if (accid == 0.0) {
+            return "";
+        } else if (accid == 1.0) {
+            return "&#9839;";
+        } else if (accid == -1.0) {
+            return "&#9837;";
+        } else if (accid == 2.0) {
+            return "&#119082;";
+        } else if (accid == -2.0) {
+            return "&#119083;";
+        } else if (accid == 3.0) {
+            return "&#119082;&#9839;";
+        } else if (accid == -3.0) {
+            return "&#9837;&#9837;&#9837;";
+        } else if (accid == 1.5) {
+            return "&#119088;";
+        } else if (accid == 0.5) {
+            return "&#119090;";
+        } else if (accid == -0.5) {
+            return "&#119091;";
+        } else if (accid == -1.5) {
+            return "&#119085;";
+        }
+        return "?";
     }
 
     /**

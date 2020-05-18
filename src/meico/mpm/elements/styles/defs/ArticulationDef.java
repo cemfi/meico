@@ -424,10 +424,12 @@ public class ArticulationDef extends AbstractDef {
                 }
                 if (this.absoluteDurationChange != 0.0) {
                     double dur = Double.parseDouble(durationAtt.getValue());
-                    double durNew = dur + this.absoluteDurationChange;
-                    for (double reduce = 2.0; durNew >= 0.0; reduce *= 2.0)     // as long as the duration change causes the duration to become 0.0 or negative
-                        durNew = dur + (this.absoluteDurationChange / reduce);  // reduce the change by 50%
-                    durationAtt.setValue(Double.toString(durNew));
+                    if (dur > 0.0) {                                                // changes make only sense if the duration is greater than 0.0
+                        double durNew = dur + this.absoluteDurationChange;
+                        for (double reduce = 2.0; durNew <= 0.0; reduce *= 2.0)     // as long as the duration change causes the duration to become 0.0 or negative
+                            durNew = dur + (this.absoluteDurationChange / reduce);  // reduce the change by 50%
+                        durationAtt.setValue(Double.toString(durNew));
+                    }
                 }
             }
             if (this.absoluteDurationChangeMs != 0.0) {

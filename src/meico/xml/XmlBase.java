@@ -308,7 +308,6 @@ public class XmlBase {
 
     /**
      * if the constructor was unable to load the file, the data is empty and no further operations
-     *
      * @return true if the data document is empty, else false
      */
     public  boolean isEmpty() {
@@ -316,6 +315,7 @@ public class XmlBase {
     }
 
     /**
+     * this returns the whole XML code as a string
      * @return String with the XML code
      */
     public synchronized String toXML() {
@@ -325,6 +325,7 @@ public class XmlBase {
     }
 
     /**
+     * get the xml document
      * @return the data
      */
     public Document getDocument() {
@@ -342,6 +343,7 @@ public class XmlBase {
     }
 
     /**
+     * access the root element of the document
      * @return the root element of the data document
      */
     public Element getRootElement() {

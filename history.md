@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.8.5
+- New methods in class `meico.mei.Helper`: `pulseDuration2decimal()`, `decimalDuration2HtmlUnicode()`, `durationRemainder2UnicodeDots()`, `accidDecimal2unicodeString()`. These can beused to generate Unicode strings from note value and pitch information.
+- Bugfix in method `meico.mei.Mei.makeMovement()`. It checks for the file to be not null before accessing it.
+- Bugfix in method `meico.mpm.elements.styles.defs.ArticulationDef.articulateNote()` that cause articulation rendering running into an infinite loop when `absoluteDurationChange` is checked to create only non-negative durations.
+
+
 #### v0.8.4
 - Another bugfix in method `meico.mpm.elements.maps.DynamicsMap.renderDynamicsToMap()`. Seems like the previous update solved one bug and introduced another.
 - Enhancement in method `meico.mpm.elements.maps.DynamicsMap.getDynamicsDataOf()`. It is now possible to set `subNoteDynamics="true"` even in a constant dynamics segment. This can be useful after a continuous segment to avoid sudden steps of the MIDI channel volume controller.
