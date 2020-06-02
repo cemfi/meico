@@ -404,12 +404,19 @@ public class ArticulationMap extends GenericMap {
         ArrayList<KeyValue<Double, Element>> styleSwitchList = this.getAllElementsOfType("style");      // collect all style switches and put them into the list
         for (KeyValue<Double, Element> styleEntry : styleSwitchList) {
             ArticulationStyle aStyle = (ArticulationStyle) this.getStyle(Mpm.ARTICULATION_STYLE, Helper.getAttributeValue("name.ref", styleEntry.getValue()));
-            if (aStyle != null) {
-                ArticulationDef aDef = aStyle.getArticulationDef(Helper.getAttributeValue("defaultArticulation", styleEntry.getValue()));
-                if (aDef == null)
-                    System.err.println("Warning: attribute " + Helper.getAttribute("defaultArticulation", this.getXml()).toXML() + " in style element refers to an unknown articulationDef.");
-                defaultArticulations.add(new KeyValue<>(styleEntry.getKey(), aDef));
+            if (aStyle == null)
+                continue;
+
+            Attribute defaultArticulationAtt = Helper.getAttribute("defaultArticulation", styleEntry.getValue());
+            if (defaultArticulationAtt == null) {                                       // if no default articulation is specified (it is optional)
+                defaultArticulations.add(new KeyValue<>(styleEntry.getKey(), null));    // set the list entry for this date to null so it will not attempt to use the previous entry during rendering from the style's date on
+                continue;
             }
+
+            ArticulationDef aDef = aStyle.getArticulationDef(defaultArticulationAtt.getValue());
+            if (aDef == null)
+                System.err.println("Warning: attribute " + Helper.getAttribute("defaultArticulation", this.getXml()).toXML() + " in style element refers to an unknown articulationDef.");
+            defaultArticulations.add(new KeyValue<>(styleEntry.getKey(), aDef));
         }
 
         // articulate the map elements
@@ -420,7 +427,7 @@ public class ArticulationMap extends GenericMap {
                 continue;                                                           // go on with the next element
 
             ArrayList<ArticulationData> artics = noteArtics.get(mapEntry.getValue());
-            if (artics != null) {                                                   // apply the articulations to the associated note
+            if (artics != null) {                                                   // apply the articulations (if there is one or more) to the associated note
                 for (ArticulationData artic : artics) {                             // each articulation that is associated with this note element
                     mapTimingChanged |= artic.articulateNote(mapEntry.getValue());  // apply articulation
                 }
@@ -428,7 +435,7 @@ public class ArticulationMap extends GenericMap {
             }
 
             // otherwise apply the default articulation
-            if (defaultArticulations.isEmpty())                                     // if we have such data
+            if (defaultArticulations.isEmpty())                                     // if we have no such data
                 continue;
 
             // make sure we use the latest default articulation

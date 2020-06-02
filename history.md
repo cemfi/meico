@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.6
+- Another bugfix in method `meico.mpm.elements.styles.defs.ArticulationDef.articulateNote()` so style switches with no attribute `defaultArticulation` (it is optional) are supported.
+
+
 #### v0.8.5
 - New methods in class `meico.mei.Helper`: `pulseDuration2decimal()`, `decimalDuration2HtmlUnicode()`, `durationRemainder2UnicodeDots()`, `accidDecimal2unicodeString()`. These can beused to generate Unicode strings from note value and pitch information.
 - Bugfix in method `meico.mei.Mei.makeMovement()`. It checks for the file to be not null before accessing it.
