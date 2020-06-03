@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.7
+- Enhancement in method `meico.msm.Msm.parseProgramChangeMap()` so MIDI program change events can also be generated after date 0.0. This makes it possible to switch instrument/timbre during the music.
+
+
 #### v0.8.6
 - Another bugfix in method `meico.mpm.elements.styles.defs.ArticulationDef.articulateNote()` so style switches with no attribute `defaultArticulation` (it is optional) are supported.
 

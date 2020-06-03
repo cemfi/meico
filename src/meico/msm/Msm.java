@@ -946,7 +946,7 @@ public class Msm extends AbstractMsm {
             if (date == 0.0)
                 weHaveAnInitialPrgCh = true;
             short value = Short.parseShort(n.getAttributeValue("value"));
-            track.add(EventMaker.createProgramChange(channel, 0, value));                                // add program change event
+            track.add(EventMaker.createProgramChange(channel, date, value));        // add program change event
         }
         return weHaveAnInitialPrgCh;
     }
