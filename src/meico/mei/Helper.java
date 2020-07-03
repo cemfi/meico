@@ -44,6 +44,7 @@ public class Helper {
     protected ArrayList<Element> endids = new ArrayList<>();            // msm and mpm elements that will be terminated at the time position of an mei element with a specified endid
     protected ArrayList<Element> tstamp2s = new ArrayList<>();          // mpm elements that will be terminated at a position in another measure indicated by attribute tstamp2
     protected ArrayList<Element> ties = new ArrayList<>();              // a list of pending MEI tie elements
+    protected ArrayList<Element> lyrics = new ArrayList<>();            // this is used to collect lyrics converted from mei syl elements to be added to an msm note
     protected HashMap<String, Element> allNotesAndChords = new HashMap<>(); // when converting a new mdiv this hashmap is created first to accelarate lookup for notes and chords via xml:id
     protected Performance currentPerformance = null;                    // a quick link to the current movement's current performance
     protected List<Msm> movements = new ArrayList<>();                  // this list holds the resulting Msm objects after performing MEI-to-MSM conversion
@@ -80,6 +81,7 @@ public class Helper {
         this.endids.clear();
         this.tstamp2s.clear();
         this.ties.clear();
+        this.lyrics.clear();
         this.allNotesAndChords.clear();
     }
 
@@ -1130,9 +1132,9 @@ public class Helper {
                     Element node = this.allNotesAndChords.get(startid);
                     if (node != null) {
                         Element parent = (Element) node.getParent();
-                        event.detach();                                                                             // detach it
+                        event.detach();                                                                             // detach the event
                         parent.insertChild(event, parent.indexOf(node));                                            // and insert it at the position
-//                        event.removeAttribute(startidAtt);                                                          // remove attribute startid so this element is not replaced again when reaching it during the further processing
+//                        event.removeAttribute(startidAtt);                                                        // remove attribute startid so this element is not replaced again when reaching it during the further processing
                         event.addAttribute(new Attribute("dontRepositionMeAgain", "true"));                         // make an indication that this element has been repositioned on the basis of startid
                         return null;                                                                                // this control event has been replaced and should be processed later
                     }

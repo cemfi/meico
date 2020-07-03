@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.8.8
+- Added a getter to class `meico.mpm.Mpm` to provide access to the metadata: `getMetadata()`.
+- Added support for MEI `verse` and `syl` elements, so they are converted to MSM `lyrics` elements.
+- Added support for MEI `dynam` and `tempo` elements that are positioned within a `verse` environment.
+- New method `processSpace()` for processing MEI `space` elements. These elements are usually interpreted as rests. However, this should not be done when they encode a textual space, e.g. in lyrics. That is what the method ensures.
+
+
 #### v0.8.7
 - Enhancement in method `meico.msm.Msm.parseProgramChangeMap()` so MIDI program change events can also be generated after date 0.0. This makes it possible to switch instrument/timbre during the music.
 

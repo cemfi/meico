@@ -46,7 +46,7 @@ public class Mpm extends AbstractMsm {
 
     private Metadata metadata = null;
     private Element relatedResources = null;
-    private ArrayList<Performance> performances = new ArrayList<>();
+    private final ArrayList<Performance> performances = new ArrayList<>();
 
     /**
      * constructor
@@ -219,6 +219,14 @@ public class Mpm extends AbstractMsm {
     public void removeMetadata() {
         this.metadata.getXml().detach();
         this.metadata = null;
+    }
+
+    /**
+     * a getter to access the metadata of this MPM
+     * @return
+     */
+    public Metadata getMetadata() {
+        return this.metadata;
     }
 
     /**

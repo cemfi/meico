@@ -754,7 +754,7 @@ public class Mei extends meico.xml.XmlBase {
                     break;
 
                 case "space":
-                    this.processRest(e);                                        // handle it like a rest
+                    this.processSpace(e);
                     continue;
 
                 case "slur":                                                    // indication of 1) a "unified melodic idea" or 2) performance technique
@@ -782,7 +782,8 @@ public class Mei extends meico.xml.XmlBase {
                     break;                                                      // process its content
 
                 case "syl":
-                    continue;                                                   // TODO: can be included in MIDI, too; useful for choir synthesis
+                    this.processSyl(e);
+                    continue;
 
                 case "syllable":
                     continue;                                                   // ignored, this implementation focusses on common modern notation
@@ -826,7 +827,7 @@ public class Mei extends meico.xml.XmlBase {
                     continue;                                                   // ignored, this implementation focusses on common modern notation
 
                 case "verse":
-                    continue;                                                   // TODO: ignored
+                    break;                                                      // process its contents
 
                 default:
                     continue;                                                   // ignore it and its children
@@ -1699,6 +1700,69 @@ public class Mei extends meico.xml.XmlBase {
             parentNote.addAttribute(new Attribute("childDots", "1"));                   // and set it to 1
     }
 
+    /**
+     * process an mei syl element
+     * @param syl
+     */
+    private void processSyl(Element syl) {
+        Element lyrics = new Element("lyrics");
+
+        for (Element parent = (Element) syl.getParent(); parent != null; parent = (Element) parent.getParent()) {
+            if (parent.getLocalName().equals("verse")) {        // found the parent verse element
+                Attribute n = parent.getAttribute("n");         // get its n attribute
+                if (n != null)                                  // if it has one
+                    lyrics.addAttribute(new Attribute("verse", n.getValue()));  // add an according attribute to lyrics
+                continue;
+            }
+
+            if (parent.getLocalName().equals("note")) {         // found the parent note element
+                String text = syl.getValue();                   // copy the text of syl
+
+                Attribute wordpos = syl.getAttribute("wordpos");
+                if ((wordpos != null) && (wordpos.getValue().equals("i") || wordpos.getValue().equals("m"))) {
+                    Attribute con = syl.getAttribute("con");
+                    if (con != null) {
+                        switch (con.getValue()) {
+                            case "s":
+                                text += " ";
+                                break;
+                            case "d":
+                                text += "-";
+                                break;
+                            case "u":
+                                text += "_";
+                                break;
+                            case "t":
+                                text += "~";
+                                break;
+                            case "c":
+                                text += "ˆ";
+                                break;
+                            case "v":
+                                text += "ˇ";
+                                break;
+                            case "i":
+                                text += "̑";
+                                break;
+                            case "b":
+                                text += "˘";
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                lyrics.appendChild(text);
+                this.helper.lyrics.add(lyrics);                 // add syl to the helper's lyrics list which will be further processed by the note element's processing routine
+                return;                                         // done
+            }
+
+            // we found no parental note so we don't process this syl
+            if (parent.getLocalName().equals("measure") || parent.getLocalName().equals("section") || parent.getLocalName().equals("score") || parent.getLocalName().equals("mdiv") || parent.getLocalName().equals("body"))    // enough tested
+                return;
+        }
+    }
+
     /** make a part entry in xml/msm from an mei staffDef and insert into movement, if it exists already, return it
      *
      * @param staffDef an mei staffDef element
@@ -2079,21 +2143,21 @@ public class Mei extends meico.xml.XmlBase {
         // parse the instruction
         switch (dynam.getLocalName()) {                                                                     // which kind of dynamics instruction is this?
             case "dynam":                                                                                   // an MEI dynam element (verbal dynamics instruction)
-                dd.volumeString = dynam.getValue();                                                               // read the instruction
-                if (dd.volumeString.isEmpty()) {                                                                  // if no value/text at this element
+                dd.volumeString = dynam.getValue();                                                         // read the instruction
+                if (dd.volumeString.isEmpty()) {                                                            // if no value/text at this element
                     Attribute label = dynam.getAttribute("label");                                          // try attribute label
-                    if (label != null) dd.volumeString = label.getValue();                                        // if there is a label attribute, use its value
+                    if (label != null) dd.volumeString = label.getValue();                                  // if there is a label attribute, use its value
                 }
-                if (dd.volumeString.isEmpty()) {                                                                  // empty instructions cannot be interpreted
+                if (dd.volumeString.isEmpty()) {                                                            // empty instructions cannot be interpreted
                     System.err.println("Cannot process MEI element " + dynam.toXML() + ". No value or label specified.");
                     return;
                 }
-                if (dd.volumeString.contains("dim") || dd.volumeString.contains("decresc")) {                           // is it a dim or decresc
-                    dd.volumeString = "?";                                                                        // mark the volume to be read from the previous instruction
-                    dd.transitionToString = "-";                                                                  // mark the transitionTo attribute to be less than the volume and read from the subsequent instruction
-                } else if (dd.volumeString.contains("cresc")) {                                                   // is it a cresc
-                    dd.volumeString = "?";                                                                        // mark the volume to be read from the previous instruction
-                    dd.transitionToString = "+";                                                                  // mark the transitionTo attribute to be greater than the volume and read from the subsequent instruction
+                if (dd.volumeString.contains("dim") || dd.volumeString.contains("decresc")) {               // is it a dim or decresc
+                    dd.volumeString = "?";                                                                  // mark the volume to be read from the previous instruction
+                    dd.transitionToString = "-";                                                            // mark the transitionTo attribute to be less than the volume and read from the subsequent instruction
+                } else if (dd.volumeString.contains("cresc")) {                                             // is it a cresc
+                    dd.volumeString = "?";                                                                  // mark the volume to be read from the previous instruction
+                    dd.transitionToString = "+";                                                            // mark the transitionTo attribute to be greater than the volume and read from the subsequent instruction
                 } else {                                                                                    // this instruction might be added to the global styleDef
                     DynamicsStyle dynamicsStyle = (DynamicsStyle) this.helper.currentPerformance.getGlobal().getHeader().getStyleDef(Mpm.DYNAMICS_STYLE, "MEI export"); // get the global dynamicsSyles/styleDef element
                     if (dynamicsStyle == null)                                                                                                                          // if there is none
@@ -2352,7 +2416,7 @@ public class Mei extends meico.xml.XmlBase {
             return;
 
         Attribute att = artic.getAttribute("artic.ges");    // first try to find the gestural articulation attribute artic.ges
-        Attribute slur = artic.getAttribute("slur");
+        Attribute slur = artic.getAttribute("slur");        // and get the slur attribute
         if (att == null) {                                  // if failed
             att = artic.getAttribute("artic");              // try to find the artic attribute
             if ((att == null) && (slur == null))            // if failed, too, and there is also no slur
@@ -2381,7 +2445,7 @@ public class Mei extends meico.xml.XmlBase {
             map.addStyleSwitch(0.0, "MEI export", "nonlegato");                                                                     // set its initial style
         }
 
-        for (Element parent = artic; (parent != null) && (parent != this.getRootElement()); parent = (Element) parent.getParent()) {    // search through the parent elements, start with the element itself becuase it could already be the note or chord itself
+        for (Element parent = artic; (parent != null) && (parent != this.getRootElement()); parent = (Element) parent.getParent()) {    // search through the parent elements, start with the element itself because it could already be the note or chord itself
             if (parent.getLocalName().equals("note")) {                                                                         // found a note
                 String noteId = Helper.getAttributeValue("id", parent);                                                         // get its xml:id
                 if (noteId.isEmpty()) {                                                                                         // it has no xml:id
@@ -2390,12 +2454,12 @@ public class Mei extends meico.xml.XmlBase {
                 }
                 if (att != null)
                     this.addArticulationToMap(date, att.getValue(), xmlid, noteId, map, articulationStyle);                     // make articulation entry in the map
-                if (slur != null) {                                                                                             // if there is a slur attribute with value i or m
+                if (slur != null) {                                                                                             // if there is a slur attribute
                     String slurid = (artic.getAttribute("slurid") == null) ? null : artic.getAttributeValue("slurid");          // read the xml:id of the slur element that created this slur attribute
                     if (slur.getValue().contains("t"))                                                                          // for a terminal legato
-                        this.addArticulationToMap(date, "legatoStop", slurid, noteId, map, articulationStyle);                    // make a legatoStop articulation entry in the map
+                        this.addArticulationToMap(date, "legatoStop", slurid, noteId, map, articulationStyle);                  // make a legatoStop articulation entry in the map
                     else if (slur.getValue().contains("i") || slur.getValue().contains("m"))                                    // for an initial or medial legato
-                        this.addArticulationToMap(date, "legato", slurid, noteId, map, articulationStyle);                        // make a legato articulation entry in the map
+                        this.addArticulationToMap(date, "legato", slurid, noteId, map, articulationStyle);                      // make a legato articulation entry in the map
                 }
                 return;                                                                                                         // done
             }
@@ -3024,6 +3088,29 @@ public class Mei extends meico.xml.XmlBase {
     }
 
     /**
+     * process an mei space element
+     * @param space
+     */
+    private void processSpace(Element space) {
+        // check the parents of the space element to make sure this space must be interpreted as a rest
+        for (Element parent = (Element) space.getParent(); parent != null; parent = (Element) parent.getParent()) {
+            switch (parent.getLocalName()) {
+                case "layer":
+                case "refrain":
+                case "syllable":
+                case "verse":
+                case "volta":
+                    return;         // the space is no rest
+            }
+
+            if (parent.getLocalName().equals("measure") || parent.getLocalName().equals("section") || parent.getLocalName().equals("score") || parent.getLocalName().equals("mdiv") || parent.getLocalName().equals("body"))    // enough tested
+                break;              // done testing, it's a rest
+        }
+
+        this.processRest(space);    // handle it like a rest
+    }
+
+    /**
      * process an mei octave element
      * @param octave an mei octave element
      */
@@ -3269,13 +3356,13 @@ public class Mei extends meico.xml.XmlBase {
         // handle ties
         this.helper.checkTies(note);                                            // check for pending tie elements
         char tie = 'n';                                                         // what kind of tie is it? i: initial, m: medial, t: terminal, n: nothing
-        if (note.getAttribute("tie") != null) {                                 // if the note has a tie attribute
-            tie = note.getAttributeValue("tie").charAt(0);                      // get its value (first character of the array, it hopefully has only one character!)
+        Attribute tieAtt = note.getAttribute("tie");                            // get the tie attribute
+        if (tieAtt != null) {                                                   // if the note has a tie attribute
+            tie = tieAtt.getValue().charAt(0);                                  // get its value (first character of the array, it hopefully has only one character!)
         }
         else if ((this.helper.currentChord != null) && (this.helper.currentChord.getAttribute("tie") != null)) {    // or if the chord environment has a tie attribute
             tie = this.helper.currentChord.getAttributeValue("tie").charAt(0);  // get its value (first character of the array, it hopefully has only one character!)
         }
-
         switch (tie) {
             case 'n':
                 break;
@@ -3298,6 +3385,17 @@ public class Mei extends meico.xml.XmlBase {
                 }
             }
         }
+
+        // handle lyrics
+        Attribute sylAtt = note.getAttribute("syl");                            // get the syl attribute
+        if (sylAtt != null) {                                                   // if the note has a syl attribute
+            Element syl = new Element("lyrics");                                // create a lyrics
+            syl.appendChild(sylAtt.getValue());                                 // and add the text
+        }
+        for (Element lyrics : this.helper.lyrics) {                             // if the note had child elements containing lyrics (<syl>) we have already created msm lyrics elements that are waiting in the helper
+            s.appendChild(lyrics);                                              // add them to the msm note
+        }
+        this.helper.lyrics.clear();                                             // clear the helper list of lyrics so other notes will not get them, too
 
         this.helper.addLayerAttribute(s);                                       // add an attribute that indicates the layer
 
