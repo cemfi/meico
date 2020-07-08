@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.8.9
+- Updated MPM API to MPM v2.1.0. This update moved element `relatedResources` into element `metadata`.
+- Added new class `meico.mpm.elements.metadata.RelatedResource`.
+
+
 #### v0.8.8
 - Added a getter to class `meico.mpm.Mpm` to provide access to the metadata: `getMetadata()`.
 - Added support for MEI `verse` and `syl` elements, so they are converted to MSM `lyrics` elements.

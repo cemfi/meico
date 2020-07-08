@@ -1,5 +1,6 @@
 package meico.mpm.elements.metadata;
 
+import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.xml.AbstractXmlSubtree;
 import nu.xom.Element;
@@ -7,14 +8,16 @@ import nu.xom.Elements;
 import nu.xom.Text;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * This class interfaces the metadata of the MPM instance.
  * @author Axel Berndt
  */
 public class Metadata extends AbstractXmlSubtree {
-    private ArrayList<Author> authors = new ArrayList<>();     // the list of authors
-    private ArrayList<Element> comments = new ArrayList<>();    // the list of comments
+    private ArrayList<Author> authors = new ArrayList<>();                      // the list of authors
+    private ArrayList<Element> comments = new ArrayList<>();                    // the list of comments
+    private ArrayList<RelatedResource> relatedResources = new ArrayList<>();    // the related resources
 
     /**
      * this constructor instantiates the Metadata object from an existing xml source handed over as XOM Element
@@ -136,6 +139,13 @@ public class Metadata extends AbstractXmlSubtree {
                 case "comment":
                     this.comments.add(child);
                     break;
+                case "relatedResources":
+                    LinkedList<Element> resources = Helper.getAllChildElements("resource", child);
+                    for (Element resource : resources) {
+                        RelatedResource r = RelatedResource.createRelatedResource(resource);
+                        if (r != null)
+                            this.relatedResources.add(r);
+                    }
                 default:
                     break;
             }
@@ -240,6 +250,78 @@ public class Metadata extends AbstractXmlSubtree {
      * @param index the index of the comment object
      */
     public void removeComment(int index) {
+        Element comment = this.comments.get(index);
+        comment.detach();
+        this.getXml().removeChild(comment);
         this.comments.remove(index);
+    }
+
+    /**
+     * add a related resource to the metadata
+     * @param relatedResource
+     * @return the index where the resource is added
+     */
+    public int addRelatedResource(RelatedResource relatedResource) {
+        Element relatedResourcesElt = Helper.getFirstChildElement("relatedResources", this.getXml());
+        if (relatedResourcesElt == null) {
+            relatedResourcesElt = new Element("relatedResources", Mpm.MPM_NAMESPACE);
+            this.getXml().appendChild(relatedResourcesElt);
+        }
+
+        relatedResourcesElt.appendChild(relatedResource.getXml());
+        this.relatedResources.add(relatedResource);
+        return this.relatedResources.size() - 1;
+    }
+
+    /**
+     * access the list of related resources
+     * @return
+     */
+    public ArrayList<RelatedResource> getRelatedResources() {
+        return this.relatedResources;
+    }
+
+    /**
+     * access a specific related resource via its index
+     * @param index
+     * @return
+     */
+    public RelatedResource getRelatedResource(int index) {
+        if (this.relatedResources.size() <= index)
+            return null;
+
+        return this.relatedResources.get(index);
+    }
+
+    /**
+     * remove a related resource
+     * @param index
+     */
+    public void removeRelatedResource(int index) {
+        RelatedResource relatedResource = this.relatedResources.get(index);
+        this.removeRelatedResource(relatedResource);
+    }
+
+    /**
+     * remove a related resource
+     * @param relatedResource
+     */
+    public void removeRelatedResource(RelatedResource relatedResource) {
+        if (relatedResource == null)
+            return;
+
+        Element relatedResourcesElt = Helper.getFirstChildElement("relatedResources", this.getXml());
+        if (relatedResourcesElt == null)
+            return;
+
+        relatedResource.getXml().detach();
+        relatedResourcesElt.removeChild(relatedResource.getXml());
+        this.relatedResources.remove(relatedResource);
+
+        // it is not allowed to have an empty relatedResources list, so make sure it is deleted when empty
+        if (relatedResourcesElt.getChildCount() == 0) {
+            relatedResourcesElt.detach();
+            this.getXml().removeChild(relatedResourcesElt);
+        }
     }
 }

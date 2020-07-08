@@ -1,11 +1,8 @@
 package meico.mei;
 
-import java.io.*;
-import java.net.URL;
-import java.util.*;
-
 import meico.mpm.Mpm;
 import meico.mpm.elements.Part;
+import meico.mpm.elements.Performance;
 import meico.mpm.elements.maps.ArticulationMap;
 import meico.mpm.elements.maps.DynamicsMap;
 import meico.mpm.elements.maps.GenericMap;
@@ -13,20 +10,24 @@ import meico.mpm.elements.maps.TempoMap;
 import meico.mpm.elements.maps.data.DynamicsData;
 import meico.mpm.elements.maps.data.TempoData;
 import meico.mpm.elements.metadata.Author;
+import meico.mpm.elements.metadata.RelatedResource;
 import meico.mpm.elements.styles.ArticulationStyle;
 import meico.mpm.elements.styles.DynamicsStyle;
 import meico.mpm.elements.styles.defs.ArticulationDef;
 import meico.mpm.elements.styles.defs.DynamicsDef;
-import meico.supplementary.KeyValue;
-import meico.mpm.elements.Performance;
 import meico.msm.Goto;
-import meico.svg.SvgCollection;
-import meico.xml.XmlBase;
-import nu.xom.*;
 import meico.msm.Msm;
+import meico.supplementary.KeyValue;
+import meico.svg.SvgCollection;
+import nu.xom.*;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.*;
 
 /**
  * This class holds the mei data from a source file in a XOM Document.
@@ -393,12 +394,12 @@ public class Mei extends meico.xml.XmlBase {
             }
             if (mpms.size() == 1) {                                                                                         // if only one msm object (no numbering needed)
                 mpms.get(0).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mpm");                 // replace the file extension mei with msm and make this the filename
-                mpms.get(0).addRelatedResource(msms.get(0).getFile().getAbsolutePath(), "msm");                              // add the msm to the reference music
+                mpms.get(0).getMetadata().addRelatedResource(RelatedResource.createRelatedResource(msms.get(0).getFile().getAbsolutePath(), "msm"));    // add the msm to the reference music
             }
             else {                                                                                                          // multiple msm objects created (or none)
                 for (int i = 0; i < mpms.size(); ++i) {                                                                     // for each msm object
                     mpms.get(i).setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + "-" + i + ".mpm");   // replace the extension by the number and the .msm extension
-                    mpms.get(i).addRelatedResource(msms.get(i).getFile().getAbsolutePath(), "msm");                          // add the corresponding msm to the reference music
+                    mpms.get(i).getMetadata().addRelatedResource(RelatedResource.createRelatedResource(msms.get(i).getFile().getAbsolutePath(), "msm"));// add the corresponding msm to the reference music
                 }
             }
         }
@@ -868,7 +869,7 @@ public class Mei extends meico.xml.XmlBase {
         Mpm mpm = Mpm.createMpm();                                                  // generate an Mpm object
         if (this.file != null) {
             mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from '" + this.getFile().getName() + "' using the meico MEI converter.");
-            mpm.addRelatedResource(this.file.getAbsolutePath(), "mei");             // add the mei as music reference
+            mpm.getMetadata().addRelatedResource(RelatedResource.createRelatedResource(this.file.getAbsolutePath(), "mei"));             // add the mei as music reference
         } else {
             mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from MEI code using the meico MEI converter.");
         }
@@ -943,7 +944,9 @@ public class Mei extends meico.xml.XmlBase {
                 if (tempoData != null) {
                     if (globalTempoMap == null) {
                         globalTempoMap = this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.TEMPO_MAP);               // make sure there is a global tempoMap
-                        globalTempoMap.addStyleSwitch(0.0, "MEI export");                                                           // set its start style reference
+
+                        if (this.helper.currentPerformance.getGlobal().getHeader().getAllStyleTypes().get(Mpm.TEMPO_STYLE) != null) // if there is a global tempo style definition
+                            globalTempoMap.addStyleSwitch(0.0, "MEI export");                                                       // set it as start style reference
                     }
                     tempoData.startDate = 0.0;
                     ((TempoMap) globalTempoMap).addTempo(tempoData);
@@ -2325,7 +2328,9 @@ public class Mei extends meico.xml.XmlBase {
             tempoMap = (TempoMap) this.helper.currentPerformance.getGlobal().getDated().getMap(Mpm.TEMPO_MAP);      // get the global tempoMap
             if (tempoMap == null) {                                                                                 // if there is no global tempoMap
                 tempoMap = (TempoMap) this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.TEMPO_MAP);  // create one
-                tempoMap.addStyleSwitch(0.0, "MEI export");                                                         // set its start style reference
+
+                if (this.helper.currentPerformance.getGlobal().getHeader().getAllStyleTypes().get(Mpm.TEMPO_STYLE) != null) // if there is a global tempo style definition
+                    tempoMap.addStyleSwitch(0.0, "MEI export");                                                     // set it as start style reference
             }
 
             // add the new tempo instruction
