@@ -70,7 +70,7 @@ class DataObject extends Group {
     private boolean menuActive = false;
     private ArrayList<DataObjectLine> lines = new ArrayList<>();    // the list of connections lines to child data objects that were exported from this one
     private ArrayList<Thread> threads = new ArrayList<>();
-    private boolean isActive = false;               // will be set true when it is activated for transformations
+    private boolean isActive = false;                   // will be set true when it is activated for transformations
 
     /**
      * constructor
