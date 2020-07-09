@@ -3100,7 +3100,6 @@ public class Mei extends meico.xml.XmlBase {
         // check the parents of the space element to make sure this space must be interpreted as a rest
         for (Element parent = (Element) space.getParent(); parent != null; parent = (Element) parent.getParent()) {
             switch (parent.getLocalName()) {
-                case "layer":
                 case "refrain":
                 case "syllable":
                 case "verse":
@@ -3108,7 +3107,7 @@ public class Mei extends meico.xml.XmlBase {
                     return;         // the space is no rest
             }
 
-            if (parent.getLocalName().equals("measure") || parent.getLocalName().equals("section") || parent.getLocalName().equals("score") || parent.getLocalName().equals("mdiv") || parent.getLocalName().equals("body"))    // enough tested
+            if (parent.getLocalName().equals("layer") || parent.getLocalName().equals("measure") || parent.getLocalName().equals("section") || parent.getLocalName().equals("score") || parent.getLocalName().equals("mdiv") || parent.getLocalName().equals("body"))    // enough tested
                 break;              // done testing, it's a rest
         }
 

@@ -1,9 +1,14 @@
 ### Version History
 
 
+#### v0.8.10
+- Bugfix: If an MEI `space` element was in a `layer` environment, it was falsely interpreted as textual gap. However, it is a musical gap and should be interpreted as rest.
+
+
 #### v0.8.9
 - Updated MPM API to MPM v2.1.0. This update moved element `relatedResources` into element `metadata`.
 - Added new class `meico.mpm.elements.metadata.RelatedResource`.
+- Bugfix: MEI to MPM conversion generated tempo style switches while there was no tempo style to switch to. This has been fixed.
 
 
 #### v0.8.8
