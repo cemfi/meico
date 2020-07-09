@@ -2671,8 +2671,23 @@ public class Mei extends meico.xml.XmlBase {
                 note.addAttribute(new Attribute("tie", "i"));   // hence, we add an initial tie attribute
             }
 
-            this.helper.ties.add(tie);                          // add the tie to the ties list
+            this.helper.ties.add(tie);                              // add the tie to the ties list
         }
+
+//        // find the endid note and set its tie attribute
+//        note = this.helper.allNotesAndChords.get(tie.getAttributeValue("endid").trim().replace("#", ""));
+//        if (note != null) {
+//            Attribute a = note.getAttribute("tie");             // get its tie attribute if it has one
+//            if (a != null) {                                    // if the note has already a tie attribute
+//                if (a.getValue().equals("i"))                   // but it says that the tie starts here
+//                    a.setValue("m");                            // make an intermediate tie out of it
+//                else if (a.getValue().equals("n"))              // but it says "no tie"
+//                    a.setValue("t");                            // make a terminal tie out of it
+//            }
+//            else {                                              // otherwise the element had no tie attribute
+//                note.addAttribute(new Attribute("tie", "t"));   // hence, we add an terminal tie attribute
+//            }
+//        }
     }
 
     /**

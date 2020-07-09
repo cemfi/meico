@@ -915,7 +915,7 @@ public class Helper {
     protected void checkTies(Element e) {
         String id = "#" + Helper.getAttributeValue("id", e);                // get id of the current element
         for (int j = this.getTie(id); j >= 0; j = this.getTie(id)) {        // find all pending elements in the ties list to be finished at this element
-            Attribute a = this.ties.get(j).getAttribute("tie");             // get its tie attribute if it has one
+            Attribute a = e.getAttribute("tie");                            // get its tie attribute if it has one
             if (a != null) {                                                // if the note has already a tie attribute
                 if (a.getValue().equals("i"))                               // but it says that the tie is initial
                     a.setValue("m");                                        // make an intermediate tie out of it
@@ -923,7 +923,7 @@ public class Helper {
                     a.setValue("t");                                        // make a terminal tie out of it
             }
             else {                                                          // otherwise the element had no tie attribute
-                this.ties.get(j).addAttribute(new Attribute("tie", "t"));   // hence, we add a terminal tie attribute
+                e.addAttribute(new Attribute("tie", "t"));                  // hence, we add a terminal tie attribute
             }
             this.ties.remove(j);                                            // remove element from list, it is finished
         }

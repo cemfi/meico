@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.11
+- Another bugfix: The `endid` of MEI `tie` elements was not properly resolved.
+
+
 #### v0.8.10
 - Bugfix: If an MEI `space` element was in a `layer` environment, it was falsely interpreted as textual gap. However, it is a musical gap and should be interpreted as rest.
 
