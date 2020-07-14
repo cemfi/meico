@@ -1088,12 +1088,12 @@ public class Mei extends meico.xml.XmlBase {
 
         if (s != null) {
 //            s.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("date") : "0.0"));  // set currentDate of processing
-            s.addAttribute(new Attribute("currentDate", this.helper.getMidiTimeAsString()));  // set currentDate of processing
-            this.helper.currentPart = s;                                                               // if that part entry was found, return it
+            s.addAttribute(new Attribute("currentDate", this.helper.getMidiTimeAsString()));    // set currentDate of processing
+            this.helper.currentPart = s;                                                        // if that part entry was found, return it
         }
         else {            // the part was not found, create one
             System.out.println("There is an undefined staff element in the score with no corresponding staffDef.\n" + staff.toXML() + "\nGenerating a new part for it.");  // output notification
-            this.helper.currentPart = this.makePart(staff);                                            // generate a part and return it
+            this.helper.currentPart = this.makePart(staff);                                     // generate a part and return it
         }
 
         // everything within the staff will be treated as local to the corresponding part, thanks to helper.currentPart being != null
@@ -1457,20 +1457,6 @@ public class Mei extends meico.xml.XmlBase {
     private void processMeasure(Element measure) {
         double startDate = this.helper.getMidiTime();                                                           // get the date at the beginning of the measure
         measure.addAttribute(new Attribute("date", Double.toString(startDate)));                                // set the measure's date in attribute date
-
-        // compute the duration of this measure
-        double dur1 = 0.0;                                                                                      // this will hold the duration of the measure according to the underlying time signature
-        if ((this.helper.currentPart != null) && (this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null)) {      // if there is a local time signature map that is not empty
-            Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");                                             // get the timeSignature elements
-            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator")));  // compute the measure's (preliminary) length from the time signature
-        }
-        else if (this.helper.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getFirstChildElement("timeSignature") != null) {  // if there is a global time signature map
-            Elements es = this.helper.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");       // get the timeSignature elements
-            dur1 = this.helper.computeMeasureLength(Double.parseDouble(es.get(es.size()-1).getAttributeValue("numerator")), Double.parseDouble(es.get(es.size()-1).getAttributeValue("denominator")));  // compute the measure's (preliminary) length from the time signature
-        }
-
-        measure.addAttribute(new Attribute("midi.dur", Double.toString(dur1)));                                 // add attribute midi.dur and store the official (time signature defined) duration in it (this will be adapted some lines below if necessary)
-
         this.helper.currentMeasure = measure;                                                                   // set the state variable currentMeasure to this measure
 
         // process pending msm/mpm elements with a tstamp2 attribute
@@ -1495,50 +1481,91 @@ public class Mei extends meico.xml.XmlBase {
         // process the contents of the measure
         this.convert(measure);                                                                                  // process everything within the measure
         this.helper.accid.clear();                                                                              // accidentals are valid within one measure, but not in the subsequent measures, so forget them
-
-        // draw the duration of the measure
         this.helper.currentMeasure = null;                                                                      // this has to be set null so that getMidiTime() does not return the measure's date
-        double endDate = this.helper.getMidiTime();                                                             // get the current date
-        double dur2 = endDate - startDate;                                                                      // duration of the measure's content (ideally it is equal to the measure duration, but could also be over- or underful)
-        boolean durNotTimeSig = false;                                                                          // this will be set true if the measure's duration does not comply the time signature
-        if (dur1 >= dur2) {                                                                                     // if the measure is underfull or properly filled
-            if ((measure.getAttribute("metcon") != null) && (measure.getAttributeValue("metcon").equals("false"))) {    // if the measure's length does not have to correspond with the time signature
-                measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                               // take the duration from the fill state of the measure
-                durNotTimeSig = true;
-            }
-            else {                                                                                              // if the measure has to follow the time signature
-                // keep the measures official (time signature defined) length as set some lines above
-                endDate = startDate + dur1;                                                                     // in case it is underfull this ensures that the endDate of the measure is in accordance with the time signature and filled up with rests if necessary
-            }
-        }
-        else {                                                                                                  // if the measure is overfull
-            measure.getAttribute("midi.dur").setValue(Double.toString(dur2));                                   // take this longer duration as the measure's length
-            durNotTimeSig = true;
+
+        // check the time signature of the measure (can be local for each staff) and see if the measure's length fits
+        Attribute metconAtt = measure.getAttribute("metcon");                                                   // get the measure's metcon attribute, if it has one
+        boolean metcon = (metconAtt == null) || !metconAtt.getValue().equals("false");                          // does the measure conform to the time signature?
+
+        double defaultGlobalMeasureDuration = 0.0;
+        Element globalTimeSignature = null;
+        Element globalTsMap = this.helper.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap");
+        if (globalTsMap.getChildCount() > 0) {
+            Elements tss = globalTsMap.getChildElements("timeSignature");
+            globalTimeSignature = tss.get(tss.size() - 1);                                                      // get the latest global time signature
+            defaultGlobalMeasureDuration = this.helper.computeMeasureLength(Double.parseDouble(globalTimeSignature.getAttributeValue("numerator")), Double.parseDouble(globalTimeSignature.getAttributeValue("denominator")));
         }
 
-        // the measure length does not confirm the time signature, hence we need a new time signature entry at the measure's startDate and  another one ate the end so the next measure has the official time signature again
-        if (durNotTimeSig) {
-            double[] numDenom = this.helper.getCurrentTimeSignature();                                          // get the current time signature numerator and denominator
-            double num = (dur2 * numDenom[1]) / (this.helper.ppq * 4.0);                                        // from the actual duration of the measure and the denominator of the time signature compute the new numerator
-            Element ts = Msm.makeTimeSignature(startDate, num, (int)numDenom[1], null);                         // generate a new timeSignature element to be added to the global msm timeSignatureMap
-
-            Element tsMap = this.helper.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap");   // we are global here, so get the global timeSignatureMap
-            Elements tss = tsMap.getChildElements();                                                            // get all the child elements in the timeSignatureMap so far
-            for (int i = tss.size() - 1; i >= 0; --i) {                                                         // check the timeSignature elements from back to front
-                Element t = tss.get(i);                                                                         // get the element
-                if (Double.parseDouble(t.getAttributeValue("date")) >= startDate)                               // if its date is at or after the startDate of this measure
-                    tsMap.removeChild(t);                                                                       // it conflicts with the new timeSignature that we have to assign here, hence, remove it
+        double longestDuration = 0.0;                                                                           // we will have to choose the longest duration of all parts to set the measure's duration
+        HashMap<Element, Double> partsDefaultDurations = new HashMap<>();
+        HashMap<Element, KeyValue<Element, Element>> partsTsMapAndTs = new HashMap<>();
+        Elements parts = this.helper.currentMsmMovement.getChildElements("part");                               // get all MSM parts
+        for (Element part : parts) {                                                                            // for each part
+            Element tsMap = part.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap");        // get its local time signature map
+            Element ts = null;
+            if (tsMap.getChildCount() > 0) {                                                                    // if there is a nonempty local time signature map in this part
+                Elements tss = tsMap.getChildElements("timeSignature");
+                ts = tss.get(tss.size() - 1);                                                                   // get the latest time signature definition from there
+                partsTsMapAndTs.put(part, new KeyValue<>(tsMap, ts));
             }
 
-            tsMap.appendChild(ts);                                                                              // add the new timeSignature element to the global timeSignatureMap
-            Element tsBack = Msm.makeTimeSignature(endDate, numDenom[0], (int)numDenom[1], null);               // generate a timeSignature element to switch back to the official time signature at the end of the measure
-            tsMap.appendChild(tsBack);                                                                          // add it to the map
+            double defaultLocalMeasureDuration = (ts == null) ? defaultGlobalMeasureDuration : this.helper.computeMeasureLength(Double.parseDouble(ts.getAttributeValue("numerator")), Double.parseDouble(ts.getAttributeValue("denominator")));  // compute the measure's (preliminary) length from the time signature
+            partsDefaultDurations.put(part, defaultLocalMeasureDuration);
+            double actualPartMeasureDuration = Double.parseDouble(part.getAttributeValue("currentDate")) - startDate;   // compute the actual duration it has in this measure
+
+            // if the duration matches the measure's default duration or it is less and has to be extended, in every other case we have to adapt the measure's duration to its actual fill state, so we set the part's measure duration accordingly
+            double d = ((actualPartMeasureDuration == defaultLocalMeasureDuration) || ((actualPartMeasureDuration < defaultLocalMeasureDuration) && metcon)) ? defaultLocalMeasureDuration : actualPartMeasureDuration;
+            part.getAttribute("currentDate").setValue(Double.toString(d + startDate));                          // set the currentDate attribute
+            if (d > longestDuration)                                                                            // if this is longer than the longest duration so far
+                longestDuration = d;                                                                            // keep it
+        }
+        measure.addAttribute(new Attribute("midi.dur", Double.toString(longestDuration)));                      // add the measure's midi duration
+        double endDate = startDate + longestDuration;                                                           // compute the end date of the measure
+
+        // if the measure's duration does not comply the time signature we need to add an in-between time signature
+        if ((globalTimeSignature != null) && (longestDuration != defaultGlobalMeasureDuration)) {               // update global time signature map
+            globalTimeSignature.getAttribute("date").setValue(Double.toString(endDate));                        // take the last timeSignature element, give it a new date
+
+            // remove all timeSignature elements at and after startDate
+            for (Element prev = Helper.getPreviousSiblingElement(globalTimeSignature); prev != null; prev = Helper.getPreviousSiblingElement(globalTimeSignature)) {
+                if (Double.parseDouble(prev.getAttributeValue("date")) >= startDate) {
+                    prev.detach();
+                    globalTsMap.removeChild(prev);
+                } else
+                    break;
+            }
+
+            // create a new timeSignature element and add it at startDate
+            double[] numDenom = {Double.parseDouble(globalTimeSignature.getAttributeValue("numerator")), Double.parseDouble(globalTimeSignature.getAttributeValue("denominator"))};
+            double num = (longestDuration * numDenom[1]) / (this.helper.ppq * 4.0);                             // from the actual duration of the measure and the denominator of the time signature compute the new numerator
+            Element newTs = Msm.makeTimeSignature(startDate, num, (int)numDenom[1], null);                      // create the timeSignature element
+            globalTsMap.insertChild(newTs, globalTsMap.indexOf(globalTimeSignature));                           // insert it at the position of the previous timeSignature element so it moves one index further
         }
 
-        // go through all msm parts and set the currentDate attribute to endDate
-        Elements parts = this.helper.currentMsmMovement.getChildElements("part");                               // get all parts
-        for (int i=0; i < parts.size(); ++i)                                                                    // go through all the parts
-            parts.get(i).getAttribute("currentDate").setValue(Double.toString(endDate));                        // set their currentDate attribute
+        for (Element part : parts) {                                                                            // update local time signature maps
+            KeyValue<Element, Element> tsData = partsTsMapAndTs.get(part);
+            if ((tsData == null) || (partsDefaultDurations.get(part) == longestDuration))
+                continue;
+
+            Element tsMap = tsData.getKey();
+            Element ts = tsData.getValue();
+            ts.getAttribute("date").setValue(Double.toString(endDate));                                         // take the last timeSignature element, give it a new date
+
+            // remove all timeSignature elements at and after startDate
+            for (Element prev = Helper.getPreviousSiblingElement(ts); prev != null; prev = Helper.getPreviousSiblingElement(ts)) {
+                if (Double.parseDouble(prev.getAttributeValue("date")) >= startDate) {
+                    prev.detach();
+                    tsMap.removeChild(prev);
+                } else
+                    break;
+            }
+
+            // create a new timeSignature element and add it at startDate
+            double[] numDenom = {Double.parseDouble(ts.getAttributeValue("numerator")), Double.parseDouble(ts.getAttributeValue("denominator"))};
+            double num = (longestDuration * numDenom[1]) / (this.helper.ppq * 4.0);                             // from the actual duration of the measure and the denominator of the time signature compute the new numerator
+            Element newTs = Msm.makeTimeSignature(startDate, num, (int)numDenom[1], null);                      // create the timeSignature element
+            tsMap.insertChild(newTs, tsMap.indexOf(ts));                                                        // insert it at the position of the previous timeSignature element so it moves one index further
+        }
 
         // process barlines (end mark, repetition)
         if (measure.getAttribute("left") != null)                                                               // if the measure has a "left" attribute
@@ -1837,9 +1864,15 @@ public class Mei extends meico.xml.XmlBase {
         s.addAttribute(new Attribute("date", this.helper.getMidiTimeAsString()));                   // compute the date
 
         // count and unit are preferred in the processing; if not given take sym
-        if (((meiSource.getAttribute("count") != null) && (meiSource.getAttribute("unit") != null)) || ((meiSource.getAttribute("meter.count") != null) && (meiSource.getAttribute("meter.unit") != null))) {
+        Attribute count = meiSource.getAttribute("count");
+        if (count == null)
+            count = meiSource.getAttribute("meter.count");
+        Attribute unit = meiSource.getAttribute("unit");
+        if (unit == null)
+            unit = meiSource.getAttribute("meter.unit");
+        if ((count != null) && (unit != null)) {
             // the meter.count attribute may also be like "2+5.5+3.857"
-            String str = (meiSource.getLocalName().equals("meterSig")) ? meiSource.getAttributeValue("count") : meiSource.getAttributeValue("meter.count");
+            String str = count.getValue();
             Double result = 0.0;
             String num = "";
             for (int i = 0; i < str.length(); ++i) {
@@ -1853,26 +1886,30 @@ public class Mei extends meico.xml.XmlBase {
             }
             result += (num.isEmpty()) ? 0.0 : Double.parseDouble(num);
             s.addAttribute(new Attribute("numerator", Double.toString(result)));                // store numerator
-            s.addAttribute(new Attribute("denominator", (meiSource.getLocalName().equals("meterSig")) ? meiSource.getAttributeValue("unit") : meiSource.getAttributeValue("meter.unit")));        // store denominator
+            s.addAttribute(new Attribute("denominator", unit.getValue()));                      // store denominator
             this.helper.addLayerAttribute(s);                                                   // add an attribute that indicates the layer
             return s;
         }
-        else {      // process meter.sym / sym
-            if ((meiSource.getAttribute("sym") != null) || (meiSource.getAttribute("meter.sym") != null)) {
-                String str = (meiSource.getLocalName().equals("meterSig")) ? meiSource.getAttributeValue("sym") : meiSource.getAttributeValue("meter.sym");
-                if (str.equals("common")) {
-                    s.addAttribute(new Attribute("numerator", "4"));                        // store numerator
-                    s.addAttribute(new Attribute("denominator", "4"));                      // store denominator
-                    this.helper.addLayerAttribute(s);                                       // add an attribute that indicates the layer
-                    return s;
-                } else if (str.equals("cut")) {
-                    s.addAttribute(new Attribute("numerator", "2"));                        // store numerator
-                    s.addAttribute(new Attribute("denominator", "2"));                      // store denominator
-                    this.helper.addLayerAttribute(s);                                       // add an attribute that indicates the layer
-                    return s;
-                }
+
+        // process meter.sym / sym
+        Attribute sym = meiSource.getAttribute("sym");
+        if (sym == null)
+            sym = meiSource.getAttribute("meter.sym");
+        if (sym != null) {
+            String str = (meiSource.getLocalName().equals("meterSig")) ? meiSource.getAttributeValue("sym") : meiSource.getAttributeValue("meter.sym");
+            if (str.equals("common")) {
+                s.addAttribute(new Attribute("numerator", "4"));                        // store numerator
+                s.addAttribute(new Attribute("denominator", "4"));                      // store denominator
+                this.helper.addLayerAttribute(s);                                       // add an attribute that indicates the layer
+                return s;
+            } else if (str.equals("cut")) {
+                s.addAttribute(new Attribute("numerator", "2"));                        // store numerator
+                s.addAttribute(new Attribute("denominator", "2"));                      // store denominator
+                this.helper.addLayerAttribute(s);                                       // add an attribute that indicates the layer
+                return s;
             }
         }
+
         return null;
     }
 
@@ -2009,8 +2046,6 @@ public class Mei extends meico.xml.XmlBase {
                 chord.addAttribute(new Attribute("dots", this.helper.currentChord.getAttributeValue("dots")));      // take this
             }
         }
-
-        this.helper.checkTies(chord);                                       // check for pending ties
 
         // make sure that we have a duration for this chord
         double dur = 0.0;                                                   // this holds the duration of the chord
@@ -2583,7 +2618,7 @@ public class Mei extends meico.xml.XmlBase {
                     }
 
                     // create the articulation from tstamp/tstamp.ges including the risk that it does not fall on a note's date and will, thus, have no effect on the music
-                    System.out.println("MEI element " + breath.toXML() + " is not associated with a note or chord. If its 'tstamp.ges' or 'tstamp' does not coincied with a note it will have no effect on the musc!");
+                    System.out.println("MEI element " + breath.toXML() + " is not associated with a note or chord. If its 'tstamp.ges' or 'tstamp' does not coincide with a note it will have no effect on the musc!");
                     double date = this.helper.tstampToTicks(att.getValue());                                            // compute the midi date of the instruction from tstamp
 
                     // make sure there is a styleDef in MPM for articulation definitions because MEI uses only descriptors an no numerical specification of articulations
@@ -2602,7 +2637,7 @@ public class Mei extends meico.xml.XmlBase {
                         articulationMap = (ArticulationMap) this.helper.currentPerformance.getGlobal().getDated().getMap(Mpm.ARTICULATION_MAP);     // get the global articulationMap
                         if (articulationMap == null) {                                                                                              // if there is no global articulationMap
                             articulationMap = (ArticulationMap) this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.ARTICULATION_MAP); // create one
-                            articulationMap.addStyleSwitch(0.0, "MEI export", "defaultArticulation");                   // set its start style reference
+                            articulationMap.addStyleSwitch(0.0, "MEI export", "nonlegato");                             // set its start style reference
                         }
                         this.addArticulationToMap(date, "breath", xmlid, null, articulationMap, articulationStyle);     // add the new articulation instruction
                     }
@@ -2619,7 +2654,7 @@ public class Mei extends meico.xml.XmlBase {
                             articulationMap = (ArticulationMap) part.getDated().getMap(Mpm.ARTICULATION_MAP);           // get the part's articulationMap
                             if (articulationMap == null) {                                                              // if it has none so far
                                 articulationMap = (ArticulationMap) part.getDated().addMap(Mpm.ARTICULATION_MAP);       // create it
-                                articulationMap.addStyleSwitch(0.0, "MEI export", "defaultArticulation");               // set the style reference
+                                articulationMap.addStyleSwitch(0.0, "MEI export", "nonlegato");                         // set the style reference
                             }
                             this.addArticulationToMap(date, "breath", (xmlid == null) ? null :  ((multiIds) ? (xmlid + "_meico_" + UUID.randomUUID().toString()) : xmlid), null, articulationMap, articulationStyle); // generate and add the new articulation instruction
                             multiIds = true;
@@ -2670,24 +2705,22 @@ public class Mei extends meico.xml.XmlBase {
             else {                                              // otherwise the element had no tie attribute
                 note.addAttribute(new Attribute("tie", "i"));   // hence, we add an initial tie attribute
             }
-
-            this.helper.ties.add(tie);                              // add the tie to the ties list
         }
 
-//        // find the endid note and set its tie attribute
-//        note = this.helper.allNotesAndChords.get(tie.getAttributeValue("endid").trim().replace("#", ""));
-//        if (note != null) {
-//            Attribute a = note.getAttribute("tie");             // get its tie attribute if it has one
-//            if (a != null) {                                    // if the note has already a tie attribute
-//                if (a.getValue().equals("i"))                   // but it says that the tie starts here
-//                    a.setValue("m");                            // make an intermediate tie out of it
-//                else if (a.getValue().equals("n"))              // but it says "no tie"
-//                    a.setValue("t");                            // make a terminal tie out of it
-//            }
-//            else {                                              // otherwise the element had no tie attribute
-//                note.addAttribute(new Attribute("tie", "t"));   // hence, we add an terminal tie attribute
-//            }
-//        }
+        // find the endid note and set its tie attribute
+        note = this.helper.allNotesAndChords.get(tie.getAttributeValue("endid").trim().replace("#", ""));
+        if (note != null) {
+            Attribute a = note.getAttribute("tie");             // get its tie attribute if it has one
+            if (a != null) {                                    // if the note has already a tie attribute
+                if (a.getValue().equals("i"))                   // but it says that the tie starts here
+                    a.setValue("m");                            // make an intermediate tie out of it
+                else if (a.getValue().equals("n"))              // but it says "no tie"
+                    a.setValue("t");                            // make a terminal tie out of it
+            }
+            else {                                              // otherwise the element had no tie attribute
+                note.addAttribute(new Attribute("tie", "t"));   // hence, we add an terminal tie attribute
+            }
+        }
     }
 
     /**
@@ -3373,7 +3406,6 @@ public class Mei extends meico.xml.XmlBase {
         note.addAttribute(new Attribute("midi.dur", String.valueOf(dur)));
 
         // handle ties
-        this.helper.checkTies(note);                                            // check for pending tie elements
         char tie = 'n';                                                         // what kind of tie is it? i: initial, m: medial, t: terminal, n: nothing
         Attribute tieAtt = note.getAttribute("tie");                            // get the tie attribute
         if (tieAtt != null) {                                                   // if the note has a tie attribute

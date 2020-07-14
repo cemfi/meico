@@ -43,7 +43,6 @@ public class Helper {
     protected ArrayList<Element> accid = new ArrayList<>();             // holds accidentals that appear within measures to be considered during pitch computation
     protected ArrayList<Element> endids = new ArrayList<>();            // msm and mpm elements that will be terminated at the time position of an mei element with a specified endid
     protected ArrayList<Element> tstamp2s = new ArrayList<>();          // mpm elements that will be terminated at a position in another measure indicated by attribute tstamp2
-    protected ArrayList<Element> ties = new ArrayList<>();              // a list of pending MEI tie elements
     protected ArrayList<Element> lyrics = new ArrayList<>();            // this is used to collect lyrics converted from mei syl elements to be added to an msm note
     protected HashMap<String, Element> allNotesAndChords = new HashMap<>(); // when converting a new mdiv this hashmap is created first to accelarate lookup for notes and chords via xml:id
     protected Performance currentPerformance = null;                    // a quick link to the current movement's current performance
@@ -80,7 +79,6 @@ public class Helper {
         this.accid.clear();
         this.endids.clear();
         this.tstamp2s.clear();
-        this.ties.clear();
         this.lyrics.clear();
         this.allNotesAndChords.clear();
     }
@@ -188,20 +186,17 @@ public class Helper {
      * @return
      */
     public static Element getNextSiblingElement(Element ofThis) {
-        if (ofThis == null) return null;
+        if (ofThis == null)
+            return null;
 
         if (ofThis == ofThis.getDocument().getRootElement())                // if we are at the root of the document
             return null;                                                    // there can be no siblings, hence return null
 
-        Elements es = ((Element)ofThis.getParent()).getChildElements();     // get a list of all siblings
+        int index = ofThis.getParent().indexOf(ofThis);
+        if (index >= (ofThis.getParent().getChildCount() - 1))
+            return null;
 
-        for (int i = es.size()-2; i >= 0; i--) {                            // go through all siblings starting at the element before the last (the last one cannot have a successor)
-            if (ofThis == es.get(i)) {                                      // if ofThis was found
-                return es.get(i+1);                                         // the successor is the next sibling
-            }
-        }
-
-        return null;                                                        // ofThis is the final element and has no next sibling
+        return (Element) ofThis.getParent().getChild(index + 1);
     }
 
     /**
@@ -211,7 +206,8 @@ public class Helper {
      * @return
      */
     public static Element getNextSiblingElement(String name, Element ofThis) {
-        if (ofThis == null) return null;
+        if (ofThis == null)
+            return null;
 
         if (ofThis == ofThis.getDocument().getRootElement())                // if we are at the root of the document
             return null;                                                    // there can be no siblings, hence return null
@@ -237,20 +233,17 @@ public class Helper {
      * @return
      */
     public static Element getPreviousSiblingElement(Element ofThis) {
-        if (ofThis == null) return null;
+        if (ofThis == null)
+            return null;
 
         if (ofThis == ofThis.getDocument().getRootElement())                // if we are at the root of the document
             return null;                                                    // there can be no siblings, hence return null
 
-        Elements es = ((Element)ofThis.getParent()).getChildElements();     // get a list of all siblings
+        int index = ofThis.getParent().indexOf(ofThis);
+        if (index == 0)
+            return null;
 
-        for (int i=1; i < es.size(); ++i) {                                 // go through all siblings starting at the second (the first cannot have a predecessor)
-            if (ofThis == es.get(i)) {                                      // if ofThis was found
-                return es.get(i-1);                                         // the predecessor is the previous sibling
-            }
-        }
-
-        return null;                                                        // ofThis is the final element and has no next sibling
+        return (Element) ofThis.getParent().getChild(index - 1);
     }
 
     /**
@@ -260,7 +253,8 @@ public class Helper {
      * @return
      */
     public static Element getPreviousSiblingElement(String name, Element ofThis) {
-        if (ofThis == null) return null;
+        if (ofThis == null)
+            return null;
 
         if (ofThis == ofThis.getDocument().getRootElement())                // if we are at the root of the document
             return null;                                                    // there can be no siblings, hence return null
@@ -896,40 +890,6 @@ public class Helper {
     }
 
     /**
-     * return the first element in the ties list with an endid attribute value that equals id
-     * @param id
-     * @return the index in the ties list or -1 if not found
-     */
-    private int getTie(String id) {
-        for (int i=0; i < this.ties.size(); ++i) {                        // go through the list of pending elements to be ended
-            if (this.ties.get(i).getAttributeValue("endid").equals(id))   // found
-                return i;                                                 // return it
-        }
-        return -1;
-    }
-
-    /**
-     * check for pending ties that might end at this note or chord
-     * @param e an MEI note or chord element
-     */
-    protected void checkTies(Element e) {
-        String id = "#" + Helper.getAttributeValue("id", e);                // get id of the current element
-        for (int j = this.getTie(id); j >= 0; j = this.getTie(id)) {        // find all pending elements in the ties list to be finished at this element
-            Attribute a = e.getAttribute("tie");                            // get its tie attribute if it has one
-            if (a != null) {                                                // if the note has already a tie attribute
-                if (a.getValue().equals("i"))                               // but it says that the tie is initial
-                    a.setValue("m");                                        // make an intermediate tie out of it
-                else if (a.getValue().equals("n"))                          // but it says "no tie"
-                    a.setValue("t");                                        // make a terminal tie out of it
-            }
-            else {                                                          // otherwise the element had no tie attribute
-                e.addAttribute(new Attribute("tie", "t"));                  // hence, we add a terminal tie attribute
-            }
-            this.ties.remove(j);                                            // remove element from list, it is finished
-        }
-    }
-
-    /**
      * this method is for note elements to check whether one of the pending slurs applies for it
      * @param e
      */
@@ -1279,11 +1239,11 @@ public class Helper {
         }
 
         // tupletSpans
-        LinkedList<Element> tps = new LinkedList<>();
+        LinkedList<Element> tps;
         if (this.currentPart != null) {                                                                                                                                             // we have to be in a staff environment for this
-            tps = Helper.getAllChildElements("tupletSpan", this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap"));   // get al local tupletSpans
+            tps = Helper.getAllChildElements("tupletSpan", this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap"));   // get all local tupletSpans
         } else {
-            tps = Helper.getAllChildElements("tupletSpan", this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap")); // get all globalo tipletSpans
+            tps = Helper.getAllChildElements("tupletSpan", this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap")); // get all globalo tupletSpans
         }
 
         for (int i = tps.size() - 1; i >= 0; --i) {                                                                                                             // go through all these tupletSpans, starting with the last

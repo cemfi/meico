@@ -1,6 +1,15 @@
 ### Version History
 
 
+#### v0.8.12
+- Enhancement of the processing of MEI `tie` element.
+- Bugfix in method `meico.mei.Mei.processBreath()` that generated a wrong default articulation.
+- Bugfix in method `meico.mpm.elements.maps.ArticulationMap.renderArticulationToMap_noMillisecondModifiers()`: NullPointerException in an error message.
+- Optimization of methods `meico.mei.Helper.getPreviousSiblingElement()` and `getNextSiblingElement()`.
+- An extensive overhaul of method `meico.mei.Mei.processMeasure()` which is now able to handle the situation that no global time signature is given (via `scoreDef`) and only locally defined in the `staffDef` elements.
+- Some code polishing.
+
+
 #### v0.8.11
 - Another bugfix: The `endid` of MEI `tie` elements was not properly resolved.
 

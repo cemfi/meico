@@ -415,7 +415,7 @@ public class ArticulationMap extends GenericMap {
 
             ArticulationDef aDef = aStyle.getArticulationDef(defaultArticulationAtt.getValue());
             if (aDef == null)
-                System.err.println("Warning: attribute " + Helper.getAttribute("defaultArticulation", this.getXml()).toXML() + " in style element refers to an unknown articulationDef.");
+                System.err.println("Warning: attribute " + Helper.getAttribute("defaultArticulation", styleEntry.getValue()).toXML() + " in style element refers to an unknown articulationDef.");
             defaultArticulations.add(new KeyValue<>(styleEntry.getKey(), aDef));
         }
 
