@@ -1625,20 +1625,18 @@ public class Mei extends meico.xml.XmlBase {
             }
         }
 
-        Attribute accidAtt = accid.getAttribute("accid");                               // get the accid attribute
         Attribute accidGesAtt = accid.getAttribute("accid.ges");                        // get the accid.ges attribute
-        if ((accidAtt == null)) {                                                       // this accid is not visible (hence, it applies only to its parent note)
-            if ((accidGesAtt != null)                                                   // but it has a gestural attribute accid.ges
-                    && (parentNote != null)                                             // and it has a parent note
-                    && (parentNote.getAttribute("accid.ges") == null)) {                // and the parent note has no preexistent accid.ges (if it has one it dominates)
-                parentNote.addAttribute(new Attribute("accid.ges", accidGesAtt.getValue()));    // add the accid.ges attribute to the note
-            }
+        if ((accidGesAtt != null) && (parentNote != null) && (parentNote.getAttribute("accid.ges") == null))    // if we have an accid.ges attribute and a parent note with no accid.ges attribute (because we do not want to overwrite it)
+            parentNote.addAttribute(new Attribute("accid.ges", accidGesAtt.getValue()));// add the accid.ges attribute to the note
+
+        Attribute accidAtt = accid.getAttribute("accid");                               // get the accid attribute
+        if (accidAtt == null)                                                           // this accid is not visible which means it applies only to the parent note and not to subsequent notes
             return;                                                                     // done, no need to add this accid to the helper.accid list since it applies only to this parent note or none if no parent note is given
-        }
+        if ((parentNote != null) && (parentNote.getAttribute("accid") == null))         // if we have an accid attribute and a parent note with no accid attribute (because we do not want to overwrite it)
+            parentNote.addAttribute(new Attribute("accid", accidAtt.getValue()));       // add the accid attribute to the note
 
         // determin pitchname
         Attribute ploc = accid.getAttribute("ploc");                                    // get the pitch class
-        Attribute oloc = accid.getAttribute("oloc");                                    // get the octave
         String pname = null;
         if (ploc != null) {                                                             // first check for a ploc attribute
             pname = ploc.getValue();                                                    // get its value string
@@ -1662,6 +1660,7 @@ public class Mei extends meico.xml.XmlBase {
 
 
         // determine octave
+        Attribute oloc = accid.getAttribute("oloc");                                    // get the octave
         String oct = null;
         if (oloc != null) {                                                             // first check for the oloc attribute
             oct = oloc.getValue();                                                      // get its value string
@@ -1674,9 +1673,9 @@ public class Mei extends meico.xml.XmlBase {
                         oct = parentNote.getAttributeValue("oct.ges");                  // get its value string
                     } else {                                                            // no oct.ges on the note
                         if (this.helper.currentPart != null) {                          // try finding a default octave
-                            Elements octs = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octave
+                            Elements octs = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");                              // get all local default octaves
                             if (octs.size() == 0) {                                                                                                                                             // if there is none
-                                octs = this.helper.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octave
+                                octs = this.helper.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("miscMap").getChildElements("oct.default");// get all global default octaves
                             }
                             for (int i = octs.size() - 1; i >= 0; --i) {                                                                                                                        // search from back to front
                                 if ((octs.get(i).getAttribute("layer") == null) || octs.get(i).getAttributeValue("layer").equals(Helper.getLayerId(Helper.getLayer(accid)))) {                  // for a default octave with no layer dependency or a matching layer
@@ -1697,12 +1696,10 @@ public class Mei extends meico.xml.XmlBase {
                 return;
             }
         }
-        accid.addAttribute(new Attribute("oct", oct));                                  // make an oct attribute and add it to the accidental so it is compatible with note elements an can be processed similarly in Helper.computePitch()
+        accid.addAttribute(new Attribute("oct", oct));                                  // make an oct attribute and add it to the accidental so it is compatible with note elements and can be processed similarly in Helper.computePitch()
 
         this.helper.addLayerAttribute(accid);                                           // add an attribute that indicates the layer
-
-        if (accid.getAttribute("accid") != null)                                        // remember this accidental for the rest of the measure only if it is visual, gestural is only for the current note
-            this.helper.accid.add(accid);
+        this.helper.accid.add(accid);                                                   // remember this accidental for the rest of the measure only if it is visual, gestural is only for the current note
     }
 
     /**

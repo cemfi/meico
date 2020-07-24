@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.13
+- Fix of the processing of `<accid>` elements where the parent `<note>` has different graphical and gestural pitch, see issue [#17](https://github.com/cemfi/meico/issues/17).
+
+
 #### v0.8.12
 - Enhancement of the processing of MEI `tie` element.
 - Bugfix in method `meico.mei.Mei.processBreath()` that generated a wrong default articulation.
