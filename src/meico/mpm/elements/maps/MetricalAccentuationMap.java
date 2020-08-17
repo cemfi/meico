@@ -79,6 +79,27 @@ public class MetricalAccentuationMap extends GenericMap {
      * @param accentuationPatternDefName a reference to an accentuationPatternDef
      * @param scale
      * @param loop
+     * @param stickToMeasures restart the pattern with every measure when this is set true (default behavior even if it is not specified)
+     * @return
+     */
+    public int addAccentuationPattern(double date, String accentuationPatternDefName, double scale, boolean loop, boolean stickToMeasures) {
+        Element e = new Element("accentuationPattern", Mpm.MPM_NAMESPACE);
+        e.addAttribute(new Attribute("date", Double.toString(date)));
+        e.addAttribute(new Attribute("name.ref", accentuationPatternDefName));
+        e.addAttribute(new Attribute("scale", Double.toString(scale)));
+        e.addAttribute(new Attribute("loop", Boolean.toString(loop)));
+        e.addAttribute(new Attribute("stickToMeasures", Boolean.toString(stickToMeasures)));
+
+        KeyValue<Double, Element> kv = new KeyValue<>(date, e);
+        return this.insertElement(kv, false);
+    }
+
+    /**
+     * add an accentuationPattern element to the map
+     * @param date
+     * @param accentuationPatternDefName a reference to an accentuationPatternDef
+     * @param scale
+     * @param loop
      * @return
      */
     public int addAccentuationPattern(double date, String accentuationPatternDefName, double scale, boolean loop) {

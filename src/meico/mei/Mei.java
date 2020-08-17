@@ -940,7 +940,7 @@ public class Mei extends meico.xml.XmlBase {
         if (((globalTempoMap == null) || (globalTempoMap.getElementBeforeAt(0.0) == null)) && (this.helper.currentWork != null)) {  // if the global tempoMap has no initial tempo and if we have a work element in meiHead
             Element tempo = Helper.getFirstChildElement("tempo", this.helper.currentWork);
             if (tempo != null) {                                                                                                    // and it contains a tempo element
-                TempoData tempoData = this.helper.parseTempo(tempo);
+                TempoData tempoData = this.helper.parseTempo(tempo, null);
                 if (tempoData != null) {
                     if (globalTempoMap == null) {
                         globalTempoMap = this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.TEMPO_MAP);               // make sure there is a global tempoMap
@@ -1350,7 +1350,7 @@ public class Mei extends meico.xml.XmlBase {
      */
     private void processPhrase(Element phrase) {
         // compute the timing or get the necessary data to compute the end date later on
-        ArrayList<Object> timingData = this.helper.computeControlEventTiming(phrase);
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(phrase, this.helper.currentPart);
         if (timingData == null)                                                                                 // if the event has been repositioned in accordance to a startid attribute
             return;                                                                                             // stop processing it right now
         Double date = (Double) timingData.get(0);
@@ -1466,7 +1466,7 @@ public class Mei extends meico.xml.XmlBase {
             String[] tstamp2 = att.getValue().split("m\\+");                                                    // separate measures and position part
             int measures = Integer.parseInt(tstamp2[0]) - 1;                                                    // decrease the measures part of the tstamp2 string
             if (measures <= 0) {                                                                                // we finally arrived at the measure indicated in tstamp2
-                double endDate = this.helper.tstampToTicks(tstamp2[1]);                                         // compute the endDate
+                double endDate = this.helper.tstampToTicks(tstamp2[1], null);                                   // compute the endDate
                 e.addAttribute(new Attribute("date.end", Double.toString(endDate)));                            // add new attribute date.end, will be resolved during mpmPostprocessing()
                 e.removeAttribute(att);                                                                         // remove the tstamp2 attribute
                 this.helper.tstamp2s.remove(i);                                                                 // remove the element from the tstamp2s list
@@ -2102,7 +2102,7 @@ public class Mei extends meico.xml.XmlBase {
         }
 
         // compute the timing or get the necessary data to compute the end date later on
-        ArrayList<Object> timingData = this.helper.computeControlEventTiming(tupletSpan);
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(tupletSpan, this.helper.currentPart);
         if (timingData == null)                                                                         // if the event has been repositioned in accordance to a startid attribute
             return;                                                                                     // stop processing it right now
         Double date = (Double) timingData.get(0);
@@ -2229,7 +2229,7 @@ public class Mei extends meico.xml.XmlBase {
         }
 
         // compute the timing or get the necessary data to compute the end date later on
-        ArrayList<Object> timingData = this.helper.computeControlEventTiming(dynam);
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(dynam, this.helper.currentPart);
         if (timingData == null)                                                                                 // if the event has been repositioned in accordance to a startid attribute
             return;                                                                                             // stop processing it right now
         dd.startDate = (Double) timingData.get(0);
@@ -2338,12 +2338,12 @@ public class Mei extends meico.xml.XmlBase {
      * @param tempo
      */
     private void processTempo(Element tempo) {
-        TempoData tempoData = this.helper.parseTempo(tempo);                                                        // tempo data to generate an entry in an MPM tempoMap
+        TempoData tempoData = this.helper.parseTempo(tempo, this.helper.currentPart);                               // tempo data to generate an entry in an MPM tempoMap
         if (tempoData == null)
             return;
 
         // compute the timing or get the necessary data to compute the end date later on
-        ArrayList<Object> timingData = this.helper.computeControlEventTiming(tempo);
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(tempo, this.helper.currentPart);
         if (timingData == null)                                                                                     // if the event has been repositioned in accordance to a startid attribute
             return;                                                                                                 // stop processing it right now
         tempoData.startDate = (Double) timingData.get(0);
@@ -2579,7 +2579,7 @@ public class Mei extends meico.xml.XmlBase {
                 }
                 articulationStyle.addArticulationDef(def);
             }
-            articulationMap.addArticulation(date, artic, "#" + noteid, id);     // generate an articulation for the given id at the given date and with the specific descriptor
+            articulationMap.addArticulation(date, artic, ((noteid == null) ? null : ("#" + noteid)), id);     // generate an articulation for the given id at the given date and with the specific descriptor
         }
     }
 
@@ -2615,8 +2615,8 @@ public class Mei extends meico.xml.XmlBase {
                     }
 
                     // create the articulation from tstamp/tstamp.ges including the risk that it does not fall on a note's date and will, thus, have no effect on the music
-                    System.out.println("MEI element " + breath.toXML() + " is not associated with a note or chord. If its 'tstamp.ges' or 'tstamp' does not coincide with a note it will have no effect on the musc!");
-                    double date = this.helper.tstampToTicks(att.getValue());                                            // compute the midi date of the instruction from tstamp
+                    System.out.println("MEI element " + breath.toXML() + " is not associated with a note or chord. If its 'tstamp.ges' or 'tstamp' does not coincide with a note it will have no effect on the music!");
+                    String tstamp = att.getValue();
 
                     // make sure there is a styleDef in MPM for articulation definitions because MEI uses only descriptors an no numerical specification of articulations
                     ArticulationStyle articulationStyle = (ArticulationStyle) this.helper.currentPerformance.getGlobal().getHeader().getStyleDef(Mpm.ARTICULATION_STYLE, "MEI export"); // get the global articulationStyle/styleDef element
@@ -2636,6 +2636,7 @@ public class Mei extends meico.xml.XmlBase {
                             articulationMap = (ArticulationMap) this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.ARTICULATION_MAP); // create one
                             articulationMap.addStyleSwitch(0.0, "MEI export", "nonlegato");                             // set its start style reference
                         }
+                        double date = this.helper.tstampToTicks(tstamp, this.helper.currentPart);                       // compute the midi date of the instruction from tstamp
                         this.addArticulationToMap(date, "breath", xmlid, null, articulationMap, articulationStyle);     // add the new articulation instruction
                     }
                     else {                                                                                              // there are staffs, hence, local articulation instruction
@@ -2644,15 +2645,26 @@ public class Mei extends meico.xml.XmlBase {
                         boolean multiIds = false;
 
                         for (String staff : staffs) {                                                                   // go through all the part numbers
-                            Part part = this.helper.currentPerformance.getPart(Integer.parseInt(staff));                // find that part in the performance data structure
-                            if (part == null)                                                                           // if not found
+                            Part mpmPart = this.helper.currentPerformance.getPart(Integer.parseInt(staff));             // find that part in the performance data structure
+                            if (mpmPart == null)                                                                        // if not found
                                 continue;                                                                               // continue with the next
 
-                            articulationMap = (ArticulationMap) part.getDated().getMap(Mpm.ARTICULATION_MAP);           // get the part's articulationMap
+                            articulationMap = (ArticulationMap) mpmPart.getDated().getMap(Mpm.ARTICULATION_MAP);        // get the part's articulationMap
                             if (articulationMap == null) {                                                              // if it has none so far
-                                articulationMap = (ArticulationMap) part.getDated().addMap(Mpm.ARTICULATION_MAP);       // create it
+                                articulationMap = (ArticulationMap) mpmPart.getDated().addMap(Mpm.ARTICULATION_MAP);    // create it
                                 articulationMap.addStyleSwitch(0.0, "MEI export", "nonlegato");                         // set the style reference
                             }
+
+                            // find corresponding MSM part
+                            Element msmPart = null;
+                            for (Element part : this.helper.currentMsmMovement.getChildElements("part")) {
+                                if (part.getAttributeValue("number").equals(staff)) {
+                                    msmPart = part;
+                                    break;
+                                }
+                            }
+
+                            double date = this.helper.tstampToTicks(tstamp, msmPart);                                   // compute the midi date of the instruction from tstamp
                             this.addArticulationToMap(date, "breath", (xmlid == null) ? null :  ((multiIds) ? (xmlid + "_meico_" + UUID.randomUUID().toString()) : xmlid), null, articulationMap, articulationStyle); // generate and add the new articulation instruction
                             multiIds = true;
                         }
@@ -2780,7 +2792,7 @@ public class Mei extends meico.xml.XmlBase {
         }
 
         // compute the timing or get the necessary data to compute the end date later on
-        ArrayList<Object> timingData = this.helper.computeControlEventTiming(slur);
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(slur, this.helper.currentPart);
         if (timingData == null)                                                                         // if the event has been repositioned in accordance to a startid attribute
             return;                                                                                     // stop processing it right now
         Double date = (Double) timingData.get(0);
@@ -2918,7 +2930,7 @@ public class Mei extends meico.xml.XmlBase {
      * @param mRpt an mei mRpt elemnet
      */
     private void processMRpt(Element mRpt) {
-        this.processRepeat(this.helper.getOneMeasureLength());
+        this.processRepeat(this.helper.getOneMeasureLength(this.helper.currentPart));
     }
 
 
@@ -2927,7 +2939,7 @@ public class Mei extends meico.xml.XmlBase {
      * @param mRpt2 an mei mRpt2 element
      */
     private void processMRpt2(Element mRpt2) {
-        double timeframe = this.helper.getOneMeasureLength();
+        double timeframe = this.helper.getOneMeasureLength(this.helper.currentPart);
 
         // get the value of one measure from the local or global timeSignatureMap
         Elements es = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
@@ -2951,7 +2963,7 @@ public class Mei extends meico.xml.XmlBase {
                 first.addAttribute(new Attribute("date", this.helper.currentPart.getAttributeValue("currentDate")));  // draw date of first  to currentDate
 
                 // set date of the last time signature element to the beginning of currentDate + 1 measure
-                double timeframe2 = (4.0 * this.helper.ppq * Double.parseDouble(first.getAttributeValue("numerator"))) / Double.parseDouble(first.getAttributeValue("denominator"));    // compute the length of one measure of time signature element first
+                double timeframe2 = (4.0 * this.helper.ppq * Double.parseDouble(first.getAttributeValue("numerator"))) / Double.parseDouble(first.getAttributeValue("denominator"));// compute the length of one measure of time signature element first
                 second.getAttribute("date").setValue(Double.toString(Double.parseDouble(this.helper.currentPart.getAttributeValue("currentDate")) + timeframe2));                   // draw date of second time signature element
 
                 // add both instructions to the timeSignatureMap
@@ -2972,7 +2984,7 @@ public class Mei extends meico.xml.XmlBase {
     private void processMultiRpt(Element multiRpt) {
         double timeframe = 0;                                                                                                                                                           // here comes the length of the timeframe to be repeated
         double currentDate = this.helper.getMidiTime();
-        double measureLength = currentDate - this.helper.getOneMeasureLength();                                                                                                         // length of one measure in ticks
+        double measureLength = currentDate - this.helper.getOneMeasureLength(this.helper.currentPart);                                                                                  // length of one measure in ticks
 
         // get time signature element
         Elements ts = this.helper.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");
@@ -3009,7 +3021,7 @@ public class Mei extends meico.xml.XmlBase {
      * @param halfmRpt an mei halfmRpt element
      */
     private void processHalfmRpt(Element halfmRpt) {
-        this.processRepeat(0.5 * this.helper.getOneMeasureLength());
+        this.processRepeat(0.5 * this.helper.getOneMeasureLength(this.helper.currentPart));
     }
 
     /**
@@ -3195,7 +3207,7 @@ public class Mei extends meico.xml.XmlBase {
         }
 
         // compute the timing or get the necessary data to compute the end date later on
-        ArrayList<Object> timingData = this.helper.computeControlEventTiming(octave);
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(octave, this.helper.currentPart);
         if (timingData == null)                                                                         // if the event has been repositioned in accordance to a startid attribute
             return;                                                                                     // stop processing it right now
         Double date = (Double) timingData.get(0);
@@ -3275,7 +3287,7 @@ public class Mei extends meico.xml.XmlBase {
         }
 
         // compute the timing or get the necessary data to compute the end date later on
-        ArrayList<Object> timingData = this.helper.computeControlEventTiming(pedal);
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(pedal, this.helper.currentPart);
         if (timingData == null)                                                                                 // if the event has been repositioned in accordance to a startid attribute
             return;                                                                                             // stop processing it right now
         Double date = (Double) timingData.get(0);

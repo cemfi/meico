@@ -381,24 +381,26 @@ public class Helper {
 
     /**
      * compute the length of one measure in midi ticks at the currentDate in the currentPart of the currentMovement; if no time signature information available it returns the length of a 4/4 measure
+     * @param msmPartContext specify the MSM part in which's context the (possibly local) measure length is determined or set it null, this is necessary as currentPart is not necessarily the correct context
      * @return
      */
-    protected double getOneMeasureLength() {
-        double[] ts = this.getCurrentTimeSignature();
+    protected double getOneMeasureLength(Element msmPartContext) {
+        double[] ts = this.getCurrentTimeSignature(msmPartContext);
         return (4.0 * this.ppq * ts[0]) / ts[1];
     }
 
     /**
      * get the current time signature as tuplet of doubles [numerator, denominator]
+     * @param msmPartContext specify the MSM part in which's context the (possibly local) time signature is determined or set it null, this is necessary as currentPart is not necessarily the correct context
      * @return
      */
-    protected double[] getCurrentTimeSignature() {
+    protected double[] getCurrentTimeSignature(Element msmPartContext) {
         // get the value of one measure from the local or global timeSignatureMap
         Elements es = null;
-        if (this.currentPart != null)                                                                                                                                           // we are within a part
-            es = this.currentPart.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");                                     // try to get its timeSignature
+        if (msmPartContext != null)                                                                                                                                           // we are within a part
+            es = msmPartContext.getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements();                                                    // try to get its timeSignature
         if ((es == null) || (es.size() == 0))                                                                                                                                   // if we are outside a part or the local map is empty
-            es = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements("timeSignature");  // get global entries
+            es = this.currentMsmMovement.getFirstChildElement("global").getFirstChildElement("dated").getFirstChildElement("timeSignatureMap").getChildElements();              // get global entries
         if ((es.size() == 0) && (this.currentWork != null)) {                                                                                                                   // get the meter element from meiHead
             Element meter = this.currentWork.getFirstChildElement("meter");
             if (meter != null) {
@@ -474,6 +476,20 @@ public class Helper {
         Attribute a = getAttribute(name, ofThis);
         if (a == null) return "";
         return a.getValue();
+    }
+
+    /**
+     * Add a UUID-based xml:id to the specified element.
+     * Caution: If the element has already an xml:id, it will be overwritten!
+     * @param toThis
+     * @return
+     */
+    public static String addUUID(Element toThis) {
+        String uuid = "meico_" + UUID.randomUUID().toString();              // generate new id
+        Attribute a = new Attribute("id", uuid);                            // create an attribute
+        a.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");      // set its namespace to xml
+        toThis.addAttribute(a);                                             // add attribute to the element
+        return uuid;
     }
 
     /**
@@ -767,9 +783,10 @@ public class Helper {
      * helper method to generate MPM TempoData from an MEI tempo element,
      * only the timing data is not computed here
      * @param tempo
+     * @param msmPartContext
      * @return
      */
-    public TempoData parseTempo(Element tempo) {
+    public TempoData parseTempo(Element tempo, Element msmPartContext) {
         TempoData tempoData = new TempoData();                                                                      // tempo data to generate an entry in an MPM tempoMap
 
         // determine numeric tempo if such a value is specified
@@ -790,7 +807,7 @@ public class Helper {
 
         // compute beatLength
         Attribute mmUnit = tempo.getAttribute("mm.unit");
-        tempoData.beatLength = (mmUnit != null) ? Helper.duration2decimal(mmUnit.getValue()) : (1.0 / this.getCurrentTimeSignature()[1]);    // use the specified mm.unit for beatLength or (if missing) use the denominator of the underlying time signature
+        tempoData.beatLength = (mmUnit != null) ? Helper.duration2decimal(mmUnit.getValue()) : (1.0 / this.getCurrentTimeSignature(msmPartContext)[1]);    // use the specified mm.unit for beatLength or (if missing) use the denominator of the underlying time signature
         Attribute mmDots = tempo.getAttribute("mm.dots");
         if (mmDots != null) {                                                                                   // are there dots involved in the beatLength
             int dots = Integer.parseInt(mmDots.getValue());                                                     // get their number
@@ -1058,16 +1075,17 @@ public class Helper {
      * convert a tstamp value to midi ticks,
      * not suited for tstamp2!
      * @param tstamp
+     * @param msmPartContext
      * @return
      */
-    protected double tstampToTicks(String tstamp) {
+    protected double tstampToTicks(String tstamp, Element msmPartContext) {
         if ((tstamp == null) || tstamp.isEmpty() || (this.currentMeasure == null))      // if there is no tstamp or it is empty or we are outside a measure (tstamps are only meaningful within a measure)
             return this.getMidiTime();                                                  // just return the current time
 
         double date = Double.parseDouble(tstamp);                                       // convert the tstamp value to double
         date = (date < 1.0) ? 0.0 : (date - 1.0);                                       // date == 0.0 is the barline, first beat is at date 1.0, timing-wise both are equal
 
-        double denom = this.getCurrentTimeSignature()[1];                               // get the current denominator
+        double denom = this.getCurrentTimeSignature(msmPartContext)[1];                 // get the current denominator
         double tstampToTicksConversionFactor = (4.0 * this.ppq) / denom;                // multiply a tstamp with this and you get the midi tick value (don't forget to add the measure date!)
 
         return (date * tstampToTicksConversionFactor) + Double.parseDouble(this.currentMeasure.getAttributeValue("date"));
@@ -1078,9 +1096,10 @@ public class Helper {
      * The same is true for the duration of control events. It is computed from @dur, @tstamp2.ges, @tstamp2, or @endid (in this priority).
      * This method helps in handling this.
      * @param event the MEI control event
+     * @param msmPartContext
      * @return an ArrayList of the following form (double date, Double endDate, Attribute tstamp2, Attribute endid), except for date every other entry can be null if no such data is present or applicable! The return value can also be null when the timing should better be computed on the basis of attribute startid, in that case this method does the repositioning of the event automatically and the invoking method should cancel this event's processing right now and get back to this event later on
      */
-    protected ArrayList<Object> computeControlEventTiming(Element event) {
+    protected ArrayList<Object> computeControlEventTiming(Element event, Element msmPartContext) {
         // read the tstamp or, if missing, process startid
         Attribute att = event.getAttribute("tstamp.ges");
         if (att == null) {
@@ -1102,7 +1121,7 @@ public class Helper {
             }
         }
         String tstamp = (att == null) ? null  : att.getValue();
-        Double date = this.tstampToTicks(tstamp);                   // the midi date of the instruction from tstamp or, if null, the current midi date
+        Double date = this.tstampToTicks(tstamp, msmPartContext);                   // the midi date of the instruction from tstamp or, if null, the current midi date
 
         // read dur, tstamp2 or endid
         Attribute tstamp2 = null;
@@ -1120,10 +1139,10 @@ public class Helper {
                 if (ts2.length == 0)                                // if the tstamp2 string is invalid (empty or only "m+")
                     tstamp2 = null;                                 // ignore this attribute, the next if statement will check for an endid attribute
                 else if (ts2.length == 1) {
-                    endDate = this.tstampToTicks(ts2[0]);
+                    endDate = this.tstampToTicks(ts2[0], msmPartContext);
                     tstamp2 = null;
                 } else if (ts2[0].equals("0")) {
-                    endDate = this.tstampToTicks(ts2[1]);
+                    endDate = this.tstampToTicks(ts2[1], msmPartContext);
                     tstamp2 = null;
                 }
             }

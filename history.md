@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.8.14
+- Added method `meico.mei.Helper.addUUID()` which encapsulates the generation of unique `xml:id` attributes. The corresponding code in method `meico.msm.Msm.addIds()` has been adapted.
+- Added another method `addAccentuationPattern()` to class `meico.mpm.elements.maps.MetricalAccentuationMap` which allows setting attribute `stickToMeasures`.
+- Minor fix in method `meico.mei.Mei.addArticulationToMap()` which generated a `noteid` string from `null` instead of setting the string `null`.
+- After update 0.8.12, method `getCurrentTimeSignature()` in class `meico.mei.Helper` required more context as input to determine the time signature information. It has been updated accordingly. This required adaptations also in several other methods in classes `meico.mei.Helper` and `meico.mei.Mei` which have been done, too.
+
+
 #### v0.8.13
 - Fix of the processing of `<accid>` elements where the parent `<note>` has different graphical and gestural pitch, see issue [#17](https://github.com/cemfi/meico/issues/17).
 

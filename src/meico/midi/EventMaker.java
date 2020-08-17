@@ -39,7 +39,7 @@ public class EventMaker {
     public static final short SYSTEM_RESET              = 255;
     public static final short META_EVENT                = 255;
 
-    // use these constants to set the controller number  of a CONTROL_CHANGE event
+    // use these constants to set the controller number of a CONTROL_CHANGE event
     public static final short CC_Bank_Select                = 0;
     public static final short CC_Modulation_Wheel           = 1;
     public static final short CC_Breath_Ctrl                = 2;

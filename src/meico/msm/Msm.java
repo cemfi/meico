@@ -1246,12 +1246,8 @@ public class Msm extends AbstractMsm {
         }
 
         Nodes e = root.query("descendant::*[(local-name()='note' or local-name()='rest') and not(@xml:id)]");
-        for (int i = 0; i < e.size(); ++i) {                                    // go through all the nodes
-            String uuid = "meico_" + UUID.randomUUID().toString();              // generate new ids for them
-            Attribute a = new Attribute("id", uuid);                            // create an attribute
-            a.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");      // set its namespace to xml
-            ((Element) e.get(i)).addAttribute(a);                               // add attribute to the node
-        }
+        for (int i = 0; i < e.size(); ++i)                                     // go through all the nodes
+            Helper.addUUID((Element) e.get(i));                                // add the xml:id attribute with a UUID
 
         System.out.println(" done");
 

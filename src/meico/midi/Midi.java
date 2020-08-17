@@ -180,6 +180,10 @@ public class Midi {
         throw new Exception("Error: MIDI timing is in SMTPE, not PPQ!");
     }
 
+    /**
+     * retrieve the tempo map from the MIDI data
+     * @return
+     */
     public synchronized TempoMap getTempoMap() {
         TempoMap tempoMap = TempoMap.createTempoMap();
         if (tempoMap == null)
@@ -220,6 +224,7 @@ public class Midi {
     }
 
     /**
+     * print some basic MIDI data to a string
      * @param sequence
      */
     public static String print(Sequence sequence) {
