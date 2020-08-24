@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.8.15
+- Little tweak in method `meico.mei.Mei.processMeasure()` as it struggled to remove and inserting `timeSignature` elements from `timeSignatureMap` when the measure does not comply with the given time signature.
+- Indexing correction in method `meico.mpm.elements.styles.defs.AccentuationPatternDef.addAccentuationToArrayList()` so accentuations are added in the correct order to patterns.
+- In method `meico.mei.Mei.processSyl()` attribute `wordpos` was mandatory (with values `i` or `m`) to process attribte `con`. This did not work for some cases. So, `wordpos` is now being ignored and `con` will always be processed.
+
+
 #### v0.8.14
 - Added method `meico.mei.Helper.addUUID()` which encapsulates the generation of unique `xml:id` attributes. The corresponding code in method `meico.msm.Msm.addIds()` has been adapted.
 - Added another method `addAccentuationPattern()` to class `meico.mpm.elements.maps.MetricalAccentuationMap` which allows setting attribute `stickToMeasures`.

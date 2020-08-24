@@ -194,9 +194,9 @@ public class AccentuationPatternDef extends AbstractDef {
      */
     private int addAccentuationToArrayList(double[] accentuation, Element xml) {
         for (int j=this.accentuations.size()-1; j >= 0; --j) {                      // go through the accentuations list
-            if (accentuation[0] <= this.accentuations.get(j).getKey()[0]) {         // is the beat of the accentuation to be added at or after the pivot accentuation?
-                this.accentuations.add(j, new KeyValue<>(accentuation, xml));       // add it after it
-                return j;
+            if (accentuation[0] >= this.accentuations.get(j).getKey()[0]) {         // is the beat of the accentuation to be added at or after the pivot accentuation?
+                this.accentuations.add(j+1, new KeyValue<>(accentuation, xml));     // add it after it
+                return j+1;
             }
         }
         this.accentuations.add(new KeyValue<>(accentuation, xml));               // if the beat is before the first accentuation, add it at the beginning

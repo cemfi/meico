@@ -1524,13 +1524,12 @@ public class Mei extends meico.xml.XmlBase {
 
         // if the measure's duration does not comply the time signature we need to add an in-between time signature
         if ((globalTimeSignature != null) && (longestDuration != defaultGlobalMeasureDuration)) {               // update global time signature map
-            globalTimeSignature.getAttribute("date").setValue(Double.toString(endDate));                        // take the last timeSignature element, give it a new date
-
             // remove all timeSignature elements at and after startDate
-            for (Element prev = Helper.getPreviousSiblingElement(globalTimeSignature); prev != null; prev = Helper.getPreviousSiblingElement(globalTimeSignature)) {
-                if (Double.parseDouble(prev.getAttributeValue("date")) >= startDate) {
-                    prev.detach();
-                    globalTsMap.removeChild(prev);
+            while (globalTsMap.getChildElements().size() > 0) {
+                Element last = globalTsMap.getChildElements().get(globalTsMap.getChildCount() - 1);
+                if (Double.parseDouble(last.getAttributeValue("date")) >= startDate) {
+//                    last.detach();
+                    globalTsMap.removeChild(last);
                 } else
                     break;
             }
@@ -1539,7 +1538,11 @@ public class Mei extends meico.xml.XmlBase {
             double[] numDenom = {Double.parseDouble(globalTimeSignature.getAttributeValue("numerator")), Double.parseDouble(globalTimeSignature.getAttributeValue("denominator"))};
             double num = (longestDuration * numDenom[1]) / (this.helper.ppq * 4.0);                             // from the actual duration of the measure and the denominator of the time signature compute the new numerator
             Element newTs = Msm.makeTimeSignature(startDate, num, (int)numDenom[1], null);                      // create the timeSignature element
-            globalTsMap.insertChild(newTs, globalTsMap.indexOf(globalTimeSignature));                           // insert it at the position of the previous timeSignature element so it moves one index further
+            globalTsMap.appendChild(newTs);                                                                     // insert it at the position of the previous timeSignature element so it moves one index further
+
+            // inset a new timeSignature that switches back to the normal meter that was expected in this measure and place it at the end of the measure
+            Element switchBackTs = Msm.makeTimeSignature(endDate, numDenom[0], (int)numDenom[1], null);
+            globalTsMap.appendChild(switchBackTs);
         }
 
         for (Element part : parts) {                                                                            // update local time signature maps
@@ -1549,13 +1552,15 @@ public class Mei extends meico.xml.XmlBase {
 
             Element tsMap = tsData.getKey();
             Element ts = tsData.getValue();
-            ts.getAttribute("date").setValue(Double.toString(endDate));                                         // take the last timeSignature element, give it a new date
+            if (ts == null)
+                continue;
 
             // remove all timeSignature elements at and after startDate
-            for (Element prev = Helper.getPreviousSiblingElement(ts); prev != null; prev = Helper.getPreviousSiblingElement(ts)) {
-                if (Double.parseDouble(prev.getAttributeValue("date")) >= startDate) {
-                    prev.detach();
-                    tsMap.removeChild(prev);
+            while (tsMap.getChildElements().size() > 0) {
+                Element last = tsMap.getChildElements().get(tsMap.getChildCount() - 1);
+                if (Double.parseDouble(last.getAttributeValue("date")) >= startDate) {
+//                    last.detach();
+                    tsMap.removeChild(last);
                 } else
                     break;
             }
@@ -1564,7 +1569,11 @@ public class Mei extends meico.xml.XmlBase {
             double[] numDenom = {Double.parseDouble(ts.getAttributeValue("numerator")), Double.parseDouble(ts.getAttributeValue("denominator"))};
             double num = (longestDuration * numDenom[1]) / (this.helper.ppq * 4.0);                             // from the actual duration of the measure and the denominator of the time signature compute the new numerator
             Element newTs = Msm.makeTimeSignature(startDate, num, (int)numDenom[1], null);                      // create the timeSignature element
-            tsMap.insertChild(newTs, tsMap.indexOf(ts));                                                        // insert it at the position of the previous timeSignature element so it moves one index further
+            tsMap.appendChild(newTs);                                                                           // insert it at the position of the previous timeSignature element so it moves one index further
+
+            // inset a new timeSignature that switches back to the normal meter that was expected in this measure and place it at the end of the measure
+            Element switchBackTs = Msm.makeTimeSignature(endDate, numDenom[0], (int)numDenom[1], null);
+            tsMap.appendChild(switchBackTs);
         }
 
         // process barlines (end mark, repetition)
@@ -1745,8 +1754,8 @@ public class Mei extends meico.xml.XmlBase {
             if (parent.getLocalName().equals("note")) {         // found the parent note element
                 String text = syl.getValue();                   // copy the text of syl
 
-                Attribute wordpos = syl.getAttribute("wordpos");
-                if ((wordpos != null) && (wordpos.getValue().equals("i") || wordpos.getValue().equals("m"))) {
+//                Attribute wordpos = syl.getAttribute("wordpos");
+//                if ((wordpos != null) && (wordpos.getValue().equals("i") || wordpos.getValue().equals("m"))) {
                     Attribute con = syl.getAttribute("con");
                     if (con != null) {
                         switch (con.getValue()) {
@@ -1778,7 +1787,7 @@ public class Mei extends meico.xml.XmlBase {
                                 break;
                         }
                     }
-                }
+//                }
                 lyrics.appendChild(text);
                 this.helper.lyrics.add(lyrics);                 // add syl to the helper's lyrics list which will be further processed by the note element's processing routine
                 return;                                         // done
