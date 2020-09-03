@@ -439,9 +439,12 @@ public class DynamicsMap extends GenericMap {
             // apply dynamics to the map elements' velocity
             for (; mapIndex < map.size(); ++mapIndex) {                                         // traverse the map elements
                 KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);                // get the current map entry
-                if ((mapEntry.getKey() < dd.startDate)                                          // if this map entry is before the current dynamics
-                    || !mapEntry.getValue().getLocalName().equals("note"))                      // or if the map entry is no note element
+                if (!mapEntry.getValue().getLocalName().equals("note"))                         // if the map entry is no note element
                     continue;                                                                   // leave it unaltered and go on until we are at or after the dynamics' date and it is a note element
+                if (mapEntry.getKey() < dd.startDate) {                                         // if the map entry is before the current dynamics instruction
+                    mapEntry.getValue().addAttribute(new Attribute("velocity", "100.0"));       // create and set attribute velocity at the note element with a default value
+                    continue;
+                }
                 if (mapEntry.getKey() >= dd.endDate)                                            // if the current map element is out of the scope of the current dynamics data
                     break;                                                                      // stop here and find the next dynamics element first before continuing
                 mapEntry.getValue().addAttribute(new Attribute("velocity", Double.toString(dd.getDynamicsAt(mapEntry.getKey()))));  // create and set attribute velocity at the note element

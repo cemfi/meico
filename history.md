@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.16
+- Little tweak in method `meico.mpm.maps.DynamicsMap.renderDynamicsToMap()`: If a `dynamicsMap` does not have a `dynamics` element at date 0.0 but there are `notes` to be performed before the first `dynamics` instruction, they now get a default velocity value.
+
+
 #### v0.8.15
 - Little tweak in method `meico.mei.Mei.processMeasure()` as it struggled to remove and inserting `timeSignature` elements from `timeSignatureMap` when the measure does not comply with the given time signature.
 - Indexing correction in method `meico.mpm.elements.styles.defs.AccentuationPatternDef.addAccentuationToArrayList()` so accentuations are added in the correct order to patterns.
