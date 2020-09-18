@@ -1,6 +1,20 @@
 ### Version History
 
 
+#### v0.8.17
+- Made class `meico.midi.InstrumentsDirectory` public so it can be used outside of its package.
+- Extended method `meico.mei.Mei.makePart()`. 
+    - This addresses issue [#23](https://github.com/cemfi/meico/issues/23) where the staff label did not suffice to properly indicate which General MIDI instrument should be chosen during the MIDI export. 
+    - Thus, support for MEI element `instrDef` has been added. It should be used as follows.
+      ````
+      <staffDef clef.line="2" clef.shape="G" lines="5" n="1" label="unhelpful label">
+          <instrDef midi.instrname="Violin" midi.instrnum="40"/>
+      </staffDef>
+      ````
+      Only one of the attributes `midi.instrnum` (prioritized) and `midi.instrname` is required. The former should have values from 0 to 127 (not 1 to 128!). A list of General MIDI instrument names and numbers can be found on [Wikipedia](https://en.wikipedia.org/wiki/General_MIDI) (here the numbers must be decreased by 1!).
+    - Meico will add a `programChangeMap` to the MSM part during export and use this instead of the label to generate the corresponding MIDI messages during MIDI export.
+    - The MEI Coverage Documentation has been updated accordingly and provides further information.
+
 #### v0.8.16
 - Little tweak in method `meico.mpm.maps.DynamicsMap.renderDynamicsToMap()`: If a `dynamicsMap` does not have a `dynamics` element at date 0.0 but there are `notes` to be performed before the first `dynamics` instruction, they now get a default velocity value.
 

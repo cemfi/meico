@@ -14,7 +14,7 @@ import info.debatty.java.stringsimilarity.*;
  * This is a helper class to parse a String to a program change number.
  * @author Axel Berndt
  */
-class InstrumentsDictionary {
+public class InstrumentsDictionary {
 
     public static final byte Levenshtein = 0x00;
     public static final byte NormalizedLevenshtein = 0x01;

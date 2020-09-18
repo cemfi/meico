@@ -1,5 +1,6 @@
 package meico.mei;
 
+import meico.midi.InstrumentsDictionary;
 import meico.mpm.Mpm;
 import meico.mpm.elements.Part;
 import meico.mpm.elements.Performance;
@@ -577,7 +578,7 @@ public class Mei extends meico.xml.XmlBase {
                     continue;                                                   // ignored, this implementation focusses on common modern notation
 
                 case "instrDef":
-                    continue;                                                   // ignore this tag as this converter handles midi stuff individually
+                    continue;                                                   // ignore this tag as these elements are handled in method makePart()
 
                 case "instrGrp":
                     continue;                                                   // ignore this tag as this converter handles midi stuff individually
@@ -1847,6 +1848,50 @@ public class Mei extends meico.xml.XmlBase {
         part = Msm.makePart(label, number, midiChannel, midiPort);                                              // create MSM part element
 
         part.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("date") : "0.0"));    // set currentDate of processing
+
+        Nodes instrDefs = staffDef.query("descendant::*[local-name()='instrDef']");                             // check if this staffDef contains any instrDef elements; these can be used to specify the MIDI instrument declaration and is particularly useful when the staff's label does not indicate the correct instrument
+        Element instrDef = (instrDefs.size() == 0) ? null : (Element)instrDefs.get(0);                          // get the first instrDef element found or null; we do not support multiple instruments per stuff as this requires a different handling MIDI-wise of all the information in the staff
+        if (instrDef != null) {                                                                                 // if there is an instrDef
+            Integer midiInstrNum = null;                                                                        // this gets the program change value or null if no valid value can be found
+
+            // check attribute midi.instrnum
+            Attribute instr = instrDef.getAttribute("midi.instrnum");                                           // get the attribute
+            if (instr != null) {                                                                                // if the attribute is present
+                try {
+                    midiInstrNum = Integer.parseInt(instr.getValue());                                          // read its value
+                    if ((midiInstrNum < 0) || (midiInstrNum > 127)) {                                           // make sure that the value is valid
+                        throw new Exception();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Invalid midi.instrnum value in element " + instrDef.toXML() + ". Only numbers from 0 to 127 are allowed.");
+                    midiInstrNum = null;
+                }
+            }
+
+            // if we have no program change value so far, check attribute midi.instrname
+            if (midiInstrNum == null) {                                                                         // if the previous block did not produce a valid program change number
+                instr = instrDef.getAttribute("midi.instrname");                                                // get the attribute midi.instrname
+                if (instr != null) {                                                                            // if the attribute is present
+                    InstrumentsDictionary dict;                                                                 // initialize an instance of InstrumentsDictionary
+                    try {
+                        dict = new InstrumentsDictionary();
+                        midiInstrNum = (int) dict.getProgramChange(instr.getValue());                           // look up the instrument name to get the corresponding program change number
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            // create a programChangeMap in the MSM part and add a programChange element
+            if (midiInstrNum != null) {                                                                         // if we have a valid program change value
+                Element programChange = new Element("programChange");                                           // create a programChange element
+                programChange.addAttribute(new Attribute("date", "0.0"));                                       // set its date
+                programChange.addAttribute(new Attribute("value", Integer.toString(midiInstrNum)));             // set its value
+                Element programChangeMap = new Element("programChangeMap");                                     // create a programChangeMap
+                part.getFirstChildElement("dated").appendChild(programChangeMap);                               // add it to the part's dated environment
+                programChangeMap.appendChild(programChange);                                                    // add the programChange element to the programChangeMap
+            }
+        }
 
         this.helper.currentMsmMovement.appendChild(part);                                                       // insert it into movement
 

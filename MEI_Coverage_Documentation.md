@@ -160,7 +160,15 @@ Hairpins indicate a continuous dynamics transition. Their processing is similar 
 This creates a copy of the preceding timeframe. This timeframe is `0.5 * length of one measure`.
 
 #### instrDef
-This element is deliberately ignored. Meico handles and generates MIDI-related information individually, more comprehensive and more consistent than MEI does.
+If the staff label did not suffice to properly indicate which General MIDI instrument should be chosen during the MIDI export, this element can be used to provide clarity. This element is supported only in the `staffDef` environment, i.e. as child or sub-child of a `staffDef` element such as demonstrated in the MEI Encoding Guidelines in the section on [Recording General MIDI Instrumentation](https://music-encoding.org/guidelines/v4/content/integration.html#midiInstruments). Here is another example.
+````
+<staffDef clef.line="2" clef.shape="G" lines="5" n="1" label="unhelpful label">
+    <instrDef midi.instrname="Violin" midi.instrnum="40"/>
+</staffDef>
+````
+Only one of the attributes `midi.instrnum` (prioritized) and `midi.instrname` is required. The former should have values from 0 to 127 (not 1 to 128!). A list of General MIDI instrument names and numbers can be found on [Wikipedia](https://en.wikipedia.org/wiki/General_MIDI) (here the numbers must be decreased by 1!). Meico will generate an according `programChangeMap` in the MSM export and use it instead of the staff labels to trigger the correct instruments.
+
+In the presence of multiple `instrDef` elements (maybe via `layerDef` subtrees or an `instrGrp`) meico will choose only the first of them for export. Meico does not support multiple instruments per staff as this requires a different handling of all the information in the staff MIDI-wise. This is reserved to the user who can import the MIDI data to a Digital Audio Worktation (DAW) and further produce the music.
 
 #### instrGrp
 This element is deliberately ignored. Meico handles and generates MIDI-related information individually, more comprehensive and more consistent than MEI does.
