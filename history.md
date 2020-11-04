@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.18
+- Enhancement of class `meico.mpm.elements.metadata.Metadata` so it can be instatiated with related resources.
+
+
 #### v0.8.17
 - Made class `meico.midi.InstrumentsDirectory` public so it can be used outside of its package.
 - Extended method `meico.mei.Mei.makePart()`. 

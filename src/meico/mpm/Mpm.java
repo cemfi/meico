@@ -4,6 +4,7 @@ import meico.mei.Helper;
 import meico.mpm.elements.metadata.Author;
 import meico.mpm.elements.metadata.Metadata;
 import meico.mpm.elements.Performance;
+import meico.mpm.elements.metadata.RelatedResource;
 import meico.msm.AbstractMsm;
 import nu.xom.*;
 import org.xml.sax.SAXException;
@@ -12,6 +13,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 
 /**
@@ -187,16 +189,20 @@ public class Mpm extends AbstractMsm {
      * @param comment a string or null
      * @return success
      */
-    public boolean addMetadata(Author author, String comment) {
+    public boolean addMetadata(Author author, String comment, Collection<RelatedResource> relatedResources) {
         if (this.metadata != null) {
             if (author != null)
                 this.metadata.addAuthor(author);
             if (comment != null)
                 this.metadata.addComment(comment);
+            if (relatedResources != null) {
+                for (RelatedResource resource : relatedResources)
+                    this.metadata.addRelatedResource(resource);
+            }
             return true;
         }
 
-        this.metadata = Metadata.createMetadata(author, comment);
+        this.metadata = Metadata.createMetadata(author, comment, relatedResources);
         if (this.metadata == null)
             return false;
 

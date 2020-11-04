@@ -869,10 +869,11 @@ public class Mei extends meico.xml.XmlBase {
 
         Mpm mpm = Mpm.createMpm();                                                  // generate an Mpm object
         if (this.file != null) {
-            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from '" + this.getFile().getName() + "' using the meico MEI converter.");
-            mpm.getMetadata().addRelatedResource(RelatedResource.createRelatedResource(this.file.getAbsolutePath(), "mei"));             // add the mei as music reference
+            ArrayList<RelatedResource> relatedResources = new ArrayList<>();
+            relatedResources.add(RelatedResource.createRelatedResource(this.file.getAbsolutePath(), "mei"));
+            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from '" + this.getFile().getName() + "' using the meico MEI converter.", relatedResources);
         } else {
-            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from MEI code using the meico MEI converter.");
+            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from MEI code using the meico MEI converter.", null);
         }
         Performance performance = Performance.createPerformance("MEI export performance");  // generate a Performance object
         if (performance == null) {                                                  // make sure it is not null

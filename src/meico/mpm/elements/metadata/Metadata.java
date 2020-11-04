@@ -8,6 +8,7 @@ import nu.xom.Elements;
 import nu.xom.Text;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 
 /**
@@ -15,9 +16,9 @@ import java.util.LinkedList;
  * @author Axel Berndt
  */
 public class Metadata extends AbstractXmlSubtree {
-    private ArrayList<Author> authors = new ArrayList<>();                      // the list of authors
-    private ArrayList<Element> comments = new ArrayList<>();                    // the list of comments
-    private ArrayList<RelatedResource> relatedResources = new ArrayList<>();    // the related resources
+    private final ArrayList<Author> authors = new ArrayList<>();                      // the list of authors
+    private final ArrayList<Element> comments = new ArrayList<>();                    // the list of comments
+    private final ArrayList<RelatedResource> relatedResources = new ArrayList<>();    // the related resources
 
     /**
      * this constructor instantiates the Metadata object from an existing xml source handed over as XOM Element
@@ -32,9 +33,10 @@ public class Metadata extends AbstractXmlSubtree {
      * this constructor creates a new Metadata object from an author and/or comment
      * @param author an Author object or null
      * @param comment a String or null
+     * @param relatedResources
      * @throws Exception
      */
-    private Metadata(Author author, String comment) throws Exception {
+    private Metadata(Author author, String comment, Collection<RelatedResource> relatedResources) throws Exception {
         Element metadata = new Element("metadata", Mpm.MPM_NAMESPACE);
 
         if (author != null)
@@ -44,6 +46,13 @@ public class Metadata extends AbstractXmlSubtree {
             Element com = new Element("comment", Mpm.MPM_NAMESPACE);
             com.appendChild(new Text(comment));
             metadata.appendChild(com);
+        }
+
+        if ((relatedResources != null) && !relatedResources.isEmpty()) {
+            Element relatedResourcesElt = new Element("relatedResources");
+            metadata.appendChild(relatedResourcesElt);
+            for (RelatedResource resource : relatedResources)
+                relatedResourcesElt.appendChild(resource.getXml());
         }
 
         this.parseData(metadata);
@@ -73,7 +82,7 @@ public class Metadata extends AbstractXmlSubtree {
     public static Metadata createMetadata(Author author) {
         Metadata metadata;
         try {
-            metadata = new Metadata(author, null);
+            metadata = new Metadata(author, null, null);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -89,7 +98,23 @@ public class Metadata extends AbstractXmlSubtree {
     public static Metadata createMetadata(String comment) {
         Metadata metadata;
         try {
-            metadata = new Metadata(null, comment);
+            metadata = new Metadata(null, comment, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return metadata;
+    }
+
+    /**
+     * this factory generates a Metadata object from a collection of related resources
+     * @param relatedResources
+     * @return
+     */
+    public static Metadata createMetadata(Collection<RelatedResource> relatedResources) {
+        Metadata metadata;
+        try {
+            metadata = new Metadata(null, null, relatedResources);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -101,12 +126,13 @@ public class Metadata extends AbstractXmlSubtree {
      * this factory generates a Metadata object from an author and/or comment
      * @param author
      * @param comment
+     * @param relatedResources
      * @return
      */
-    public static Metadata createMetadata(Author author, String comment) {
+    public static Metadata createMetadata(Author author, String comment, Collection<RelatedResource> relatedResources) {
         Metadata metadata;
         try {
-            metadata = new Metadata(author, comment);
+            metadata = new Metadata(author, comment, relatedResources);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -151,8 +177,8 @@ public class Metadata extends AbstractXmlSubtree {
             }
         }
 
-        if ((this.authors.size() + this.comments.size()) == 0)
-            throw new Exception("Cannot generate Metadata object. It must contain at least one author or comment");
+        if (((this.authors.size() + this.comments.size()) == 0) && this.relatedResources.isEmpty())
+            throw new Exception("Cannot generate empty Metadata object. It must contain at least one author, comment or related resource.");
     }
 
     /**
