@@ -2,6 +2,7 @@ package meico.mpm;
 
 import meico.mei.Helper;
 import meico.mpm.elements.metadata.Author;
+import meico.mpm.elements.metadata.Comment;
 import meico.mpm.elements.metadata.Metadata;
 import meico.mpm.elements.Performance;
 import meico.mpm.elements.metadata.RelatedResource;
@@ -50,7 +51,7 @@ public class Mpm extends AbstractMsm {
     private final ArrayList<Performance> performances = new ArrayList<>();
 
     /**
-     * constructor
+     * Constructor. Be aware that this is not a valid MPM document until a first Performance has been added!
      */
     public Mpm() {
         super();
@@ -141,7 +142,7 @@ public class Mpm extends AbstractMsm {
     }
 
     /**
-     * an Mpm factory
+     * An Mpm factory. Be aware that this is not a valid MPM document until a first Performance has been added!
      * @return
      */
     public static Mpm createMpm() {
@@ -186,10 +187,10 @@ public class Mpm extends AbstractMsm {
     /**
      * add metadata to the MPM
      * @param author an Author object or null
-     * @param comment a string or null
+     * @param comment a Comment object or null
      * @return success
      */
-    public boolean addMetadata(Author author, String comment, Collection<RelatedResource> relatedResources) {
+    public boolean addMetadata(Author author, Comment comment, Collection<RelatedResource> relatedResources) {
         if (this.metadata != null) {
             if (author != null)
                 this.metadata.addAuthor(author);
@@ -214,7 +215,8 @@ public class Mpm extends AbstractMsm {
      * remove the complete metadata part from this MPM
      */
     public void removeMetadata() {
-        this.metadata.getXml().detach();
+        this.getRootElement().removeChild(this.metadata.getXml());
+//        this.metadata.getXml().detach();
         this.metadata = null;
     }
 
@@ -270,10 +272,13 @@ public class Mpm extends AbstractMsm {
     /**
      * add a performance to this mpm, but caution: if another performance with the same name exists already in this mpm, accessing it via getPerformance(name) will return only the first in the list
      * @param performance
+     * @return success
      */
-    public void addPerformance(Performance performance) {
+    public boolean addPerformance(Performance performance) {
+        if (performance == null)
+            return false;
         this.getRootElement().appendChild(performance.getXml());
-        this.performances.add(performance);
+        return this.performances.add(performance);
     }
 
     /**
@@ -298,6 +303,7 @@ public class Mpm extends AbstractMsm {
             if (p.getName().equals(name)) {                     // with this name
                 this.performances.remove(p);                    // get removed
                 this.getRootElement().removeChild(p.getXml());  // also from the xml structure
+//                p.getXml().detach();
             }
         }
     }
@@ -307,8 +313,10 @@ public class Mpm extends AbstractMsm {
      * @param performance
      */
     public void removePerformance(Performance performance) {
-        if (this.performances.remove(performance))                      // if the performance was in this mpm and could be removed from the performances list
+        if (this.performances.remove(performance)) {                    // if the performance was in this mpm and could be removed from the performances list
             this.getRootElement().removeChild(performance.getXml());    // it can be removed from the xml structure
+//            performance.getXml().detach();
+        }
     }
 
     /**

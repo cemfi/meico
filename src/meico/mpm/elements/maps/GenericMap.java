@@ -127,6 +127,7 @@ public class GenericMap extends AbstractXmlSubtree {
         for (int i = 0; i < this.elements.size(); ++i) {    // for each element
             Element e = this.elements.get(i).getValue();
             xml.removeChild(e);                             // remove the element wherever it is
+//            e.detach();
             xml.insertChild(e, i);                          // and add it at its correct index
         }
     }
@@ -524,6 +525,7 @@ public class GenericMap extends AbstractXmlSubtree {
 
         Element e = this.elements.get(index).getValue();
         this.getXml().removeChild(e);
+//        e.detach();
         this.elements.remove(index);
     }
 
@@ -535,6 +537,7 @@ public class GenericMap extends AbstractXmlSubtree {
         for (KeyValue<Double, Element> e : this.elements) {
             if (e.getValue() == xml) {
                 this.getXml().removeChild(xml);
+//                xml.detach();
                 this.elements.remove(e);
                 return;
             }
@@ -644,6 +647,7 @@ public class GenericMap extends AbstractXmlSubtree {
         }
 
         parent.removeChild(oldXmlData);                             // remove the old map from the xml tree
+//        oldXmlData.detach();
         return true;
     }
 

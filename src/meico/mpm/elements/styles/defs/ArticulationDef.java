@@ -85,14 +85,7 @@ public class ArticulationDef extends AbstractDef {
      */
     @Override
     protected void parseData(Element xml) throws Exception {
-        if (xml == null)
-            throw new Exception("Cannot generate ArticulationDef object. XML Element is null.");
-
-        this.name = Helper.getAttribute("name", xml);
-        if (this.name == null)
-            throw new Exception("Cannot generate ArticulationDef object. Missing name attribute.");
-
-        this.setXml(xml);
+        super.parseData(xml);
 
         // make sure that this element is really a "articulationDef" element
         if (!this.getXml().getLocalName().equals("articulationDef")) {

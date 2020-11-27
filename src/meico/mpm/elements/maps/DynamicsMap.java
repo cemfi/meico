@@ -4,6 +4,7 @@ import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.DynamicsStyle;
 import meico.mpm.elements.styles.GenericStyle;
+import meico.mpm.elements.styles.defs.DynamicsDef;
 import meico.supplementary.KeyValue;
 import meico.mpm.elements.maps.data.DynamicsData;
 import nu.xom.Attribute;
@@ -322,14 +323,14 @@ public class DynamicsMap extends GenericMap {
                     break;
                 }
             }
-            GenericStyle gStyle = this.getStyle(Mpm.DYNAMICS_STYLE, dd.styleName);      // read the dynamics style
+            DynamicsStyle gStyle = (DynamicsStyle) this.getStyle(Mpm.DYNAMICS_STYLE, dd.styleName);      // read the dynamics style
             if (gStyle != null)
-                dd.style = (DynamicsStyle) gStyle;
+                dd.style = gStyle;
 
             att = Helper.getAttribute("name.ref", e);
             if (att != null) {                                                          // name.ref attribute is mandatory
                 dd.dynamicsDefString = att.getValue();
-                dd.dynamicsDef = dd.style.getDynamicsDef(dd.dynamicsDefString);
+                dd.dynamicsDef = dd.style.getDef(dd.dynamicsDefString);
             }
 
             att = Helper.getAttribute("volume", e);

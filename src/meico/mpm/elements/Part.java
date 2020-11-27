@@ -19,6 +19,7 @@ public class Part extends AbstractXmlSubtree {
     private int number = 0;             // the part number
     private int midiChannel = 0;        // the midi channel
     private int midiPort = 0;           // the midi port
+    private Attribute id = null;        // the id attribute
 
     /**
      * constructor for a plain/empty Part object
@@ -61,6 +62,27 @@ public class Part extends AbstractXmlSubtree {
             e.printStackTrace();
             return null;
         }
+        return part;
+    }
+
+    /**
+     * part factory
+     * @param name the name of the part, can be "" (empty string)
+     * @param number
+     * @param midiChannel
+     * @param midiPort
+     * @param id
+     * @return
+     */
+    public static Part createPart(String name, int number, int midiChannel, int midiPort, String id) {
+        Part part;
+        try {
+            part = new Part(name, number, midiChannel, midiPort);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        part.setId(id);
         return part;
     }
 
@@ -115,6 +137,7 @@ public class Part extends AbstractXmlSubtree {
         this.number = Integer.parseInt(number.getValue());
         this.midiChannel = Integer.parseInt(midiChannelAtt.getValue());
         this.midiPort = Integer.parseInt(midiPortAtt.getValue());
+        this.id = Helper.getAttribute("id", this.getXml());
 
         // make sure that this element is really a "part" element
         if (!this.getXml().getLocalName().equals("part")) {
@@ -243,5 +266,39 @@ public class Part extends AbstractXmlSubtree {
      */
     public Global getGlobal() {
         return this.global;
+    }
+
+    /**
+     * set the part's id
+     * @param id a xml:id string or null
+     */
+    public void setId(String id) {
+        if (id == null) {
+            if (this.id != null) {
+                this.id.detach();
+                this.id = null;
+            }
+            return;
+        }
+
+        if (this.id == null) {
+            this.id = new Attribute("id", id);
+            this.id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+            this.getXml().addAttribute(this.id);
+            return;
+        }
+
+        this.id.setValue(id);
+    }
+
+    /**
+     * get the part's id
+     * @return a string or null
+     */
+    public String getId() {
+        if (this.id == null)
+            return null;
+
+        return this.id.getValue();
     }
 }

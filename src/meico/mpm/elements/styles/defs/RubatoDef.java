@@ -20,11 +20,13 @@ public class RubatoDef extends AbstractDef {
     /**
      * constructor, creates an empty rubatoDef
      * @param name
+     * @param frameLength
      * @throws Exception
      */
-    private RubatoDef(String name) throws Exception {
+    private RubatoDef(String name, double frameLength) throws Exception {
         Element e = new Element("rubatoDef", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("name", name));
+        e.addAttribute(new Attribute("frameLength", "" + frameLength));
         this.parseData(e);
     }
 
@@ -61,10 +63,10 @@ public class RubatoDef extends AbstractDef {
      * @param name
      * @return
      */
-    public static RubatoDef createRubatoDef(String name) {
+    public static RubatoDef createRubatoDef(String name, double frameLength) {
         RubatoDef rubatoDef;
         try {
-            rubatoDef = new RubatoDef(name);
+            rubatoDef = new RubatoDef(name, frameLength);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -114,14 +116,7 @@ public class RubatoDef extends AbstractDef {
      */
     @Override
     protected void parseData(Element xml) throws Exception {
-        if (xml == null)
-            throw new Exception("Cannot generate RubatoDef object. XML Element is null.");
-
-        this.name = Helper.getAttribute("name", xml);
-        if (this.name == null)
-            throw new Exception("Cannot generate RubatoDef object. Missing name attribute.");
-
-        this.setXml(xml);
+        super.parseData(xml);
 
         // make sure that this element is really a "rubatoDef" element
         if (!this.getXml().getLocalName().equals("rubatoDef")) {

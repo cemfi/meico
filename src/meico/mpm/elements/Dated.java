@@ -227,8 +227,18 @@ public class Dated extends AbstractXmlSubtree {
      */
     public void removeMap(String type) {
         GenericMap m = this.maps.remove(type);
-        if (m != null)
+        if (m != null) {
             this.getXml().removeChild(m.getXml());
+//            m.getXml().detach();
+        }
+    }
+
+    /**
+     * remove all maps from dated
+     */
+    public void clear() {
+       this.getXml().removeChildren();
+       this.maps.clear();
     }
 
     /**

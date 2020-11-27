@@ -365,6 +365,7 @@ public class XmlBase {
             Element parent = (Element)ns.get(i).getParent();                                        // get its parent element
             if (parent != null) {                                                                   // if it has a parent (does not apply to the root node)
                 parent.removeChild(ns.get(i));                                                      // remove its child
+                ns.get(i).detach();
                 deletions++;                                                                        // increase the deletions counter
             }
         }

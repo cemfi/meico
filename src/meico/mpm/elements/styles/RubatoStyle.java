@@ -13,9 +13,7 @@ import java.util.LinkedList;
  * and assotiate it with an instance of RubatoDef.
  * @author Axel Berndt
  */
-public class RubatoStyle extends GenericStyle {
-    private HashMap<String, RubatoDef> rubatoDefs;             // the lookup table for rubatoDefs (name -> RubatoDef)
-
+public class RubatoStyle extends GenericStyle<RubatoDef> {
     /**
      * this constructor generates an empty styleDef for rubatoDefs to be added subsequently
      * @param name
@@ -52,6 +50,24 @@ public class RubatoStyle extends GenericStyle {
 
     /**
      * RubatoStyle factory
+     * @param name
+     * @param id
+     * @return
+     */
+    public static RubatoStyle createRubatoStyle(String name, String id) {
+        RubatoStyle rubatoStyle;
+        try {
+            rubatoStyle = new RubatoStyle(name);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        rubatoStyle.setId(id);
+        return rubatoStyle;
+    }
+
+    /**
+     * RubatoStyle factory
      * @param xml
      * @return
      */
@@ -73,75 +89,13 @@ public class RubatoStyle extends GenericStyle {
     protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
 
-        this.rubatoDefs = new HashMap<>();
-
         // parse the rubatoDef elements (the children of this styleDef)
         LinkedList<Element> rubatoDefs = Helper.getAllChildElements("rubatoDef", this.getXml());
         for (Element def : rubatoDefs) {                       // for each rubatoDef
             RubatoDef rd = RubatoDef.createRubatoDef(def);
             if (rd == null)
                 continue;
-            this.rubatoDefs.put(rd.getName(), rd);                           // add the (name, RubatoDef) pair to the lookup table
+            this.defs.put(rd.getName(), rd);                           // add the (name, RubatoDef) pair to the lookup table
         }
-    }
-
-    /**
-     * access the whole HashMap with (name, RubatoDef) pairs
-     * @return
-     */
-    public HashMap<String, RubatoDef> getAllRubatoDefs() {
-        return this.rubatoDefs;
-    }
-
-    /**
-     * retrieve a specific rubatoDef
-     * @param name
-     * @return
-     */
-    public RubatoDef getRubatoDef(String name) {
-        return this.rubatoDefs.get(name);
-    }
-
-    /**
-     * add or (if a rubatoDef with this name is already existent) replace the rubatoDef
-     * @param rubatoDef the RubatoDef instance to be added, if there is already one with this name, it is replaced
-     */
-    public void addRubatoDef(RubatoDef rubatoDef) {
-        if (rubatoDef == null) {
-            System.err.println("Cannot add a null RubatoDef to the styleDef.");
-            return;
-        }
-        removeRubatoDef(rubatoDef.getName());               // if there is already a rubatorDef with this name, remove it
-        this.rubatoDefs.put(rubatoDef.getName(), rubatoDef);
-        this.getXml().appendChild(rubatoDef.getXml());
-    }
-
-    /**
-     * remove the specified rubatoDef from this styleDef
-     * @param name
-     */
-    public void removeRubatoDef(String name) {
-        RubatoDef rd = this.rubatoDefs.get(name);        // get the xml element of this rubatoDef
-        if (rd == null)                                 // if there is no such rubatoDef
-            return;                                     // done
-
-        this.rubatoDefs.remove(name);                    // remove the (name, values) lookup table entry
-        this.getXml().removeChild(rd.getXml());         // remove the element from the xml
-    }
-
-    /**
-     * get the number of rubatoDefs in this styleDef
-     * @return
-     */
-    public int size() {
-        return this.rubatoDefs.size();
-    }
-
-    /**
-     * does the styleDef contain rubatoDefs?
-     * @return
-     */
-    public boolean isEmpty() {
-        return this.rubatoDefs.isEmpty();
     }
 }

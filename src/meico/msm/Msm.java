@@ -378,8 +378,10 @@ public class Msm extends AbstractMsm {
         if (this.isEmpty()) return;
 
         Nodes r = this.getRootElement().query("descendant::*[local-name()='rest']");    // select all rest elements
-        for (int i = 0; i < r.size(); ++i)
+        for (int i = 0; i < r.size(); ++i) {
             r.get(i).getParent().removeChild(r.get(i));                                 // remove them
+            r.get(i).detach();
+        }
     }
 
     /**
@@ -438,13 +440,17 @@ public class Msm extends AbstractMsm {
             }
 
             // delete the local sequencingMap (because it does not apply anymore)
-            if (localMap)
+            if (localMap) {
                 part.getFirstChildElement("dated").removeChild(sequencingMap);
+                sequencingMap.detach();
+            }
         }
 
         // delete the global sequencingMap (because it does not apply anymore)
-        if (globalSequencingMap != null)
+        if (globalSequencingMap != null) {
             this.getRootElement().getFirstChildElement("global").getFirstChildElement("dated").removeChild(globalSequencingMap);
+            globalSequencingMap.detach();
+        }
 
         return repetitionIDs;
     }

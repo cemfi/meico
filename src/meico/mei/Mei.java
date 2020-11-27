@@ -11,6 +11,7 @@ import meico.mpm.elements.maps.TempoMap;
 import meico.mpm.elements.maps.data.DynamicsData;
 import meico.mpm.elements.maps.data.TempoData;
 import meico.mpm.elements.metadata.Author;
+import meico.mpm.elements.metadata.Comment;
 import meico.mpm.elements.metadata.RelatedResource;
 import meico.mpm.elements.styles.ArticulationStyle;
 import meico.mpm.elements.styles.DynamicsStyle;
@@ -871,9 +872,11 @@ public class Mei extends meico.xml.XmlBase {
         if (this.file != null) {
             ArrayList<RelatedResource> relatedResources = new ArrayList<>();
             relatedResources.add(RelatedResource.createRelatedResource(this.file.getAbsolutePath(), "mei"));
-            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from '" + this.getFile().getName() + "' using the meico MEI converter.", relatedResources);
+            Comment comment = Comment.createComment("This MPM has been generated from '" + this.getFile().getName() + "' using the meico MEI converter.", null);
+            mpm.addMetadata(Author.createAuthor("meico", null, null), comment, relatedResources);
         } else {
-            mpm.addMetadata(Author.createAuthor("meico", null, null), "This MPM has been generated from MEI code using the meico MEI converter.", null);
+            Comment comment = Comment.createComment("This MPM has been generated from MEI code using the meico MEI converter.", null);
+            mpm.addMetadata(Author.createAuthor("meico", null, null), comment, null);
         }
         Performance performance = Performance.createPerformance("MEI export performance");  // generate a Performance object
         if (performance == null) {                                                  // make sure it is not null
@@ -1335,7 +1338,10 @@ public class Mei extends meico.xml.XmlBase {
                 Element firstGoto = (Element)gotosAtSameDate.get(0);                                                                // get the first goto
                 if (index >= gotosAtSameDate.size()) Helper.addToMap(gt, sequencingMap);                                            // if the index is after the last goto at the dame date, we cann simply add the new goto at the end
                 else sequencingMap.insertChild(gt, sequencingMap.indexOf((gotosAtSameDate.size() == 0) ? marker : gotosAtSameDate.get(index)));  // otherwise insert the new goto at its respective position inbetween
-                if (firstGoto.getAttribute("first") != null) sequencingMap.removeChild(firstGoto);                                  // in any case, if the first goto is a first ending's goto, remove it
+                if (firstGoto.getAttribute("first") != null) {                                                                    // in any case, if the first goto is a first ending's goto, remove it
+                    sequencingMap.removeChild(firstGoto);
+//                    firstGoto.detach();
+                }
 
             }
         }
@@ -1530,8 +1536,8 @@ public class Mei extends meico.xml.XmlBase {
             while (globalTsMap.getChildElements().size() > 0) {
                 Element last = globalTsMap.getChildElements().get(globalTsMap.getChildCount() - 1);
                 if (Double.parseDouble(last.getAttributeValue("date")) >= startDate) {
-//                    last.detach();
                     globalTsMap.removeChild(last);
+//                    last.detach();
                 } else
                     break;
             }
@@ -1561,8 +1567,8 @@ public class Mei extends meico.xml.XmlBase {
             while (tsMap.getChildElements().size() > 0) {
                 Element last = tsMap.getChildElements().get(tsMap.getChildCount() - 1);
                 if (Double.parseDouble(last.getAttributeValue("date")) >= startDate) {
-//                    last.detach();
                     tsMap.removeChild(last);
+//                    last.detach();
                 } else
                     break;
             }
@@ -2253,8 +2259,8 @@ public class Mei extends meico.xml.XmlBase {
                     if (dynamicsStyle == null)                                                                                                                          // if there is none
                         dynamicsStyle = (DynamicsStyle) this.helper.currentPerformance.getGlobal().getHeader().addStyleDef(Mpm.DYNAMICS_STYLE, "MEI export");           // create one
 
-                    if ((dynamicsStyle != null) && (dynamicsStyle.getDynamicsDef(dd.volumeString) == null))       // it is obviously an instantanious dynamics instruction, but if its string is not defined in the global styleDef for dynamics
-                        dynamicsStyle.addDynamicsDef(DynamicsDef.createDefaultDynamicsDef(dd.volumeString));      // add it to the styleDef and try to create a default numeric value for the volume literal
+                    if ((dynamicsStyle != null) && (dynamicsStyle.getDef(dd.volumeString) == null))       // it is obviously an instantanious dynamics instruction, but if its string is not defined in the global styleDef for dynamics
+                        dynamicsStyle.addDef(DynamicsDef.createDefaultDynamicsDef(dd.volumeString));      // add it to the styleDef and try to create a default numeric value for the volume literal
                 }
                 break;
             case "hairpin":                                                                                 // a hairpin (symbolic cresc. or dim. instruction)
@@ -2525,7 +2531,7 @@ public class Mei extends meico.xml.XmlBase {
         ArticulationStyle articulationStyle = (ArticulationStyle) this.helper.currentPerformance.getGlobal().getHeader().getStyleDef(Mpm.ARTICULATION_STYLE, "MEI export"); // get the global articulationStyle/styleDef element
         if (articulationStyle == null) {                                                                                                                                    // if there is none
             articulationStyle = (ArticulationStyle) this.helper.currentPerformance.getGlobal().getHeader().addStyleDef(Mpm.ARTICULATION_STYLE, "MEI export");               // create one
-            articulationStyle.addArticulationDef(ArticulationDef.createDefaultArticulationDef("nonlegato"));
+            articulationStyle.addDef(ArticulationDef.createDefaultArticulationDef("nonlegato"));
         }
 
         // find the local articulationMap
@@ -2626,13 +2632,13 @@ public class Mei extends meico.xml.XmlBase {
         String[] articulations = articulation.trim().split("\\s+");                 // get all articulation specifiers as individual strings
 
         for (String artic : articulations) {
-            if (articulationStyle.getArticulationDef(artic) == null) {
+            if (articulationStyle.getDef(artic) == null) {
                 ArticulationDef def = ArticulationDef.createDefaultArticulationDef(artic);
                 if (def == null) {
                     System.err.println("Failed to generate articulationDef for \"" + artic + "\".");
                     continue;
                 }
-                articulationStyle.addArticulationDef(def);
+                articulationStyle.addDef(def);
             }
             articulationMap.addArticulation(date, artic, ((noteid == null) ? null : ("#" + noteid)), id);     // generate an articulation for the given id at the given date and with the specific descriptor
         }
@@ -2677,7 +2683,7 @@ public class Mei extends meico.xml.XmlBase {
                     ArticulationStyle articulationStyle = (ArticulationStyle) this.helper.currentPerformance.getGlobal().getHeader().getStyleDef(Mpm.ARTICULATION_STYLE, "MEI export"); // get the global articulationStyle/styleDef element
                     if (articulationStyle == null) {                                                                                                                                    // if there is none
                         articulationStyle = (ArticulationStyle) this.helper.currentPerformance.getGlobal().getHeader().addStyleDef(Mpm.ARTICULATION_STYLE, "MEI export");               // create one
-                        articulationStyle.getArticulationDef("defaultArticulation");                                                                                                              // the articulation style should define a defauult articulation which is here called defaultArticulation
+                        articulationStyle.getDef("defaultArticulation");                                                                                                              // the articulation style should define a defauult articulation which is here called defaultArticulation
                     }
 
                     // find or generate the required articulationMaps and generate and insert the articulation instruction there
@@ -3598,6 +3604,7 @@ public class Mei extends meico.xml.XmlBase {
                 for (Map.Entry<Element, String> placeholder : placeholders.entrySet()) {
                     notResolved.add(placeholder.getKey().toXML());                                      // add all entries to the return list
                     placeholder.getKey().getParent().removeChild(placeholder.getKey());                 // delete all placeholders from the xml, we cannot resolve them anyway
+//                    placeholder.getKey().detach();
                 }
                 System.err.print(" circular copyof or sameas referencing detected, cannot be resolved,");
                 break;                                                                                  // stop the while loop
@@ -3613,6 +3620,7 @@ public class Mei extends meico.xml.XmlBase {
                 if (found == null) {                                                                    // if no element with this id has been found
                     notResolved.add(placeholder.getKey().toXML());                                      // add entry to the return list
                     placeholder.getKey().getParent().removeChild(placeholder.getKey());                 // delete the placeholder from the xml, we cannot process it anyway
+//                    placeholder.getKey().detach();
                     continue;                                                                           // continue with the next placeholder
                 }
 
@@ -3680,6 +3688,7 @@ public class Mei extends meico.xml.XmlBase {
 
             parent.appendChild(r.getValue());
             parent.removeChild(r);
+//            r.detach();
             count++;
         }
 
@@ -3712,8 +3721,10 @@ public class Mei extends meico.xml.XmlBase {
         if (expansion != null) {
             // remove all expansion elements from this regularizedRoot
             Elements expansions = regularizedRoot.getChildElements("expansion");            // get all expansion elements that are present as direct children of regularizedRoot
-            for (int i = expansions.size() - 1; i >= 0; --i)                                // delete all expansion elements from the regularizedRoot
+            for (int i = expansions.size() - 1; i >= 0; --i) {                              // delete all expansion elements from the regularizedRoot
                 regularizedRoot.removeChild(expansions.get(i));
+//                expansions.get(i).detach();
+            }
 
             // parse the plist and write its content to expansionSequence
             if (expansion.getAttribute("plist") != null) {                                  // if the expansion has a plist attribute
@@ -3732,6 +3743,7 @@ public class Mei extends meico.xml.XmlBase {
                 Attribute childId = Helper.getAttribute("id", child);                       // get the child's id
                 if (childId == null || !plist.contains(childId.getValue())) {               // if it does not have one, it cannot be in the plist and will not be played or the id is not in the plist, again the child will not be played
                     regularizedRoot.removeChild(child);                                     // hence, delete it
+//                    child.detach();
                     continue;                                                               // continue with the next child
                 }
             }

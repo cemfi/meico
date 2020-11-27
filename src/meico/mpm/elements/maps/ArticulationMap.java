@@ -279,7 +279,7 @@ public class ArticulationMap extends GenericMap {
         if (att != null) {
             ad.articulationDefName = att.getValue();
             if (ad.style != null)
-                ad.articulationDef = ad.style.getArticulationDef(ad.articulationDefName);
+                ad.articulationDef = ad.style.getDef(ad.articulationDefName);
         }
 
         att = Helper.getAttribute("absoluteDuration", e);
@@ -351,7 +351,7 @@ public class ArticulationMap extends GenericMap {
                 if (att != null) {
                     ad.defaultArticulation = att.getValue();
                     if (ad.style != null)
-                        ad.defaultArticulationDef = ad.style.getArticulationDef(ad.defaultArticulation);
+                        ad.defaultArticulationDef = ad.style.getDef(ad.defaultArticulation);
                 }
                 return;
             }
@@ -413,7 +413,7 @@ public class ArticulationMap extends GenericMap {
                 continue;
             }
 
-            ArticulationDef aDef = aStyle.getArticulationDef(defaultArticulationAtt.getValue());
+            ArticulationDef aDef = aStyle.getDef(defaultArticulationAtt.getValue());
             if (aDef == null)
                 System.err.println("Warning: attribute " + Helper.getAttribute("defaultArticulation", styleEntry.getValue()).toXML() + " in style element refers to an unknown articulationDef.");
             defaultArticulations.add(new KeyValue<>(styleEntry.getKey(), aDef));

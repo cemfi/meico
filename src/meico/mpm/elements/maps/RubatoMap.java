@@ -4,6 +4,7 @@ import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.GenericStyle;
 import meico.mpm.elements.styles.RubatoStyle;
+import meico.mpm.elements.styles.defs.RubatoDef;
 import meico.supplementary.KeyValue;
 import meico.mpm.elements.maps.data.RubatoData;
 import nu.xom.Attribute;
@@ -248,14 +249,14 @@ public class RubatoMap extends GenericMap {
                     break;
                 }
             }
-            GenericStyle gStyle = this.getStyle(Mpm.DYNAMICS_STYLE, rd.styleName);          // read the rubato style
+            RubatoStyle gStyle = (RubatoStyle) this.getStyle(Mpm.DYNAMICS_STYLE, rd.styleName); // read the rubato style
             if (gStyle != null)
-                rd.style = (RubatoStyle) gStyle;
+                rd.style = gStyle;
 
             att = Helper.getAttribute("name.ref", e);
             if (att != null) {                                                              // name.ref attribute is mandatory
                 rd.rubatoDefString = att.getValue();
-                rd.rubatoDef = rd.style.getRubatoDef(rd.rubatoDefString);
+                rd.rubatoDef = rd.style.getDef(rd.rubatoDefString);
             }
 
             att = Helper.getAttribute("frameLength", e);

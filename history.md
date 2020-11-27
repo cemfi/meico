@@ -1,12 +1,29 @@
 ### Version History
 
 
+#### v0.8.19
+- Added new class `meico.mpm.elements.metadata.Comment` and incorporated it in all classes that handle MPM metadata comment elements.
+- In class `meico.mpm.elements.metadata.Metadata` some new methods have been added: `removeAuthor()` and `removeComment()`.
+- Enhancement in method `meico.mpm.Mpm.addPerformance()` to cancel if the input `Performance` object is null. It also got a `boolean` return value to indicate the success of the action.
+- The same has been added to method `meico.mpm.elements.Performance.addPart()`. It returns `false` also if the part is already in the performance.
+- The same has been added to methods `meico.mpm.elements.metadata.Metadata.addAuthor()`, `addComment()` and `addRelatedResource()`. Instead of an index they return `-1`.
+- Bugfixes in methods `meico.mpm.elements.metadata.Author.setId()` and `removeAuthor()`.
+- Classes `meico.mpm.elements.Part`, `Performance` have been extended to provide access also to the element's `xml:id`.
+- New methods `clear()` and `renameStyleDef()` in class `meico.mpm.elements.Header` to remove all content of from the respective MPM element.
+- New method `clear()` in class `meico.mpm.elements.Dated` to remove all content of from the respective MPM element.
+- Bugfix in method `meico.mpm.elements.Header.removeStyleType()`, `removeStyleDef()`, `addStyleType()`.
+- Lots of enhancement and refactoring of all classes in packages `meico.mpm.elements.styles` and `meico.mpm.elements.styles.defs`.
+- Correction of `rubatoDef` factory method `meico.mpm.elements.styles.defs.RubatoDef.createRubatoDef(String name)` to `createRubatoDef(String name, double frameLength)`. A `rubatoDef` without a `frameLangth` is invalid. Hence the factory could never create a `rubatoDef`. This is fixed.
+- Refactoring of method `meico.mpm.elements.styles.defs.AccentuationPatternDef.getSize()` to `size()` to follow the convention used in all other classes.
+- Added another method `addAccentuation()` to class `meico.mpm.elements.styles.defs.AccentuationPatternDef` that supports input of an `id` string.
+
+
 #### v0.8.18
 - Enhancement of class `meico.mpm.elements.metadata.Metadata` so it can be instatiated with related resources.
 
 
 #### v0.8.17
-- Made class `meico.midi.InstrumentsDirectory` public so it can be used outside of its package.
+- Made class `meico.midi.InstrumentsDirectory` public, so it can be used outside of its package.
 - Extended method `meico.mei.Mei.makePart()`. 
     - This addresses issue [#23](https://github.com/cemfi/meico/issues/23) where the staff label did not suffice to properly indicate which General MIDI instrument should be chosen during the MIDI export. 
     - Thus, support for MEI element `instrDef` has been added. It should be used as follows.

@@ -24,6 +24,7 @@ public class Performance extends AbstractXmlSubtree {
     private int pulsesPerQuarter = 720;                         // the timing resolution of symbolic time (midi.date etc.)
     private Global global = null;                               // the global performance information
     private ArrayList<Part> parts = new ArrayList<>();          // the local performance information
+    private Attribute id = null;                                // the id attribute
 
     /**
      * This constructor generates an empty performance with only a name, global and dated environment.
@@ -67,6 +68,46 @@ public class Performance extends AbstractXmlSubtree {
     /**
      * performance factory
      *
+     * @param name the name of the performance
+     * @param pulsesPerQuarter
+     * @return
+     */
+    public static Performance createPerformance(String name, int pulsesPerQuarter) {
+        Performance performance;
+        try {
+            performance = new Performance(name);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        performance.setPulsesPerQuarter(pulsesPerQuarter);
+        return performance;
+    }
+
+    /**
+     * performance factory
+     *
+     * @param name the name of the performance
+     * @param pulsesPerQuarter
+     * @param id
+     * @return
+     */
+    public static Performance createPerformance(String name, int pulsesPerQuarter, String id) {
+        Performance performance;
+        try {
+            performance = new Performance(name);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        performance.setPulsesPerQuarter(pulsesPerQuarter);
+        performance.setId(id);
+        return performance;
+    }
+
+    /**
+     * performance factory
+     *
      * @param xml
      * @return
      */
@@ -99,6 +140,7 @@ public class Performance extends AbstractXmlSubtree {
 
         this.setXml(xml);
         this.name = Helper.getAttribute("name", this.getXml());
+        this.id = Helper.getAttribute("id", this.getXml());
 
         // make sure that this element is really a "performance" element
         if (!this.getXml().getLocalName().equals("performance")) {
@@ -201,17 +243,20 @@ public class Performance extends AbstractXmlSubtree {
     /**
      * add the part to the performance,
      * caution: if another part with the same number exists already in this performance, getPart(number) will return only the first
-     *
      * @param part
+     * @return success
      */
-    public void addPart(Part part) {
+    public boolean addPart(Part part) {
+        if ((part == null) || (this.parts.contains(part)))
+            return false;
+
         Element parent = (Element) part.getXml().getParent();
         if ((parent == null) || (parent != this.getXml())) {
             part.getXml().detach();
             this.getXml().appendChild(part.getXml());   // add the xml code of the part to the performance's xml
         }
         part.setGlobal(this.getGlobal());           // link to the global environment where the part may find related information (styleDefs etc.)
-        this.parts.add(part);
+        return this.parts.add(part);
     }
 
     /**
@@ -224,6 +269,7 @@ public class Performance extends AbstractXmlSubtree {
             if (p.getNumber() == number) {
                 this.parts.remove(p);
                 this.getXml().removeChild(p.getXml());
+//                p.getXml().detach();
             }
         }
     }
@@ -238,6 +284,7 @@ public class Performance extends AbstractXmlSubtree {
             if (p.getName().equals(name)) {
                 this.parts.remove(p);
                 this.getXml().removeChild(p.getXml());
+//                p.getXml().detach();
             }
         }
     }
@@ -250,6 +297,7 @@ public class Performance extends AbstractXmlSubtree {
     public void removePart(Part part) {
         if (this.parts.remove(part)) {                  // if the part was in this performance and could be removed from the parts list
             this.getXml().removeChild(part.getXml());   // it can be removed from the xml structure
+//            part.getXml().detach();
         }
     }
 
@@ -549,5 +597,39 @@ public class Performance extends AbstractXmlSubtree {
             }
         }
         return null;
+    }
+
+    /**
+     * set the performance's id
+     * @param id a xml:id string or null
+     */
+    public void setId(String id) {
+        if (id == null) {
+            if (this.id != null) {
+                this.id.detach();
+                this.id = null;
+            }
+            return;
+        }
+
+        if (this.id == null) {
+            this.id = new Attribute("id", id);
+            this.id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+            this.getXml().addAttribute(this.id);
+            return;
+        }
+
+        this.id.setValue(id);
+    }
+
+    /**
+     * get the performance's id
+     * @return a string or null
+     */
+    public String getId() {
+        if (this.id == null)
+            return null;
+
+        return this.id.getValue();
     }
 }

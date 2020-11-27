@@ -72,20 +72,13 @@ public class DynamicsDef extends AbstractDef {
      * @param xml
      */
     protected void parseData(Element xml) throws Exception {
-        if (xml == null)
-            throw new Exception("Cannot generate DynamicsDef object. XML Element is null.");
+        super.parseData(xml);
 
         // parse the dynamicsDef element
-            this.name = Helper.getAttribute("name", xml);                                           // get its name attribute
-            if (this.name == null) {                                                        // if no name
-                throw new Exception("Cannot generate DynamicsDef object. Missing name attribute.");
-            }
-            Attribute value = Helper.getAttribute("value", xml);                                    // get its value attribute
-            if (value == null) {                                                            // if no value
-                throw new Exception("Cannot generate DynamicsDef object. Missing value attribute.");
-            }
-
-        this.setXml(xml);
+        Attribute value = Helper.getAttribute("value", xml);                                    // get its value attribute
+        if (value == null) {                                                            // if no value
+            throw new Exception("Cannot generate DynamicsDef object. Missing value attribute.");
+        }
 
         // make sure that this element is really a DynamicsDef element
         if (!this.getXml().getLocalName().equals("dynamicsDef")) {

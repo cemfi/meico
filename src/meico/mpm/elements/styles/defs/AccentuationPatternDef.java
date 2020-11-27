@@ -58,6 +58,25 @@ public class AccentuationPatternDef extends AbstractDef {
 
     /**
      * AcctentuationPatternDef factory
+     * @param name
+     * @param length
+     * @param id
+     * @return
+     */
+    public static AccentuationPatternDef createAccentuationPatternDef(String name, double length, String id) {
+        AccentuationPatternDef accentuationPatternDef;
+        try {
+            accentuationPatternDef = new AccentuationPatternDef(name, length);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        accentuationPatternDef.setId(id);
+        return accentuationPatternDef;
+    }
+
+    /**
+     * AcctentuationPatternDef factory
      * @param xml
      * @return
      */
@@ -77,16 +96,9 @@ public class AccentuationPatternDef extends AbstractDef {
      * @param xml
      */
     protected void parseData(Element xml) throws Exception {
-        if (xml == null)
-            throw new Exception("Cannot generate AccentuationPatternDef object. XML Element is null.");
+        super.parseData(xml);
 
         // parse the dynamicsDef element
-        this.name = Helper.getAttribute("name", xml);                       // get its name attribute
-        if (this.name == null) {                                            // if no name
-            throw new Exception("Cannot generate AccentuationPatternDef object. Missing name attribute.");
-        }
-
-        this.setXml(xml);
 
         // make sure that this element is really a "accentuationPatternDef" element
         if (!this.getXml().getLocalName().equals("accentuationPatternDef")) {
@@ -139,11 +151,31 @@ public class AccentuationPatternDef extends AbstractDef {
      * @return the index at which it has been added
      */
     public int addAccentuation(double beat, double value, double transitionFrom, double transitionTo) {
+        return this.addAccentuation(beat, value, transitionFrom, transitionTo, null);
+    }
+
+    /**
+     * create and add an accentuation to this accentuationPatternDef
+     * @param beat
+     * @param value
+     * @param transitionFrom
+     * @param transitionTo
+     * @param id
+     * @return the index at which it has been added
+     */
+    public int addAccentuation(double beat, double value, double transitionFrom, double transitionTo, String id) {
         Element accElt = new Element("accentuation", Mpm.MPM_NAMESPACE);                                            // create an xml representation of the accentuation to be added
         accElt.addAttribute(new Attribute("beat", Double.toString(beat)));
         accElt.addAttribute(new Attribute("value", Double.toString(value)));
         accElt.addAttribute(new Attribute("transition.from", Double.toString(transitionFrom)));
         accElt.addAttribute(new Attribute("transition.to", Double.toString(transitionTo)));
+
+        if (id != null) {
+            Attribute idAtt = new Attribute("id", id);
+            idAtt.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+            accElt.addAttribute(idAtt);
+        }
+
         int index = this.addAccentuationToArrayList(new double[]{beat, value, transitionFrom, transitionTo}, accElt);   // add the accentuation to this.accentuations
         this.getXml().insertChild(accElt, index);                                                                   // add it to the xml
         return index;
@@ -211,6 +243,7 @@ public class AccentuationPatternDef extends AbstractDef {
         for (int i = 0; i < this.accentuations.size(); ++i) {           // for each accentuation
             Element accentuation = this.accentuations.get(i).getValue();
             xml.removeChild(accentuation);                              // remove the accentuation wherever it is
+//            accentuation.detach();                                      // the accentuation keeps its parent, so we don't need to do this
             xml.insertChild(accentuation, i);                           // and add it at its correct index
         }
     }
@@ -224,7 +257,9 @@ public class AccentuationPatternDef extends AbstractDef {
             return;
 
         this.getXml().removeChild(this.accentuations.get(index).getValue());    // remove the accentuation from the xml
+//        this.accentuations.get(index).getValue().detach();
         this.accentuations.remove(index);                                       // remove its values from the accentuations list
+
     }
 
     /**
@@ -293,7 +328,7 @@ public class AccentuationPatternDef extends AbstractDef {
      * get the count of accentuations in this accentuation pattern
      * @return the count of accentuations in this accentuation pattern
      */
-    public int getSize() {
+    public int size() {
         return this.accentuations.size();
     }
 

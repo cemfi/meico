@@ -13,9 +13,7 @@ import java.util.LinkedList;
  * and assotiate it with an instance of ArticulationDef.
  * @author Axel Berndt
  */
-public class ArticulationStyle extends GenericStyle {
-    private HashMap<String, ArticulationDef> articulationDefs;     // the lookup table for tempoDefs (name -> ArticulationDef)
-
+public class ArticulationStyle extends GenericStyle<ArticulationDef> {
     /**
      * this constructor generates an empty styleDef for dynamicsDefs to be added subsequently
      * @param name
@@ -52,6 +50,24 @@ public class ArticulationStyle extends GenericStyle {
 
     /**
      * ArticulationStyle factory
+     * @param name
+     * @param id
+     * @return
+     */
+    public static ArticulationStyle createArticulationStyle(String name, String id) {
+        ArticulationStyle articulationStyle;
+        try {
+            articulationStyle = new ArticulationStyle(name);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        articulationStyle.setId(id);
+        return articulationStyle;
+    }
+
+    /**
+     * ArticulationStyle factory
      * @param xml
      * @return
      */
@@ -73,75 +89,13 @@ public class ArticulationStyle extends GenericStyle {
     protected void parseData(Element xml) throws Exception {
         super.parseData(xml);
 
-        this.articulationDefs = new HashMap<>();
-
         // parse the articulationDef elements (the children of this styleDef)
         LinkedList<Element> articDefs = Helper.getAllChildElements("articulationDef", this.getXml());
         for (Element articDef : articDefs) {                                // for each articulationDef
             ArticulationDef ad = ArticulationDef.createArticulationDef(articDef);
             if (ad == null)
                 continue;
-            this.articulationDefs.put(ad.getName(), ad);                             // add the (name, ArticulationDef) pair to the lookup table
+            this.defs.put(ad.getName(), ad);                             // add the (name, ArticulationDef) pair to the lookup table
         }
-    }
-
-    /**
-     * access the whole HashMap with (name, ArticulationDef) pairs
-     * @return
-     */
-    public HashMap<String, ArticulationDef> getAllArticulationDefs() {
-        return this.articulationDefs;
-    }
-
-    /**
-     * retrieve a specific articulationDef
-     * @param name
-     * @return
-     */
-    public ArticulationDef getArticulationDef(String name) {
-        return this.articulationDefs.get(name);
-    }
-
-    /**
-     * add or (if a articulationDef with this name is already existent) replace the articulationDef
-     * @param articulationDef the ArticulationDef instance to be added, if there is already one with this name, it is replaced
-     */
-    public void addArticulationDef(ArticulationDef articulationDef) {
-        if (articulationDef == null) {
-            System.err.println("Cannot add a null ArticulationDef to the styleDef.");
-            return;
-        }
-        removeArticulationDef(articulationDef.getName());               // if there is already a articulationDef with this name, remove it
-        this.articulationDefs.put(articulationDef.getName(), articulationDef);
-        this.getXml().appendChild(articulationDef.getXml());
-    }
-
-    /**
-     * remove the specified articulationDef from this styleDef
-     * @param name
-     */
-    public void removeArticulationDef(String name) {
-        ArticulationDef ad = this.articulationDefs.get(name);    // get the xml element of this articulationDef
-        if (ad == null)                                         // if there is no such articulationDef
-            return;                                             // done
-
-        this.articulationDefs.remove(name);                      // remove the (name, values) lookup table entry
-        this.getXml().removeChild(ad.getXml());                 // remove the element from the xml
-    }
-
-    /**
-     * get the number of articulationDefs in this styleDef
-     * @return
-     */
-    public int size() {
-        return this.articulationDefs.size();
-    }
-
-    /**
-     * does the styleDef contain articulationDefs?
-     * @return
-     */
-    public boolean isEmpty() {
-        return this.articulationDefs.isEmpty();
     }
 }

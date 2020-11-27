@@ -13,9 +13,7 @@ import java.util.LinkedList;
  * and assotiate it with an instance of TempoDef.
  * @author Axel Berndt
  */
-public class TempoStyle extends GenericStyle {
-    private HashMap<String, TempoDef> tempoDefs;              // the lookup table for TempoDef
-
+public class TempoStyle extends GenericStyle<TempoDef> {
     /**
      * this constructor generates an empty styleDef for tempoDefs to be added subsequently
      * @param name
@@ -52,6 +50,24 @@ public class TempoStyle extends GenericStyle {
 
     /**
      * TempoStyle factory
+     * @param name
+     * @param id
+     * @return
+     */
+    public static TempoStyle createTempoStyle(String name, String id) {
+        TempoStyle tempoStyle;
+        try {
+            tempoStyle = new TempoStyle(name);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        tempoStyle.setId(id);
+        return tempoStyle;
+    }
+
+    /**
+     * TempoStyle factory
      * @param xml
      * @return
      */
@@ -73,15 +89,13 @@ public class TempoStyle extends GenericStyle {
     public void parseData(Element xml) throws Exception {
         super.parseData(xml);
 
-        this.tempoDefs = new HashMap<>();
-
         // parse the tempoDef elements (the children of this styleDef)
         LinkedList<Element> tempoDefs = Helper.getAllChildElements("tempoDef", this.getXml());
         for (Element def : tempoDefs) { // for each tempoDef
             TempoDef td = TempoDef.createTempoDef(def);
             if (td == null)
                 continue;
-            this.tempoDefs.put(td.getName(), td);     // add the (name, TempoDef) pair to the lookup table
+            this.defs.put(td.getName(), td);     // add the (name, TempoDef) pair to the lookup table
         }
     }
 
@@ -91,7 +105,7 @@ public class TempoStyle extends GenericStyle {
      * @return the numeric bpm value or 100.0 if everything else fails
      */
     public double getNumericBpmValue(String tempoString) {
-        TempoDef tempoDef = this.getTempoDef(tempoString);
+        TempoDef tempoDef = this.getDef(tempoString);
         if (tempoDef != null)
             return tempoDef.getValue();
         try {
@@ -109,7 +123,7 @@ public class TempoStyle extends GenericStyle {
      * @return the numeric bpm value or 100.0 if everything else fails
      */
     public static double getNumericBpmValue(String tempoString, TempoStyle style) {
-        TempoDef tempoDef = (style != null) ? style.getTempoDef(tempoString) : null;
+        TempoDef tempoDef = (style != null) ? style.getDef(tempoString) : null;
         if (tempoDef != null)
             return tempoDef.getValue();
 
@@ -119,65 +133,5 @@ public class TempoStyle extends GenericStyle {
             System.err.println("Failed to convert tempo string \"" + tempoString + "\" to double. No tempoDef, no number format.");
             return 100.0;
         }
-    }
-
-    /**
-     * access the whole HashMap with (name, TempoDef) pairs
-     * @return
-     */
-    public HashMap<String, TempoDef> getAllTempoDefs() {
-        return this.tempoDefs;
-    }
-
-    /**
-     * retrieve a specific TempoDef
-     * @param name
-     * @return
-     */
-    public TempoDef getTempoDef(String name) {
-        return this.tempoDefs.get(name);
-    }
-
-    /**
-     * add or (if a TempoDef with this name is already existent) replace the TempoDef
-     * @param tempoDef the TempoDef instance to be added, if there is already one with this name, it is replaced
-     */
-    public void addTempoDef(TempoDef tempoDef) {
-        if (tempoDef == null) {
-            System.err.println("Cannot add a null TempoDef to the styleDef.");
-            return;
-        }
-        removeTempoDef(tempoDef.getName());               // if there is already a tempoDef with this name, remove it
-        this.tempoDefs.put(tempoDef.getName(), tempoDef);
-        this.getXml().appendChild(tempoDef.getXml());
-    }
-
-    /**
-     * remove the specified TempoDef from this styleDef
-     * @param name
-     */
-    public void removeTempoDef(String name) {
-        TempoDef rd = this.tempoDefs.get(name);    // get the xml element of this tempoDef
-        if (rd == null)                                 // if there is no such tempoDef
-            return;                                     // done
-
-        this.tempoDefs.remove(name);                  // remove the (name, values) lookup table entry
-        this.getXml().removeChild(rd.getXml());         // remove the element from the xml
-    }
-
-    /**
-     * get the number of tempoDefs in this styleDef
-     * @return
-     */
-    public int size() {
-        return this.tempoDefs.size();
-    }
-
-    /**
-     * does the styleDef contain tempoDefs?
-     * @return
-     */
-    public boolean isEmpty() {
-        return this.tempoDefs.isEmpty();
     }
 }

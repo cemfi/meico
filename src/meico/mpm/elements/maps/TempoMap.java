@@ -229,9 +229,9 @@ public class TempoMap extends GenericMap {
                     break;
                 }
             }
-            GenericStyle gStyle = this.getStyle(Mpm.TEMPO_STYLE, td.styleName);     // read the tempo style
+            TempoStyle gStyle = (TempoStyle) this.getStyle(Mpm.TEMPO_STYLE, td.styleName);     // read the tempo style
             if (gStyle != null)
-                td.style = (TempoStyle) gStyle;
+                td.style = gStyle;
 
             td.bpmString = bpmAtt.getValue();
             td.bpm = TempoStyle.getNumericBpmValue(td.bpmString, td.style);         // get numeric tempo value

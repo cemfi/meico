@@ -4,6 +4,7 @@ import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.styles.GenericStyle;
 import meico.mpm.elements.styles.MetricalAccentuationStyle;
+import meico.mpm.elements.styles.defs.AccentuationPatternDef;
 import meico.supplementary.KeyValue;
 import meico.mpm.elements.maps.data.MetricalAccentuationData;
 import nu.xom.Attribute;
@@ -225,10 +226,10 @@ public class MetricalAccentuationMap extends GenericMap {
                     break;
                 }
             }
-            GenericStyle gStyle = this.getStyle(Mpm.METRICAL_ACCENTUATION_STYLE, md.styleName); // read the metrical accentuation style
+            MetricalAccentuationStyle gStyle = (MetricalAccentuationStyle) this.getStyle(Mpm.METRICAL_ACCENTUATION_STYLE, md.styleName); // read the metrical accentuation style
             if (gStyle != null) {
-                md.style = (MetricalAccentuationStyle) gStyle;
-                md.accentuationPatternDef = md.style.getAccentuationPatternDef(md.accentuationPatternDefName);
+                md.style = gStyle;
+                md.accentuationPatternDef = md.style.getDef(md.accentuationPatternDefName);
                 return md;      // only if we have accentuationPatternDef data we have what we need for working with the accentuation pattern
             }
         }

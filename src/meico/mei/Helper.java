@@ -656,8 +656,10 @@ public class Helper {
         // delete all miscMaps and non-msm conform attributes
         Nodes n = msm.getRootElement().query("descendant::*[local-name()='miscMap'] | descendant::*[attribute::currentDate]/attribute::currentDate | descendant::*[attribute::tie]/attribute::tie | descendant::*[attribute::layer]/attribute::layer | descendant::*[attribute::endid]/attribute::endid | descendant::*[attribute::tstamp2]/attribute::tstamp2 | descendant::*[local-name()='goto' and attribute::n]/attribute::n");
         for (int i=0; i < n.size(); ++i) {
-            if (n.get(i) instanceof Element)
+            if (n.get(i) instanceof Element) {
                 n.get(i).getParent().removeChild(n.get(i));
+//                n.get(i).detach();
+            }
 
             if (n.get(i) instanceof Attribute)
                 ((Element) n.get(i).getParent()).removeAttribute((Attribute) n.get(i));
@@ -839,12 +841,12 @@ public class Helper {
                 if (tempoStyle == null)                                                                                                                     // if there is none
                     tempoStyle = (TempoStyle) this.currentPerformance.getGlobal().getHeader().addStyleDef(Mpm.TEMPO_STYLE, "MEI export");                   // create one
 
-                if ((tempoStyle != null) && (tempoStyle.getTempoDef(descriptor) == null)) {                                                                 // if there is a descriptor string for this tempo instruction
+                if ((tempoStyle != null) && (tempoStyle.getDef(descriptor) == null)) {                                                                 // if there is a descriptor string for this tempo instruction
                     // use the specified tempo or, if not defined, try to create a default numeric value for the descriptor string
                     if (tempoData.bpmString == null)
-                        tempoStyle.addTempoDef(TempoDef.createDefaultTempoDef(descriptor));
+                        tempoStyle.addDef(TempoDef.createDefaultTempoDef(descriptor));
                     else
-                        tempoStyle.addTempoDef(TempoDef.createTempoDef(descriptor, Double.parseDouble(tempoData.bpmString)));
+                        tempoStyle.addDef(TempoDef.createTempoDef(descriptor, Double.parseDouble(tempoData.bpmString)));
                 }
                 tempoData.bpmString = descriptor;
             }
@@ -1269,6 +1271,7 @@ public class Helper {
             Element ts = tps.get(i);
             if ((ts.getAttribute("date.end") != null) && (Double.parseDouble(ts.getAttributeValue("date.end")) <= this.getMidiTime())) {                        // if the tupletSpan is already over
                 this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap").getFirstChildElement("tupletSpanMap").removeChild(ts);           // remove this tupletSpan from the map, it is no longer needed
+//                ts.detach();
                 continue;                                                                                                                                       // continue with the previous element in tps
             }
             if (!Helper.isSameLayer(ts, Helper.getLayerId(this.currentLayer))) {                                                                                 // check whether this is dedicated to a specific layer but not the current layer (layer of ofThis)

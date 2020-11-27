@@ -88,7 +88,7 @@ public class Author extends AbstractXmlSubtree {
     }
 
     /**
-     * the the author's name
+     * set the author's name
      * @param name
      */
     public void setName(String name) {
@@ -150,13 +150,13 @@ public class Author extends AbstractXmlSubtree {
         }
 
         if (this.id == null) {
-            this.id = new Attribute("number", id);
+            this.id = new Attribute("id", id);
             this.id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
             this.getXml().addAttribute(this.id);
             return;
         }
 
-        this.number.setValue(id);
+        this.id.setValue(id);
     }
 
     /**

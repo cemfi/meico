@@ -72,14 +72,9 @@ public class TempoDef extends AbstractDef {
      * @param xml
      */
     protected void parseData(Element xml) throws Exception {
-        if (xml == null)
-            throw new Exception("Cannot generate TempoDef object. XML Element is null.");
+        super.parseData(xml);
 
         // parse the dynamicsDef element
-        this.name = Helper.getAttribute("name", xml);                                           // get its name attribute
-        if (this.name == null) {                                                        // if no name
-            throw new Exception("Cannot generate TempoDef object. Missing name attribute.");
-        }
         Attribute value = Helper.getAttribute("value", xml);                                    // get its value attribute
         if (value == null) {                                                            // if no value
             throw new Exception("Cannot generate TempoDef object. Missing value attribute.");

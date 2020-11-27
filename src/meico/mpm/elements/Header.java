@@ -9,13 +9,14 @@ import nu.xom.Nodes;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * This class interfaces MPM header information.
  * @author Axel Berndt
  */
 public class Header extends AbstractXmlSubtree {
-    private HashMap<String, HashMap<String, GenericStyle>> styleDefs = new HashMap<>();  // this hashmap addresses the style definitions in the form styleDefs.get(styleType, styleDefName);
+    private final HashMap<String, HashMap<String, GenericStyle>> styleDefs = new HashMap<>();  // this hashmap addresses the style definitions in the form styleDefs.get(styleType, styleDefName);
 
     /**
      * constructor
@@ -92,20 +93,13 @@ public class Header extends AbstractXmlSubtree {
     /**
      * add a new empty style type to the header,
      * if a type with this name is already existent, it will be replaced
-     * @param type the local name of the type, e.g. "tempoStyles" or "articulationStyles"
+     * @param type the local name of the type, e.g. "tempoStyles" or "articulationStyles", use the constants in Mpm (e.g. Mpm.ARTICULATION_STYLE)
      * @return the style collection just added, converted into a hashmap
      */
     public HashMap<String, GenericStyle> addStyleType(String type) {
-        if (type.isEmpty())
+        if ((type == null) || type.isEmpty())
             return null;
-
-        if (this.styleDefs.get(type) != null)       // if there is already such a style
-            this.removeStyleType(type);             // delete it
-
-        this.getXml().appendChild(new Element(type));
-        HashMap<String, GenericStyle> s = new HashMap<>();
-        this.styleDefs.put(type, s);
-        return s;
+        return this.addStyleType(new Element(type, Mpm.MPM_NAMESPACE));
     }
 
     /**
@@ -166,8 +160,9 @@ public class Header extends AbstractXmlSubtree {
      */
     public void removeStyleType(String type) {
         if (this.styleDefs.remove(type) != null) {
-            Element typeElt = this.getXml().getFirstChildElement(type);
+            Element typeElt = this.getXml().getFirstChildElement(type, Mpm.MPM_NAMESPACE);
             this.getXml().removeChild(typeElt);
+//            typeElt.detach();
         }
     }
 
@@ -207,7 +202,7 @@ public class Header extends AbstractXmlSubtree {
      * @param styleDef if there is already a styleDef with this name it will be replaced
      */
     public void addStyleDef(String type, GenericStyle styleDef) {
-        if (type.isEmpty() || (styleDef == null))
+        if ((type == null) || type.isEmpty() || (styleDef == null))
             return;
 
         HashMap<String, GenericStyle> styleCollection = this.styleDefs.get(type);   // get the style collection of the specified type
@@ -276,7 +271,49 @@ public class Header extends AbstractXmlSubtree {
             return;
 
         GenericStyle styleDef = styleCollection.remove(name);
-        if (styleDef != null)
-            this.getXml().getFirstChildElement("type").removeChild(styleDef.getXml());
+        if (styleDef != null) {
+            this.getXml().getFirstChildElement(type, Mpm.MPM_NAMESPACE).removeChild(styleDef.getXml());
+//            styleDef.getXml().detach();
+        }
+    }
+
+    /**
+     * Rename a styleDef.
+     * Caution: If there is already a styleDef with the newName it will be overwritten!
+     * @param type
+     * @param currentName
+     * @param newName
+     * @return
+     */
+    public GenericStyle renameStyleDef(String type, String currentName, String newName) {
+        if (currentName.equals(newName))
+            return this.getStyleDef(type, currentName);
+
+        HashMap<String, GenericStyle> allStyleDefs = this.getAllStyleDefs(type);
+        if (allStyleDefs.isEmpty()) {
+            System.out.println("There are no styleDef elements for type " + type);
+            return null;
+        }
+
+        GenericStyle styleDef = allStyleDefs.get(currentName);
+        if (styleDef == null) {
+            System.out.println("There is no styleDef element with name \"" + currentName + "\" to be renamed.");
+            return null;
+        }
+
+        allStyleDefs.remove(newName);       // if there is already an entry with this name itl will be removed/overwritten by the one that gets this name next
+
+        Helper.getAttribute("name", styleDef.getXml()).setValue(newName);   // set the new name in the xml
+        styleDef = allStyleDefs.remove(currentName);
+        allStyleDefs.put(newName, styleDef); // update the hashmap
+        return styleDef;
+    }
+
+    /**
+     * remove all style collections of the header
+     */
+    public void clear() {
+        this.getXml().removeChildren();
+        this.styleDefs.clear();
     }
 }
