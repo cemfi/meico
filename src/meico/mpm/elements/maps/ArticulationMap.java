@@ -205,6 +205,27 @@ public class ArticulationMap extends GenericMap {
      * @param date
      * @param styleName a reference to a styleDef
      * @param defaultArticulation a reference to an articulationDef
+     * @param id the XML ID of the style switch or null
+     * @return the index at which it has been inserted
+     */
+    public int addStyleSwitch(double date, String styleName, String defaultArticulation, String id) {
+        Element e = new Element("style", Mpm.MPM_NAMESPACE);
+        e.addAttribute(new Attribute("date", Double.toString(date)));
+        e.addAttribute(new Attribute("name.ref", styleName));
+        e.addAttribute(new Attribute("defaultArticulation", defaultArticulation));
+
+        if (id != null)
+            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", id));
+
+        KeyValue<Double, Element> kv = new KeyValue<>(date, e);
+        return this.insertElement(kv, true);
+    }
+
+    /**
+     * this method generates a style switch (an MPM style element) and adds it to the map
+     * @param date
+     * @param styleName a reference to a styleDef
+     * @param defaultArticulation a reference to an articulationDef
      * @return the index at which it has been inserted
      */
     public int addStyleSwitch(double date, String styleName, String defaultArticulation) {

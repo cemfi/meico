@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.20
+- In classes `meico.mpm.elements.maps.GenericMap` and `meico.mpm.elements.maps.ArticulationMap` a variant of method `addStyleSwitch()` has been added that supports input of an ID string.
+
+
 #### v0.8.19
 - Added new class `meico.mpm.elements.metadata.Comment` and incorporated it in all classes that handle MPM metadata comment elements.
 - In class `meico.mpm.elements.metadata.Metadata` some new methods have been added: `removeAuthor()` and `removeComment()`.

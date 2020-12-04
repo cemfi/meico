@@ -548,6 +548,25 @@ public class GenericMap extends AbstractXmlSubtree {
      * this method generates a style switch (an MPM style element) and adds it to the map
      * @param date
      * @param styleName a reference to a styleDef
+     * @param id the XML ID of the switch or null
+     * @return the index at which it has been inserted
+     */
+    public int addStyleSwitch(double date, String styleName, String id) {
+        Element e = new Element("style", Mpm.MPM_NAMESPACE);
+        e.addAttribute(new Attribute("date", Double.toString(date)));
+        e.addAttribute(new Attribute("name.ref", styleName));
+
+        if (id != null)
+            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", id));
+
+        KeyValue<Double, Element> kv = new KeyValue<>(date, e);
+        return this.insertElement(kv, true);
+    }
+
+    /**
+     * this method generates a style switch (an MPM style element) and adds it to the map
+     * @param date
+     * @param styleName a reference to a styleDef
      * @return the index at which it has been inserted
      */
     public int addStyleSwitch(double date, String styleName) {
