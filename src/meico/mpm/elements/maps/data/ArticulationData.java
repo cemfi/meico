@@ -74,6 +74,82 @@ public class ArticulationData {
     }
 
     /**
+     * default constructor
+     */
+    public ArticulationData() {
+        super();
+    }
+
+    /**
+     * constructor with XML element parsing
+     * @param xml MPM articulation element
+     */
+    public ArticulationData(Element xml) {
+        this.xml = xml;
+        this.date = Double.parseDouble(xml.getAttributeValue("date"));
+
+        Attribute nameRef = xml.getAttribute("name.ref");
+        if (nameRef != null)
+            this.articulationDefName = nameRef.getValue();
+
+        Attribute noteId = xml.getAttribute("noteid");
+        if (noteId != null)
+            this.noteid = noteId.getValue();
+
+        Attribute absoluteDuration = xml.getAttribute("absoluteDuration");
+        if (absoluteDuration != null)
+            this.absoluteDuration = Double.parseDouble(absoluteDuration.getValue());
+
+        Attribute absoluteDurationChange = xml.getAttribute("absoluteDurationChange");
+        if (absoluteDurationChange != null)
+            this.absoluteDurationChange = Double.parseDouble(absoluteDurationChange.getValue());
+
+        Attribute absoluteDurationMs = xml.getAttribute("absoluteDurationMs");
+        if (absoluteDurationMs != null)
+            this.absoluteDurationMs = Double.parseDouble(absoluteDurationMs.getValue());
+
+        Attribute absoluteDurationChangeMs = xml.getAttribute("absoluteDurationChangeMs");
+        if (absoluteDurationChangeMs != null)
+            this.absoluteDurationChangeMs = Double.parseDouble(absoluteDurationChangeMs.getValue());
+
+        Attribute relativeDuration = xml.getAttribute("relativeDuration");
+        if (relativeDuration != null)
+            this.relativeDuration = Double.parseDouble(relativeDuration.getValue());
+
+        Attribute absoluteDelay = xml.getAttribute("absoluteDelay");
+        if (absoluteDelay != null)
+            this.absoluteDelay = Double.parseDouble(absoluteDelay.getValue());
+
+        Attribute absoluteDelayMs = xml.getAttribute("absoluteDelayMs");
+        if (absoluteDelayMs != null)
+            this.absoluteDelayMs = Double.parseDouble(absoluteDelayMs.getValue());
+
+        Attribute absoluteVelocity = xml.getAttribute("absoluteVelocity");
+        if (absoluteVelocity != null)
+            this.absoluteVelocity = Double.parseDouble(absoluteVelocity.getValue());
+
+        Attribute absoluteVelocityChange = xml.getAttribute("absoluteVelocityChange");
+        if (absoluteVelocityChange != null)
+            this.absoluteVelocityChange = Double.parseDouble(absoluteVelocityChange.getValue());
+
+        Attribute relativeVelocity = xml.getAttribute("relativeVelocity");
+        if (relativeVelocity != null)
+            this.relativeVelocity = Double.parseDouble(relativeVelocity.getValue());
+
+        Attribute detuneCents = xml.getAttribute("detuneCents");
+        if (detuneCents != null)
+            this.detuneCents = Double.parseDouble(detuneCents.getValue());
+
+        Attribute detuneHz = xml.getAttribute("detuneHz");
+        if (detuneHz != null)
+            this.detuneHz = Double.parseDouble(detuneHz.getValue());
+
+        Attribute id = xml.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+        if (id != null)
+            this.xmlId = id.getValue();
+    }
+
+    /**
      * apply this articulationData to the specified MSM note element
      * @param note
      * @return true if the date changed, as this might require the map to be reordered

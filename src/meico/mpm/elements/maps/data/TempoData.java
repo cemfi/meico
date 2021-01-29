@@ -1,6 +1,7 @@
 package meico.mpm.elements.maps.data;
 
 import meico.mpm.elements.styles.TempoStyle;
+import nu.xom.Attribute;
 import nu.xom.Element;
 
 /**
@@ -21,6 +22,7 @@ public class TempoData {
 
     public String bpmString = null;
     public Double bpm = null;
+
     public String transitionToString = null;
     public Double transitionTo = null;
 
@@ -28,6 +30,48 @@ public class TempoData {
 
     public Double meanTempoAt = null;
     public Double exponent = null;
+
+    /**
+     * default constructor
+     */
+    public TempoData() {}
+
+    /**
+     * constructor from XML element parsing
+     * @param xml MPM tempo element
+     */
+    public TempoData(Element xml) {
+        this.xml = xml;
+        this.startDate = Double.parseDouble(xml.getAttributeValue("date"));
+
+        this.beatLength = Double.parseDouble(xml.getAttributeValue("beatLength"));
+
+        Attribute bpmAtt = xml.getAttribute("bpm");
+        if (bpmAtt != null) {
+            try {       // if the attribute holds a numeric value it should be stored in the dedicated variable
+                this.bpm = Double.parseDouble(bpmAtt.getValue());
+            } catch (NumberFormatException e) {
+                this.bpmString = bpmAtt.getValue();
+            }
+        }
+
+        Attribute transitionToAtt = xml.getAttribute("transition.to");
+        if (transitionToAtt != null) {
+            try {       // if the attribute holds a numeric value it should be stored in the dedicated variable
+                this.transitionTo = Double.parseDouble(transitionToAtt.getValue());
+            } catch (NumberFormatException e) {
+                this.transitionToString = transitionToAtt.getValue();
+            }
+        }
+
+        Attribute meanTempoAtAtt = xml.getAttribute("meanTempoAt");
+        if (meanTempoAtAtt != null)
+            this.meanTempoAt = Double.parseDouble(meanTempoAtAtt.getValue());
+
+        Attribute id = xml.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+        if (id != null)
+            this.xmlId = id.getValue();
+    }
 
     /**
      * create a copy of this object

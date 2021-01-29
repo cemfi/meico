@@ -212,7 +212,9 @@ public class ArticulationMap extends GenericMap {
         Element e = new Element("style", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("name.ref", styleName));
-        e.addAttribute(new Attribute("defaultArticulation", defaultArticulation));
+
+        if (defaultArticulation != null)
+            e.addAttribute(new Attribute("defaultArticulation", defaultArticulation));
 
         if (id != null)
             e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", id));
@@ -232,7 +234,9 @@ public class ArticulationMap extends GenericMap {
         Element e = new Element("style", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("name.ref", styleName));
-        e.addAttribute(new Attribute("defaultArticulation", defaultArticulation));
+
+        if (defaultArticulation != null)
+            e.addAttribute(new Attribute("defaultArticulation", defaultArticulation));
 
         KeyValue<Double, Element> kv = new KeyValue<>(date, e);
         return this.insertElement(kv, true);

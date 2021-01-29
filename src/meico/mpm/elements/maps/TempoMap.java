@@ -143,20 +143,14 @@ public class TempoMap extends GenericMap {
         Element e = new Element("tempo", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(data.startDate)));
 
-        if (data.xmlId != null)
-            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
-
-        if (data.bpmString == null) {
-            if (data.bpm == null) {
-                System.err.println("Cannot add tempo, bpm not specified.");
-                return -1;
-            }
-            e.addAttribute(new Attribute("bpm", Double.toString(data.bpm)));
-        } else {
+        if (data.bpmString != null)
             e.addAttribute(new Attribute("bpm", data.bpmString));
+        else if (data.bpm != null)
+            e.addAttribute(new Attribute("bpm", Double.toString(data.bpm)));
+        else {
+            System.err.println("Cannot add tempo, bpm not specified.");
+            return -1;
         }
-
-        e.addAttribute(new Attribute("beatLength", Double.toString(data.beatLength)));
 
         if (data.transitionToString != null)
             e.addAttribute(new Attribute("transition.to", data.transitionToString));
@@ -165,6 +159,11 @@ public class TempoMap extends GenericMap {
 
         if (data.meanTempoAt != null)
             e.addAttribute(new Attribute("meanTempoAt", Double.toString(data.meanTempoAt)));
+
+        e.addAttribute(new Attribute("beatLength", Double.toString(data.beatLength)));
+
+        if (data.xmlId != null)
+            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
 
         KeyValue<Double, Element> kv = new KeyValue<>(data.startDate, e);
         return this.insertElement(kv, false);

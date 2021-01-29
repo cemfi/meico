@@ -130,23 +130,30 @@ public class RubatoMap extends GenericMap {
         Element e = new Element("rubato", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(data.startDate)));
 
-        if (data.xmlId != null)
-            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
-
         if (data.rubatoDef != null)
             e.addAttribute(new Attribute("name.ref", data.rubatoDef.getName()));
+        else if (data.rubatoDefString != null) {
+            e.addAttribute(new Attribute("name.ref", data.rubatoDefString));
 
-        if (data.frameLength == null) {
+            data.style = (RubatoStyle) this.getStyleAt(data.startDate, Mpm.RUBATO_STYLE);
+            if (data.style != null)
+                data.rubatoDef = data.style.getDef(data.rubatoDefString);
+        }
+
+        if (data.frameLength == null) {     // if the frameLength is not given there must be a name.ref to a valid rubatoDef that has a frameLength
             if (data.rubatoDef == null) {
-                System.err.println("Cannot add rubato, frameLength not specified.");
+                System.err.println("Cannot add rubato, frameLength not specified, neither in the input data nor via a rubatoDef.");
                 return -1;
             }
-            data.frameLength = data.rubatoDef.getFrameLength();
+//            data.frameLength = data.rubatoDef.getFrameLength();
+        } else {
+            e.addAttribute(new Attribute("frameLength", Double.toString(data.frameLength)));
         }
-        e.addAttribute(new Attribute("frameLength", Double.toString(data.frameLength)));
 
-        data.intensity = RubatoMap.ensureIntensityBoundaries(data.intensity);
-        e.addAttribute(new Attribute("intensity", Double.toString(data.intensity)));
+        if (data.intensity != null) {
+            data.intensity = RubatoMap.ensureIntensityBoundaries(data.intensity);
+            e.addAttribute(new Attribute("intensity", Double.toString(data.intensity)));
+        }
 
         Double[] le = RubatoMap.ensureLateStartEarlyEndBoundaries(data.lateStart, data.earlyEnd);
         if (le[0] != null)
@@ -156,6 +163,9 @@ public class RubatoMap extends GenericMap {
             e.addAttribute(new Attribute("earlyEnd", Double.toString(le[1])));
 
         e.addAttribute(new Attribute("loop", Boolean.toString(data.loop)));
+
+        if (data.xmlId != null)
+            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
 
         KeyValue<Double, Element> kv = new KeyValue<>(data.startDate, e);
         return this.insertElement(kv, false);

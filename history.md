@@ -1,6 +1,15 @@
 ### Version History
 
 
+#### v0.8.21
+- Little enhancement in methods `meico.mpm.elements.maps.ArticulationMap.addStyleSwitch()` that is now also able to handle argument `defaultArticulation == null`.
+- Added constructors to classes `meico.mpm.elements.maps.data.ArticulationData`, `MetricalAccentuationData`, `RubatoData`, `DynamicsData`, `TempoData`, and `DistributionData` so they can now be instantiated from a corresponding XML element.
+- Fix in method `meico.mpm.elements.maps.MetricalAccentuationMap.addAccentuationPattern(MetricalAccentuationData data)`. It has rejected input data that defined an `accentuationPatternDef` name but not the corresponding object itself. However, this is the usual situation when parsing an XML element. So this had to be fixed.
+    - Same for method `meico.mpm.elements.maps.RubatoMap.addRubato(RubatoData data)`.
+- Bugfix: corrected constant value `meico.mpm.Mpm.RUBATOR_STYLE = "RubatorStyles"` to `"RubatoStyles"`.
+- Introduced some constants to class `meico.mpm.elements.maps.data.DistributionData` that provide the default strings for the type of the distribution. These are now used in class `meico.mpm.elements.maps.ImprecisionMap` instead of the hard-coded strings, so it will be easier to alter and extend those constants in future updates.
+
+
 #### v0.8.20
 - In classes `meico.mpm.elements.maps.GenericMap` and `meico.mpm.elements.maps.ArticulationMap` a variant of method `addStyleSwitch()` has been added that supports input of an ID string.
 

@@ -139,23 +139,22 @@ public class MetricalAccentuationMap extends GenericMap {
     public int addAccentuationPattern(MetricalAccentuationData data) {
         Element e = new Element("accentuationPattern", Mpm.MPM_NAMESPACE);
 
-        if (data.accentuationPatternDef == null) {
-            System.err.println("Cannot add accentuationPattern, accentuationPatternDef not specified.");
-            return -1;
-        }
-
         e.addAttribute(new Attribute("date", Double.toString(data.startDate)));
-
-        if (data.xmlId != null)
-            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
 
         if (data.accentuationPatternDef != null)
             e.addAttribute(new Attribute("name.ref", data.accentuationPatternDef.getName()));
         else if (data.accentuationPatternDefName != null)
             e.addAttribute(new Attribute("name.ref", data.accentuationPatternDefName));
+        else {
+            System.err.println("Cannot add accentuationPattern, accentuationPatternDef not specified.");
+            return -1;
+        }
 
         e.addAttribute(new Attribute("scale", Double.toString(data.scale)));
         e.addAttribute(new Attribute("loop", Boolean.toString(data.loop)));
+
+        if (data.xmlId != null)
+            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
 
         KeyValue<Double, Element> kv = new KeyValue<>(data.startDate, e);
         return this.insertElement(kv, false);

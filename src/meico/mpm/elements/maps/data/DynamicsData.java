@@ -2,6 +2,7 @@ package meico.mpm.elements.maps.data;
 
 import meico.mpm.elements.styles.DynamicsStyle;
 import meico.mpm.elements.styles.defs.DynamicsDef;
+import nu.xom.Attribute;
 import nu.xom.Element;
 
 import java.util.ArrayList;
@@ -34,6 +35,54 @@ public class DynamicsData {
 
     private Double x1 = null;
     private Double x2 = null;
+
+    /**
+     * default constructor
+     */
+    public DynamicsData() {}
+
+    /**
+     * constructor from XML element parsing
+     * @param xml MPM dynamics element
+     */
+    public DynamicsData(Element xml) {
+        this.xml = xml;
+        this.startDate = Double.parseDouble(xml.getAttributeValue("date"));
+
+        Attribute volumeAtt = xml.getAttribute("volume");
+        if (volumeAtt != null) {
+            try {       // if the attribute holds a numeric value it should be stored in the dedicated variable
+                this.volume = Double.parseDouble(volumeAtt.getValue());
+            } catch (NumberFormatException e) {
+                this.volumeString = volumeAtt.getValue();
+            }
+        }
+
+        Attribute transitionToAtt = xml.getAttribute("transition.to");
+        if (transitionToAtt != null) {
+            try {       // if the attribute holds a numeric value it should be stored in the dedicated variable
+                this.transitionTo = Double.parseDouble(transitionToAtt.getValue());
+            } catch (NumberFormatException e) {
+                this.transitionToString = transitionToAtt.getValue();
+            }
+        }
+
+        Attribute curvatureAtt = xml.getAttribute("curvature");
+        if (curvatureAtt != null)
+            this.curvature = Double.parseDouble(curvatureAtt.getValue());
+
+        Attribute protractionAtt = xml.getAttribute("protraction");
+        if (protractionAtt != null)
+            this.protraction = Double.parseDouble(protractionAtt.getValue());
+
+        Attribute subNoteDynamicsAtt = xml.getAttribute("subNoteDynamics");
+        if (subNoteDynamicsAtt != null)
+            this.subNoteDynamics = Boolean.parseBoolean(subNoteDynamicsAtt.getValue());
+
+        Attribute id = xml.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+        if (id != null)
+            this.xmlId = id.getValue();
+    }
 
     /**
      * create a copy of this object

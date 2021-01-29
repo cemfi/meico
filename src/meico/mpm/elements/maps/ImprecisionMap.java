@@ -166,7 +166,7 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionUniform(double date, double lowerLimit, double upperLimit, Long seed) {
-        Element e = new Element("distribution.uniform", Mpm.MPM_NAMESPACE);
+        Element e = new Element(DistributionData.UNIFORM, Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
@@ -202,7 +202,7 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionGaussian(double date, double standardDeviation, double lowerLimit, double upperLimit, Long seed) {
-        Element e = new Element("distribution.gaussian", Mpm.MPM_NAMESPACE);
+        Element e = new Element(DistributionData.GAUSSIAN, Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("deviation.standard", Double.toString(standardDeviation)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
@@ -243,7 +243,7 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionTriangular(double date, double lowerLimit, double upperLimit, double mode, double lowerClip, double upperClip, Long seed) {
-        Element e = new Element("distribution.triangular", Mpm.MPM_NAMESPACE);
+        Element e = new Element(DistributionData.TRIANGULAR, Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
         e.addAttribute(new Attribute("limit.upper", Double.toString(upperLimit)));
@@ -284,7 +284,7 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionBrownianNoise(double date, double maxStepWidth, double lowerLimit, double upperLimit, double millisecondsTimingBasis, Long seed) {
-        Element e = new Element("distribution.correlated.brownianNoise", Mpm.MPM_NAMESPACE);
+        Element e = new Element(DistributionData.BROWNIAN, Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("stepWidth.max", Double.toString(maxStepWidth)));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
@@ -330,7 +330,7 @@ public class ImprecisionMap extends GenericMap {
      * @return the index at which it has been inserted
      */
     public int addDistributionCompensatingTriangle(double date, double degreeOfCorrelation, double lowerLimit, double upperLimit, double lowerClip, double upperClip, double millisecondsTimingBasis, Long seed) {
-        Element e = new Element("distribution.correlated.compensatingTriangle", Mpm.MPM_NAMESPACE);
+        Element e = new Element(DistributionData.COMPENSATING_TRIANGLE, Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(date)));
         e.addAttribute(new Attribute("degreeOfCorrelation", Double.toString((Math.max(degreeOfCorrelation, 0.0)))));
         e.addAttribute(new Attribute("limit.lower", Double.toString(lowerLimit)));
@@ -381,7 +381,7 @@ public class ImprecisionMap extends GenericMap {
             e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
 
         switch (data.type) {
-            case "distribution.uniform":
+            case DistributionData.UNIFORM:
                 if (data.lowerLimit == null) {
                     System.err.println("Cannot add distribution, lowerLimit not specified.");
                     return -1;
@@ -395,7 +395,7 @@ public class ImprecisionMap extends GenericMap {
                 if (data.seed != null)
                     e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
-            case "distribution.gaussian":
+            case DistributionData.GAUSSIAN:
                 if (data.standardDeviation == null) {
                     System.err.println("Cannot add distribution, standardDeviation not specified.");
                     return -1;
@@ -414,7 +414,7 @@ public class ImprecisionMap extends GenericMap {
                 if (data.seed != null)
                     e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
-            case "distribution.triangular":
+            case DistributionData.TRIANGULAR:
                 if (data.lowerLimit == null) {
                     System.err.println("Cannot add distribution, lowerLimit not specified.");
                     return -1;
@@ -443,7 +443,7 @@ public class ImprecisionMap extends GenericMap {
                 if (data.seed != null)
                     e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
-            case "distribution.correlated.brownianNoise":
+            case DistributionData.BROWNIAN:
                 if (data.maxStepWidth == null) {
                     System.err.println("Cannot add distribution, maxStepWidth not specified.");
                     return -1;
@@ -463,7 +463,7 @@ public class ImprecisionMap extends GenericMap {
                 if (data.seed != null)
                     e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
-            case "distribution.correlated.compensatingTriangle":
+            case DistributionData.COMPENSATING_TRIANGLE:
                 if (data.lowerLimit == null) {
                     System.err.println("Cannot add distribution, lowerLimit not specified.");
                     return -1;
@@ -493,7 +493,7 @@ public class ImprecisionMap extends GenericMap {
                 if (data.seed != null)
                     e.addAttribute(new Attribute("seed", Long.toString(data.seed)));
                 break;
-            case "distribution.list":
+            case DistributionData.LIST:
                 for (int i=0; i < data.distributionList.size(); ++i) {
                     Element m = new Element("measurement");
                     m.addAttribute(new Attribute("value", Double.toString(data.distributionList.get(i))));
@@ -537,64 +537,9 @@ public class ImprecisionMap extends GenericMap {
 
         Element e = this.getElement(index);
         if (e.getLocalName().startsWith("distribution.")) {
-            DistributionData dd = new DistributionData();
-            dd.startDate = this.elements.get(index).getKey();
+            DistributionData dd = new DistributionData(e);
+//            dd.startDate = this.elements.get(index).getKey();
             dd.endDate = (index < (this.size() - 1)) ? this.elements.get(index + 1).getKey() : Double.MAX_VALUE;    // get the date of the subsequent imprecision element
-            dd.type = e.getLocalName();
-            dd.xml = e;
-
-            Attribute att = Helper.getAttribute("xml:id", e);
-            if (att != null)
-                dd.xmlId = att.getValue();
-
-            att = Helper.getAttribute("deviation.standard", e);
-            if (att != null)
-                dd.standardDeviation = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("stepWidth.max", e);
-            if (att != null)
-                dd.maxStepWidth = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("degreeOfCorrelation", e);
-            if (att != null)
-                dd.degreeOfCorrelation = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("mode", e);
-            if (att != null)
-                dd.mode = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("limit.upper", e);
-            if (att != null)
-                dd.upperLimit = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("limit.lower", e);
-            if (att != null)
-                dd.lowerLimit = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("clip.lower", e);
-            if (att != null)
-                dd.lowerClip = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("clip.upper", e);
-            if (att != null)
-                dd.upperClip = Double.parseDouble(att.getValue());
-
-            att = Helper.getAttribute("seed", e);
-            if (att != null)
-                dd.seed = Long.parseLong(att.getValue());
-
-            att = Helper.getAttribute("milliseconds.timingBasis", e);
-            if (att != null)
-                dd.millisecondsTimingBasis = Double.parseDouble(att.getValue());
-
-            Elements measurements = e.getChildElements("measurement");
-            for (int j = 0; j < measurements.size(); ++j) {
-                Element m = measurements.get(j);
-                att = Helper.getAttribute("value", m);
-                if (att != null) {
-                    dd.distributionList.add(Double.parseDouble(att.getValue()));
-                }
-            }
             return dd;
         }
         return null;
@@ -644,28 +589,28 @@ public class ImprecisionMap extends GenericMap {
 
             // initialize the seed, generate correlated distribution functions
             switch (dd.type) {
-                case "distribution.uniform":
+                case DistributionData.UNIFORM:
                     random = RandomNumberProvider.createRandomNumberProvider_uniformDistribution(dd.lowerLimit, dd.upperLimit);
                     break;
-                case "distribution.gaussian":
+                case DistributionData.GAUSSIAN:
                     random = RandomNumberProvider.createRandomNumberProvider_gaussianDistribution(dd.standardDeviation, dd.lowerLimit, dd.upperLimit);
                     break;
-                case "distribution.triangular":
+                case DistributionData.TRIANGULAR:
                     random = RandomNumberProvider.createRandomNumberProvider_triangularDistribution(dd.lowerLimit, dd.upperLimit, dd.mode, dd.lowerClip, dd.upperClip);
                     break;
-                case "distribution.correlated.brownianNoise": {
+                case DistributionData.BROWNIAN: {
                         Double imprecisionValueHandover = ImprecisionMap.getHandoverValue(random, ddPrev, dd);    // before we go on with this distribution element we need to provide a handover value from the previous
                         random = RandomNumberProvider.createRandomNumberProvider_brownianNoiseDistribution(dd.maxStepWidth, dd.lowerLimit, dd.upperLimit);
                         ImprecisionMap.doHandover(imprecisionValueHandover, random);    // let this imprecision element start where the previous ended
                     }
                     break;
-                case "distribution.correlated.compensatingTriangle": {
+                case DistributionData.COMPENSATING_TRIANGLE: {
                         Double imprecisionValueHandover = ImprecisionMap.getHandoverValue(random, ddPrev, dd);    // before we go on with this distribution element we need to provide a handover value from the previous
                         random = RandomNumberProvider.createRandomNumberProvider_compensatingTriangleDistribution(dd.degreeOfCorrelation, dd.lowerLimit, dd.upperLimit, dd.lowerClip, dd.upperClip);
                         ImprecisionMap.doHandover(imprecisionValueHandover, random);    // let this imprecision element start where the previous ended
                     }
                     break;
-                case "distribution.list":
+                case DistributionData.LIST:
                     random = RandomNumberProvider.createRandomNumberProvider_distributionList(dd.distributionList);
                     break;
                 default:                                                            // unknown or unimplemented distribution
@@ -680,16 +625,16 @@ public class ImprecisionMap extends GenericMap {
                 // if we are in the timing domain we have to set the timing resolution so that permutation of subsequent events is avoided
                 if (domain == ImprecisionMap.TIMING) {
                     switch (dd.type) {
-                        case "distribution.uniform":
-                        case "distribution.gaussian":
-                        case "distribution.correlated.brownianNoise":
+                        case DistributionData.UNIFORM:
+                        case DistributionData.GAUSSIAN:
+                        case DistributionData.BROWNIAN:
                             dd.millisecondsTimingBasis = dd.upperLimit - dd.lowerLimit;
                             break;
-                        case "distribution.triangular":
-                        case "distribution.correlated.compensatingTriangle":
+                        case DistributionData.TRIANGULAR:
+                        case DistributionData.COMPENSATING_TRIANGLE:
                             dd.millisecondsTimingBasis = dd.upperClip - dd.lowerClip;
                             break;
-                        case "distribution.list":
+                        case DistributionData.LIST:
                             KeyValue<Double, Double> minMax = dd.getMinAndMaxValueInDistributionList();
                             if (minMax != null)
                                 dd.millisecondsTimingBasis = minMax.getValue() - minMax.getKey();

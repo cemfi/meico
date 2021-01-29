@@ -31,7 +31,7 @@ public class Mpm extends AbstractMsm {
     public static final String DYNAMICS_STYLE                   = "dynamicsStyles";
     public static final String METRICAL_ACCENTUATION_STYLE      = "metricalAccentuationStyles";
     public static final String TEMPO_STYLE                      = "tempoStyles";
-    public static final String RUBATO_STYLE                     = "rubatorStyles";
+    public static final String RUBATO_STYLE                     = "rubatoStyles";
 
     // map type constants that occur in the dated environment, the application may create and process more map types by addressing them with their local name
     public static final String ARTICULATION_MAP                 = "articulationMap";

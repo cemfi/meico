@@ -2,6 +2,7 @@ package meico.mpm.elements.maps.data;
 
 import meico.mpm.elements.styles.MetricalAccentuationStyle;
 import meico.mpm.elements.styles.defs.AccentuationPatternDef;
+import nu.xom.Attribute;
 import nu.xom.Element;
 
 /**
@@ -23,6 +24,34 @@ public class MetricalAccentuationData {
     public double scale = 1.0;
     public boolean loop = false;
     public boolean stickToMeasures = true;
+
+    /**
+     * default constructor
+     */
+    public MetricalAccentuationData() {}
+
+    /**
+     * constructor with XML element parsing
+     * @param xml MPM accentuationPattern element
+     */
+    public MetricalAccentuationData(Element xml) {
+        this.xml = xml;
+        this.startDate = Double.parseDouble(xml.getAttributeValue("date"));
+        this.accentuationPatternDefName = xml.getAttributeValue("name.ref");
+        this.scale = Double.parseDouble(xml.getAttributeValue("scale"));
+
+        Attribute loop = xml.getAttribute("loop");
+        if (loop != null)
+            this.loop = Boolean.parseBoolean(loop.getValue());
+
+        Attribute stickToMeasures = xml.getAttribute("stickToMeasures");
+        if (stickToMeasures != null)
+            this.stickToMeasures = Boolean.parseBoolean(stickToMeasures.getValue());
+
+        Attribute id = xml.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+        if (id != null)
+            this.xmlId = id.getValue();
+    }
 
     /**
      * create a copy of this object

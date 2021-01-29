@@ -209,9 +209,6 @@ public class DynamicsMap extends GenericMap {
         Element e = new Element("dynamics", Mpm.MPM_NAMESPACE);
         e.addAttribute(new Attribute("date", Double.toString(data.startDate)));
 
-        if (data.xmlId != null)
-            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
-
         if (data.volumeString != null)
             e.addAttribute(new Attribute("volume", data.volumeString));
         else if (data.volume != null)
@@ -238,6 +235,9 @@ public class DynamicsMap extends GenericMap {
 
         if (data.subNoteDynamics)   // sadd and set this attribute only if it is true
             e.addAttribute(new Attribute("subNoteDynamics", "true"));
+
+        if (data.xmlId != null)
+            e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
 
         KeyValue<Double, Element> kv = new KeyValue<>(data.startDate, e);
         return this.insertElement(kv, false);
