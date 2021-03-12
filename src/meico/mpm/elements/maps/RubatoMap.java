@@ -259,14 +259,13 @@ public class RubatoMap extends GenericMap {
                     break;
                 }
             }
-            RubatoStyle gStyle = (RubatoStyle) this.getStyle(Mpm.DYNAMICS_STYLE, rd.styleName); // read the rubato style
-            if (gStyle != null)
-                rd.style = gStyle;
-
-            att = Helper.getAttribute("name.ref", e);
-            if (att != null) {                                                              // name.ref attribute is mandatory
-                rd.rubatoDefString = att.getValue();
-                rd.rubatoDef = rd.style.getDef(rd.rubatoDefString);
+            rd.style = (RubatoStyle) this.getStyle(Mpm.RUBATO_STYLE, rd.styleName); // read the rubato style
+            if (rd.style != null) {
+                att = Helper.getAttribute("name.ref", e);
+                if (att != null) {                                                              // name.ref attribute is mandatory
+                    rd.rubatoDefString = att.getValue();
+                    rd.rubatoDef = rd.style.getDef(rd.rubatoDefString);
+                }
             }
 
             att = Helper.getAttribute("frameLength", e);

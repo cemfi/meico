@@ -323,14 +323,13 @@ public class DynamicsMap extends GenericMap {
                     break;
                 }
             }
-            DynamicsStyle gStyle = (DynamicsStyle) this.getStyle(Mpm.DYNAMICS_STYLE, dd.styleName);      // read the dynamics style
-            if (gStyle != null)
-                dd.style = gStyle;
-
-            att = Helper.getAttribute("name.ref", e);
-            if (att != null) {                                                          // name.ref attribute is mandatory
-                dd.dynamicsDefString = att.getValue();
-                dd.dynamicsDef = dd.style.getDef(dd.dynamicsDefString);
+            dd.style = (DynamicsStyle) this.getStyle(Mpm.DYNAMICS_STYLE, dd.styleName);      // read the dynamics style
+            if (dd.style != null) {
+                att = Helper.getAttribute("name.ref", e);
+                if (att != null) {                                                          // name.ref attribute is mandatory
+                    dd.dynamicsDefString = att.getValue();
+                    dd.dynamicsDef = dd.style.getDef(dd.dynamicsDefString);
+                }
             }
 
             att = Helper.getAttribute("volume", e);

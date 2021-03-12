@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.22
+- Bugfix in methods `meico.mpm.elements.maps.DynamicsMap.getDynamicsDataOf()` and `meico.mpm.elements.maps.RubatoMap.getRubatoDataOf()`.
+
+
 #### v0.8.21
 - Little enhancement in methods `meico.mpm.elements.maps.ArticulationMap.addStyleSwitch()` that is now also able to handle argument `defaultArticulation == null`.
 - Added constructors to classes `meico.mpm.elements.maps.data.ArticulationData`, `MetricalAccentuationData`, `RubatoData`, `DynamicsData`, `TempoData`, and `DistributionData` so they can now be instantiated from a corresponding XML element.
