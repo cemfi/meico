@@ -14,6 +14,7 @@ import java.net.URLDecoder;
 public class MidiPlayer {
     private Sequencer sequencer = null;         // a sequencer to playback midi sequences
     private Synthesizer synthesizer = null;     // the synthesizer object, this is where soundbanks can be loaded
+    private MidiDevice midiDevice = null;       // the music may be output to another receiver instead of the synthesizer
     private Soundbank soundbank = null;         // the soundbank that is used to synthesize the sounds
     private long playbackPositionInTicks = 0;   // this is used to pause the playback (store playback position, stop playback, later start at that position)
 
@@ -32,6 +33,11 @@ public class MidiPlayer {
      */
     public MidiPlayer(Midi midi) throws MidiUnavailableException {
         this();
+        try {
+            this.sequencer.setSequence(midi.getSequence());
+        } catch (InvalidMidiDataException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -41,6 +47,7 @@ public class MidiPlayer {
     private void initSynthesizer() throws MidiUnavailableException {
         if (this.synthesizer == null) {
             this.synthesizer = MidiSystem.getSynthesizer();
+            this.midiDevice = this.synthesizer;
         }
 
         this.soundbank = this.synthesizer.getDefaultSoundbank();    // the Java default soundbank is usually already loaded
@@ -60,7 +67,7 @@ public class MidiPlayer {
         if (!this.sequencer.isOpen())
             this.sequencer.open();
 
-        this.sequencer.getTransmitter().setReceiver(this.synthesizer.getReceiver());
+        this.sequencer.getTransmitter().setReceiver(this.midiDevice.getReceiver());
     }
 
     /**
@@ -170,6 +177,69 @@ public class MidiPlayer {
      */
     public synchronized Synthesizer getSynthesizer() {
         return this.synthesizer;
+    }
+
+    /**
+     * switch the MIDI output to another output port
+     * @param midiDevice
+     * @return success
+     */
+    public synchronized boolean setMidiOutputPort(MidiDevice midiDevice) {
+        boolean success = true;
+
+        if (this.midiDevice == midiDevice) {                                             // the requested MIDI device is already served
+            return success;
+        }
+
+        long playbackPosition = this.sequencer.getTickPosition();
+        boolean wasPlaying = this.sequencer.isRunning();
+        Sequence sequence = this.sequencer.getSequence();
+        this.sequencer.close();
+
+//        for (Receiver receiver : this.sequencer.getReceivers())                         // close all receivers that are currently open
+//            receiver.close();
+        if (this.midiDevice != this.synthesizer)                                        // we should not close the synthesizer as it would forget the soundfont it might have loaded
+            this.midiDevice.close();                                                    // any other device should be closed to free its resources
+
+        if ((midiDevice == null) || (midiDevice instanceof Sequencer) || (midiDevice.getMaxReceivers() == 0)) { // if the output port is invalid
+            this.midiDevice = this.synthesizer;                                         // use the synthesizer as default instead
+            success = false;
+        } else {
+            this.midiDevice = midiDevice;
+        }
+
+        try {
+            if (!this.midiDevice.isOpen()) {
+                this.midiDevice.open();
+            }
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+            this.midiDevice = this.synthesizer;                                         // use the synthesizer as default instead
+            success = false;
+        }
+
+        try {
+            this.sequencer.getTransmitter().setReceiver(this.midiDevice.getReceiver()); // assign the new port to the sequencer
+            this.sequencer.open();                                                      // reopen the sequencer
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        if (sequence != null) {
+            try {
+                this.sequencer.setSequence(sequence);
+                this.sequencer.setTickPosition(playbackPosition);
+            } catch (InvalidMidiDataException e) {
+                e.printStackTrace();
+                wasPlaying = false;
+            }
+        }
+
+        if (wasPlaying)
+            this.sequencer.start();
+
+        return success;
     }
 
     /**

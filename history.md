@@ -1,6 +1,14 @@
 ### Version History
 
 
+#### v0.8.23
+- Fixed constructor `meico.midi.MidiPlayer.MidiPlayer(Midi midi)`. Now it assigns the MIDI data to its sequencer.
+- Added new method `meico.midi.MidiPlayer.setMidiOutputPort()` which allows setting an output port different from the internal Gervill synthesizer. 
+    - The internal `Synthesizer` instance is kept alife, so that any preloaded soundfonts are immediately available when switching back.
+    - To switch back to Gervill is important not to provide a new instance but to use the original one, like this `midiPlayer.setMidiOutputPort(midiPlayer.getSynthesizer())`. A shortcut is this `midiPlayer.setMidiOutputPort(null)` that will automatically choose the internal synthesizer as default.
+- Verovio update in meicoApp.
+
+
 #### v0.8.22
 - Bugfix in methods `meico.mpm.elements.maps.DynamicsMap.getDynamicsDataOf()` and `meico.mpm.elements.maps.RubatoMap.getRubatoDataOf()`.
 
