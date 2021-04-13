@@ -1,8 +1,5 @@
 package meico.app.gui;
 
-import javafx.scene.effect.Glow;
-import javafx.scene.layout.StackPane;
-
 import java.io.File;
 
 /**
@@ -17,9 +14,10 @@ class Soundbank {
     /**
      * constructor
      * @param file
+     * @param graphicalInstance
      */
-    public Soundbank(File file, DataObject graphiccalInstance) {
-        this.graphicalInstance = graphiccalInstance;
+    public Soundbank(File file, DataObject graphicalInstance) {
+        this.graphicalInstance = graphicalInstance;
         this.file = file;
     }
 
