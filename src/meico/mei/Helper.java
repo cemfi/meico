@@ -27,6 +27,7 @@ import javax.xml.transform.stream.StreamSource;
 
 /**
  * This class is used for mei to msm conversion to hold temporary data, used in class Mei.
+ * It contains functionality that is also useful in other (mostly XML-related) contexts.
  * @author Axel Berndt.
  */
 public class Helper {

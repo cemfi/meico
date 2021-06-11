@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.24
+- Added package information to the documentation.
+
+
 #### v0.8.23
 - Fixed constructor `meico.midi.MidiPlayer.MidiPlayer(Midi midi)`. Now it assigns the MIDI data to its sequencer.
 - Added new method `meico.midi.MidiPlayer.setMidiOutputPort()` which allows setting an output port different from the internal Gervill synthesizer. 
