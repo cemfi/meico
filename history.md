@@ -3,6 +3,10 @@
 
 #### v0.8.24
 - Added package information to the documentation.
+- Added Constant Q Transform spectrogram export to class `meico.audio.Audio`. The method is `exportConstantQTransformSpectrogram()`.
+    - Method `convertSpectrogramToImage()` makes it convenient to convert the spectrogram data to pixel data.
+    - A new external has been added to the meico ecosystem. [Jipes](https://www.tagtraum.com/jipes/) is an open source signal processing library by Hendrik Schreiber. It can be used to build any further audio analysis methods following the same pattern as the CQT export.
+    - MeicoApp has been extended accordingly with a new export option in the commandline application and in the graphical application.
 
 
 #### v0.8.23

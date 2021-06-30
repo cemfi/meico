@@ -1,5 +1,11 @@
 package meico.audio;
 
+import com.tagtraum.jipes.AbstractSignalProcessor;
+import com.tagtraum.jipes.SignalPipeline;
+import com.tagtraum.jipes.SignalPump;
+import com.tagtraum.jipes.audio.*;
+import com.tagtraum.jipes.math.WindowFunction;
+import com.tagtraum.jipes.universal.Mapping;
 import meico.mei.Helper;
 import meico.supplementary.KeyValue;
 import net.sourceforge.lame.lowlevel.LameDecoder;
@@ -7,10 +13,13 @@ import net.sourceforge.lame.lowlevel.LameEncoder;
 import net.sourceforge.lame.mp3.*;
 
 import javax.sound.sampled.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * This class represents audio data.
@@ -212,6 +221,87 @@ public class Audio {
             output[2 * i + 1] = (byte) (b >> 8);      // little endian
         }
         return output;
+    }
+
+    /**
+     * Compute the CQT spectrogram with default values.
+     * @return
+     */
+    public synchronized ArrayList<LogFrequencySpectrum> exportConstantQTransformSpectrogram() throws IOException {
+        return this.exportConstantQTransformSpectrogram(new WindowFunction.Hamming(2048), 1024, 20.0f, 10000.0f, 6);
+    }
+
+    /**
+     * This computes a Contant Q Transform spectrogram and returns it as buffered image.
+     * @param windowFunction
+     * @param hopSize
+     * @param minFrequency
+     * @param maxFrequency
+     * @param binsPerSemitone
+     * @return
+     */
+    public synchronized ArrayList<LogFrequencySpectrum> exportConstantQTransformSpectrogram(WindowFunction windowFunction, int hopSize, float minFrequency, float maxFrequency, int binsPerSemitone) throws IOException {
+        long startTime = System.currentTimeMillis();                        // we measure the time that the conversion consumes
+        System.out.println("\nComputing CQT spectrogram (window: " + windowFunction + ", hop size: " + hopSize +", min freq: " + minFrequency + ", max freq: " + maxFrequency + ", bins per semitone: " + binsPerSemitone + ").");
+
+        SignalPipeline<AudioBuffer, LogFrequencySpectrum> cqtPipeline = new SignalPipeline<>(
+                new Mono(),                                                 // if there are more than one channel, reduce them to mono
+                new SlidingWindow(windowFunction.getLength(), hopSize),
+                new Mapping<AudioBuffer>(AudioBufferFunctions.createMapFunction(windowFunction)),
+                new ConstantQTransform(minFrequency, maxFrequency, 12 * binsPerSemitone),
+                new AbstractSignalProcessor<LogFrequencySpectrum, ArrayList<LogFrequencySpectrum>>("specID") {  // aggregate the CQTs to a spectrum with id "specID" (needed to access it in the results)
+                    private final ArrayList<LogFrequencySpectrum> spectrogram = new ArrayList<>();
+                    @Override
+                    protected ArrayList<LogFrequencySpectrum> processNext(LogFrequencySpectrum input) throws IOException {
+                        this.spectrogram.add(input);
+                        return this.spectrogram;
+                    }
+                }
+        );
+
+        AudioSignalSource source = new AudioSignalSource(Audio.convertByteArray2AudioInputStream(this.getAudio(), this.getFormat()));
+        SignalPump<AudioBuffer> pump = new SignalPump<>(source);     // in other frameworks the pump might be called dispatcher, it delivers the audio frames
+        pump.add(cqtPipeline);
+        Map<Object, Object> results = pump.pump();
+
+        System.out.println("Computing CQT spectrogram finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+
+        return (ArrayList<LogFrequencySpectrum>) results.get("specID");
+    }
+
+    /**
+     * A convenient helper method to convert a spectrogram (as obtained by, e.g., method exportConstantQTransformSpectrogram()) into a BufferedImage.
+     * @param spectrogram
+     * @return
+     */
+    public static BufferedImage convertSpectrogramToImage(ArrayList<LogFrequencySpectrum> spectrogram) {
+        BufferedImage image = new BufferedImage(spectrogram.size(), spectrogram.get(0).getData().length, BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < spectrogram.size(); ++x) {
+            for (int y = 0; y < spectrogram.get(x).getData().length; ++y) {
+//                float h = (float) Math.pow(spectrogram.get(x).getData()[y], 0.1);
+//                float s = (spectrogram.get(x).getData()[y] + 0.3f) % 1.0f;
+//                float b = (float) Math.pow(spectrogram.get(x).getData()[y], 0.15);
+//                Color color = Color.getHSBColor(h, s, b);
+
+                float value = (float) Math.pow(spectrogram.get(x).getData()[y], 0.2);
+                Color color = new Color(value, value, value);
+
+//                int r = (int) Math.round(Math.pow(value, 0.2) * 255.0);   // red component 0...255
+//                int g = r;  // green component 0...255
+//                int b = r;  // blue component 0...255
+//                int col = (r << 16) | (g << 8) | b;
+
+                image.setRGB(x, -y + spectrogram.get(x).getData().length - 1, color.getRGB());
+            }
+        }
+
+//        try {
+//            ImageIO.write(image, "png", new File("spectrogram.png"));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        return image;
     }
 
     /**
