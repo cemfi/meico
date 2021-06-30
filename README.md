@@ -38,6 +38,7 @@ Usage: `java -jar meicoApp.jar [OPTIONS] FILE`
 | `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                            |
 | `-w`, `--wav`                     | convert to Wave                                                                                                                     |
 | `-3`, `--mp3`                     | convert to MP3                                                                                                                      |
+| `-q`, `--cqt`                     | convert the audio to CQT spectrogram                                                                                                |
 | `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                     |
 | `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                      |
 

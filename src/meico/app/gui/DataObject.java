@@ -183,7 +183,7 @@ class DataObject extends Group {
                 return new Audio(file);
             case ".json":
 //                this.workspace.getApp().getStatuspanel().setMessage("Input file type .json is not yet supported by meico.");
-                throw new IOException("File type .json is not supported by meico.");
+                throw new IOException("File type .json is not supported as input by meico.");
             case ".dls":
             case ".sf2":
                 return new meico.app.gui.Soundbank(file, this);
@@ -199,7 +199,7 @@ class DataObject extends Group {
                 throw new IOException("File type .mxl (compressed MusicXML) is not supported by meico.");
             default:
 //                this.workspace.getApp().getStatuspanel().setMessage("Input file type " + extension + " is not supported by meico.");
-                throw new IOException("File type " + extension + " is not supported by meico.");
+                throw new IOException("File type " + extension + " is not supported as input by meico.");
         }
     }
 
@@ -267,6 +267,8 @@ class DataObject extends Group {
             return ((meico.app.gui.Schema)this.data).getFile().getName();
         else if (this.data instanceof TxtData)
             return ((TxtData)this.data).getFile().getName();
+        else if (this.data instanceof ImageData)
+            return ((ImageData)this.data).getFile().getName();
         else if (this.data instanceof MusicXml)
             return ((MusicXml)this.data).getFile().getName();
         return "no filename";
@@ -539,6 +541,20 @@ class DataObject extends Group {
         }
         else if (this.data instanceof Audio) {
             String[] leftItems = {"Play", "Save (mp3)", "Save (wav)", "Save As", "Close"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
+            for (int i = 0; i < leftItems.length; ++i) {
+                Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+            String[] rightItems = {"to CQT Spectrogram"};
+            outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
+            for (int i = 0; i < rightItems.length; ++i) {
+                Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
+                menu.getChildren().add(item);
+            }
+        }
+        else if (this.data instanceof ImageData) {
+            String[] leftItems = {"Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -1858,6 +1874,27 @@ class DataObject extends Group {
                         }
                     });
                     break;
+                case "to CQT Spectrogram":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Computing Constant Q Transform Spectrogram (can take a while) ...");
+                            ImageData spectrogram = null;
+                            try {
+                                spectrogram = new ImageData(Audio.convertSpectrogramToImage(((Audio)this.getData()).exportConstantQTransformSpectrogram()), new File(Helper.getFilenameWithoutExtension(((Audio)this.getData()).getFile().getAbsolutePath()) + ".png"));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Computing Constant Q Transform Spectrogram: failed.");
+                            }
+                            if ((this.getWorkspace() != null) && (spectrogram != null)) {   // it is possible that the data object has been removed from workspace in the meantime
+                                this.addOneChild(mouseEvent, spectrogram);
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Computing Constant Q Transform Spectrogram: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
 //                case "Close":
 //                    break;
                 default:
@@ -1961,6 +1998,49 @@ class DataObject extends Group {
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
+                    });
+                    break;
+//                case "Close":
+//                    break;
+                default:
+                    break;
+            }
+        }
+        else if (this.getData() instanceof ImageData) {
+            switch (command) {
+                case "Save":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving image data ...");
+                            RotateTransition ani = this.startComputeAnimation();
+                            boolean success = ((ImageData)this.getData()).writeImageData();
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving image data " + ((success) ? ("to " + ((ImageData) this.getData()).getFile().getAbsolutePath()) : "failed."));
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Save As":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        ImageData imageData = ((ImageData)this.getData());              // the object
+                        FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
+                        File initialDir = new File(imageData.getFile().getParent());    // get the directory of the object's source file
+                        if (!initialDir.exists())                                       // if that does not exist
+                            initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
+                        chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
+                        chooser.setInitialFileName(imageData.getFile().getName());      // set the initial filename
+                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Image files (*.png)", "*.png"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
+                        if (file != null) {                                             // if it returns a file to save the data, do the save operation
+                            Thread thread = new Thread(() -> {
+                                RotateTransition ani = this.startComputeAnimation();
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving image data " + ((imageData.writeImageData(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.stopComputeAnimation(ani);
+                            });
+                            this.start(thread);
+                        }
                     });
                     break;
 //                case "Close":

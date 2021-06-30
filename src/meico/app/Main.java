@@ -18,7 +18,9 @@ import nu.xom.Elements;
 import nu.xom.ParsingException;
 import org.xml.sax.SAXException;
 
+import javax.imageio.ImageIO;
 import javax.xml.parsers.ParserConfigurationException;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -73,6 +75,7 @@ public class Main {
                 System.out.println("[-t argument] or [--tempo argument]     set MIDI tempo (bpm), default is 120 bpm");
                 System.out.println("[-w] or [--wav]                         convert to Wave");
                 System.out.println("[-3] or [--mp3]                         convert to MP3");
+                System.out.println("[-q] or [--cqt]                         convert the audio to CQT spectrogram");
                 System.out.println("[-s argument] or [--soundbank argument] use a specific sound bank file (.sf2, .dls) for Wave conversion");
                 System.out.println("[-d] or [--debug]                       write additional debug version of MEI and MSM");
                 System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
@@ -98,6 +101,7 @@ public class Main {
         boolean expressive = false;
         boolean wav = false;
         boolean mp3 = false;
+        boolean cqt = false;
         boolean generateProgramChanges = true;
         boolean dontUseChannel10 = false;
         boolean debug = false;
@@ -128,6 +132,7 @@ public class Main {
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
             if ((args[i].equals("-w")) || (args[i].equals("--wav"))) { wav = true; continue; }
             if ((args[i].equals("-3")) || (args[i].equals("--mp3"))) { mp3 = true; continue; }
+            if ((args[i].equals("-q")) || (args[i].equals("--cqt"))) { cqt = true; continue; }
             if ((args[i].equals("-p")) || (args[i].equals("--no-program-changes"))) { generateProgramChanges = false; continue; }
             if ((args[i].equals("-c")) || (args[i].equals("--dont-use-channel-10"))) { dontUseChannel10 = true; continue; }
             if ((args[i].equals("-d")) || (args[i].equals("--debug"))) { debug = true; continue; }
@@ -213,7 +218,7 @@ public class Main {
 //            svgs.writeSvgs();
 //        }
 
-        if (!(msm || mpm || pitches || chroma || midi || wav || mp3)) return 0;     // if no conversion is required, we are done here
+        if (!(msm || mpm || pitches || chroma || midi || wav || mp3 || cqt)) return 0;     // if no conversion is required, we are done here
 
         // convert mei -> msm/mpm
         System.out.println("Converting MEI to MSM and MPM.");
@@ -317,7 +322,7 @@ public class Main {
             }
         }
 
-        if (!(midi || wav || mp3)) return 0;     // if no further conversion is required, we are done here
+        if (!(midi || wav || mp3 || cqt)) return 0;     // if no further conversion is required, we are done here
 
         List<meico.midi.Midi> midis = new ArrayList<>();
         if (expressive) {
@@ -340,7 +345,7 @@ public class Main {
             }
         }
 
-        if (!(wav || mp3)) return 0;        // if no further conversion is required, we are done here
+        if (!(wav || mp3 || cqt)) return 0;        // if no further conversion is required, we are done here
 
         List<meico.audio.Audio> audios = new ArrayList<>();
         System.out.println("Converting MIDI to Audio.");
@@ -356,6 +361,19 @@ public class Main {
             for (int i = 0; i < audios.size(); ++i) {
                 audios.get(i).writeAudio();
                 System.out.println("\t" + audios.get(i).getFile().getPath());
+            }
+        }
+
+        if (cqt) {
+            for (int i = 0; i < audios.size(); ++i) {
+                try {
+                    BufferedImage image = Audio.convertSpectrogramToImage(audios.get(i).exportConstantQTransformSpectrogram());
+                    System.out.println("Writing CQT spectrogram to file system: ");
+                    ImageIO.write(image, "png", new File(Helper.getFilenameWithoutExtension(audios.get(i).getFile().getPath()) + ".png"));
+                    System.out.println("\t" + Helper.getFilenameWithoutExtension(audios.get(i).getFile().getPath()) + ".png");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
