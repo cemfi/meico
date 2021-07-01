@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.8.25
+- New supplementary class `meico.supplementary.ColorCoding` that simplifies the mapping of one-dimensional values to colors. Meico uses these for spectrogram visualizations.
+- Advancements in method `meico.audio.Audio.convertSpectrogramToImage()`. It is now possible to create spectrogram images with one of several color codings.
+- Updated Ant build script.
+- Updated internal Verovio distribution to v3.5.0-dev-7cfde60.
+
+
 #### v0.8.24
 - Added package information to the documentation.
 - Added Constant Q Transform spectrogram export to class `meico.audio.Audio`. The method is `exportConstantQTransformSpectrogram()`.

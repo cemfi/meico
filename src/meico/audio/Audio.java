@@ -7,6 +7,7 @@ import com.tagtraum.jipes.audio.*;
 import com.tagtraum.jipes.math.WindowFunction;
 import com.tagtraum.jipes.universal.Mapping;
 import meico.mei.Helper;
+import meico.supplementary.ColorCoding;
 import meico.supplementary.KeyValue;
 import net.sourceforge.lame.lowlevel.LameDecoder;
 import net.sourceforge.lame.lowlevel.LameEncoder;
@@ -84,6 +85,7 @@ public class Audio {
     /**
      * this constructor reads audio data from the AudioInputStream and associates the file with it;
      * the file may differ from the input stream
+     *
      * @param inputStream
      * @param file
      */
@@ -96,6 +98,7 @@ public class Audio {
 
     /**
      * with this constructor all data is given explicitly
+     *
      * @param audioData
      * @param format
      * @param file
@@ -109,6 +112,7 @@ public class Audio {
 
     /**
      * loads the audio file into an AudioInputStream
+     *
      * @param file
      * @throws IOException
      * @throws UnsupportedAudioFileException
@@ -119,6 +123,7 @@ public class Audio {
 
     /**
      * this method decodes an mp3 file to pcm
+     *
      * @param file
      * @return tuplet with (AudioFormat, pcm byte array)
      */
@@ -140,13 +145,14 @@ public class Audio {
 
     /**
      * convert an AudioInputStream to a byte array
+     *
      * @param stream
      * @return
      */
     public static byte[] convertAudioInputStream2ByteArray(AudioInputStream stream) {
         byte[] array;
         try {
-            array = new byte[(int)(stream.getFrameLength() * stream.getFormat().getFrameSize())];   // initialize the byte array with the length of the stream
+            array = new byte[(int) (stream.getFrameLength() * stream.getFormat().getFrameSize())];   // initialize the byte array with the length of the stream
             stream.read(array);         // write the stream's bytes into the byte array
         } catch (IOException e) {       // in case of an IOException
             e.printStackTrace();        // output error
@@ -157,6 +163,7 @@ public class Audio {
 
     /**
      * convert a byte array (without audio file header, just pure audio data) into an AudioInputStream in a given AudioFormat
+     *
      * @param array
      * @param format
      * @return
@@ -170,6 +177,7 @@ public class Audio {
     /**
      * This can be used to convert the byte array of an Audio object into an array of doubles between -1.0 and 1.0
      * which is far more convenient for audio analyses.
+     *
      * @param array
      * @param format
      * @return an ArrayList of double arrays, each is an audio channel (stereo sequence is [left, right])
@@ -207,6 +215,7 @@ public class Audio {
 
     /**
      * This method converts an input double array into a byte array. It assumes a 16 bit mono encoding.
+     *
      * @param array
      * @return
      */
@@ -225,6 +234,7 @@ public class Audio {
 
     /**
      * Compute the CQT spectrogram with default values.
+     *
      * @return
      */
     public synchronized ArrayList<LogFrequencySpectrum> exportConstantQTransformSpectrogram() throws IOException {
@@ -233,6 +243,7 @@ public class Audio {
 
     /**
      * This computes a Contant Q Transform spectrogram and returns it as buffered image.
+     *
      * @param windowFunction
      * @param hopSize
      * @param minFrequency
@@ -242,7 +253,7 @@ public class Audio {
      */
     public synchronized ArrayList<LogFrequencySpectrum> exportConstantQTransformSpectrogram(WindowFunction windowFunction, int hopSize, float minFrequency, float maxFrequency, int binsPerSemitone) throws IOException {
         long startTime = System.currentTimeMillis();                        // we measure the time that the conversion consumes
-        System.out.println("\nComputing CQT spectrogram (window: " + windowFunction + ", hop size: " + hopSize +", min freq: " + minFrequency + ", max freq: " + maxFrequency + ", bins per semitone: " + binsPerSemitone + ").");
+        System.out.println("\nComputing CQT spectrogram (window: " + windowFunction + ", hop size: " + hopSize + ", min freq: " + minFrequency + ", max freq: " + maxFrequency + ", bins per semitone: " + binsPerSemitone + ").");
 
         SignalPipeline<AudioBuffer, LogFrequencySpectrum> cqtPipeline = new SignalPipeline<>(
                 new Mono(),                                                 // if there are more than one channel, reduce them to mono
@@ -251,6 +262,7 @@ public class Audio {
                 new ConstantQTransform(minFrequency, maxFrequency, 12 * binsPerSemitone),
                 new AbstractSignalProcessor<LogFrequencySpectrum, ArrayList<LogFrequencySpectrum>>("specID") {  // aggregate the CQTs to a spectrum with id "specID" (needed to access it in the results)
                     private final ArrayList<LogFrequencySpectrum> spectrogram = new ArrayList<>();
+
                     @Override
                     protected ArrayList<LogFrequencySpectrum> processNext(LogFrequencySpectrum input) throws IOException {
                         this.spectrogram.add(input);
@@ -275,26 +287,47 @@ public class Audio {
      * @return
      */
     public static BufferedImage convertSpectrogramToImage(ArrayList<LogFrequencySpectrum> spectrogram) {
-        BufferedImage image = new BufferedImage(spectrogram.size(), spectrogram.get(0).getData().length, BufferedImage.TYPE_INT_RGB);
-        for (int x = 0; x < spectrogram.size(); ++x) {
-            for (int y = 0; y < spectrogram.get(x).getData().length; ++y) {
-//                float h = (float) Math.pow(spectrogram.get(x).getData()[y], 0.1);
-//                float s = (spectrogram.get(x).getData()[y] + 0.3f) % 1.0f;
-//                float b = (float) Math.pow(spectrogram.get(x).getData()[y], 0.15);
-//                Color color = Color.getHSBColor(h, s, b);
+        return convertSpectrogramToImage(spectrogram, 0.1f, new ColorCoding(ColorCoding.INFERNO));
+    }
 
-                float value = (float) Math.pow(spectrogram.get(x).getData()[y], 0.2);
-                Color color = new Color(value, value, value);
-
-//                int r = (int) Math.round(Math.pow(value, 0.2) * 255.0);   // red component 0...255
-//                int g = r;  // green component 0...255
-//                int b = r;  // blue component 0...255
-//                int col = (r << 16) | (g << 8) | b;
-
-                image.setRGB(x, -y + spectrogram.get(x).getData().length - 1, color.getRGB());
+    /**
+     * A convenient helper method to convert a spectrogram (as obtained by, e.g., method exportConstantQTransformSpectrogram()) into a BufferedImage.
+     * Input values are normalized.
+     * @param spectrogram
+     * @param gamma 1.0f corresponds to the normalized input values with no gamma changes
+     * @param colorCoding class ColorCoding offers some constants for easy instantiation, e.g. new ColorCoding(ColorCoding.INFERNO)
+     * @return
+     */
+    public static BufferedImage convertSpectrogramToImage(ArrayList<LogFrequencySpectrum> spectrogram, float gamma, ColorCoding colorCoding) {
+        // first, normalize the array values (scale it so the highest value is 1.0)
+        // find highest value, so we know how the amount to scale up, because that is also the scale ratio (max = 1.0)
+        float highest = 0.0f;
+        for (LogFrequencySpectrum spectrum : spectrogram) {
+            for (float binValue : spectrum.getData()) {
+                if (binValue > highest)
+                    highest = binValue;
             }
         }
 
+        // scale the values
+        for (LogFrequencySpectrum spectrum : spectrogram) {
+            for (int y = 0; y < spectrum.getData().length; ++y) {
+                spectrum.getData()[y] /= highest;
+            }
+        }
+
+        // create the pixel array
+        BufferedImage image = new BufferedImage(spectrogram.size(), spectrogram.get(0).getData().length, BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < spectrogram.size(); ++x) {
+            for (int y = 0; y < spectrogram.get(x).getData().length; ++y) {
+                float value = (float) Math.pow(spectrogram.get(x).getData()[y], gamma);         // apply gamma correction
+//                Color color = new Color(value, value, value);                                   // create a gray color
+                Color color = colorCoding.getColor(value);                                      // get the color for the value
+                image.setRGB(x, -y + spectrogram.get(x).getData().length - 1, color.getRGB());  // set the pixel's color
+            }
+        }
+
+        // in case we want to save the image to a file, do this
 //        try {
 //            ImageIO.write(image, "png", new File("spectrogram.png"));
 //        } catch (IOException e) {
