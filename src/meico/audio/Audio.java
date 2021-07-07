@@ -208,7 +208,9 @@ public class Audio {
         }
 
         // if the audio format is inappropriate
-        System.err.println("This audio has " + format.getChannels() + " channels. Only mono and stereo audio are supported.");
+        else {
+            System.err.println("This audio has " + format.getChannels() + " channels. Only mono and stereo audio are supported.");
+        }
 
         return channelList;
     }

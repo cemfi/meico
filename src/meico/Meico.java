@@ -5,7 +5,7 @@ package meico;
  * @author Axel Berndt
  */
 public class Meico {
-    public static final String version = "0.8.25";
+    public static final String version = "0.8.26";
 
     public static void main(String[] args) {
         System.out.println("meico v" + Meico.version);

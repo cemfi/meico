@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.26
+- Minor fix in method `meico.audio.Audio.convertByteArray2DoubleArray()` so that it no longer prints an error message when there is no error.
+
+
 #### v0.8.25
 - New supplementary class `meico.supplementary.ColorCoding` that simplifies the mapping of one-dimensional values to colors. Meico uses these for spectrogram visualizations.
 - Advancements in method `meico.audio.Audio.convertSpectrogramToImage()`. It is now possible to create spectrogram images with one of several color codings.
