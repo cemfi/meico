@@ -46,6 +46,7 @@ import org.xml.sax.SAXException;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.xml.parsers.ParserConfigurationException;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -546,7 +547,7 @@ class DataObject extends Group {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to CQT Spectrogram"};
+            String[] rightItems = {"to Waveform Image", "to CQT Spectrogram"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -1872,6 +1873,22 @@ class DataObject extends Group {
                                 }
                             }
                         }
+                    });
+                    break;
+                case "to Waveform Image":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Computing Waveform Image ...");
+                            BufferedImage waveformImage = ((Audio) this.getData()).exportWaveformImage(20480, 720);
+                            ImageData waveform = new ImageData(waveformImage, new File(Helper.getFilenameWithoutExtension(((Audio)this.getData()).getFile().getAbsolutePath()) + ".png"));
+                            if (this.getWorkspace() != null) {   // it is possible that the data object has been removed from workspace in the meantime
+                                this.addOneChild(mouseEvent, waveform);
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Computing Waveform Image: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
                     });
                     break;
                 case "to CQT Spectrogram":
