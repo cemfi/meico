@@ -235,6 +235,86 @@ public class Audio {
     }
 
     /**
+     * Make a waveform image from the audio data.
+     * @param width the width of the image in pixels
+     * @param height the height of the image in pixels
+     * @return a BufferedImage instance
+     */
+    public BufferedImage exportWaveformImage(int width, int height) {
+        ArrayList<double[]> channels = Audio.convertByteArray2DoubleArray(this.getAudio(), this.getFormat());
+        ArrayList<BufferedImage> waveforms = new ArrayList<>();
+        int heightSubdivision = (int) Math.floor((float) height / channels.size());                     // the pixel height of the sub-images
+        int maxWidth = 0;
+
+        // make a horizontal slice of the image for each channel
+        for (double[] channel : channels) {
+            BufferedImage waveform = Audio.convertWaveform2Image(channel, 0, channel.length-1, width, heightSubdivision);   // draw the waveform in the image
+            waveforms.add(waveform);
+            if (waveform.getWidth() > maxWidth)
+                maxWidth = waveform.getWidth();
+        }
+
+        // write the waveform images into this.waveform
+        BufferedImage waveform = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);          // we start with an empty image, all black
+        for (int waveformNum = 0; waveformNum < waveforms.size(); ++waveformNum) {
+            BufferedImage w = waveforms.get(waveformNum);
+            int yOffset = waveformNum * heightSubdivision;                                              // the y pixel offset when writing the waveform into this.waveform
+            for (int y = 0; y < w.getHeight(); ++y) {                                                   // for each pixel row
+                for (int x = 0; x < w.getWidth(); ++x) {                                                // go through each pixel
+                    waveform.setRGB(x, y + yOffset, w.getRGB(x, y));                                    // set the pixel color
+                }
+            }
+        }
+
+        return waveform;
+    }
+
+    /**
+     * Make a waveform image from the input audio date.
+     * @param audio the audio amplitude data normalized to [-1.0, 1.0]
+     * @param leftmostSample where in the audio data should we start
+     * @param rightmostSample where in the audio will we end
+     * @param width the width of the image in pixels
+     * @param height the height of the image in pixels
+     */
+    public static BufferedImage convertWaveform2Image(double[] audio, int leftmostSample, int rightmostSample, int width, int height) {
+        int sampleCount = rightmostSample - leftmostSample;     // how many samples are to be displayed in the panel frame
+        float sample2xScaleFactor = (sampleCount > 0) ? (float) (width - 1) / sampleCount : 1;  // we need this value several times
+        double[][] maxValues = new double[width][2];            // this array collects the max and min sample values to be rendered into a pixel column
+        boolean[] isSet = new boolean[width];                   // this is to keep track of whether we have specific values for this pixel column (true) or should use the previous column's value (false), this is necessary when a sample stretches over several columns
+
+        // compute the min and max amplitude values for each pixel column
+        for (int i = 0; i < sampleCount; ++i) {
+            int x = Math.round(sample2xScaleFactor * i);
+            isSet[x] = true;
+            int sampleIndex = leftmostSample + i;
+            if (maxValues[x][0] < audio[sampleIndex])
+                maxValues[x][0] = audio[sampleIndex];
+            if (maxValues[x][1] > audio[sampleIndex])
+                maxValues[x][1] = audio[sampleIndex];
+        }
+
+        // draw the waveform in a BufferedImage instance
+        BufferedImage waveform = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);  // we start with an empty image, all black
+        double yTranslationFactor = -0.5 * waveform.getHeight();                                // this value is needed several times to scale and translate the sample values (in [-1.0, 1.0]) to vertical pixel coordinates (in [waveform.getHeight(), 0])
+        int yPositive = (int) Math.round(-yTranslationFactor);                                  // initial value corresponds with amplitude value 0.0
+        int yNegative = yPositive;
+        for (int x = 0; x < width; ++x) {                                                       // for each pixel column
+            // scale and translate the values to vertical pixel coordinates
+            if (isSet[x]) {                                                                     // if we have a sample value, otherwise we use the vertical pixel coordinates of the previous column
+                yPositive = (int) Math.round((maxValues[x][0] * yTranslationFactor) - yTranslationFactor);
+                yNegative = (int) Math.round((maxValues[x][1] * yTranslationFactor) - yTranslationFactor);
+            }
+
+            // color the pixels from the lowest to highest value
+            for (int y = yPositive; y <= yNegative; ++y)
+                waveform.setRGB(x, y, Color.WHITE.getRGB());
+        }
+
+        return waveform;
+    }
+
+    /**
      * Compute the CQT spectrogram with default values.
      *
      * @return

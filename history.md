@@ -3,6 +3,7 @@
 
 #### v0.8.26
 - Minor fix in method `meico.audio.Audio.convertByteArray2DoubleArray()` so that it no longer prints an error message when there is no error.
+- New methods `meico.audio.Audio.exportWaveformImage()` and `meico.audio.Audio.convertWaveform2Image()` that renders the audio data to a `BufferedImage` instance. The functionality was also added to the meicoApp GUI. However, the waveform image exported here is rather low-res by default. The methods allow larger pixel resolutions; applications can specify the image dimensions and the slice of audio to be rendered freely.
 
 
 #### v0.8.25
