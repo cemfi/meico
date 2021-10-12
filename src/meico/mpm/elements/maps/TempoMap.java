@@ -364,7 +364,7 @@ public class TempoMap extends GenericMap {
             return;
         }
 
-        // process the mape elements on the basis of this non-empty tempoMap
+        // process the map elements on the basis of this non-empty tempoMap
         ArrayList<TempoData> tempi = new ArrayList<>();
         ArrayList<KeyValue<Double, Integer>> pendingDurations = new ArrayList<>();
 

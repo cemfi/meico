@@ -23,7 +23,7 @@ public class Performance extends AbstractXmlSubtree {
     private Attribute name = null;                              // the name of the performance
     private int pulsesPerQuarter = 720;                         // the timing resolution of symbolic time (midi.date etc.)
     private Global global = null;                               // the global performance information
-    private ArrayList<Part> parts = new ArrayList<>();          // the local performance information
+    private final ArrayList<Part> parts = new ArrayList<>();    // the local performance information
     private Attribute id = null;                                // the id attribute
 
     /**

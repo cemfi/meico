@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.8.27
+- A little optimization in method `meico.audio.Audio.convertSpectrogramToImage()`. In addition, this method has been extended with a new argument `normalize` to give applications the possibility to decide whether the spectrogram values should or should not be normalized for rendering.
+- Internal Verovio update to v3.7.0-dev-e93a13d.
+
+
 #### v0.8.26
 - Minor fix in method `meico.audio.Audio.convertByteArray2DoubleArray()` so that it no longer prints an error message when there is no error.
 - New methods `meico.audio.Audio.exportWaveformImage()` and `meico.audio.Audio.convertWaveform2Image()` that renders the audio data to a `BufferedImage` instance. The functionality was also added to the meicoApp GUI. However, the waveform image exported here is rather low-res by default. The methods allow larger pixel resolutions; applications can specify the image dimensions and the slice of audio to be rendered freely.

@@ -4,6 +4,7 @@ import com.tagtraum.jipes.AbstractSignalProcessor;
 import com.tagtraum.jipes.SignalPipeline;
 import com.tagtraum.jipes.SignalPump;
 import com.tagtraum.jipes.audio.*;
+import com.tagtraum.jipes.audio.FFT;
 import com.tagtraum.jipes.math.WindowFunction;
 import com.tagtraum.jipes.universal.Mapping;
 import meico.mei.Helper;
@@ -276,6 +277,7 @@ public class Audio {
      * @param rightmostSample where in the audio will we end
      * @param width the width of the image in pixels
      * @param height the height of the image in pixels
+     * @return the waveform image or null
      */
     public static BufferedImage convertWaveform2Image(double[] audio, int leftmostSample, int rightmostSample, int width, int height) {
         int sampleCount = rightmostSample - leftmostSample;     // how many samples are to be displayed in the panel frame
@@ -324,7 +326,7 @@ public class Audio {
     }
 
     /**
-     * This computes a Contant Q Transform spectrogram and returns it as buffered image.
+     * This computes a Contant Q Transform spectrogram and returns it as array of CQT slices.
      *
      * @param windowFunction
      * @param hopSize
@@ -334,11 +336,11 @@ public class Audio {
      * @return
      */
     public synchronized ArrayList<LogFrequencySpectrum> exportConstantQTransformSpectrogram(WindowFunction windowFunction, int hopSize, float minFrequency, float maxFrequency, int binsPerSemitone) throws IOException {
-        long startTime = System.currentTimeMillis();                        // we measure the time that the conversion consumes
+        long startTime = System.currentTimeMillis();                    // we measure the time that the conversion consumes
         System.out.println("\nComputing CQT spectrogram (window: " + windowFunction + ", hop size: " + hopSize + ", min freq: " + minFrequency + ", max freq: " + maxFrequency + ", bins per semitone: " + binsPerSemitone + ").");
 
         SignalPipeline<AudioBuffer, LogFrequencySpectrum> cqtPipeline = new SignalPipeline<>(
-                new Mono(),                                                 // if there are more than one channel, reduce them to mono
+                new Mono(),                                             // if there are more than one channel, reduce them to mono
                 new SlidingWindow(windowFunction.getLength(), hopSize),
                 new Mapping<AudioBuffer>(AudioBufferFunctions.createMapFunction(windowFunction)),
                 new ConstantQTransform(minFrequency, maxFrequency, 12 * binsPerSemitone),
@@ -354,7 +356,7 @@ public class Audio {
         );
 
         AudioSignalSource source = new AudioSignalSource(Audio.convertByteArray2AudioInputStream(this.getAudio(), this.getFormat()));
-        SignalPump<AudioBuffer> pump = new SignalPump<>(source);     // in other frameworks the pump might be called dispatcher, it delivers the audio frames
+        SignalPump<AudioBuffer> pump = new SignalPump<>(source);        // in other frameworks the pump might be called dispatcher, it delivers the audio frames
         pump.add(cqtPipeline);
         Map<Object, Object> results = pump.pump();
 
@@ -369,43 +371,66 @@ public class Audio {
      * @return
      */
     public static BufferedImage convertSpectrogramToImage(ArrayList<LogFrequencySpectrum> spectrogram) {
-        return convertSpectrogramToImage(spectrogram, 0.1f, new ColorCoding(ColorCoding.INFERNO));
+        return convertSpectrogramToImage(spectrogram, true, 0.1f, new ColorCoding(ColorCoding.INFERNO));
     }
 
     /**
      * A convenient helper method to convert a spectrogram (as obtained by, e.g., method exportConstantQTransformSpectrogram()) into a BufferedImage.
      * Input values are normalized.
      * @param spectrogram
+     * @param normalize set true to normalize the spectrogram values for image rendering (the spectrogram remains unaltered)
      * @param gamma 1.0f corresponds to the normalized input values with no gamma changes
      * @param colorCoding class ColorCoding offers some constants for easy instantiation, e.g. new ColorCoding(ColorCoding.INFERNO)
      * @return
      */
-    public static BufferedImage convertSpectrogramToImage(ArrayList<LogFrequencySpectrum> spectrogram, float gamma, ColorCoding colorCoding) {
-        // first, normalize the array values (scale it so the highest value is 1.0)
-        // find highest value, so we know how the amount to scale up, because that is also the scale ratio (max = 1.0)
-        float highest = 0.0f;
-        for (LogFrequencySpectrum spectrum : spectrogram) {
-            for (float binValue : spectrum.getData()) {
-                if (binValue > highest)
-                    highest = binValue;
-            }
-        }
+    public static BufferedImage convertSpectrogramToImage(ArrayList<LogFrequencySpectrum> spectrogram, boolean normalize, float gamma, ColorCoding colorCoding) {
+        if (spectrogram.isEmpty())                                              // make sure we have a non-empty spectrogram
+            return new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);         // if we don't, return a one pixel black image
 
-        // scale the values
-        for (LogFrequencySpectrum spectrum : spectrogram) {
-            for (int y = 0; y < spectrum.getData().length; ++y) {
-                spectrum.getData()[y] /= highest;
+        ArrayList<LogFrequencySpectrum> spectrogramCopy = spectrogram;
+
+        if (normalize) {
+            // first, normalize the array values (scale it so the highest value is 1.0)
+            // find highest value, so we know how the amount to scale up, because that is also the scale ratio (max = 1.0)
+            float highest = 0.0f;
+            for (LogFrequencySpectrum spectrum : spectrogramCopy) {
+                for (float binValue : spectrum.getData()) {
+                    if (binValue > highest)
+                        highest = binValue;
+                }
+            }
+
+            if (highest == 0.0f)                                            // trivial case, just return a black image
+                return new BufferedImage(spectrogramCopy.size(), spectrogramCopy.get(0).getData().length, BufferedImage.TYPE_INT_RGB);
+
+            // we need to change the spectrum values, but we do it in the copy, not the original spectrogram
+            spectrogramCopy = new ArrayList<>();
+            for (LogFrequencySpectrum spectrum : spectrogram) {
+                try {
+                    spectrogramCopy.add((LogFrequencySpectrum) spectrum.clone());
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // normalize the values
+            if (highest != 1.0f) {                                          // only if necessary, just a little optimization
+                for (LogFrequencySpectrum spectrum : spectrogramCopy) {
+                    for (int y = 0; y < spectrum.getData().length; ++y) {
+                        spectrum.getData()[y] /= highest;
+                    }
+                }
             }
         }
 
         // create the pixel array
-        BufferedImage image = new BufferedImage(spectrogram.size(), spectrogram.get(0).getData().length, BufferedImage.TYPE_INT_RGB);
-        for (int x = 0; x < spectrogram.size(); ++x) {
-            for (int y = 0; y < spectrogram.get(x).getData().length; ++y) {
-                float value = (float) Math.pow(spectrogram.get(x).getData()[y], gamma);         // apply gamma correction
+        BufferedImage image = new BufferedImage(spectrogramCopy.size(), spectrogramCopy.get(0).getData().length, BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < spectrogramCopy.size(); ++x) {
+            for (int y = 0; y < spectrogramCopy.get(x).getData().length; ++y) {
+                float value = (float) Math.pow(spectrogramCopy.get(x).getData()[y], gamma);         // apply gamma correction
 //                Color color = new Color(value, value, value);                                   // create a gray color
                 Color color = colorCoding.getColor(value);                                      // get the color for the value
-                image.setRGB(x, -y + spectrogram.get(x).getData().length - 1, color.getRGB());  // set the pixel's color
+                image.setRGB(x, -y + spectrogramCopy.get(x).getData().length - 1, color.getRGB());  // set the pixel's color
             }
         }
 
