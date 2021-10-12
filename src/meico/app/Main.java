@@ -78,7 +78,7 @@ public class Main {
                 System.out.println("[-q] or [--cqt]                         convert the audio to CQT spectrogram");
                 System.out.println("[-s argument] or [--soundbank argument] use a specific sound bank file (.sf2, .dls) for Wave conversion");
                 System.out.println("[-d] or [--debug]                       write additional debug version of MEI and MSM");
-                System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:\\myMeiCollection\\test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
+                System.out.println("\nThe final argument should always be a path to a valid mei file (e.g., \"C:" + File.pathSeparator + "myMeiCollection" + File.pathSeparator + "test.mei\"); always in quotes! This is the only mandatory argument if you want to convert something.");
 //                System.exit(0);
             }
         }

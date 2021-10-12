@@ -33,7 +33,7 @@ class WebBrowser extends StackPane {
             this.webEngine = browser.getEngine();
             this.webEngine.setJavaScriptEnabled(true);                                      // JavaScript should be enabled by default, this is just to be sure that it is
             this.getChildren().add(browser);
-            this.openURL("https://www.verovio.org/index.xhtml");                            // set a start page
+//            this.openURL("https://github.com/cemfi/meico");                            // set a start page
         }
     }
 
