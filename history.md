@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.28
+- Minor fix in method `meico.supplementary.RandomNumberProvider.getValue(int index)` to ensure that only non-negative index values are processed.
+
+
 #### v0.8.27
 - A little optimization in method `meico.audio.Audio.convertSpectrogramToImage()`. In addition, this method has been extended with a new argument `normalize` to give applications the possibility to decide whether the spectrogram values should or should not be normalized for rendering.
 - Internal Verovio update to v3.7.0-dev-e93a13d.

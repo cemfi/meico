@@ -260,6 +260,8 @@ public class RandomNumberProvider {
      * @return
      */
     public double getValue(int index) {
+        index = Math.max(0, index);             // ensure a positive index value
+
         if (this.distributionType == RandomNumberProvider.DISTRIBUTION_LIST)    // if distribution is based on predefined list
             return this.series.get(index % this.series.size());                 // read the list value and repeat the list if the index exeeds its length
 
