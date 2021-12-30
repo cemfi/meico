@@ -171,7 +171,7 @@ public class Audio {
      */
     public static AudioInputStream convertByteArray2AudioInputStream(byte[] array, AudioFormat format) {
         ByteArrayInputStream bis = new ByteArrayInputStream(array);                 // byte array to ByteArrayInputStream
-        AudioInputStream ais = new AudioInputStream(bis, format, (array.length / (2 * format.getChannels()))); // byteArrayInputStream to AudioInputStream
+        AudioInputStream ais = new AudioInputStream(bis, format, (array.length / (2L * format.getChannels()))); // byteArrayInputStream to AudioInputStream
         return ais;                                                                 // return it
     }
 
@@ -185,7 +185,6 @@ public class Audio {
      */
     public static ArrayList<double[]> convertByteArray2DoubleArray(byte[] array, AudioFormat format) {
         ArrayList<double[]> channelList = new ArrayList<>();
-
         double max16bit = Math.pow(2, format.getSampleSizeInBits()) / 2.0;      //for 16 bit = 32768.0; division by 2.0 is for shifting the range to half positive, half negative
 
         // little endian, mono
@@ -309,7 +308,7 @@ public class Audio {
             }
 
             // color the pixels from the lowest to highest value
-            for (int y = yPositive; y <= yNegative; ++y)
+            for (int y = yPositive; y < yNegative; ++y)
                 waveform.setRGB(x, y, Color.WHITE.getRGB());
         }
 

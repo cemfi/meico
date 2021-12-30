@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.29
+- Bugfix in method `meico.audio.Audio.convertWaveform2Image()` that caused an `IndexOutOfBoundsException` when the amplitude of the signal is at maximum.
+
+
 #### v0.8.28
 - Minor fix in method `meico.supplementary.RandomNumberProvider.getValue(int index)` to ensure that only non-negative index values are processed.
 
