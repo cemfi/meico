@@ -4,7 +4,6 @@ import com.tagtraum.jipes.AbstractSignalProcessor;
 import com.tagtraum.jipes.SignalPipeline;
 import com.tagtraum.jipes.SignalPump;
 import com.tagtraum.jipes.audio.*;
-import com.tagtraum.jipes.audio.FFT;
 import com.tagtraum.jipes.math.WindowFunction;
 import com.tagtraum.jipes.universal.Mapping;
 import meico.mei.Helper;
@@ -185,49 +184,62 @@ public class Audio {
      */
     public static ArrayList<double[]> convertByteArray2DoubleArray(byte[] array, AudioFormat format) {
         ArrayList<double[]> channelList = new ArrayList<>();
-        double max16bit = Math.pow(2, format.getSampleSizeInBits()) / 2.0;      //for 16 bit = 32768.0; division by 2.0 is for shifting the range to half positive, half negative
+        double maxVal = Math.pow(2, format.getSampleSizeInBits()) / 2.0;      //for 16 bit = 32768.0; division by 2.0 is for shifting the range to half positive, half negative
 
-        // little endian, mono
-        if (format.getChannels() == 1) {        // mono
-            double[] output = new double[array.length / 2];
-            for (int i = 0; i < (array.length / 2); i++)
-                output[i] = ((short) (((array[2 * i + 1] & 0xFF) << 8) | (array[2 * i] & 0xFF))) / max16bit;
+        int c2 = 2 * format.getChannels();
+        int oneChanArrayLength = array.length / c2;
+        for (int channel = 0; channel < format.getChannels(); ++channel) {
+            int a = channel * 2;
+            double[] output = new double[oneChanArrayLength];
+            for (int i = 0; i < oneChanArrayLength; ++i) {
+                int c2ia = c2 * i + a;
+                output[i] = ((short) (((array[c2ia + 1] & 0xFF) << 8) | (array[c2ia] & 0xFF))) / maxVal;    // we assume little endian
+            }
             channelList.add(output);
         }
 
-        // little endian, stereo, output is the sum of both channels
-        else if (format.getChannels() == 2) {   // stereo
-            double[] outputLeft = new double[array.length / 4];
-            double[] outputRight = new double[array.length / 4];
-            for (int i = 0; i < (array.length / 4); i++) {
-                outputLeft[i] = ((short) (((array[4 * i + 1] & 0xFF) << 8) | (array[4 * i] & 0xFF))) / max16bit;
-                outputRight[i] = ((short) (((array[4 * i + 3] & 0xFF) << 8) | (array[4 * i + 2] & 0xFF))) / max16bit;
-            }
-            channelList.add(outputLeft);
-            channelList.add(outputRight);
-        }
-
-        // if the audio format is inappropriate
-        else {
-            System.err.println("This audio has " + format.getChannels() + " channels. Only mono and stereo audio are supported.");
-        }
+//        // little endian, mono
+//        if (format.getChannels() == 1) {        // mono
+//            double[] output = new double[array.length / 2];
+//            for (int i = 0; i < (array.length / 2); i++)
+//                output[i] = ((short) (((array[2 * i + 1] & 0xFF) << 8) | (array[2 * i] & 0xFF))) / maxVal;
+//            channelList.add(output);
+//        }
+//
+//        // little endian, stereo, output is the sum of both channels
+//        else if (format.getChannels() == 2) {   // stereo
+//            double[] outputLeft = new double[array.length / 4];
+//            double[] outputRight = new double[array.length / 4];
+//            for (int i = 0; i < (array.length / 4); i++) {
+//                outputLeft[i] = ((short) (((array[4 * i + 1] & 0xFF) << 8) | (array[4 * i] & 0xFF))) / maxVal;
+//                outputRight[i] = ((short) (((array[4 * i + 3] & 0xFF) << 8) | (array[4 * i + 2] & 0xFF))) / maxVal;
+//            }
+//            channelList.add(outputLeft);
+//            channelList.add(outputRight);
+//        }
+//
+//        // if the audio format is inappropriate
+//        else {
+//            System.err.println("This audio has " + format.getChannels() + " channels. Only mono and stereo audio are supported.");
+//        }
 
         return channelList;
     }
 
     /**
-     * This method converts an input double array into a byte array. It assumes a 16 bit mono encoding.
+     * This method converts an input double array into a byte array.
      *
      * @param array
+     * @param sampleSizeInBits this will mostly be 16; the value can be retrieved from an Audio object via audio.getFormat().getSampleSizeInBits()
      * @return
      */
-    public static byte[] convertDoubleArray2ByteArray(double[] array) {
-        double max16bit = 32768.0;  // TODO: if the audio format is not 16 bit this must be different, see convertByteArray2DoubleArray()
+    public static byte[] convertDoubleArray2ByteArray(double[] array, int sampleSizeInBits) {
+        double maxVal = Math.pow(2, sampleSizeInBits) / 2.0;
 
         // assumes signed PCM, little endian
         byte[] output = new byte[2 * array.length];
         for (int i = 0; i < array.length; i++) {
-            int b = (array[i] == 1.0) ? Short.MAX_VALUE : (short) (array[i] * max16bit);
+            int b = (array[i] == 1.0) ? Short.MAX_VALUE : (short) (array[i] * maxVal);
             output[2 * i] = (byte) b;
             output[2 * i + 1] = (byte) (b >> 8);      // little endian
         }
@@ -301,6 +313,8 @@ public class Audio {
         int yPositive = (int) Math.round(-yTranslationFactor);                                  // initial value corresponds with amplitude value 0.0
         int yNegative = yPositive;
         for (int x = 0; x < width; ++x) {                                                       // for each pixel column
+            waveform.setRGB(x, yPositive, Color.DARK_GRAY.getRGB());                            // draw a dark gray center line
+
             // scale and translate the values to vertical pixel coordinates
             if (isSet[x]) {                                                                     // if we have a sample value, otherwise we use the vertical pixel coordinates of the previous column
                 yPositive = (int) Math.round((maxValues[x][0] * yTranslationFactor) - yTranslationFactor);
@@ -333,8 +347,24 @@ public class Audio {
      * @param maxFrequency
      * @param binsPerSemitone
      * @return
+     * @throws IOException
      */
     public synchronized ArrayList<LogFrequencySpectrum> exportConstantQTransformSpectrogram(WindowFunction windowFunction, int hopSize, float minFrequency, float maxFrequency, int binsPerSemitone) throws IOException {
+        return this.exportConstantQTransformSpectrogram(windowFunction, hopSize, minFrequency, maxFrequency, binsPerSemitone, new SignalPump<>());
+    }
+
+    /**
+     * This computes a Contant Q Transform spectrogram and returns it as array of CQT slices.
+     *
+     * @param windowFunction
+     * @param hopSize
+     * @param minFrequency
+     * @param maxFrequency
+     * @param binsPerSemitone
+     * @param pump In other dsp frameworks the pump might be called dispatcher, it delivers the audio frames. The application can provide its own pump. Via the pump the application can cancel the processing which is useful in multithreaded environments.
+     * @return
+     */
+    public synchronized ArrayList<LogFrequencySpectrum> exportConstantQTransformSpectrogram(WindowFunction windowFunction, int hopSize, float minFrequency, float maxFrequency, int binsPerSemitone, SignalPump<AudioBuffer> pump) throws IOException {
         long startTime = System.currentTimeMillis();                    // we measure the time that the conversion consumes
         System.out.println("\nComputing CQT spectrogram (window: " + windowFunction + ", hop size: " + hopSize + ", min freq: " + minFrequency + ", max freq: " + maxFrequency + ", bins per semitone: " + binsPerSemitone + ").");
 
@@ -355,7 +385,7 @@ public class Audio {
         );
 
         AudioSignalSource source = new AudioSignalSource(Audio.convertByteArray2AudioInputStream(this.getAudio(), this.getFormat()));
-        SignalPump<AudioBuffer> pump = new SignalPump<>(source);        // in other frameworks the pump might be called dispatcher, it delivers the audio frames
+        pump.setSignalSource(source);                                   // in other dsp frameworks the pump might be called dispatcher, it delivers the audio frames
         pump.add(cqtPipeline);
         Map<Object, Object> results = pump.pump();
 

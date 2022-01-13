@@ -415,7 +415,7 @@ public class RandomNumberProvider {
             for (int i = 0; i < this.series.size(); ++i)
                 doubles[i] = this.series.get(i);
         }
-        byte[] bytes = Audio.convertDoubleArray2ByteArray(doubles);         // make a byte array from it
+        byte[] bytes = Audio.convertDoubleArray2ByteArray(doubles, 16);     // make a byte array from it
 
         AudioFormat format = new AudioFormat(44100.0f, 16, 1, true, false); // create audio format
 

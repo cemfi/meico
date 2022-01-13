@@ -17,7 +17,6 @@ import java.net.URLDecoder;
  */
 
 public class Midi {
-
     private File file = null;               // the midi file
     private Sequence sequence = null;       // the midi sequence
 
@@ -345,6 +344,22 @@ public class Midi {
             }
         }
         return eventsChanged;
+    }
+
+    /**
+     * adds an offset (in ticks) to all events in this MIDI's sequence
+     * @param offsetInTicks
+     */
+    public void addOffset(long offsetInTicks) {
+        if (offsetInTicks == 0)
+            return;
+
+        for (Track track : this.getSequence().getTracks()) {
+            for (int i=0; i < track.size(); ++i) {
+                MidiEvent e = track.get(i);
+                e.setTick(Math.max(0, e.getTick() + offsetInTicks));    // we do not allow negative tick values
+            }
+        }
     }
 
     /**

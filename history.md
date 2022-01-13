@@ -1,6 +1,14 @@
 ### Version History
 
 
+#### v0.8.30
+- New method `meico.midi.Midi.addOffset()` to add a timing offset (in ticks) to all events in a MIDI sequence.
+- In method `meico.audio.Audio.convertWaveform2Image()` a dark gray center line is added to the image rendering.
+- Added another variant of method `meico.audio.Audio.convertWaveform2Image()` that uses an externally instantiated audio frame dispatcher `pump`, so the application can also cancel its processing.
+- Generalized method `meico.audio.Audio.convertDoubleArray2ByteArray()` to allow more than just 16 bit sample size.
+- Another generalization of method `meico.audio.Audio.convertByteArray2DoubleArray()` that should now also accept audio formats other than mono and stereo.
+
+
 #### v0.8.29
 - Bugfix in method `meico.audio.Audio.convertWaveform2Image()` that caused an `IndexOutOfBoundsException` when the amplitude of the signal is at maximum.
 
