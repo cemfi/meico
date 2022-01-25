@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.31
+- Reimplementation of method `meico.mpm.elements.maps.AsynchronyMap.renderAsynchronyToMap()`. The previous version did handle some note offsets incorrectly. This is fixed in the new version.
+
+
 #### v0.8.30
 - New method `meico.midi.Midi.addOffset()` to add a timing offset (in ticks) to all events in a MIDI sequence.
 - In method `meico.audio.Audio.convertWaveform2Image()` a dark gray center line is added to the image rendering.

@@ -119,50 +119,55 @@ public class AsynchronyMap extends GenericMap {
         if ((map == null) || this.elements.isEmpty())
             return;
 
-        ArrayList<KeyValue<Double[], Attribute>> pendingDurations = new ArrayList<>();
-        int mapIndex = map.getElementIndexAtAfter(this.elements.get(0).getKey());   // we start with the first map element at or after the first
+        ArrayList<KeyValue<Double, Element>> mapEntries = new ArrayList<>(map.getAllElements());        // make a list of all map entries; we will remove every entry from this list once it is completely processed
+        ArrayList<KeyValue<Double, Element>> done = new ArrayList<>();
 
-        for (int asynIndex = 0; asynIndex < this.size(); ++asynIndex) {             // traverse the asynchronyMap elements
+        for (int asynIndex = 0; asynIndex < this.size(); ++asynIndex) {                                 // traverse the asynchronyMap elements
             double asynEndDate = (asynIndex < (this.elements.size() - 1)) ? this.elements.get(asynIndex + 1).getKey() : Double.MAX_VALUE;   // get the date of the subsequent asynchrony element or (if we are at the last element) get the largest possible value
             double offset = Double.parseDouble(Helper.getAttributeValue("milliseconds.offset", this.getElement(asynIndex)));            // get the offset
 
-            for (; mapIndex < map.size(); ++mapIndex) {                             // traverse the map elements
-                KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);    // get the current map entry
+            for (int mapIndex = 0; mapIndex < mapEntries.size(); ++mapIndex) {                          // traverse the (remaining) map elements
+                KeyValue<Double, Element> mapEntry = mapEntries.get(mapIndex);                          // get the current map entry
 
-                if (mapEntry.getKey() >= asynEndDate)                               // if the current map element is out of the scope of the current asynchrony element
-                    break;                                                          // stop here and find the next asynchrony element first before continuing
+                if (mapEntry.getKey() >= asynEndDate)                                                   // if the current map element is out of the scope of the current asynchrony element
+                    break;                                                                              // stop here and find the next asynchrony element first before continuing
 
-                // add offset to milliseconds.date
-                Attribute att = Helper.getAttribute("milliseconds.date", mapEntry.getValue());  // get the map element's milliseconds.date attribute
-                if (att == null)                                                    // if it has none
-                    continue;                                                       // continue with the next map element
-                double ms = Double.parseDouble(att.getValue()) + offset;            // parse the attribute to double and add the offset
-                att.setValue(Double.toString(ms));                                  // write the updated value to the attribute
+                // process the entry's milliseconds date
+                double startDateMs = 0.0;
+                if (mapEntry.getKey() >= this.elements.get(asynIndex).getKey()) {                       // if the entry starts at or after the asynchrony instruction
+                    Attribute att = Helper.getAttribute("milliseconds.date", mapEntry.getValue());      // get the map element's milliseconds.date attribute
+                    if (att != null) {                                                                  // if we have an attribute date
+                        startDateMs = Double.parseDouble(att.getValue()) + offset;                      // parse the attribute value to double and add the offset
+                        att.setValue(Double.toString(startDateMs));                                     // write the updated value to the attribute
+                    }
+                }
 
-                // duration needs to be updated, too, but only if it is within the scope of this asnchrony element
-                Attribute dateEndAtt = Helper.getAttribute("date.end", mapEntry.getValue());
-                Attribute msDateEndAtt = Helper.getAttribute("milliseconds.date.end", mapEntry.getValue()); // get the map element's milliseconds.date.end attribute
-                if ((dateEndAtt == null) || (msDateEndAtt == null))                                         // if it misses one the required attributes
-                    continue;                                                                               // we are done with this map element
-                double dateEnd = Double.parseDouble(dateEndAtt.getValue());                                 // get the tick date of the end of the map element
-                double msDateEnd = Double.parseDouble(msDateEndAtt.getValue());                             // parse the milliseconds.date.end attribute to double
-
-                pendingDurations.add(new KeyValue<>(new Double[]{dateEnd, msDateEnd}, msDateEndAtt));       // keep the attribute in the pendingDurations list to get back to it later
-            }
-
-            // add offset to milliseconds.date.end attributes
-            for (int i=0; i < pendingDurations.size(); ++i) {
-                KeyValue<Double[], Attribute> pd = pendingDurations.get(i);
-                double dateEnd = pd.getKey()[0];
-                if (dateEnd >= asynEndDate)                                     // check whether date.end falls into the scope of this asynchrony element
+                // process the entry's milliseconds end date
+                Attribute dur = Helper.getAttribute("duration", mapEntry.getValue());                   // get the duration attribute
+                if (dur == null) {                                                                      // without a duration attribute we cannot say it the entry's end date falls into the scope of the current or any asynchrony segment
+                    done.add(mapEntry);                                                                 // hence, we are done with this map entry
                     continue;
+                }
 
-                double msDateEnd = pd.getKey()[1] + offset;
-                pd.getValue().setValue(Double.toString(msDateEnd));
+                double end = Double.parseDouble(dur.getValue()) + mapEntry.getKey();                    // use the duration to compute the tick end date
+                if (end >= asynEndDate)                                                                 // if it is after the current asynchrony segment
+                    continue;                                                                           // keep the entry for later processing, go on with the next entry
 
-                pendingDurations.remove(pd);
-                --i;
+                if (end >= this.elements.get(asynIndex).getKey()) {                                     // if the entry's end date falls in the scope of the current asynchrony segment
+                    Attribute att = Helper.getAttribute("milliseconds.date.end", mapEntry.getValue());  // get the map element's milliseconds.date.end attribute
+                    if (att != null) {                                                                  // if we have said attribute
+                        double ms = Double.parseDouble(att.getValue()) + offset;                        // parse the attribute value to double and add the offset
+                        att.setValue(Double.toString(Math.max(ms, startDateMs+1)));                      // write the updated value to the attribute; however, we do not shift the end date before the start date; in that case we set it to the start date + 1ms
+                    }
+                }
+
+                done.add(mapEntry);                                                                     // we are done with this entry, so it can be removed from the list
             }
+
+            // remove all map entries that are finished, so the next iteration does process only the remaining entries
+            for (KeyValue<Double, Element> removeMe : done)
+                mapEntries.remove(removeMe);
+            done.clear();
         }
     }
 
