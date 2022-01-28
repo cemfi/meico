@@ -504,53 +504,66 @@ public class ArticulationMap extends GenericMap {
             return;
 
         for (KeyValue<Double, Element> entry : map.elements) {
+            // collect all values and remove the temporary modifiers attributes (articulation.) from the xml element
             Attribute dateAtt = Helper.getAttribute("milliseconds.date", entry.getValue());
             if (dateAtt == null)
                 continue;
             double date = Double.parseDouble(dateAtt.getValue());
+            double dateNew = date;
 
             Attribute endAtt = Helper.getAttribute("milliseconds.date.end", entry.getValue());
+            Double end = null;
+            if (endAtt != null)
+                end = Double.parseDouble(endAtt.getValue());
+            Double endNew = end;
 
             Attribute absoluteDelayMs = Helper.getAttribute("articulation.absoluteDelayMs", entry.getValue());
             if (absoluteDelayMs != null) {
                 double delay = Double.parseDouble(absoluteDelayMs.getValue());
-                double dateNew = date + delay;
-
-                if (endAtt != null) {
-                    double end = Double.parseDouble(endAtt.getValue());
-                    if (dateNew >= end) {                       // if the delay goes beyond the end date of the note
-                        double delayNew = (end - date) / 2.0;
-                        dateNew = date + delayNew;              // reduce the delay to half of the time between date and end
-                        System.out.println("Note " + entry.getValue().toXML() + " cannot be delayed by " + delay + " milliseconds. Reducing delay to " + delayNew + " milliseconds.");
-                    }
-                }
-                dateAtt.setValue(Double.toString(dateNew));
-
-//                ((Element)absoluteDelayMs.getParent()).removeAttribute(absoluteDelayMs);
+                dateNew += delay;
+                entry.getValue().removeAttribute(absoluteDelayMs);
                 absoluteDelayMs.detach();
             }
 
-            if (endAtt == null)
-                continue;
-
             Attribute absoluteDurationMs = Helper.getAttribute("articulation.absoluteDurationMs", entry.getValue());
             if (absoluteDurationMs != null) {
-                endAtt.setValue(Double.toString(date + Double.parseDouble(absoluteDurationMs.getValue())));
-//                ((Element)absoluteDurationMs.getParent()).removeAttribute(absoluteDurationMs);
+                if (endNew != null) {
+                    double dur = Double.parseDouble(absoluteDurationMs.getValue());
+                    endNew = dateNew + dur;
+                }
+                entry.getValue().removeAttribute(absoluteDurationMs);
                 absoluteDurationMs.detach();
             }
 
             Attribute absoluteDurationChangeMs = Helper.getAttribute("articulation.absoluteDurationChangeMs", entry.getValue());
             if (absoluteDurationChangeMs != null) {
-                double end = Double.parseDouble(endAtt.getValue());
-                double durChange = Double.parseDouble(absoluteDurationChangeMs.getValue());
-                double endNew = end + durChange;
-                for (double reduce = 2.0; endNew <= date; reduce *= 2.0)    // as long as the duration change causes the duration to become 0.0 or negative
-                    endNew = end + (durChange / reduce);                    // reduce the change by 50%
-                endAtt.setValue(Double.toString(endNew));
-//                ((Element)absoluteDurationChangeMs.getParent()).removeAttribute(absoluteDurationChangeMs);
+                if (endNew != null) {
+                    double durChange = Double.parseDouble(absoluteDurationChangeMs.getValue());
+                    endNew += durChange;
+                }
+                entry.getValue().removeAttribute(absoluteDurationChangeMs);
                 absoluteDurationChangeMs.detach();
             }
+
+            if ((endNew == null) || (dateNew < endNew)) {       // if all is fine
+                dateAtt.setValue(Double.toString(dateNew));     // set the milliseconds.date attribute
+                endAtt.setValue(Double.toString(endNew));       // set the milliseconds.date.end attribute
+                continue;                                       // done with this entry
+            }
+
+            // if the delay and duration change cause a clash or reversal of onset and offset
+            System.out.println("Articulation of note " + entry.getValue().toXML() + " causes a clash or reversal of onset (" + date + "->" + dateNew + ") and offset (" + end + "->" + endNew + ")! Reducing the effect of the articulation to resolve the problem.");
+            double dateAdjust = dateNew;
+            double endAdjust = endNew;
+            for (double reduction = 0.5; (dateAdjust >= endAdjust) && (reduction > 0.001); reduction *= 0.5) {
+                dateAdjust = date + ((dateNew - date) * reduction);
+                endAdjust = end + ((endAdjust - end) * reduction);
+            }
+            if (dateAdjust >= endAdjust)                        // if the problem could not be resolved
+                continue;                                       // we do not apply the changes and leave the milliseconds dates unaltered
+
+            dateAtt.setValue(Double.toString(dateAdjust));      // set the milliseconds.date attribute
+            endAtt.setValue(Double.toString(endAdjust));        // set the milliseconds.date.end attribute
         }
     }
 

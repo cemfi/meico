@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.32
+- Enhancement/reimplementation of method `meico.mpm.elements.maps.ArticulationMap.renderArticulationToMap_millisecondModifiers()` to allow more extreme delays and duration changes.
+
+
 #### v0.8.31
 - Reimplementation of method `meico.mpm.elements.maps.AsynchronyMap.renderAsynchronyToMap()`. The previous version did handle some note offsets incorrectly. This is fixed in the new version.
 
