@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.33
+- New method `meico.midi.Midi.exportAudio(Soundbank soundbank)` to convert MIDI to audio with a soundfont that is already loaded, so its corresponding `File` is no longer required.
+
+
 #### v0.8.32
 - Enhancement/reimplementation of method `meico.mpm.elements.maps.ArticulationMap.renderArticulationToMap_millisecondModifiers()` to allow more extreme delays and duration changes.
 

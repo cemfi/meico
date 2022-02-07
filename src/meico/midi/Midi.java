@@ -500,6 +500,51 @@ public class Midi {
     }
 
     /**
+     * this is an audio exporter that uses the specified soundbank for synthesis
+     * @param soundbank a Soundbank object or null to use the default soundfont
+     * @return
+     */
+    public Audio exportAudio(Soundbank soundbank) {
+        long startTime = System.currentTimeMillis();                            // we measure the time that the conversion consumes
+        System.out.println("\nConverting " + ((this.file != null) ? this.file.getName() : "MIDI data") + " to audio.");
+        Midi2AudioRenderer renderer;                // an instance of the renderer
+        try {
+            renderer = new Midi2AudioRenderer();    // initialize the renderer
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        AudioInputStream stream = null;             // the stream that the renerer fills
+        try {
+            stream = renderer.renderMidi2Audio(this.sequence, soundbank, 44100, 16, 2); // do rendering of midi sequence into audio stream
+        } catch (MidiUnavailableException e) {
+            e.printStackTrace();
+        }
+
+        if (stream == null)                         // if rendering failed
+            return null;                            // return null
+
+        Audio audio;                                // create Audio object
+        if (this.file != null) {
+            audio = new Audio(stream, new File(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".wav"));  // set its file name, derived from this name but with different file type extension
+        }
+        else {
+            audio = new Audio(stream);
+        }
+
+        try {
+            stream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("MIDI to audio conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+
+        return audio;                   // return the Audio object
+    }
+
+    /**
      * convert the MIDI data to MSM
      * @return
      */
