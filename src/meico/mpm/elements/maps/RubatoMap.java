@@ -353,39 +353,37 @@ public class RubatoMap extends GenericMap {
             if (rd == null)
                 continue;
 
-            for (; mapIndex < map.size(); ++mapIndex) {                             // traverse the map elements
-                KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);    // get the current map entry
+            for (; mapIndex < map.size(); ++mapIndex) {                                         // traverse the map elements
+                KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);                // get the current map entry
 
-                if (mapEntry.getKey() < rd.startDate)                               // if this map entry is before the current rubato
-                    continue;                                                       // go on until we are at of after the rubato's date
+                if (mapEntry.getKey() < rd.startDate)                                           // if this map entry is before the current rubato
+                    continue;                                                                   // go on until we are at of after the rubato's date
 
                 if ((mapEntry.getKey() >= rd.endDate)                                           // if the current map element is out of the scope of the current rubato element
                     || (!rd.loop && (mapEntry.getKey() >= (rd.startDate + rd.frameLength))))    // if this is a oneshot rubato and map entry is already after its frame end
                     break;                                                                      // stop here and find the next rubato element first before continuing
 
                 // compute rubato transformation
-                double oldDate = mapEntry.getKey();
-                Attribute dateAtt = Helper.getAttribute("date", mapEntry.getValue());
-                mapEntry.setKey(RubatoMap.computeRubatoTransformation(mapEntry.getKey(), rd));
-                dateAtt.setValue(Double.toString(mapEntry.getKey()));
+                Attribute dateAtt = Helper.getAttribute("date.perf", mapEntry.getValue());
+                dateAtt.setValue(Double.toString(RubatoMap.computeRubatoTransformation(Double.parseDouble(dateAtt.getValue()), rd)));
 
                 // duration has to be converted, too, but if this element has already a date.end attribute, we go on with this
-                Attribute dateEndAtt = Helper.getAttribute("date.end", mapEntry.getValue());    // some elements have already a date.end attribute (e.g. section)
+                Attribute dateEndAtt = Helper.getAttribute("date.end.perf", mapEntry.getValue());   // some elements have already a date.end.perf attribute (e.g. section)
                 if (dateEndAtt != null) {
                     double endDate = Double.parseDouble(dateEndAtt.getValue());                 // get the tick date of the end of the map element
                     pendingDurations.add(new KeyValue<>(endDate, dateEndAtt));                  // keep the mapIndex in the pendingDurations list to get back to it later
                     continue;
                 }
-                Attribute durAtt = Helper.getAttribute("duration", mapEntry.getValue());        // if there was no date.end attribute, we check the presence of a duration attribute and generate date.end from it
+                Attribute durAtt = Helper.getAttribute("duration.perf", mapEntry.getValue());   // if there was no date.end.perf attribute, we check the presence of a duration.perf attribute and generate date.end.perf from it
                 if (durAtt != null) {
-                    double endDate = oldDate + Double.parseDouble(durAtt.getValue());           // get the tick date of the end of the map element
-                    dateEndAtt = new Attribute("date.end", Double.toString(endDate));
-                    mapEntry.getValue().addAttribute(dateEndAtt);                               // add attribute date.end
+                    double endDate = mapEntry.getKey() + Double.parseDouble(durAtt.getValue()); // get the tick date of the end of the map element
+                    dateEndAtt = new Attribute("date.end.perf", Double.toString(endDate));
+                    mapEntry.getValue().addAttribute(dateEndAtt);                               // add attribute date.end.perf
                     pendingDurations.add(new KeyValue<>(endDate, dateEndAtt));                  // keep the mapIndex in the pendingDurations list to get back to it later
                 }
             }
 
-            // check pending date.end attributes to fall under this rubato instruction and be processed now
+            // check pending date.end.perf attributes to fall under this rubato instruction and be processed now
             for (int i=0; i < pendingDurations.size(); ++i) {
                 KeyValue<Double, Attribute> pd = pendingDurations.get(i);
                 double dateEnd = pd.getKey();

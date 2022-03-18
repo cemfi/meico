@@ -23,6 +23,7 @@ public class GenericMap extends AbstractXmlSubtree {
     protected ArrayList<KeyValue<Double, Element>> elements = new ArrayList<>();    // this is a list of the map elements (with a date attribute), the form is (date, Element)
     private Header globalHeader = null;                                             // the link to the global header environment for later reference (styleDefs)
     private Header localHeader = null;                                              // the link to this part's header environment for later reference (styleDefs); leave this null if it is a global map
+    protected Attribute id = null;                                                  // the id attribute
 
     /**
      * constructor
@@ -30,7 +31,7 @@ public class GenericMap extends AbstractXmlSubtree {
      * @throws Exception
      */
     protected GenericMap(String type) throws Exception {
-        if (type.isEmpty() || !type.contains("Map")) {
+        if (!type.contains("Map")) {
             throw new Exception("Cannot generate GenericMap object. Local name \"" + type + "\" must be non-empty and contain the substring \"Map\", e.g. \"tempoMap\".");
         }
         this.parseData(new Element(type, Mpm.MPM_NAMESPACE));
@@ -82,7 +83,7 @@ public class GenericMap extends AbstractXmlSubtree {
      * @param xml
      */
     @Override
-    protected void parseData(Element xml) throws Exception, Exception {
+    protected void parseData(Element xml) throws Exception {
         if (xml == null)
             throw new Exception("Cannot generate GenericMap object. XML Element is null.");
 
@@ -117,6 +118,8 @@ public class GenericMap extends AbstractXmlSubtree {
         }
 
         this.sortXml();                                             // the xml elements can be unsorted, this makes sure it is sorted
+
+        this.id = Helper.getAttribute("id", this.getXml());
     }
 
     /**
@@ -169,11 +172,45 @@ public class GenericMap extends AbstractXmlSubtree {
      * @param type
      */
     protected void setType(String type) {
-        if (type.isEmpty() || !type.contains("Map")) {
+        if (!type.contains("Map")) {
             System.err.println("Cannot set the specified map type. Local name \"" + type + "\" must be non-empty and contain the substring \"Map\", e.g. \"tempoMap\".");
             return;
         }
         this.getXml().setLocalName(type);
+    }
+
+    /**
+     * get the id
+     * @return a string or null
+     */
+    public String getId() {
+        if (this.id == null)
+            return null;
+
+        return this.id.getValue();
+    }
+
+    /**
+     * set the id
+     * @param id a xml:id string or null
+     */
+    public void setId(String id) {
+        if (id == null) {
+            if (this.id != null) {
+                this.id.detach();
+                this.id = null;
+            }
+            return;
+        }
+
+        if (this.id == null) {
+            this.id = new Attribute("id", id);
+            this.id.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+            this.getXml().addAttribute(this.id);
+            return;
+        }
+
+        this.id.setValue(id);
     }
 
     /**

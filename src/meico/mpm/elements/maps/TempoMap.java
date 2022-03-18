@@ -350,15 +350,16 @@ public class TempoMap extends GenericMap {
                 KeyValue<Double, Element> mapEntry = map.elements.get(mapIndex);        // get the current map entry
 
                 // convert the date
-                double milliseconds = TempoMap.computeMillisecondsForNoTempo(mapEntry.getKey(), ppq);
+                double date = Double.parseDouble(Helper.getAttributeValue("date.perf", mapEntry.getValue()));
+                double milliseconds = TempoMap.computeMillisecondsForNoTempo(date, ppq);
                 mapEntry.getValue().addAttribute(new Attribute("milliseconds.date", Double.toString(milliseconds)));        // add the attribute
 
                 // convert the duration
-                Attribute durAtt = Helper.getAttribute("duration", mapEntry.getValue());
+                Attribute durAtt = Helper.getAttribute("duration.perf", mapEntry.getValue());
                 if (durAtt == null)
                     continue;
-                double endDate = mapEntry.getKey() + Double.parseDouble(durAtt.getValue());                     // get the tick date of the end of the map element
-                milliseconds = TempoMap.computeMillisecondsForNoTempo(endDate, ppq);                            // compute the millisecond end date
+                double endDate = date + Double.parseDouble(durAtt.getValue());                                              // get the tick date of the end of the map element
+                milliseconds = TempoMap.computeMillisecondsForNoTempo(endDate, ppq);                                        // compute the millisecond end date
                 mapEntry.getValue().addAttribute(new Attribute("milliseconds.date.end", Double.toString(milliseconds)));    // add the attribute
             }
             return;
@@ -391,23 +392,24 @@ public class TempoMap extends GenericMap {
                     break;                                                              // stop here and find the next tempo element first before continuing
 
                 // compute the milliseconds dates
+                double date = Double.parseDouble(Helper.getAttributeValue("date.perf", mapEntry.getValue()));
                 if (mapEntry.getKey() <= td.startDate)                                                      // if we are before the current tempo instruction
-                    milliseconds = TempoMap.renderTempoToMap(mapEntry.getKey(), ppq, null);
+                    milliseconds = TempoMap.renderTempoToMap(date, ppq, null);
                 else
-                    milliseconds = TempoMap.renderTempoToMap(mapEntry.getKey(), ppq, td) + td.startDateMilliseconds;
+                    milliseconds = TempoMap.renderTempoToMap(date, ppq, td) + td.startDateMilliseconds;
                 mapEntry.getValue().addAttribute(new Attribute("milliseconds.date", Double.toString(milliseconds)));    // add the attribute
 
                 // duration has to be converted, too, but if this element has already a date.end attribute, we go on with this
-                Attribute dateEndAtt = Helper.getAttribute("date.end", mapEntry.getValue());        // some elements have already a date.end attribute (e.g. section and all notes and rests that were processed by RubatoMap.renderRubatoToMap())
+                Attribute dateEndAtt = Helper.getAttribute("date.end.perf", mapEntry.getValue());   // some elements have already a date.end.perf attribute (e.g. section and all notes and rests that were processed by RubatoMap.renderRubatoToMap())
                 if (dateEndAtt != null) {
                     double endDate = Double.parseDouble(dateEndAtt.getValue());                     // get the tick date of the end of the map element
                     pendingDurations.add(new KeyValue<>(endDate, mapIndex));                        // keep the mapIndex in the pendingDurations list to get back to it later
                     continue;
                 }
-                Attribute durAtt = Helper.getAttribute("duration", mapEntry.getValue());            // if there was no date.end attribute, we check the presence of a duration attribute and generate date.end from it
+                Attribute durAtt = Helper.getAttribute("duration.perf", mapEntry.getValue());       // if there was no date.end.perf attribute, we check the presence of a duration.perf attribute and generate date.end.perf from it
                 if (durAtt != null) {
-                    double endDate = mapEntry.getKey() + Double.parseDouble(durAtt.getValue());     // get the tick date of the end of the map element
-                    mapEntry.getValue().addAttribute(new Attribute("date.end", Double.toString(endDate)));      // add attribute date.end
+                    double endDate = date + Double.parseDouble(durAtt.getValue());                  // get the tick date of the end of the map element
+                    mapEntry.getValue().addAttribute(new Attribute("date.end.perf", Double.toString(endDate)));      // add attribute date.end.perf
                     pendingDurations.add(new KeyValue<>(endDate, mapIndex));                        // keep the mapIndex in the pendingDurations list to get back to it later
                 }
             }
@@ -452,18 +454,18 @@ public class TempoMap extends GenericMap {
         // if no tempoMap is given, 1 MIDI tick = 1 millisecond
         for (int i=0; i < map.size(); ++i) {
             Element e = map.getElement(i);
-            Attribute dateAtt = Helper.getAttribute("date", e);
+            Attribute dateAtt = Helper.getAttribute("date.perf", e);
             if (dateAtt != null)
                 e.addAttribute(new Attribute("milliseconds.date", dateAtt.getValue()));
-            Attribute endAtt = Helper.getAttribute("date.end", e);
+            Attribute endAtt = Helper.getAttribute("date.end.perf", e);
             if (endAtt != null)
                 e.addAttribute(new Attribute("milliseconds.date.end", endAtt.getValue()));
             else {
-                Attribute durAtt = Helper.getAttribute("duration", e);
+                Attribute durAtt = Helper.getAttribute("duration.perf", e);
                 if ((durAtt != null) && (dateAtt != null)) {
 //                    e.addAttribute(new Attribute("milliseconds.duration", durAtt.getValue()));
                     double dateEnd = Double.parseDouble(dateAtt.getValue()) + Double.parseDouble(durAtt.getValue());
-                    e.addAttribute(new Attribute("date.end", Double.toString(dateEnd)));
+                    e.addAttribute(new Attribute("date.end.perf", Double.toString(dateEnd)));
                     e.addAttribute(new Attribute("milliseconds.date.end", Double.toString(dateEnd)));
                 }
             }

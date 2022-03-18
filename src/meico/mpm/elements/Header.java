@@ -136,6 +136,8 @@ public class Header extends AbstractXmlSubtree {
                     sd = RubatoStyle.createRubatoStyle(styleDef);
                     break;
                 case Mpm.ORNAMENTATION_STYLE:
+                    sd = OrnamentationStyle.createOrnamentationStyle(styleDef);
+                    break;
                 default:
                     sd = GenericStyle.createGenericStyle(styleDef);
             }
@@ -244,9 +246,9 @@ public class Header extends AbstractXmlSubtree {
             case Mpm.RUBATO_STYLE:
                 styleDef = RubatoStyle.createRubatoStyle(name);
                 break;
-//            case Mpm.ORNAMENTATION_STYLE:
-//                styleDef = OrnamentationStyle ...
-//                break;
+            case Mpm.ORNAMENTATION_STYLE:
+                styleDef = OrnamentationStyle.createOrnamentationStyle(name);
+                break;
             default:
                 styleDef = GenericStyle.createGenericStyle(name);
         }

@@ -75,12 +75,10 @@ public class TempoDef extends AbstractDef {
         super.parseData(xml);
 
         // parse the dynamicsDef element
-        Attribute value = Helper.getAttribute("value", xml);                                    // get its value attribute
-        if (value == null) {                                                            // if no value
+        Attribute value = Helper.getAttribute("value", xml);        // get its value attribute
+        if (value == null) {                                        // if no value
             throw new Exception("Cannot generate TempoDef object. Missing value attribute.");
         }
-
-        this.setXml(xml);
 
         // make sure that this element is really a "tempoDef" element
         if (!this.getXml().getLocalName().equals("tempoDef")) {

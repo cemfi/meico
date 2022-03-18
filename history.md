@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.8.34
+- Added support for attribute `xml:id` on MPM maps in class `meico.mpm.elements.maps.GenericMap`.
+- Fixed data integrity of MPM maps that get processed by rubato transformation during performance rendering.
+- First preparations for the ornamentation update ...
+
+
 #### v0.8.33
 - New method `meico.midi.Midi.exportAudio(Soundbank soundbank)` to convert MIDI to audio with a soundfont that is already loaded, so its corresponding `File` is no longer required.
 

@@ -149,7 +149,7 @@ public class Midi2MsmConverter {
 
             case EventMaker.META_Marker: {
                 Element marker = new Element("marker");
-                marker.addAttribute(new Attribute("date", Double.toString((double)event.getTick())));      // get the date of the event
+                marker.addAttribute(new Attribute("date", Double.toString((double)event.getTick())));           // get the date of the event
                 marker.addAttribute(new Attribute("message", new String(m.getData())));                         // get its text
                 Element markerMap = this.currentPart.getFirstChildElement("dated").getFirstChildElement("markerMap");
                 Helper.addToMap(marker, markerMap);                                                             // add marker to markerMap

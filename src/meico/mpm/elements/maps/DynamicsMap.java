@@ -202,7 +202,7 @@ public class DynamicsMap extends GenericMap {
 
     /**
      * add a dynamics element to the dynamicsMap
-      @param data xml data will be ignored (use addElement() instead to add an xml representation)
+     * @param data xml data will be ignored (use addElement() instead to add an xml representation)
      * @return
      */
     public int addDynamics(DynamicsData data) {

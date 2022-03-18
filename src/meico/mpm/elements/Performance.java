@@ -383,15 +383,15 @@ public class Performance extends AbstractXmlSubtree {
      * @return an augmented MSM with performance related data
      */
     public Msm perform(Msm msm) {
-        long startTime = System.currentTimeMillis();                                                            // we measure the time that the conversion consumes
+        long startTime = System.currentTimeMillis();                                                                    // we measure the time that the conversion consumes
         System.out.println("\nRendering performance \"" + this.getName() + "\" into \"" + msm.getTitle() + "\".");
 
-        Msm clone = msm.clone();                                                                                // the original msm should remain unaltered, hence, we create a copy of it to work with and be return
-        clone.setFile(Helper.getFilenameWithoutExtension(clone.getFile().getPath()) + "_" + this.getName() + ".msm");   // just to make sure that the original file will no be overwritten when the application writes this clone to the file system
+        Msm clone = msm.clone();                                                                                        // the original msm should remain unaltered, hence, we create a copy of it to work with and be returned
+        clone.setFile(Helper.getFilenameWithoutExtension(clone.getFile().getPath()) + "_" + this.getName() + ".msm");   // just to make sure that the original file will not be overwritten when the application writes this clone to the file system
 
         clone.convertPPQ(this.getPPQ());  // ppq check and convert if necessary (for all attributes date, date.end and duration)
 
-        // get global msm maps
+        // get global mpm maps
         RubatoMap globalRubatoMap = (RubatoMap) this.getGlobal().getDated().getMap(Mpm.RUBATO_MAP);                                         // get the global rubatoMap
         TempoMap globalTempoMap = (TempoMap) this.getGlobal().getDated().getMap(Mpm.TEMPO_MAP);                                             // get the global tempoMap
         AsynchronyMap globalAsynchronyMap = (AsynchronyMap) this.getGlobal().getDated().getMap(Mpm.ASYNCHRONY_MAP);                         // get the global asynchronyMap
@@ -400,26 +400,31 @@ public class Performance extends AbstractXmlSubtree {
         ImprecisionMap globalImprecisionMap_toneduration = (ImprecisionMap) this.getGlobal().getDated().getMap(Mpm.IMPRECISION_MAP_TONEDURATION);   // get the global toneduration imprecisionMap
         ImprecisionMap globalImprecisionMap_tuning = (ImprecisionMap) this.getGlobal().getDated().getMap(Mpm.IMPRECISION_MAP_TUNING);       // get the global tuning imprecisionMap
         DynamicsMap globalDynamicsMap = (DynamicsMap) this.getGlobal().getDated().getMap(Mpm.DYNAMICS_MAP);                                 // get the global dynamicsMap
-        MetricalAccentuationMap glbalMetricalAccentuationMap = (MetricalAccentuationMap) this.getGlobal().getDated().getMap(Mpm.METRICAL_ACCENTUATION_MAP); // get the global metricalAccentuationMap
+        MetricalAccentuationMap globalMetricalAccentuationMap = (MetricalAccentuationMap) this.getGlobal().getDated().getMap(Mpm.METRICAL_ACCENTUATION_MAP); // get the global metricalAccentuationMap
+        OrnamentationMap globalOrnamentationMap = (OrnamentationMap) this.getGlobal().getDated().getMap(Mpm.ORNAMENTATION_MAP);             // get the global ornamentationMap
         ArticulationMap globalArticulationMap = (ArticulationMap) this.getGlobal().getDated().getMap(Mpm.ARTICULATION_MAP);                 // get the global articulationMap
         ArrayList<GenericMap> maps = new ArrayList<>();                                                                                     // maps to be processed
         ArrayList<KeyValue<Double, Element>> cleanupList = new ArrayList<>();                                                               // maps that need cleanup at the end
 
-        // the imprecisionMaps need millisecond dates, hence we add them to the maps list and the cleanup list so the millisseconds attributes are deleted afterwards
+        // the imprecisionMaps need millisecond dates, hence we add them to the maps list and the cleanup list so the milliseconds attributes are deleted afterwards
         if (globalImprecisionMap_timing != null) {
             maps.add(globalImprecisionMap_timing);
+            Performance.addTempDateAndDuration(globalImprecisionMap_timing);
             cleanupList.addAll(globalImprecisionMap_timing.getAllElements());
         }
         if (globalImprecisionMap_dynamics != null) {
             maps.add(globalImprecisionMap_dynamics);
+            Performance.addTempDateAndDuration(globalImprecisionMap_dynamics);
             cleanupList.addAll(globalImprecisionMap_dynamics.getAllElements());
         }
         if (globalImprecisionMap_toneduration != null) {
             maps.add(globalImprecisionMap_toneduration);
+            Performance.addTempDateAndDuration(globalImprecisionMap_toneduration);
             cleanupList.addAll(globalImprecisionMap_toneduration.getAllElements());
         }
         if (globalImprecisionMap_tuning != null) {
             maps.add(globalImprecisionMap_tuning);
+            Performance.addTempDateAndDuration(globalImprecisionMap_tuning);
             cleanupList.addAll(globalImprecisionMap_tuning.getAllElements());
         }
 
@@ -432,12 +437,13 @@ public class Performance extends AbstractXmlSubtree {
         Performance.addMsmMapToList("sequencingMap", globalDated, maps);
         Performance.addMsmMapToList("markerMap", globalDated, maps);
         GenericMap globalPedalMap = Performance.addMsmMapToList("pedalMap", globalDated, maps);
-        for (GenericMap m : maps) {                                                                     // for all maps in the list of maps for timing processing
+
+        for (GenericMap m : maps) {                                                                         // for all maps in the list of maps for timing processing
             RubatoMap.renderRubatoToMap(m, globalRubatoMap);
-            TempoMap.renderTempoToMap(m, this.getPPQ(), globalTempoMap);                                // compute millisecond dates and end dates
+            TempoMap.renderTempoToMap(m, this.getPPQ(), globalTempoMap);                                    // compute millisecond dates and end dates
         }
-        AsynchronyMap.renderAsynchronyToMap(globalPedalMap, globalAsynchronyMap);                       // add asynchrony offsets to the millisecond dates
-        ImprecisionMap.renderImprecisionToMap(globalPedalMap, globalImprecisionMap_timing, true);       // add imprecision
+        AsynchronyMap.renderAsynchronyToMap(globalPedalMap, globalAsynchronyMap);                           // add asynchrony offsets to the millisecond dates
+        ImprecisionMap.renderImprecisionToMap(globalPedalMap, globalImprecisionMap_timing, true);           // add imprecision
 
         // process the msm parts
         Elements parts = clone.getParts();                                                                  // get the parts from the msm
@@ -475,6 +481,7 @@ public class Performance extends AbstractXmlSubtree {
             AsynchronyMap asynchronyMap = null;
             DynamicsMap dynamicsMap = null;
             MetricalAccentuationMap metricalAccentuationMap = null;
+            OrnamentationMap ornamentationMap = null;
             ArticulationMap articulationMap = null;
             ImprecisionMap imprecisionMap_timing = null;
             ImprecisionMap imprecisionMap_dynamics = null;
@@ -486,6 +493,7 @@ public class Performance extends AbstractXmlSubtree {
                 asynchronyMap = (AsynchronyMap) mpmPart.getDated().getMap(Mpm.ASYNCHRONY_MAP);                          // get asynchronyMap
                 dynamicsMap = (DynamicsMap) mpmPart.getDated().getMap(Mpm.DYNAMICS_MAP);                                // get dynamicsMap
                 metricalAccentuationMap = (MetricalAccentuationMap) mpmPart.getDated().getMap(Mpm.METRICAL_ACCENTUATION_MAP);   // get metricalAccentuationMap
+                ornamentationMap = (OrnamentationMap) mpmPart.getDated().getMap(Mpm.ORNAMENTATION_MAP);                 // get ornamentationMap
                 articulationMap = (ArticulationMap) mpmPart.getDated().getMap(Mpm.ARTICULATION_MAP);                    // get articulationMap
                 imprecisionMap_timing = (ImprecisionMap) mpmPart.getDated().getMap(Mpm.IMPRECISION_MAP_TIMING);         // get imprecisionMap.timing
                 imprecisionMap_dynamics = (ImprecisionMap) mpmPart.getDated().getMap(Mpm.IMPRECISION_MAP_DYNAMICS);     // get imprecisionMap.dynamics
@@ -503,7 +511,9 @@ public class Performance extends AbstractXmlSubtree {
             if (dynamicsMap == null)
                 dynamicsMap = globalDynamicsMap;
             if (metricalAccentuationMap == null)
-                metricalAccentuationMap = glbalMetricalAccentuationMap;
+                metricalAccentuationMap = globalMetricalAccentuationMap;
+            if (ornamentationMap == null)
+                ornamentationMap = globalOrnamentationMap;
             if (articulationMap == null)
                 articulationMap = globalArticulationMap;
             // the global imprecisionMaps have already milliseconds dates (required), the local does not, hence, they must be added to maps and to the cleanup list so the milliseconds attributes get deleted afterwards
@@ -511,32 +521,39 @@ public class Performance extends AbstractXmlSubtree {
                 imprecisionMap_timing = globalImprecisionMap_timing;
             else {
                 maps.add(imprecisionMap_timing);
+                Performance.addTempDateAndDuration(imprecisionMap_timing);
                 cleanupList.addAll(imprecisionMap_timing.getAllElements());
             }
             if (imprecisionMap_dynamics == null)
                 imprecisionMap_dynamics = globalImprecisionMap_dynamics;
             else {
                 maps.add(imprecisionMap_dynamics);
+                Performance.addTempDateAndDuration(imprecisionMap_dynamics);
                 cleanupList.addAll(imprecisionMap_dynamics.getAllElements());
             }
             if (imprecisionMap_toneduration == null)
                 imprecisionMap_toneduration = globalImprecisionMap_toneduration;
             else {
                 maps.add(imprecisionMap_toneduration);
+                Performance.addTempDateAndDuration(imprecisionMap_toneduration);
                 cleanupList.addAll(imprecisionMap_toneduration.getAllElements());
             }
             if (imprecisionMap_tuning == null)
                 imprecisionMap_tuning = globalImprecisionMap_tuning;
             else {
                 maps.add(imprecisionMap_tuning);
+                Performance.addTempDateAndDuration(imprecisionMap_tuning);
                 cleanupList.addAll(imprecisionMap_tuning.getAllElements());
             }
 
             // here comes the performance rendering of the part
             // some things should be done before the timing transformations
             GenericMap channelVolumeMap = DynamicsMap.renderDynamicsToMap(score, dynamicsMap);  // add dynamics data, must be done first because the tick timing will be altered by some articulations and rubato
-            if (channelVolumeMap != null)                                                       // there could be a new map with sub-note dynamics controllers to be added to maps
+            if (channelVolumeMap != null) {                                                     // there could be a new map with sub-note dynamics controllers to be added to maps
                 dated.appendChild(channelVolumeMap.getXml());                                   // add it to the MSM
+                Performance.addTempDateAndDuration(channelVolumeMap);
+                cleanupList.addAll(channelVolumeMap.getAllElements());
+            }
 
             MetricalAccentuationMap.renderMetricalAccentuationToMap(score, metricalAccentuationMap, ((timeSignatureMap != null) ? timeSignatureMap : globalTimeSignatureMap), this.getPPQ());  // add metrical accentuations; we do this before the rubato transformation as this shifts the symbolic dates of the events
             ArticulationMap.renderArticulationToMap_noMillisecondModifiers(score, articulationMap); // add articulations except for millisecond modifiers
@@ -573,6 +590,18 @@ public class Performance extends AbstractXmlSubtree {
             Attribute ms = Helper.getAttribute("milliseconds.date", e.getValue());
             if (ms != null)
                 e.getValue().removeAttribute(ms);
+
+            Attribute datePerf = Helper.getAttribute("date.perf", e.getValue());
+            if (datePerf != null)
+                e.getValue().removeAttribute(datePerf);
+
+            Attribute durationPerf = Helper.getAttribute("duration.perf", e.getValue());
+            if (durationPerf != null)
+                e.getValue().removeAttribute(durationPerf);
+
+            Attribute dateEndPerf = Helper.getAttribute("date.end.perf", e.getValue());
+            if (dateEndPerf != null)
+                e.getValue().removeAttribute(dateEndPerf);
         }
 
         System.out.println("Performance rendering finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
@@ -593,10 +622,35 @@ public class Performance extends AbstractXmlSubtree {
             GenericMap m = GenericMap.createGenericMap(e);
             if (m != null) {
                 list.add(m);
+                Performance.addTempDateAndDuration(m);
                 return m;
             }
         }
         return null;
+    }
+
+    /**
+     * This method iterates through all elements of the map provided and adds attribute date.perf and,
+     * if the element has an attribute duration and date.end, duration.perf and date.end.perf.
+     * These are temporary during the  will be used by the performance rendering
+     * so that the original attribute values remain unaltered.
+     * @param map
+     */
+    private static void addTempDateAndDuration(GenericMap map) {
+        if ((map == null) || map.isEmpty())
+            return;
+
+        for (KeyValue<Double, Element> e : map.getAllElements()) {
+            e.getValue().addAttribute(new Attribute("date.perf", Helper.getAttributeValue("date", e.getValue())));
+
+            Attribute duration = Helper.getAttribute("duration", e.getValue());
+            if (duration != null)
+                e.getValue().addAttribute(new Attribute("duration.perf", duration.getValue()));
+
+            Attribute dateEnd = Helper.getAttribute("date.end", e.getValue());
+            if (dateEnd != null)
+                e.getValue().addAttribute(new Attribute("date.end.perf", dateEnd.getValue()));
+        }
     }
 
     /**
