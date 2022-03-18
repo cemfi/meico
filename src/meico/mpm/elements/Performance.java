@@ -404,29 +404,7 @@ public class Performance extends AbstractXmlSubtree {
         OrnamentationMap globalOrnamentationMap = (OrnamentationMap) this.getGlobal().getDated().getMap(Mpm.ORNAMENTATION_MAP);             // get the global ornamentationMap
         ArticulationMap globalArticulationMap = (ArticulationMap) this.getGlobal().getDated().getMap(Mpm.ARTICULATION_MAP);                 // get the global articulationMap
         ArrayList<GenericMap> maps = new ArrayList<>();                                                                                     // maps to be processed
-        ArrayList<KeyValue<Double, Element>> cleanupList = new ArrayList<>();                                                               // maps that need cleanup at the end
-
-        // the imprecisionMaps need millisecond dates, hence we add them to the maps list and the cleanup list so the milliseconds attributes are deleted afterwards
-        if (globalImprecisionMap_timing != null) {
-            maps.add(globalImprecisionMap_timing);
-            Performance.addTempDateAndDuration(globalImprecisionMap_timing);
-            cleanupList.addAll(globalImprecisionMap_timing.getAllElements());
-        }
-        if (globalImprecisionMap_dynamics != null) {
-            maps.add(globalImprecisionMap_dynamics);
-            Performance.addTempDateAndDuration(globalImprecisionMap_dynamics);
-            cleanupList.addAll(globalImprecisionMap_dynamics.getAllElements());
-        }
-        if (globalImprecisionMap_toneduration != null) {
-            maps.add(globalImprecisionMap_toneduration);
-            Performance.addTempDateAndDuration(globalImprecisionMap_toneduration);
-            cleanupList.addAll(globalImprecisionMap_toneduration.getAllElements());
-        }
-        if (globalImprecisionMap_tuning != null) {
-            maps.add(globalImprecisionMap_tuning);
-            Performance.addTempDateAndDuration(globalImprecisionMap_tuning);
-            cleanupList.addAll(globalImprecisionMap_tuning.getAllElements());
-        }
+//        ArrayList<KeyValue<Double, Element>> cleanupList = new ArrayList<>();                                                               // maps that need cleanup at the end
 
         // process global data
         System.out.println("Processing global data.");
@@ -519,32 +497,12 @@ public class Performance extends AbstractXmlSubtree {
             // the global imprecisionMaps have already milliseconds dates (required), the local does not, hence, they must be added to maps and to the cleanup list so the milliseconds attributes get deleted afterwards
             if (imprecisionMap_timing == null)
                 imprecisionMap_timing = globalImprecisionMap_timing;
-            else {
-                maps.add(imprecisionMap_timing);
-                Performance.addTempDateAndDuration(imprecisionMap_timing);
-                cleanupList.addAll(imprecisionMap_timing.getAllElements());
-            }
             if (imprecisionMap_dynamics == null)
                 imprecisionMap_dynamics = globalImprecisionMap_dynamics;
-            else {
-                maps.add(imprecisionMap_dynamics);
-                Performance.addTempDateAndDuration(imprecisionMap_dynamics);
-                cleanupList.addAll(imprecisionMap_dynamics.getAllElements());
-            }
             if (imprecisionMap_toneduration == null)
                 imprecisionMap_toneduration = globalImprecisionMap_toneduration;
-            else {
-                maps.add(imprecisionMap_toneduration);
-                Performance.addTempDateAndDuration(imprecisionMap_toneduration);
-                cleanupList.addAll(imprecisionMap_toneduration.getAllElements());
-            }
             if (imprecisionMap_tuning == null)
                 imprecisionMap_tuning = globalImprecisionMap_tuning;
-            else {
-                maps.add(imprecisionMap_tuning);
-                Performance.addTempDateAndDuration(imprecisionMap_tuning);
-                cleanupList.addAll(imprecisionMap_tuning.getAllElements());
-            }
 
             // here comes the performance rendering of the part
             // some things should be done before the timing transformations
@@ -552,10 +510,10 @@ public class Performance extends AbstractXmlSubtree {
             if (channelVolumeMap != null) {                                                     // there could be a new map with sub-note dynamics controllers to be added to maps
                 dated.appendChild(channelVolumeMap.getXml());                                   // add it to the MSM
                 Performance.addTempDateAndDuration(channelVolumeMap);
-                cleanupList.addAll(channelVolumeMap.getAllElements());
             }
 
             MetricalAccentuationMap.renderMetricalAccentuationToMap(score, metricalAccentuationMap, ((timeSignatureMap != null) ? timeSignatureMap : globalTimeSignatureMap), this.getPPQ());  // add metrical accentuations; we do this before the rubato transformation as this shifts the symbolic dates of the events
+            // TODO: apply dynamicsGradient from ornamentationMap
             ArticulationMap.renderArticulationToMap_noMillisecondModifiers(score, articulationMap); // add articulations except for millisecond modifiers
 
             // rubato and tempo transformations apply to all maps
@@ -585,24 +543,10 @@ public class Performance extends AbstractXmlSubtree {
             ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_tuning, true);          // add tuning imprecision
         }
 
-        // cleanup: remove attribute milliseconds.date from all elements in the cleanup list
-        for (KeyValue<Double, Element> e : cleanupList) {
-            Attribute ms = Helper.getAttribute("milliseconds.date", e.getValue());
-            if (ms != null)
-                e.getValue().removeAttribute(ms);
-
-            Attribute datePerf = Helper.getAttribute("date.perf", e.getValue());
-            if (datePerf != null)
-                e.getValue().removeAttribute(datePerf);
-
-            Attribute durationPerf = Helper.getAttribute("duration.perf", e.getValue());
-            if (durationPerf != null)
-                e.getValue().removeAttribute(durationPerf);
-
-            Attribute dateEndPerf = Helper.getAttribute("date.end.perf", e.getValue());
-            if (dateEndPerf != null)
-                e.getValue().removeAttribute(dateEndPerf);
-        }
+        // cleanup: remove temporary attributes from all elements in the cleanup list
+//        for (KeyValue<Double, Element> e : cleanupList) {
+//            // do something
+//        }
 
         System.out.println("Performance rendering finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
 

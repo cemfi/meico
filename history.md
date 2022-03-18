@@ -4,6 +4,7 @@
 #### v0.8.34
 - Added support for attribute `xml:id` on MPM maps in class `meico.mpm.elements.maps.GenericMap`.
 - Fixed data integrity of MPM maps that get processed by rubato transformation during performance rendering.
+- Optimization of the performance rendering process.
 - First preparations for the ornamentation update ...
 
 
