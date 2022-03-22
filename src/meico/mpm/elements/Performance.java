@@ -509,11 +509,11 @@ public class Performance extends AbstractXmlSubtree {
             GenericMap channelVolumeMap = DynamicsMap.renderDynamicsToMap(score, dynamicsMap);  // add dynamics data, must be done first because the tick timing will be altered by some articulations and rubato
             if (channelVolumeMap != null) {                                                     // there could be a new map with sub-note dynamics controllers to be added to maps
                 dated.appendChild(channelVolumeMap.getXml());                                   // add it to the MSM
-                Performance.addTempDateAndDuration(channelVolumeMap);
+                Performance.addPerformanceTimingAttributes(channelVolumeMap);                   // add the .perf attributes
             }
 
             MetricalAccentuationMap.renderMetricalAccentuationToMap(score, metricalAccentuationMap, ((timeSignatureMap != null) ? timeSignatureMap : globalTimeSignatureMap), this.getPPQ());  // add metrical accentuations; we do this before the rubato transformation as this shifts the symbolic dates of the events
-            // TODO: apply dynamicsGradient from ornamentationMap
+            // TODO: apply ornamentation -> dynamicsGradient from ornamentationMap
             ArticulationMap.renderArticulationToMap_noMillisecondModifiers(score, articulationMap); // add articulations except for millisecond modifiers
 
             // rubato and tempo transformations apply to all maps
@@ -566,7 +566,7 @@ public class Performance extends AbstractXmlSubtree {
             GenericMap m = GenericMap.createGenericMap(e);
             if (m != null) {
                 list.add(m);
-                Performance.addTempDateAndDuration(m);
+                Performance.addPerformanceTimingAttributes(m);  // add the .perf attributes
                 return m;
             }
         }
@@ -580,7 +580,7 @@ public class Performance extends AbstractXmlSubtree {
      * so that the original attribute values remain unaltered.
      * @param map
      */
-    private static void addTempDateAndDuration(GenericMap map) {
+    private static void addPerformanceTimingAttributes(GenericMap map) {
         if ((map == null) || map.isEmpty())
             return;
 

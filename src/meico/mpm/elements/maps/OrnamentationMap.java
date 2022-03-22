@@ -151,4 +151,16 @@ public class OrnamentationMap extends GenericMap {
         KeyValue<Double, Element> kv = new KeyValue<>(data.date, ornament);
         return this.insertElement(kv, false);
     }
+
+    /**
+     * On the basis of this ornamentationMap, edit the map (preferably an MSM score).
+     * This method is meant to be applied BEFORE the other timing and articulation transformations and AFTER dynamics and metrical accentuation rendering.
+     * @param map
+     */
+    public void renderOrnamentationMap(GenericMap map) {
+        if (map == null)
+            return;
+
+        // TODO ...
+    }
 }
