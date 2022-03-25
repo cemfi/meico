@@ -46,6 +46,7 @@ public class Helper {
     protected ArrayList<Element> tstamp2s = new ArrayList<>();          // mpm elements that will be terminated at a position in another measure indicated by attribute tstamp2
     protected ArrayList<Element> lyrics = new ArrayList<>();            // this is used to collect lyrics converted from mei syl elements to be added to an msm note
     protected HashMap<String, Element> allNotesAndChords = new HashMap<>(); // when converting a new mdiv this hashmap is created first to accelarate lookup for notes and chords via xml:id
+    protected ArrayList<KeyValue<Attribute, Boolean>> arpeggiosToSort = new ArrayList<>();  // for some arpeggios the note.order attribute must be sorted to get an up (true) or downwards (false) direction; this is done during postprocessing of mdiv elements when we know the notes' pitch values (also available via allNotesAndChords, attribute pnum); this list holds all attributes note.order to be reordered and the corresponding direction (true=up, false=down)
     protected Performance currentPerformance = null;                    // a quick link to the current movement's current performance
     protected List<Msm> movements = new ArrayList<>();                  // this list holds the resulting Msm objects after performing MEI-to-MSM conversion
     protected List<Mpm> performances = new ArrayList<>();               // this list holds the resulting Mpm objects after performing MEI-to-MSM conversion

@@ -230,6 +230,24 @@ public class OrnamentDef extends AbstractDef {
     }
 
     /**
+     * set the temporalSpread transformer
+     * @param frameStart
+     * @param frameEnd
+     * @param frameDomain
+     * @param intensity
+     * @param noteOffShift
+     */
+    public void setTemporalSpread(double frameStart, double frameEnd, TemporalSpread.FrameDomain frameDomain, double intensity, TemporalSpread.NoteOffShift noteOffShift) {
+        TemporalSpread temporalSpread = new TemporalSpread();
+        temporalSpread.frameStart = frameStart;
+        temporalSpread.frameEnd = frameEnd;
+        temporalSpread.frameDomain = frameDomain;
+        temporalSpread.intensity = intensity;
+        temporalSpread.noteOffShift = noteOffShift;
+        this.setTemporalSpread(temporalSpread);
+    }
+
+    /**
      * access the dynamicsGradient transformer
      * @return
      */
@@ -263,6 +281,38 @@ public class OrnamentDef extends AbstractDef {
             dg.addAttribute(new Attribute("transition.to", Double.toString(dynamicsGradient.transitionTo)));
 
         this.getXml().appendChild(dg);
+    }
+
+    /**
+     * set the dynamicsGradient transformer
+     * @param transitionFrom
+     * @param transitionTo
+     */
+    public void setDynamicsGradient(double transitionFrom, double transitionTo) {
+        DynamicsGradient dynamicsGradient = new DynamicsGradient();
+        dynamicsGradient.transitionFrom = transitionFrom;
+        dynamicsGradient.transitionTo = transitionTo;
+        this.setDynamicsGradient(dynamicsGradient);
+    }
+
+    /**
+     * generate a default ornament definition for the given name string
+     * @param name
+     * @return
+     */
+    public static OrnamentDef createDefaultOrnamentDef(String name) {
+        OrnamentDef def = OrnamentDef.createOrnamentDef(name);
+        if (def == null)
+            return null;
+
+        switch (name.trim().toLowerCase()) {
+            case "arpeg":
+            case "arpeggio":
+                def.setDynamicsGradient(-1.0, 1.0);
+                def.setTemporalSpread(-180.0, 90.0, TemporalSpread.FrameDomain.Ticks, 1.0, TemporalSpread.NoteOffShift.False);
+        }
+
+        return def;
     }
 
     /**

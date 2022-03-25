@@ -4,19 +4,19 @@ import meico.midi.InstrumentsDictionary;
 import meico.mpm.Mpm;
 import meico.mpm.elements.Part;
 import meico.mpm.elements.Performance;
-import meico.mpm.elements.maps.ArticulationMap;
-import meico.mpm.elements.maps.DynamicsMap;
-import meico.mpm.elements.maps.GenericMap;
-import meico.mpm.elements.maps.TempoMap;
+import meico.mpm.elements.maps.*;
 import meico.mpm.elements.maps.data.DynamicsData;
+import meico.mpm.elements.maps.data.OrnamentData;
 import meico.mpm.elements.maps.data.TempoData;
 import meico.mpm.elements.metadata.Author;
 import meico.mpm.elements.metadata.Comment;
 import meico.mpm.elements.metadata.RelatedResource;
 import meico.mpm.elements.styles.ArticulationStyle;
 import meico.mpm.elements.styles.DynamicsStyle;
+import meico.mpm.elements.styles.OrnamentationStyle;
 import meico.mpm.elements.styles.defs.ArticulationDef;
 import meico.mpm.elements.styles.defs.DynamicsDef;
+import meico.mpm.elements.styles.defs.OrnamentDef;
 import meico.msm.Goto;
 import meico.msm.Msm;
 import meico.supplementary.KeyValue;
@@ -351,7 +351,7 @@ public class Mei extends meico.xml.XmlBase {
         int minPPQ = this.computeMinimalPPQ();                                  // compute the minimal required ppq resolution
         if (minPPQ > ppq) {                                                     // if it is greater than the specified resolution
             ppq = minPPQ;                                                       // adjust the specified ppq to ensure viable results
-            System.out.println("The specified pulses per quarternote resolution (ppq) is too coarse to capture the shortest duration values in the mei source with integer values. Using the minimal required resolution of " + ppq + " instead");
+            System.out.println("The specified pulses per quarter note resolution (ppq) is too coarse to capture the shortest duration values in the mei source with integer values. Using the minimal required resolution of " + ppq + " instead");
         }
 
         Document orig = null;
@@ -446,8 +446,9 @@ public class Mei extends meico.xml.XmlBase {
                     this.processApp(e);
                     continue;
 
-                case "arpeg":
-                    continue;                                                   // TODO: ignored at the moment but relevant for expressive performance later on
+                case "arpeg":                                                   // indicates that the notes of a chord are to be performed successively rather than simultaneously
+                    this.processArpeg(e);
+                    continue;
 
                 case "artic":                                                   // an indication of how to play a note or chord
                     this.processArtic(e);
@@ -941,6 +942,45 @@ public class Mei extends meico.xml.XmlBase {
         }
         this.convert(mdiv);                         // process the content of the mdiv
 
+        // postprocess arpeggios, namely reorder the note.order attribute now that we have a proper pitch value for each note
+        for (KeyValue<Attribute, Boolean> arpeggioNoteOrder : this.helper.arpeggiosToSort) {                // for each note.order attribute to be reordered
+            ArrayList<KeyValue<String, Double>> notePitchList = new ArrayList<>();
+            for (String noteId : arpeggioNoteOrder.getKey().getValue().replaceAll("#", "").split("\\s+")) { // deserialize the note.order string to a list of note IDs
+                Element note = this.helper.allNotesAndChords.get(noteId);
+                if (note == null)
+                    continue;
+
+                Attribute pitchAtt = Helper.getAttribute("pnum", note);
+                if (pitchAtt == null)
+                    continue;
+
+                double pitch = Double.parseDouble(pitchAtt.getValue());
+
+                // sort the note into the notePitchList
+                // TODO: bug here somewhere, ordering is always ascending
+                if (arpeggioNoteOrder.getValue()) {                 // sort by ascending pitch
+                    int i;
+                    for (i = notePitchList.size() - 1; i >= 0; --i)
+                        if (notePitchList.get(i).getValue() <= pitch)
+                            break;
+                    notePitchList.add(i+1, new KeyValue<>(noteId, pitch));
+                } else {                                            // sort by descending pitch
+                    int i;
+                    for (i = 0; i < notePitchList.size(); ++i)
+                        if (notePitchList.get(i).getValue() > pitch)
+                            break;
+                    notePitchList.add(i, new KeyValue<>(noteId, pitch));
+                }
+            }
+
+            // concatenate the note IDs in a string and set new attribute value for note.order
+            String noteIdsString = "";
+            for (KeyValue<String, Double> noteId : notePitchList)
+                noteIdsString = noteIdsString.concat(" #" + noteId.getKey().trim().replace("#", ""));
+            arpeggioNoteOrder.getKey().setValue(noteIdsString.trim());
+        }
+
+        // finalize the tempoMap
         GenericMap globalTempoMap = this.helper.currentPerformance.getGlobal().getDated().getMap(Mpm.TEMPO_MAP);
         if (((globalTempoMap == null) || (globalTempoMap.getElementBeforeAt(0.0) == null)) && (this.helper.currentWork != null)) {  // if the global tempoMap has no initial tempo and if we have a work element in meiHead
             Element tempo = Helper.getFirstChildElement("tempo", this.helper.currentWork);
@@ -2230,6 +2270,126 @@ public class Mei extends meico.xml.XmlBase {
     }
 
     /**
+     * process an mei arpeg element
+     * @param arpeg
+     */
+    private void processArpeg(Element arpeg) {
+        // check if this is really an arpeggio
+        Attribute order = Helper.getAttribute("order", arpeg);              // get order attribute
+        if ((order != null) && order.getValue().trim().equals("nonarp"))    // if no arpeggio
+            return;                                                         // cancel
+
+        // compute the timing or get the necessary data to compute the end date later on
+        ArrayList<Object> timingData = this.helper.computeControlEventTiming(arpeg, this.helper.currentPart);
+        if (timingData == null)                                             // if the event has been repositioned in accordance to a startid attribute
+            return;                                                         // stop processing it right now
+
+        // create ornament data
+        OrnamentData od = new OrnamentData();
+        od.date = (Double) timingData.get(0);
+        od.ornamentDefName = "arpeggio";
+        od.scale = 10.0;
+
+        // read the xml:id
+        Attribute id = Helper.getAttribute("id", arpeg);
+        od.xmlId = (id == null) ? null : id.getValue();
+
+        // determine the note order
+        int needsPostprocessing = 0;                                        // this will be set 1, if the note.order must be reordered with ascending pitch, and -1 for descending pitch
+        Attribute plist = Helper.getAttribute("plist", arpeg);
+        if (plist == null) {                                                // if we have no plist that specifies the note sequence
+            if (order != null) {                                            // if we have an order attribute (otherwise we leave the note.order attribute away which is equal to "ascending pitch")
+                od.noteOrder = new ArrayList<>();
+                if (order.getValue().trim().equals("down"))                 // if it is specified down
+                    od.noteOrder.add("descending pitch");                   // set the note.order attribute
+                else                                                        // in any other case (order ="up" or any unknown value)
+                    od.noteOrder.add("ascending pitch");                    // set note.order="ascending pitch"
+            }
+        } else {                                                            // if we have a plist
+            od.noteOrder = new ArrayList<>();
+            for (String ref : plist.getValue().trim().split("\\s+")) {      // collect the references (sorting will come later)
+                Element e = this.helper.allNotesAndChords.get(ref.replace("#", ""));    // get the MEI element behind the reference
+                if (e == null)                                              // if it is neither a note nore a chord
+                    continue;                                               // ignore it
+                if (e.getLocalName().equals("note")) {                      // if it is a note
+                    od.noteOrder.add(ref);                                  // add its reference to the note order list
+                    continue;
+                }
+                if (e.getLocalName().equals("chord")) {                     // if it is a chord, we retrieve its notes and add them to the note order list in the sequence they are defined in the chord
+                    for (Node node : e.query("descendant::*[local-name()='note']")) {  // get all note elements in the chord
+                        Element note = (Element) node;                      // process it as an element
+                        Attribute noteId = Helper.getAttribute("id", note); // get the note's id
+                        if (noteId == null) {                               // if the note has no id, generate one
+                            noteId = new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", "meico_" + UUID.randomUUID().toString());
+                            this.helper.allNotesAndChords.put(noteId.getValue(), note);
+                            note.addAttribute(noteId);
+                        }
+                        od.noteOrder.add("#" + noteId.getValue());          // add the id to the note order list
+                    }
+                }
+            }
+
+            // the sequence of the notes must be reordered to ensure that it matches with @order="up/down"; this will be done at the end of the MEI-to-MSM conversion when all notes are converted and have a proper @pnum/@midi.pitch for each note
+            if (order != null) {                                            // seems like a specific order is desired
+                if (order.getValue().trim().equals("down"))                 // if it should be with descending pitch
+                    needsPostprocessing = -1;                               // set the indication - will be processed later
+                else if (order.getValue().trim().equals("up"))              // if ascending pitch
+                    needsPostprocessing = 1;                                // set the indication - will be processed later
+            }
+        }
+
+        // make sure that the arpeggio is defined in a global ornamentation style of name "MEI export"
+        OrnamentationStyle ornamentationStyle = (OrnamentationStyle) this.helper.currentPerformance.getGlobal().getHeader().getStyleDef(Mpm.ORNAMENTATION_STYLE, "MEI export"); // get the global ornamentationSyles/styleDef element
+        if (ornamentationStyle == null)                                                                                                                                         // if there is none
+            ornamentationStyle = (OrnamentationStyle) this.helper.currentPerformance.getGlobal().getHeader().addStyleDef(Mpm.ORNAMENTATION_STYLE, "MEI export");                // create one
+        if (ornamentationStyle.getDef(od.ornamentDefName) == null)
+            ornamentationStyle.addDef(OrnamentDef.createDefaultOrnamentDef(od.ornamentDefName));
+
+        // parse the staff attribute (space separated staff numbers)
+        OrnamentationMap ornamentationMap;
+        Attribute att = arpeg.getAttribute("part");                                                                         // get the part attribute (MEI 4.0, https://github.com/music-encoding/music-encoding/issues/435)
+        if (att == null)                                                                                                    // if no part attribute
+            att = arpeg.getAttribute("staff");                                                                              // find the staffs that this is associated to
+        if ((att == null) || att.getValue().isEmpty() || att.getValue().equals("%all")) {                                   // if no part or staff association is defined treat it as a global instruction
+            ornamentationMap = (OrnamentationMap) this.helper.currentPerformance.getGlobal().getDated().getMap(Mpm.ORNAMENTATION_MAP);      // get the global ornamentationMap
+            if (ornamentationMap == null) {                                                                                                 // if there is no global ornamentationMap
+                ornamentationMap = (OrnamentationMap) this.helper.currentPerformance.getGlobal().getDated().addMap(Mpm.ORNAMENTATION_MAP);  // create one
+                ornamentationMap.addStyleSwitch(0.0, "MEI export");                                                                         // set its start style reference
+            }
+            int index = ornamentationMap.addOrnament(od);                                           // add it to the map
+            if (needsPostprocessing != 0)
+                this.helper.arpeggiosToSort.add(new KeyValue<>(Helper.getAttribute("note.order", ornamentationMap.getElement(index)), needsPostprocessing > 0));    // store the note.order attribute and arpeggio direction for reordering during postprocessing
+        }
+        else {                                                                                      // there are staffs, hence, local ornament instruction
+            boolean multiIDs = false;
+            String staffString = att.getValue();
+            String[] staffs = staffString.split("\\s+");                                            // this creates an array of one or more integer strings (the staff numbers), they are separated by one or more whitespaces
+
+            for (String staff : staffs) {                                                           // go through all the part numbers
+                Part part = this.helper.currentPerformance.getPart(Integer.parseInt(staff));        // find that part in the performance data structure
+                if (part == null)                                                                   // if not found
+                    continue;                                                                       // continue with the next
+
+                ornamentationMap = (OrnamentationMap) part.getDated().getMap(Mpm.ORNAMENTATION_MAP);// get the part's ornamentationMap
+                if (ornamentationMap == null) {                                                     // if it has none so far
+                    ornamentationMap = (OrnamentationMap) part.getDated().addMap(Mpm.ORNAMENTATION_MAP);    // create it
+                    ornamentationMap.addStyleSwitch(0.0, "MEI export");                             // set the style reference
+                }
+
+                OrnamentData odd = od.clone();
+                if ((od.xmlId != null) && multiIDs)
+                    odd.xmlId = od.xmlId + "_meico_" + UUID.randomUUID().toString();
+
+                int index = ornamentationMap.addOrnament(odd);                                      // add it to the map
+                if (needsPostprocessing != 0)
+                    this.helper.arpeggiosToSort.add(new KeyValue<>(Helper.getAttribute("note.order", ornamentationMap.getElement(index)), needsPostprocessing > 0));    // store the note.order attribute and arpeggio direction for reordering during postprocessing
+
+                multiIDs = true;
+            }
+        }
+    }
+
+    /**
      * process an mei dynam element
      * @param dynam
      */
@@ -3470,8 +3630,8 @@ public class Mei extends meico.xml.XmlBase {
         if (this.helper.currentChord == null)                                   // the next instruction must be suppressed in the chord environment
             this.helper.currentPart.getAttribute("currentDate").setValue(Double.toString(date + dur));  // draw currentDate counter
 
-        //adding some attributes to the mei source, this is only for the debugging in mei
-        note.addAttribute(new Attribute("pnum", String.valueOf(pitch)));
+        // adding some attributes to the mei source, this is only for the debugging in mei
+        note.addAttribute(new Attribute("pnum", String.valueOf(pitch)));        // this is also needed during mdiv-wise postprocessing of arpeggios
         note.addAttribute(new Attribute("date", String.valueOf(date)));
         note.addAttribute(new Attribute("midi.dur", String.valueOf(dur)));
 

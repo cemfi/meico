@@ -3,10 +3,14 @@
 
 #### v0.8.34
 - Added support for attribute `xml:id` on MPM maps in class `meico.mpm.elements.maps.GenericMap`.
+- `meico.mpm.elements.maps.GenericMap` constructor has now full support for MSM `score`.
 - Fixed data integrity of MPM maps that get processed by rubato transformation during performance rendering.
 - Optimization of the performance rendering process.
-- First preparations for the ornamentation update ...
-
+- New method `meico.msm.Msm.getPart()` to retrieve a specific `part` element.
+- Ornamentation support added to MPM API.
+  - New classes are `meico.mpm.elements.styles.OrnamentationStyle`, `meico.mpm.elements.styles.defs.OrnamentDef`, `meico.mpm.elements.styles.defs.OrnamentDef.DynamicsGradient`, `meico.mpm.elements.styles.defs.OrnamentDef.TemporalSpread`, `meico.mpm.elements.maps.OrnamentationMap`, and `meico.mpm.elements.maps.data.OrnamentData`.
+  - WIP: Ornamentation has been added to the performance rendering in `meico.mpm.elements.Performance.perform()`.
+  - WIP: Added MEI export for element `arpeg` to MPM ornamentation.
 
 #### v0.8.33
 - New method `meico.midi.Midi.exportAudio(Soundbank soundbank)` to convert MIDI to audio with a soundfont that is already loaded, so its corresponding `File` is no longer required.

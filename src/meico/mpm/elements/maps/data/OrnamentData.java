@@ -23,7 +23,7 @@ public class OrnamentData {
 
     public double date = 0.0;                       // the date for which the data is assembled
     public double scale = 1.0;
-    public ArrayList<String> noteIds = null;
+    public ArrayList<String> noteOrder = null;
 
     /**
      * default constructor
@@ -44,10 +44,14 @@ public class OrnamentData {
         if (scale != null)
             this.scale = Double.parseDouble(scale.getValue());
 
-        Attribute noteIds = xml.getAttribute("noteids");
-        if (noteIds != null) {
-            this.noteIds = new ArrayList<>();
-            this.noteIds.addAll(Arrays.asList(noteIds.getValue().trim().replaceAll("#", "").split("\\s+")));
+        Attribute noteOrder = xml.getAttribute("note.order");
+        if (noteOrder != null) {
+            String no = noteOrder.getValue().trim();
+            this.noteOrder = new ArrayList<>();
+            if (no.equals("ascending pitch") || no.equals("descending pitch"))
+                this.noteOrder.add(no);
+            else
+                this.noteOrder.addAll(Arrays.asList(no.replaceAll("#", "").split("\\s+")));
         }
 
         Attribute id = xml.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
@@ -70,8 +74,10 @@ public class OrnamentData {
         clone.ornamentDef = this.ornamentDef;
         clone.date = this.date;
         clone.scale = this.scale;
-        clone.noteIds = new ArrayList<>();
-        clone.noteIds.addAll(this.noteIds);
+        if (this.noteOrder != null) {
+            clone.noteOrder = new ArrayList<>();
+            clone.noteOrder.addAll(this.noteOrder);
+        }
         return clone;
     }
 }

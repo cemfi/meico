@@ -333,6 +333,46 @@ public class Msm extends AbstractMsm {
     }
 
     /**
+     * Retrieve the part element that matches the given specifications. If the number matches already,
+     * the others will not be checked, otherwise the name is checked and, if nothing was found, the MIDI
+     * channel and port are checked.
+     * @param number
+     * @param name
+     * @param midiChannel
+     * @param midiPort
+     * @return
+     */
+    public Element getPart(int number, String name, int midiChannel, int midiPort) {
+        Elements parts = this.getParts();
+
+        // try to find the part by its number
+        for (Element part : parts) {
+            Attribute numberAtt = Helper.getAttribute("number", part);
+            if ((numberAtt != null) && (Integer.parseInt(numberAtt.getValue()) == number))
+                return part;
+        }
+
+        // try to find the part by its name
+        for (Element part : parts) {
+            Attribute nameAtt = Helper.getAttribute("name", part);
+            if ((nameAtt != null) && (nameAtt.getValue().equals(name)))
+                return part;
+        }
+
+        // try to find the part by its MIDI port and channel
+        for (Element part : parts) {
+            Attribute portAtt = Helper.getAttribute("midi.port", part);
+            if ((portAtt != null) && (Integer.parseInt(portAtt.getValue()) == midiPort)) {
+                Attribute channelAtt = Helper.getAttribute("midi.channel", part);
+                if ((channelAtt != null) && (Integer.parseInt(channelAtt.getValue()) == midiChannel))
+                    return part;
+            }
+        }
+
+        return null;    // nothing found
+    }
+
+    /**
      * a getter that returns all part elements in the XML tree
      * @return
      */

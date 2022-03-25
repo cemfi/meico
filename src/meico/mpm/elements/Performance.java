@@ -1,5 +1,6 @@
 package meico.mpm.elements;
 
+import com.sun.istack.internal.NotNull;
 import meico.mei.Helper;
 import meico.midi.Midi;
 import meico.mpm.Mpm;
@@ -416,6 +417,8 @@ public class Performance extends AbstractXmlSubtree {
         Performance.addMsmMapToList("markerMap", globalDated, maps);
         GenericMap globalPedalMap = Performance.addMsmMapToList("pedalMap", globalDated, maps);
 
+        OrnamentationMap.renderGlobalOrnamentationToParts(this.getAllMsmPartsAffectedByGlobalMap(msm, Mpm.ORNAMENTATION_MAP), globalOrnamentationMap);  // add global ornamentation attributes to affected parts' notes
+
         for (GenericMap m : maps) {                                                                         // for all maps in the list of maps for timing processing
             RubatoMap.renderRubatoToMap(m, globalRubatoMap);
             TempoMap.renderTempoToMap(m, this.getPPQ(), globalTempoMap);                                    // compute millisecond dates and end dates
@@ -427,17 +430,9 @@ public class Performance extends AbstractXmlSubtree {
         Elements parts = clone.getParts();                                                                  // get the parts from the msm
         for (int p = 0; p < parts.size(); ++p) {
             Element msmPart = parts.get(p);
-
-            // find the corresponding mpm part
-            Part mpmPart = this.getPart(Integer.parseInt(Helper.getAttributeValue("number", msmPart)));     // try finding the corresponding mpm part via the number attribute
-            if (mpmPart == null) {
-                mpmPart = this.getPart(Helper.getAttributeValue("name", msmPart));                          // try finding the corresponding mpm part via the name attribute
-                if (mpmPart == null) {
-                    mpmPart = this.getPart(Integer.parseInt(Helper.getAttributeValue("midi.channel", msmPart)), Integer.parseInt(Helper.getAttributeValue("midi.port", msmPart)));  // try finding the corresponding mpm part via the attributes midi.channel and midi.port
-                }
-            }
+            Part mpmPart = this.getCorrespondingPart(msmPart);                                              // find the corresponding mpm part
             if (mpmPart == null)                                                                            // if no mpm part could be found
-                System.err.println("Cannot find an MPM part that corresponds to MSM part " + Helper.getAttributeValue("number", msmPart) + " \"" + Helper.getAttributeValue("name", msmPart) + "\""); // error message
+                System.err.println("No MPM part found that corresponds to MSM part " + Helper.getAttributeValue("number", msmPart) + " \"" + Helper.getAttributeValue("name", msmPart) + "\""); // error message
             else
                 System.out.println("Performing part " + mpmPart.getNumber() + ": " + mpmPart.getName() /*+ ", midi channel " + mpmPart.getMidiChannel() + ", midi port " + mpmPart.getMidiPort()*/);
 
@@ -513,7 +508,7 @@ public class Performance extends AbstractXmlSubtree {
             }
 
             MetricalAccentuationMap.renderMetricalAccentuationToMap(score, metricalAccentuationMap, ((timeSignatureMap != null) ? timeSignatureMap : globalTimeSignatureMap), this.getPPQ());  // add metrical accentuations; we do this before the rubato transformation as this shifts the symbolic dates of the events
-            // TODO: apply ornamentation -> dynamicsGradient from ornamentationMap
+            OrnamentationMap.renderOrnamentationToMap(score, ornamentationMap);                 // apply ornamentation
             ArticulationMap.renderArticulationToMap_noMillisecondModifiers(score, articulationMap); // add articulations except for millisecond modifiers
 
             // rubato and tempo transformations apply to all maps
@@ -551,6 +546,42 @@ public class Performance extends AbstractXmlSubtree {
         System.out.println("Performance rendering finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
 
         return clone;
+    }
+
+    /**
+     * given an MSM part, find the corresponding Part in this performance
+     * @param msmPart
+     * @return the MPM part or null
+     */
+    public Part getCorrespondingPart(@NotNull Element msmPart) {
+        Part mpmPart = this.getPart(Integer.parseInt(Helper.getAttributeValue("number", msmPart)));     // try finding the corresponding mpm part via the number attribute
+        if (mpmPart == null) {
+            mpmPart = this.getPart(Helper.getAttributeValue("name", msmPart));                          // try finding the corresponding mpm part via the name attribute
+            if (mpmPart == null) {
+                mpmPart = this.getPart(Integer.parseInt(Helper.getAttributeValue("midi.channel", msmPart)), Integer.parseInt(Helper.getAttributeValue("midi.port", msmPart)));  // try finding the corresponding mpm part via the attributes midi.channel and midi.port
+            }
+        }
+        return mpmPart;
+    }
+
+    /**
+     * retrieve all MSM parts that are/would be affected by a global map of the given type
+     * @param msm
+     * @param mapType
+     * @return a list of MSM part elements; can be empty
+     */
+    private ArrayList<Element> getAllMsmPartsAffectedByGlobalMap(Msm msm, String mapType) {
+        ArrayList<Element> msmPartsWithoutLocalMap = new ArrayList<>();
+
+        for (Part part : this.getAllParts()) {                          // check all MPM parts
+            if (part.getDated().getMap(mapType) != null)                // if the part has a local map of the given type
+                continue;                                               // it is not affected by a global map of that type
+
+            Element msmPart = msm.getPart(part.getNumber(), part.getName(), part.getMidiChannel(), part.getMidiPort()); // find the part in the MSM
+            if (msmPart != null)
+                msmPartsWithoutLocalMap.add(msmPart);                   // add it to the list
+        }
+        return msmPartsWithoutLocalMap;
     }
 
     /**
