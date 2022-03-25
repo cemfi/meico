@@ -533,7 +533,7 @@ class DataObject extends Group {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to Audio", "to MSM", "Humanize (experimental)"};
+            String[] rightItems = {"to Audio", "to MSM", "Humanize"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -1776,7 +1776,7 @@ class DataObject extends Group {
                         this.start(thread);
                     });
                     break;
-                case "Humanize (experimental)":
+                case "Humanize":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
