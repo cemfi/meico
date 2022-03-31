@@ -404,7 +404,7 @@ public class ArticulationDef extends AbstractDef {
             return false;
 
         boolean dateChanged = false;
-        Attribute durationAtt = Helper.getAttribute("duration", note);
+        Attribute durationAtt = Helper.getAttribute("duration.perf", note);
         if (durationAtt != null) {      // duration modifiers can only be applied if there is a duration attribute
             if (this.absoluteDurationMs != null) {
                 note.addAttribute(new Attribute("articulation.absoluteDurationMs", Double.toString(this.absoluteDurationMs)));
@@ -430,7 +430,7 @@ public class ArticulationDef extends AbstractDef {
             }
         }
 
-        Attribute dateAtt = Helper.getAttribute("date", note);
+        Attribute dateAtt = Helper.getAttribute("date.perf", note);
         if (dateAtt != null) {          // date modifiers require the presence of a date attribute
             if (this.absoluteDelay != 0.0) {
                 dateAtt.setValue(Double.toString(Double.parseDouble(dateAtt.getValue()) + this.absoluteDelay));

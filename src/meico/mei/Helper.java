@@ -1096,7 +1096,7 @@ public class Helper {
     }
 
     /**
-     * MEI control events are usually placed out of timing at the end of a measure. If they use @startid meico places them right before the referred element. Otherwise the timing has to be computed from @tstamp.ges or @tstamp.
+     * MEI control events are usually placed out of timing at the end of a measure. If they use @startid meico places them right before the referred element. Otherwise, the timing has to be computed from @tstamp.ges or @tstamp.
      * The same is true for the duration of control events. It is computed from @dur, @tstamp2.ges, @tstamp2, or @endid (in this priority).
      * This method helps in handling this.
      * @param event the MEI control event
@@ -1110,8 +1110,11 @@ public class Helper {
             att = event.getAttribute("tstamp");
             if ((att == null) && (event.getAttribute("dontRepositionMeAgain") == null)) {                           // if there is no tstamp information at all and this element has not yet been repositioned on the basis of startid
                 Attribute startidAtt = event.getAttribute("startid");                                               // try finding a startid attribute
+                if (startidAtt == null) {                                                                           // if there is no startid
+                    startidAtt = event.getAttribute("plist");                                                       // try to find the plist attribute
+                }
                 if (startidAtt != null) {
-                    String startid = startidAtt.getValue().trim().replace("#", "");                                 // get the id string
+                    String startid = startidAtt.getValue().trim().replace("#", "").split("\\s+")[0].trim();         // get the first id string
                     Element node = this.allNotesAndChords.get(startid);
                     if (node != null) {
                         Element parent = (Element) node.getParent();

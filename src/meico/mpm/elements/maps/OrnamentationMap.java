@@ -1,14 +1,16 @@
 package meico.mpm.elements.maps;
 
-import com.sun.istack.internal.NotNull;
 import meico.mei.Helper;
 import meico.mpm.Mpm;
 import meico.mpm.elements.maps.data.OrnamentData;
+import meico.mpm.elements.styles.OrnamentationStyle;
 import meico.supplementary.KeyValue;
 import nu.xom.Attribute;
 import nu.xom.Element;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * This class interfaces MPM's ornamentationMaps
@@ -81,7 +83,7 @@ public class OrnamentationMap extends GenericMap {
      * @param id set this null or leave it empty to omit it from the xml code
      * @return the index at which the element has been added
      */
-    public int addOrnament(double date, @NotNull String nameRef, double scale, ArrayList<String> noteOrder, String id) {
+    public int addOrnament(double date, String nameRef, double scale, ArrayList<String> noteOrder, String id) {
         Element ornament = new Element("ornament", Mpm.MPM_NAMESPACE);
         ornament.addAttribute(new Attribute("date", Double.toString(date)));
         ornament.addAttribute(new Attribute("name.ref", nameRef));
@@ -115,7 +117,7 @@ public class OrnamentationMap extends GenericMap {
      * @param nameRef
      * @return the index at which the element has been added
      */
-    public int addOrnament(double date, @NotNull String nameRef) {
+    public int addOrnament(double date, String nameRef) {
         return this.addOrnament(date, nameRef, 1.0, null, null);
     }
 
@@ -135,8 +137,77 @@ public class OrnamentationMap extends GenericMap {
     }
 
     /**
+     * this collects the ornament data of a specified element in this map, given via the index number
+     * @param index
+     * @return the ornament data or null if the indexed element is no ornament element or invalid
+     */
+    private OrnamentData getOrnamentDataOf(int index) {
+        if (this.elements.isEmpty() || (index < 0))
+            return null;
+
+        if (index >= this.elements.size())
+            index = this.elements.size() - 1;
+
+        Element xml = this.elements.get(index).getValue();
+        if (xml.getLocalName().equals("ornament")) {
+            OrnamentData od = new OrnamentData();
+
+            Attribute OrnamentDefAtt = Helper.getAttribute("name.ref", xml);
+            if (OrnamentDefAtt == null) {
+                System.err.println("Error processing MPM ornamentationMap: no name.ref defined in " + xml.toXML() + ".");
+                return null;
+            }
+            od.ornamentDefName = OrnamentDefAtt.getValue();
+
+            // get the style that applies to this date
+            od.styleName = "";
+            for (int j = index; j >= 0; --j) {                                  // find the first style switch at or before date
+                Element s = this.elements.get(j).getValue();
+                if (s.getLocalName().equals("style")) {
+                    od.styleName = Helper.getAttributeValue("name.ref", s);
+                    break;
+                }
+            }
+            od.style = (OrnamentationStyle) this.getStyle(Mpm.ORNAMENTATION_STYLE, od.styleName);   // read the ornamentation style
+            if (od.style == null) {                                             // if there is no style
+                System.err.println("Error processing MPM ornamentationMap: Unknown ornamentation style \"" + od.styleName + "\". Ornament " + xml.toXML() + " cannot be processed.");
+                return null;                                                    // we have no look up for the ornament ref.name, hence cancel
+            }
+
+            od.ornamentDef = od.style.getDef(od.ornamentDefName);
+            if (od.ornamentDef == null) {
+                System.err.println("Error processing MPM ornamentationMap: Unknown ornamentDef reference in " + xml.toXML() + ".");
+                return null;
+            }
+
+            od.date = this.elements.get(index).getKey();
+            od.xml = xml;
+
+            Attribute noteOrderAtt = xml.getAttribute("note.order");
+            if (noteOrderAtt != null) {
+                String no = noteOrderAtt.getValue().trim();
+                od.noteOrder = new ArrayList<>();
+                if (no.equals("ascending pitch") || no.equals("descending pitch"))
+                    od.noteOrder.add(no);
+                else
+                    od.noteOrder.addAll(Arrays.asList(no.replaceAll("#", "").split("\\s+")));
+            }
+
+            Attribute scaleAtt = Helper.getAttribute("scale", xml);
+            if (scaleAtt != null)
+                od.scale = Double.parseDouble(scaleAtt.getValue());
+
+            Attribute att = Helper.getAttribute("xml:id", xml);
+            if (att != null)
+                od.xmlId = att.getValue();
+        }
+
+        return null;
+    }
+    /**
      * On the basis of this ornamentationMap, edit the maps (MSM scores!).
-     * This method is meant to be applied BEFORE the other timing and articulation transformations and AFTER dynamics and metrical accentuation rendering.
+     * This method is meant to be applied BEFORE the other transformations.
+     * It will add only attributes to the MSM note elements which will be applied to the performance attributes later.
      * @param parts the MSM part elements which the ornamentationMap is applied to
      * @param ornamentationMap the global ornamentationMap
      */
@@ -144,13 +215,13 @@ public class OrnamentationMap extends GenericMap {
         if ((ornamentationMap == null) || ornamentationMap.isEmpty())
             return;
 
-        ArrayList<Element> mapsToOrnament = new ArrayList<>();
+        ArrayList<GenericMap> mapsToOrnament = new ArrayList<>();
         for (Element part : parts) {
             Element s = Helper.getFirstChildElement("dated", part);
             if (s != null) {
                 s = Helper.getFirstChildElement("score", s);
                 if (s != null) {                                        // if the part has a score (this is where ornamentation is applied)
-                    mapsToOrnament.add(s);                              // add it to the mapsToOrnament list
+                    mapsToOrnament.add(GenericMap.createGenericMap(s)); // add it to the mapsToOrnament list
                 }
             }
         }
@@ -161,25 +232,15 @@ public class OrnamentationMap extends GenericMap {
 
     /**
      * On the basis of this ornamentationMap, edit the maps (MSM scores!).
-     * This method is meant to be applied BEFORE the other timing and articulation transformations and AFTER dynamics and metrical accentuation rendering.
+     * This method is meant to be applied BEFORE the other transformations.
+     * It will add only attributes to the MSM note elements which will be applied to the performance attributes later.
      * @param maps the MSM scores to which the ornamentationMap is applied
      */
-    public void renderGlobalOrnamentationMap(ArrayList<Element> maps) {
+    public void renderGlobalOrnamentationMap(ArrayList<GenericMap> maps) {
         if ((maps == null) || maps.isEmpty())
             return;
 
-        // unify the maps into one GenericMap
-        GenericMap map = GenericMap.createGenericMap("unifiedScoreMap");
-        if (map == null)
-            return;
-        for (Element m : maps) {
-            if (m != null) {
-                for (Element e : m.getChildElements())
-                    map.addElement(e);
-            }
-        }
-
-        this.renderOrnamentationMapIntoAttributes(map);
+        this.apply(maps);
     }
 
     /**
@@ -190,32 +251,248 @@ public class OrnamentationMap extends GenericMap {
      */
     public static void renderOrnamentationToMap(GenericMap map, OrnamentationMap ornamentationMap) {
         if (ornamentationMap != null)
-            ornamentationMap.renderOrnamentationMap(map);
+            ornamentationMap.renderOrnamentationToMap(map);
     }
 
     /**
      * On the basis of the specified ornamentationMap, add/edit the corresponding data to all note elements of the specified map.
      * Basically, that map should be an MSM score because only note elements will be processed.
+     * A global ornamentationMap should be processed via renderGlobalOrnamentationToParts() or renderGlobalOrnamentationMap()
+     * before invokiing this method.
      * @param map MSM score
      */
-    public void renderOrnamentationMap(GenericMap map) {
+    public void renderOrnamentationToMap(GenericMap map) {
         if (map == null)
             return;
 
-        if (this.getLocalHeader() != null)  // this is a local ornamentationMap; global ones were already processed via renderGlobalOrnamentationMap(ArrayList<Element> maps)
-            this.renderOrnamentationMapIntoAttributes(map);
+        if (this.getLocalHeader() != null) { // this is a local ornamentationMap; global ones were already processed via renderGlobalOrnamentationMap(ArrayList<Element> maps)
+            ArrayList<GenericMap> maps = new ArrayList<>();
+            maps.add(map);
+            this.apply(maps);
+        }
 
-        // TODO: render ornamentation modifier attributes into .perf and velocity attributes
-        // TODO: Where should replacement be done (relevant for future ornamentation features)?
+        this.renderAllNonmillisecondsModifiersToMap(map);   // render ornamentation modifier attributes into .perf and velocity attributes
     }
 
     /**
-     * Helper method for ornamentation rendering. This method does not add or edit any
+     * Core part of the ornamentation rendering. This method does not add or edit any
      * performance attributes (xx.perf and velocity) on the map elements. It will only
      * add attributes that will later be used to set the performance attributes.
-     * @param map an MSM score; ornaments are applied only to notes
+     * It also adds new notes and marks note to be deleted from the performance via the respective OrnamentData.apply() invokation.
+     * @param maps list of MSM scores
      */
-    private void renderOrnamentationMapIntoAttributes(@NotNull GenericMap map) {
-        // TODO: compute and add/edit modifier attributes
+    private void apply(ArrayList<GenericMap> maps) {
+        if (maps.isEmpty())
+            return;
+
+        if ((this.getLocalHeader() == null) && (this.getGlobalHeader() == null)) {
+            System.err.println("Error processing MPM ornamentationMap: no header defined to look up ornamentationStyle.");
+            return;
+        }
+
+        // create a hashmap of all note elements, hashed by their ID, so we have quick access to them later on
+        HashMap<String, Element> notes = new HashMap<>();
+        for (GenericMap map : maps) {
+            for (KeyValue<Double, Element> note : map.getAllElementsOfType("note")) {
+                Attribute id = Helper.getAttribute("id", note.getValue());
+                if (id != null)
+                    notes.put(id.getValue(), note.getValue());
+            }
+        }
+
+        OrnamentationStyle style = null;
+
+        // process each ornament entry in this ornamentationMap
+        for (int i = 0; i < this.size(); ++i) {
+            Element ornamentXml = this.getElement(i);
+
+            // get the lookup style for subsequent onraments
+            if (ornamentXml.getLocalName().equals("style")) {
+                if (this.getLocalHeader() != null)
+                    style = (OrnamentationStyle) this.getLocalHeader().getStyleDef(Mpm.ORNAMENTATION_STYLE, Helper.getAttributeValue("name.ref", ornamentXml));
+                if ((style == null) && (this.getGlobalHeader() != null))
+                    style = (OrnamentationStyle) this.getGlobalHeader().getStyleDef(Mpm.ORNAMENTATION_STYLE, Helper.getAttributeValue("name.ref", ornamentXml));
+                continue;
+            }
+
+            if ((style == null) || !ornamentXml.getLocalName().equals("ornament"))  // without a style we cannot interpret any ornament's name.ref attribute; if it is no ornament we cannot process it either
+                continue;           // skip the current element
+
+            // read all data into an OrnamentData instance
+            OrnamentData od = new OrnamentData();
+            od.style = style;
+//            od.styleName = style.getName();   // not required
+
+            Attribute OrnamentDefAtt = Helper.getAttribute("name.ref", ornamentXml);
+            if (OrnamentDefAtt == null)
+                continue;
+            od.ornamentDefName = OrnamentDefAtt.getValue();
+            od.ornamentDef = od.style.getDef(od.ornamentDefName);
+            if (od.ornamentDef == null)
+                continue;
+
+            od.date = this.elements.get(i).getKey();
+//            od.xml = xml;     // not required
+
+            Attribute scaleAtt = Helper.getAttribute("scale", ornamentXml);
+            if (scaleAtt != null)
+                od.scale = Double.parseDouble(scaleAtt.getValue());
+
+//            Attribute att = Helper.getAttribute("xml:id", xml);   // not required
+//            if (att != null)
+//                od.xmlId = att.getValue();
+
+            // determine the note order and collect the notes which the ornament will be applied to
+            int noteOrderAscending = 1;                         // 1 = ascending pitch, -1 = descending pitch, 0 = ID sequence
+            ArrayList<ArrayList<Element>> chordSequence = null; // this will hold the chord/note sequence
+            Attribute noteOrderAtt = ornamentXml.getAttribute("note.order");
+            if (noteOrderAtt != null) {
+                String no = noteOrderAtt.getValue().trim();
+                switch (no) {
+                    case "ascending pitch":
+//                        noteOrderAscending = 1;
+                        break;
+                    case "descending pitch":
+                        noteOrderAscending = -1;
+                        break;
+                    default:                                    // attribute note.order is a list of reference IDs to be read into the notes list
+                        od.noteOrder = new ArrayList<>(Arrays.asList(no.replaceAll("#", "").split("\\s+")));
+                        if (od.noteOrder.isEmpty())             // empty note list, hence no notes to ornament
+                            continue;                           // continue with the next ornament
+                        chordSequence = new ArrayList<>();
+                        noteOrderAscending = 0;
+                        for (String ref : od.noteOrder) {
+                            Element note = notes.get(ref);
+                            if (note != null) {
+                                ArrayList<Element> chord = new ArrayList<>();
+                                chord.add(note);
+                                chordSequence.add(chord);
+                            }
+                        }
+                }
+            }
+            if (chordSequence == null) {                         // if no note sequence was specified so far
+                chordSequence = new ArrayList<>();
+                for (GenericMap map : maps) {
+                    ArrayList<KeyValue<Double, Element>> notesAtDate = map.getAllElementsAt(od.date);
+                    for (KeyValue<Double, Element> note : notesAtDate) {
+                        if (note.getValue().getLocalName().equals("note")) {
+                            ArrayList<Element> chord = new ArrayList<>();
+                            chord.add(note.getValue());
+                            chordSequence.add(chord);
+                        }
+                    }
+                }
+                if (chordSequence.isEmpty())
+                    continue;
+
+                // sort the chords in the indicated order on the basis of the chord's first note's pitch; notes within chord are not reordered
+                int finalNoteOrderAscending = noteOrderAscending;
+                chordSequence.sort((n1, n2) -> {
+                    double pitch1 = Double.parseDouble(Helper.getAttributeValue("midi.pitch", n1.get(0)));
+                    double pitch2 = Double.parseDouble(Helper.getAttributeValue("midi.pitch", n2.get(0)));
+                    return ((int) Math.signum(pitch1 - pitch2)) * finalNoteOrderAscending;
+                });
+            }
+
+            // apply the ornament to the notes; this will create/edit their ornament.xx attributes for further
+            // processing later in the performance rendering pipeline; if new notes are generated, these will be
+            // returned by apply() and added to the first map in maps
+            for (ArrayList<Element> chord : od.apply(chordSequence)) {
+                for (Element note : chord) {
+                    maps.get(0).addElement(note);
+                }
+            }
+        }
+    }
+
+    /**
+     * render ornamentation modifier attributes into .perf and velocity attributes
+     * this includes attributes
+     *      - ornament.dynamics
+     *      - ornament.date.offset (an offset) ... ornament.milliseconds.date.offset comes later in the rendering pipeline,
+     *      - ornament.duration (absolute duration) ... ornament.milliseconds.duration comes later in the rendering pipeline,
+     *      - ornament.noteoff.shift (true/false),
+     * @param map
+     */
+    private void renderAllNonmillisecondsModifiersToMap(GenericMap map) {
+        for (KeyValue<Double, Element> e : map.getAllElementsOfType("note")) {
+            // add ornament.dynamics to the velocity value
+            Attribute ornamentDynamics = Helper.getAttribute("ornament.dynamics", e.getValue());
+            if (ornamentDynamics != null) {
+                Attribute velocity = Helper.getAttribute("velocity", e.getValue());
+                if (velocity != null) {                     // this attribute is missing, we have no basic dynamics to add the ornament dynamics to, so this is mandatory
+                    velocity.setValue(String.valueOf(Double.parseDouble(velocity.getValue()) + Double.parseDouble(ornamentDynamics.getValue())));
+                }
+            }
+
+            // add ornament.date.offset to date.perf, set date.end.perf according to ornament.duration or ornament.noteoff.shift, resp.
+            Attribute ornamentDateOffsetAtt = Helper.getAttribute("ornament.date.offset", e.getValue());
+            if (ornamentDateOffsetAtt != null) {
+                Attribute datePerfAtt = Helper.getAttribute("date.perf", e.getValue());
+                if (datePerfAtt != null) {                  // this attribute is mandatory for all further timing transformations
+                    double datePerf = Double.parseDouble(datePerfAtt.getValue());
+                    double ornamentDateOffset = Double.parseDouble(ornamentDateOffsetAtt.getValue());
+                    datePerfAtt.setValue(String.valueOf(datePerf + ornamentDateOffset));
+
+                    Attribute dateEndPerfAtt = Helper.getAttribute("date.end.perf", e.getValue());
+                    Attribute durationPerfAtt = Helper.getAttribute("duration.perf", e.getValue());
+
+                    // ornament.duration
+                    Attribute ornamentDurationAtt = Helper.getAttribute("ornament.duration", e.getValue());
+                    if (ornamentDurationAtt != null) {
+                        if (dateEndPerfAtt != null)
+                            dateEndPerfAtt.setValue(String.valueOf(datePerf + Double.parseDouble(ornamentDurationAtt.getValue())));
+                        if (durationPerfAtt != null)
+                            durationPerfAtt.setValue(String.valueOf(ornamentDurationAtt.getValue()));
+                    }
+
+                    // ornament.noteoff.shift
+                    Attribute ornamentNoteoffShiftAtt = Helper.getAttribute("ornament.noteoff.shift", e.getValue());
+                    if (ornamentNoteoffShiftAtt != null) {
+                        if (dateEndPerfAtt != null)
+                            dateEndPerfAtt.setValue(String.valueOf(Double.parseDouble(dateEndPerfAtt.getValue()) + ornamentDateOffset));
+                        if (durationPerfAtt != null)
+                            durationPerfAtt.setValue(String.valueOf(Double.parseDouble(durationPerfAtt.getValue()) + ornamentDateOffset));;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * render ornamentation milliseconds modifier attributes into performance attributes:
+     *      - ornament.milliseconds.date.offset into milliseconds.date
+     *      - ornament.milliseconds.duration into milliseconds.date.end
+     * @param map
+     * @param ornamentationMap
+     */
+    public static void renderMillisecondsModifiersToMap(GenericMap map, OrnamentationMap ornamentationMap) {
+        if ((ornamentationMap == null) || (map == null))
+            return;
+
+        for (KeyValue<Double, Element> e : map.getAllElementsOfType("note")) {
+            Attribute millisecondsDateAtt = Helper.getAttribute("milliseconds.date", e.getValue());
+            if (millisecondsDateAtt == null)                // without this attribute we have no reference for all the transformations
+                continue;
+            double millisecondsDate = Double.parseDouble(millisecondsDateAtt.getValue());
+
+            Attribute ornamentMillisecondsDateAtt = Helper.getAttribute("ornament.milliseconds.date.offset", e.getValue());
+            if (ornamentMillisecondsDateAtt != null) {
+                millisecondsDate += Double.parseDouble(ornamentMillisecondsDateAtt.getValue());
+                millisecondsDateAtt.setValue(String.valueOf(millisecondsDate));
+            }
+
+            Attribute ornamentMillisecondsDuration = Helper.getAttribute("ornament.milliseconds.duration", e.getValue());
+            if (ornamentMillisecondsDuration == null)
+                continue;
+
+            double millisecondsDateEnd = millisecondsDate + Double.parseDouble(ornamentMillisecondsDuration.getValue());
+            Attribute millisecondsDateEndAtt = Helper.getAttribute("milliseconds.date.end", e.getValue());
+            if (millisecondsDateEndAtt == null)
+                e.getValue().addAttribute(new Attribute("milliseconds.date.end", String.valueOf(millisecondsDateEnd)));
+            else
+                millisecondsDateEndAtt.setValue(String.valueOf(millisecondsDateEnd));
+        }
     }
 }

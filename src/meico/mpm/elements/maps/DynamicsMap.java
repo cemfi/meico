@@ -2,11 +2,9 @@ package meico.mpm.elements.maps;
 
 import meico.mei.Helper;
 import meico.mpm.Mpm;
-import meico.mpm.elements.styles.DynamicsStyle;
-import meico.mpm.elements.styles.GenericStyle;
-import meico.mpm.elements.styles.defs.DynamicsDef;
-import meico.supplementary.KeyValue;
 import meico.mpm.elements.maps.data.DynamicsData;
+import meico.mpm.elements.styles.DynamicsStyle;
+import meico.supplementary.KeyValue;
 import nu.xom.Attribute;
 import nu.xom.Element;
 
@@ -459,7 +457,7 @@ public class DynamicsMap extends GenericMap {
      * Basically, that map should be an MSM score because only note elements will be processed.
      * @param map
      * @param dynamicsMap
-     * @return the channelVolumeMap with su-note dynamics data or null if there is none; this channelVolumeMap should be added to the MSM part
+     * @return the channelVolumeMap with sub-note dynamics data or null if there is none; this channelVolumeMap should be added to the MSM part
      */
     public static GenericMap renderDynamicsToMap(GenericMap map, DynamicsMap dynamicsMap) {
         if (dynamicsMap != null) {

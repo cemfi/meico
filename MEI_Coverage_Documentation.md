@@ -41,6 +41,25 @@ There is no special processing routine for this element. Meico just processes it
 #### app
 MEI's critical apparatus environment contains one or more alternative encodings/readings via elements `lem` and `rdg`. If `app` contains none of them it is ignored. The children of `lem` and `rdg` elements are processed only in the `app` environment. Meico interprets `lem` as the favored reading and will, hence, render the children of the first `lem` child of `app`. Later `lem` elements are ignored. If no `lem` is given meico chooses the first `rdg` for rendering.
 
+#### arpeg
+Arpeggios encoded via MEI element `arpeg` are converted to MPM `ornament` elements and `ornamentDef` elements. Meico's default arpeggio is defined rather neutral, so it works in as many musical situations as possible. It's `ornamentDef` might be further edited and finetuned to better suit a particular style and musical context. 
+```xml
+<ornamentDef name="arpeggio">
+    <dynamicsGradient transition.from="-1.0" transition.to="1.0"/>
+    <temporalSpread frame.start="-22.0" frame.end="22.0"/>
+</ornamentDef>
+...
+<ornament date="..." name.ref="arpeggio" scale="0.0" note.order="..."/>
+```
+
+If the `arpeg` has an `xml:id` it is also used for the MPM `ornament` element. 
+
+Attributes `part` (priority) and `staff` can be used to associate the instruction with one or more `staff` elements, i.e. MSM `part` elements. If these attributes are omitted the instruction is treated as global, i.e. relevant to all musical parts. In attribute `part` - and in contrast to the MEI specification - the following values are supported: `%all` and space separated staff numbers. Attribute `layer` is not supported and meico will not search for the staffs that contain the specified layers. If `layer` is used in the MEI encoding `staff` should also be specified so the arpeggio instruction is assigned to the correct musical part at least. To avoid confusion between local (part specific) and global (all parts) arpeggios we recommend defining them generally global (`part="%all"`) and use plist to specify the notes and chords involved.
+
+Mandatory for the interpretation of the `arpeg` is information about its association to MEI `note` or `chord` elements or, alternatively, information about its temporal location in the music. The easiest way is to provide the `note`/`chord` IDs via attribute `plist`. The temporal location can be specified via attributes `tstamp.ges`, `tstamp`, `startid`. If `plist` is given, the other attributes are not necessary and will be ignored by meico.
+
+Attribute `order` is optional in MEI. If specified, meico will interpret value `"up"` as an arpeggio with ascending pitch, `"down"` as an arpeggio with descending pitch and `"nonarp"` will cause meico to do nothing. If attribute `order` is not given, meico will realize the arpeggio in the sequence specified in attribute `"plist"`. If neither `order` nor `plist` are given, meico will assume `order="up"` as default and apply it to all notes at the part and time position of the `arpeg`.
+
 #### artic
 Meico converts MEI `artic` elements to MPM `articulation` elements which are then associated with the notes to be articulated. If these `note` elements have no `xml:id` meico generates it. One of the attributes `artic` and `artic.ges` must be present for an articulation to be meaningful, the latter is prioritized. Meico supports any articulation denominator in these attributes, not only those allowed in the MEI specification. These are added to an MPM articulation `styleDef` where the user can specify the modifiers that the articulation applies to a note if the default articulation definitions do not satisfy. Meico undestands the following default articulations.
 
@@ -129,7 +148,7 @@ Depending on the soundfont/synthesizer these values may be more or less appropri
 
 If the `dynam` has an `xml:id` it is also applied in the MPM encoding. Attributes `part` (priority) and `staff` can be used to associate the instruction with one or more `staff` elements, i.e. MSM `part` elements. If these attributes are omitted the instruction is treated as global, i.e. relevant to all musical parts. In attribute `part` - and in contrast to the MEI specification - the following values are supported: `%all` and space separated staff numbers. Attribute `layer` is not supported and meico will not search for the staffs that contain the specified layers. If `layer` is used in the MEI encoding `staff` should also be specified so the dynamics instruction is assigned to the correct musical part at least. 
 
-Mandatory for the interpretation of the `dynam` is information about its temporal location in the music. The easiest way is placing it within a `verse` element that itself is a child of a note, so the performance instruction gets the same timing position. Alternatively, attributes `tstamp.ges`, `tstamp` or `startid` can be used. For continuous dynamics the attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given). The `endid` can also be the id of the subsequent `dynam` element. Continuous dynamics transitions without one of the previous four attributes end at the subsequent instruction. Our recommendation: If there is a dynamics instruction anyway the attributes should not be used at all to avoid potential contradictory or erroneous encodings.
+Mandatory for the interpretation of the `dynam` is information about its temporal location in the music. The easiest way is placing it within a `verse` element that itself is a child of a note, so the performance instruction gets the same timing position. Alternatively, attributes `tstamp.ges`, `tstamp`, `startid` or `plist` can be used. For continuous dynamics the attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given). The `endid` can also be the id of the subsequent `dynam` element. Continuous dynamics transitions without one of the previous four attributes end at the subsequent instruction. Our recommendation: If there is a dynamics instruction anyway the attributes should not be used at all to avoid potential contradictory or erroneous encodings.
 
 #### ending
 MEI `ending` elements are transformed to entries in an MSM `sequencingMap`. If there is only one `ending`, playback will skip it at repetition by default. Meico tries to realize the order of the endings according to the numbering in the endings' `n` attribute. This attribute should contain an integer substring (e.g., `"1"`, `"1."`, `"2nd"`, `"Play this at the 3rd time!"`, but not `"first"` or `"Play this at the third time!"`). (Sub-)String `"fine"`/`"Fine"`/`"FINE"` will also be recognized. Strings such as `"1-3"` will be recognized as `"1"`, this means that more complex instructions will not be recognized correctly due to the lack of unambiguous, binding formalization (meico is no "guessing machine"). If meico does not find attribute `n`, it tries to parse attribute `label`. If neither of them is provided or meico fails to extract a meaningful numbering, the endings are played in order of appearance in the MEI source.
@@ -161,7 +180,7 @@ This creates a copy of the preceding timeframe. This timeframe is `0.5 * length 
 
 #### instrDef
 If the staff label did not suffice to properly indicate which General MIDI instrument should be chosen during the MIDI export, this element can be used to provide clarity. This element is supported only in the `staffDef` environment, i.e. as child or sub-child of a `staffDef` element such as demonstrated in the MEI Encoding Guidelines in the section on [Recording General MIDI Instrumentation](https://music-encoding.org/guidelines/v4/content/integration.html#midiInstruments). Here is another example.
-````
+````xml
 <staffDef clef.line="2" clef.shape="G" lines="5" n="1" label="unhelpful label">
     <instrDef midi.instrname="Violin" midi.instrnum="40"/>
 </staffDef>
@@ -245,7 +264,7 @@ Attribute `dis` or `dis.place` is mandatory. Valid values of `dis` are `"8"`, `"
 
 Attribute `staff` can be used to associate the octave instruction with one or more staffs, i.e. MSM `part` elements. If this attribute is omitted the `octave` is treated as global, i.e. relevant to all musical parts.
 
-For computing the `date` of the pedal instruction, attributes `tstamp.ges`, `tstamp` and `startid` are supported. For the optional end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
+For computing the `date` of the pedal instruction, attributes `tstamp.ges`, `tstamp`, `startid` and `plist` are supported. For the optional end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
 
 #### oLayer
 This element is processed by the same routine as MEI `layer` elements.
@@ -267,14 +286,14 @@ Meico requires attribute `dir`. This is sensitive to the `staff` attribute but n
 
 Attributes `part` (priority) and `staff` can be used to associate the instruction with one or more `staff` elements, i.e. MSM `part` elements. If these attributes are omitted the instruction is treated as global, i.e. relevant to all musical parts. In attribute `part` - and in contrast to the MEI specification - the following values are supported: `%all` and space separated staff numbers.
 
-For computing the `date` of the pedal instruction, attributes `tstamp.ges`, `tstamp` and `startid` are supported. For the optional end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
+For computing the `date` of the pedal instruction, attributes `tstamp.ges`, `tstamp`, `startid` and `plist` are supported. For the optional end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
 
 #### phrase
 Meico fills an MSM `phraseMap` with data on the phrase structure of the music. The MSM representation looks like this: `<phrase date="" label="" xml:id="" date.end=""/>`. It encodes the start and end date of the phrase in midi ticks. Attribute `label` is created from the MEI `prase` element's attribute `label` (prioritized) or `n`. Attribute `xml:id` is copied from the MEI source. If these attributes are missing, the MSM representation won't have them neither.
 
 Attributes `part` (priority) and `staff` can be used to associate the instruction with one or more `staff` elements, i.e. MSM `part` elements. If these attributes are omitted the instruction is treated as global, i.e. relevant to all musical parts. In attribute `part` - and in contrast to the MEI specification - the following values are supported: `%all` and space separated staff numbers.
 
-For computing the start date of the phrase, attributes `tstamp.ges`, `tstamp` and `startid` are supported. For the end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
+For computing the start date of the phrase, attributes `tstamp.ges`, `tstamp`, `startid` and `plist` are supported. For the end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
 
 #### rdg
 This element is part of the critical apparatus, child of `app` and processed only in this context.
@@ -314,7 +333,7 @@ Meico interprets an MEI `slur` as a legato instruction. All but the final `note`
 
 If a `slur` element defines a `plist`, meico uses this to identify all `note` and `chord` elements that participate in that `slur`. If `startid` and `endid` are not contained in the `plist`, meico adds them. Other element types than `note` and `chord` are ignored. The final entry in the `plist` will be articulated `"legatoStop"`. If multiple notes should be articulated this way, the final element should be a `chord` that includes all those notes.
 
-If (and only if) no `plist` is specified, meico will compute the start date from `tstamp.ges`, `tstamp` or `startid` and the end date from `dur`, `tstamp2.ges`, `tstamp2` or `endid`. Attributes `staff` and `layer` are taken into account to determine the notes to be articulated. In the absence of a `staff` or `layer` attribute meico checks whether `startid` and `endid` are in the same staff or layer, respectively, and articulates only notes within this same staff or layer. If they are in different layers, the whole staff content under the slur will be articulated. If even the staff relation is indefinite, all musical content under the `slur` is played legato. The final notes of a `slur`, i.e. those notes that are at the slur's end, are always articulated `"legatoStop"` even if another `slur` starts at this note or goes further.
+If (and only if) no `plist` is specified, meico will compute the start date from `tstamp.ges`, `tstamp`, `startid` or `plist` and the end date from `dur`, `tstamp2.ges`, `tstamp2` or `endid`. Attributes `staff` and `layer` are taken into account to determine the notes to be articulated. In the absence of a `staff` or `layer` attribute meico checks whether `startid` and `endid` are in the same staff or layer, respectively, and articulates only notes within this same staff or layer. If they are in different layers, the whole staff content under the slur will be articulated. If even the staff relation is indefinite, all musical content under the `slur` is played legato. The final notes of a `slur`, i.e. those notes that are at the slur's end, are always articulated `"legatoStop"` even if another `slur` starts at this note or goes further.
 
 #### space
 If this element encodes a textual gap (e.g. in lyrics) it has no musical meaning and is ignored. Otherwise, it is interpreted as `rest`.
@@ -369,7 +388,7 @@ If the `tempo` element does not specify a descriptor string as value, i.e. inner
 
 If the `tempo` has an `xml:id` it is also applied in the MPM encoding. Attributes `part` (priority) and `staff` can be used to associate the instruction with one or more `staff` elements, i.e. MSM `part` elements. If these attributes are omitted the instruction is treated as global, i.e. relevant to all musical parts. In attribute `part` - and in contrast to the MEI specification - the following values are supported: `%all` and space separated staff numbers. Attribute `layer` is not supported and meico will not search for the staffs that contain the specified layers. 
 
-Mandatory for the interpretation of the `tempo` is information about its temporal location in the music. The easiest way is placing it within a `verse` element that itself is a child of a note, so the performance instruction gets the same timing position. Alternatively, attributes `tstamp.ges`, `tstamp` or `startid` can be used. For continuous tempo transitions the attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given). The `endid` can also be the id of the subsequent `tempo` element. Continuous tempo transitions without one of the previous four attributes end at the subsequent instruction. Our recommendation: If there is a tempo instruction anyway the attributes should not be used at all to avoid potential contradictory or erroneous encodings.
+Mandatory for the interpretation of the `tempo` is information about its temporal location in the music. The easiest way is placing it within a `verse` element that itself is a child of a note, so the performance instruction gets the same timing position. Alternatively, attributes `tstamp.ges`, `tstamp`, `startid`, or `plist` can be used. For continuous tempo transitions the attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given). The `endid` can also be the id of the subsequent `tempo` element. Continuous tempo transitions without one of the previous four attributes end at the subsequent instruction. Our recommendation: If there is a tempo instruction anyway the attributes should not be used at all to avoid potential contradictory or erroneous encodings.
 
 #### tie
 Meico requires attributes `startid` and `endid`. The editor should ensure that the corresponding `note` or `chord` elements actually exist. Cross-layer tieing is supported, cross-staff tieing is not. Furthermore, it is mandatory that both notes have the exact same pitch, including accidentals! Even though the end note of a tie is ususally notated without accidental (hence, no `accid` attribute or child element) it must then have an `accid.ges` attribute or it will not be tied to the previous note and played with the notated wrong pitch! Each `tie` element is internally resolved into `tie` attributes. Meico is able to handle a mixture of `tie` elements and already existing `tie` attributes on `note` or `chord` elements. Tieing of non-adjacent notes is not supported.
@@ -385,7 +404,7 @@ Required attributes `num` and `numbase`. The processing of this element is sensi
 
 Attributes `part` (priority) and `staff` can be used to associate the instruction with one or more `staff` elements, i.e. MSM `part` elements. If these attributes are omitted the instruction is treated as global, i.e. relevant to all musical parts. In attribute `part` - and in contrast to the MEI specification - the following values are supported: `%all` and space separated staff numbers.
 
-For computing the `date` of the `tupletSpan`, attributes `tstamp.ges`, `tstamp` and `startid` are supported. For the end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
+For computing the `date` of the `tupletSpan`, attributes `tstamp.ges`, `tstamp`, `startid` and `plist` are supported. For the end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
 
 #### unclear
 This element is processed as part of the `choice` environment and also outside of that environment.

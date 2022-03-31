@@ -2,7 +2,6 @@ meico
 meico.audio
 meico.mei
 meico.midi
-meico.midi.legacy
 meico.mpm
 meico.mpm.elements
 meico.mpm.elements.maps

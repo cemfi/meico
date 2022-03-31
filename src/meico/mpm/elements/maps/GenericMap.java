@@ -503,7 +503,7 @@ public class GenericMap extends AbstractXmlSubtree {
         }
 
         if (xml.getLocalName().equals("style") && (xml.getAttribute("name.ref") == null)) {   // if it is a style switch but has no name.ref attribute
-            System.err.println("Cannot add the Element to GenericMap. Attribute name.ref is mandatory for style elements but missing.");
+            System.err.println("Cannot add Element \"" + xml.toXML() + "\" to GenericMap. Attribute name.ref is mandatory for style elements but missing.");
             return -1;
         }
 

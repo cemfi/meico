@@ -9,8 +9,10 @@
 - New method `meico.msm.Msm.getPart()` to retrieve a specific `part` element.
 - Ornamentation support added to MPM API.
   - New classes are `meico.mpm.elements.styles.OrnamentationStyle`, `meico.mpm.elements.styles.defs.OrnamentDef`, `meico.mpm.elements.styles.defs.OrnamentDef.DynamicsGradient`, `meico.mpm.elements.styles.defs.OrnamentDef.TemporalSpread`, `meico.mpm.elements.maps.OrnamentationMap`, and `meico.mpm.elements.maps.data.OrnamentData`.
-  - WIP: Ornamentation has been added to the performance rendering in `meico.mpm.elements.Performance.perform()`.
-  - WIP: Added MEI export for element `arpeg` to MPM ornamentation.
+  - Added MEI export for element `arpeg` to MPM ornamentation. New method `meico.mei.Mei.processArpeg()` and additions to `meico.mei.Mei.makeMovement()` and class `meico.mei.Helper`.
+  - Ornamentation has been added to the performance rendering in `meico.mpm.elements.Performance.perform()`.
+- Enhancement of method `meico.mei.Helper.computeControlEventTiming()`; in search for the timing of an MEI control event, it will now also look at the first reference in attribute `plist`.
+- Deleted package `meico.midi.legacy`.
 
 #### v0.8.33
 - New method `meico.midi.Midi.exportAudio(Soundbank soundbank)` to convert MIDI to audio with a soundfont that is already loaded, so its corresponding `File` is no longer required.

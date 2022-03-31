@@ -955,23 +955,11 @@ public class Mei extends meico.xml.XmlBase {
                     continue;
 
                 double pitch = Double.parseDouble(pitchAtt.getValue());
-
-                // sort the note into the notePitchList
-                // TODO: bug here somewhere, ordering is always ascending
-                if (arpeggioNoteOrder.getValue()) {                 // sort by ascending pitch
-                    int i;
-                    for (i = notePitchList.size() - 1; i >= 0; --i)
-                        if (notePitchList.get(i).getValue() <= pitch)
-                            break;
-                    notePitchList.add(i+1, new KeyValue<>(noteId, pitch));
-                } else {                                            // sort by descending pitch
-                    int i;
-                    for (i = 0; i < notePitchList.size(); ++i)
-                        if (notePitchList.get(i).getValue() > pitch)
-                            break;
-                    notePitchList.add(i, new KeyValue<>(noteId, pitch));
-                }
+                notePitchList.add(new KeyValue<>(noteId, pitch));
             }
+
+            // sort the notes according to the indicated order
+            notePitchList.sort((n1, n2) -> (int) ((arpeggioNoteOrder.getValue()) ? Math.signum(n1.getValue() - n2.getValue()) : Math.signum(n2.getValue() - n1.getValue())));
 
             // concatenate the note IDs in a string and set new attribute value for note.order
             String noteIdsString = "";
@@ -2288,7 +2276,7 @@ public class Mei extends meico.xml.XmlBase {
         OrnamentData od = new OrnamentData();
         od.date = (Double) timingData.get(0);
         od.ornamentDefName = "arpeggio";
-        od.scale = 10.0;
+        od.scale = 0.0;
 
         // read the xml:id
         Attribute id = Helper.getAttribute("id", arpeg);
@@ -2329,7 +2317,7 @@ public class Mei extends meico.xml.XmlBase {
                 }
             }
 
-            // the sequence of the notes must be reordered to ensure that it matches with @order="up/down"; this will be done at the end of the MEI-to-MSM conversion when all notes are converted and have a proper @pnum/@midi.pitch for each note
+            // the sequence of the notes must be reordered to ensure that it matches with @order="up/down"; this will be done at the end of the mdiv conversion when all notes are converted and have a proper @pnum/@midi.pitch for each note
             if (order != null) {                                            // seems like a specific order is desired
                 if (order.getValue().trim().equals("down"))                 // if it should be with descending pitch
                     needsPostprocessing = -1;                               // set the indication - will be processed later

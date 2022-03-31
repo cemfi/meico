@@ -22,7 +22,7 @@ public class OrnamentData {
     public OrnamentDef ornamentDef = null;
 
     public double date = 0.0;                       // the date for which the data is assembled
-    public double scale = 1.0;
+    public double scale = 0.0;
     public ArrayList<String> noteOrder = null;
 
     /**
@@ -79,5 +79,35 @@ public class OrnamentData {
             clone.noteOrder.addAll(this.noteOrder);
         }
         return clone;
+    }
+
+    /**
+     * Apply the ornament to the given chord/note sequence. This will only add
+     * corresponding attributes to the notes; their realization in performance
+     * attributes is done later during performance rendering. This method will
+     * also return new notes to be added to the chordSequence's underlying map.
+     * If notes should be deleted from the performance, they are marked by an according attribute.
+     * @param chordSequence the sequence of the chords/notes in which the ornament is applied
+     * @return sequence of chords/notes to be added to the chordSequence's underlying map or null
+     */
+    public ArrayList<ArrayList<Element>> apply(ArrayList<ArrayList<Element>> chordSequence) {
+        ArrayList<ArrayList<Element>> chordsToAdd = new ArrayList<>();                      // if new notes are added to the underlying map, these will be collected in this list and returned at the end
+
+        if (this.ornamentDef == null)
+            return chordsToAdd;
+
+        ArrayList<ArrayList<Element>> tempChordSequence = new ArrayList<>(chordSequence);   // a note sequence to apply the further transformations
+
+        // TODO: if new notes are generated that might add to or replace the notes in the sequence,
+        //  do this here and forward this incl. the new notes to the dynamicsGradient via tempChordSequence;
+        //  in case of replacement, the notes to be deleted get a corresponding attribute and
+
+        if (this.ornamentDef.getDynamicsGradient() != null)
+            this.ornamentDef.getDynamicsGradient().apply(tempChordSequence, this.scale);
+
+        if (this.ornamentDef.getTemporalSpread() != null)
+            this.ornamentDef.getTemporalSpread().apply(tempChordSequence);
+
+        return chordsToAdd;
     }
 }

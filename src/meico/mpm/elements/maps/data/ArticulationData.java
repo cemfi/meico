@@ -163,7 +163,7 @@ public class ArticulationData {
         if (this.articulationDef != null)
             dateChanged = this.articulationDef.articulateNote(note);
 
-        Attribute dateAtt = Helper.getAttribute("date", note);
+        Attribute dateAtt = Helper.getAttribute("date.perf", note);
         if (dateAtt != null) {          // date modifiers require the presence of a date attribute
             if (this.absoluteDelay != 0.0) {
                 dateAtt.setValue(Double.toString(Double.parseDouble(dateAtt.getValue()) + this.absoluteDelay));
@@ -175,7 +175,7 @@ public class ArticulationData {
         }
 
         // now apply local modifiers
-        Attribute durationAtt = Helper.getAttribute("duration", note);
+        Attribute durationAtt = Helper.getAttribute("duration.perf", note);
         if (durationAtt != null) {      // duration modifiers can only be applied if there is a duration attribute
             double duration = Double.parseDouble(durationAtt.getValue());
             if (this.absoluteDurationMs != null) {

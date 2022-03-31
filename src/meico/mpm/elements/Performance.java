@@ -1,6 +1,5 @@
 package meico.mpm.elements;
 
-import com.sun.istack.internal.NotNull;
 import meico.mei.Helper;
 import meico.midi.Midi;
 import meico.mpm.Mpm;
@@ -417,7 +416,7 @@ public class Performance extends AbstractXmlSubtree {
         Performance.addMsmMapToList("markerMap", globalDated, maps);
         GenericMap globalPedalMap = Performance.addMsmMapToList("pedalMap", globalDated, maps);
 
-        OrnamentationMap.renderGlobalOrnamentationToParts(this.getAllMsmPartsAffectedByGlobalMap(msm, Mpm.ORNAMENTATION_MAP), globalOrnamentationMap);  // add global ornamentation attributes to affected parts' notes
+        OrnamentationMap.renderGlobalOrnamentationToParts(this.getAllMsmPartsAffectedByGlobalMap(clone, Mpm.ORNAMENTATION_MAP), globalOrnamentationMap);  // add global ornamentation attributes to affected parts' notes
 
         for (GenericMap m : maps) {                                                                         // for all maps in the list of maps for timing processing
             RubatoMap.renderRubatoToMap(m, globalRubatoMap);
@@ -501,41 +500,43 @@ public class Performance extends AbstractXmlSubtree {
 
             // here comes the performance rendering of the part
             // some things should be done before the timing transformations
-            GenericMap channelVolumeMap = DynamicsMap.renderDynamicsToMap(score, dynamicsMap);  // add dynamics data, must be done first because the tick timing will be altered by some articulations and rubato
-            if (channelVolumeMap != null) {                                                     // there could be a new map with sub-note dynamics controllers to be added to maps
-                dated.appendChild(channelVolumeMap.getXml());                                   // add it to the MSM
-                Performance.addPerformanceTimingAttributes(channelVolumeMap);                   // add the .perf attributes
+            GenericMap channelVolumeMap = DynamicsMap.renderDynamicsToMap(score, dynamicsMap);      // add dynamics data, must be done first because the tick timing will be altered by some articulations and rubato
+            if (channelVolumeMap != null) {                                                         // there could be a new map with sub-note dynamics controllers to be added to maps
+                dated.appendChild(channelVolumeMap.getXml());                                       // add it to the MSM
+                Performance.addPerformanceTimingAttributes(channelVolumeMap);                       // add the .perf attributes
             }
 
             MetricalAccentuationMap.renderMetricalAccentuationToMap(score, metricalAccentuationMap, ((timeSignatureMap != null) ? timeSignatureMap : globalTimeSignatureMap), this.getPPQ());  // add metrical accentuations; we do this before the rubato transformation as this shifts the symbolic dates of the events
-            OrnamentationMap.renderOrnamentationToMap(score, ornamentationMap);                 // apply ornamentation
             ArticulationMap.renderArticulationToMap_noMillisecondModifiers(score, articulationMap); // add articulations except for millisecond modifiers
 
-            // rubato and tempo transformations apply to all maps
-            for (GenericMap m : maps) {                                                         // for all maps in the list of maps for timing processing
-                RubatoMap.renderRubatoToMap(m, rubatoMap);                                      // rubato
-                TempoMap.renderTempoToMap(m, this.getPPQ(), tempoMap);                          // compute millisecond dates and end dates
+            for (GenericMap m : maps)                                                               // for all maps in the list of maps for timing processing
+                RubatoMap.renderRubatoToMap(m, rubatoMap);                                          // rubato
+
+            OrnamentationMap.renderOrnamentationToMap(score, ornamentationMap);                     // apply ornamentation (incl. pending attributes from global ornamentation), except for milliseconds effects, these come later
+
+            for (GenericMap m : maps)                                                               // for all maps in the list of maps for timing processing
+                TempoMap.renderTempoToMap(m, this.getPPQ(), tempoMap);                              // compute millisecond dates and end dates
                 // further performance features are applied only to specific maps, thus not processed here
-            }
 
             // pedalMap
-            AsynchronyMap.renderAsynchronyToMap(pedalMap, asynchronyMap);                       // add asynchrony offsets to the millisecond dates to the pedalMap
-            ImprecisionMap.renderImprecisionToMap(pedalMap, imprecisionMap_timing, true);       // add imprecision to the pedalMap
+            AsynchronyMap.renderAsynchronyToMap(pedalMap, asynchronyMap);                           // add asynchrony offsets to the millisecond dates to the pedalMap
+            ImprecisionMap.renderImprecisionToMap(pedalMap, imprecisionMap_timing, true);           // add imprecision to the pedalMap
 
             // channelVolumeMap
-            TempoMap.renderTempoToMap(channelVolumeMap, this.getPPQ(), tempoMap);               // channelVolumeMap gets trandformed by the tempoMap but not the rubatoMap as the latter would create higher-frequency variations in the dynamics curve
-            AsynchronyMap.renderAsynchronyToMap(channelVolumeMap, asynchronyMap);               // add asynchrony offsets to the millisecond dates to the channelVolumeMap
+            TempoMap.renderTempoToMap(channelVolumeMap, this.getPPQ(), tempoMap);                   // channelVolumeMap gets trandformed by the tempoMap but not the rubatoMap as the latter would create higher-frequency variations in the dynamics curve
+            AsynchronyMap.renderAsynchronyToMap(channelVolumeMap, asynchronyMap);                   // add asynchrony offsets to the millisecond dates to the channelVolumeMap
 
             // score
             if (score == null)      // if this msm part has no score
                 continue;           // continue with the next msm part
-            AsynchronyMap.renderAsynchronyToMap(score, asynchronyMap);                          // add asynchrony offsets to the millisecond dates
-            ArticulationMap.renderArticulationToMap_millisecondModifiers(score, articulationMap); // apply articulations' millisecond modifiers
+            AsynchronyMap.renderAsynchronyToMap(score, asynchronyMap);                              // add asynchrony offsets to the millisecond dates
+            ArticulationMap.renderArticulationToMap_millisecondModifiers(score, articulationMap);   // apply articulations' millisecond modifiers
+            OrnamentationMap.renderMillisecondsModifiersToMap(score, ornamentationMap);             // apply ornamentation milliseconds transformations
 
-            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_timing, true);          // add timing imprecision
-            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_dynamics, true);        // add dynamics imprecision
-            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_toneduration, true);    // add toneduration imprecision
-            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_tuning, true);          // add tuning imprecision
+            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_timing, true);              // add timing imprecision
+            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_dynamics, true);            // add dynamics imprecision
+            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_toneduration, true);        // add toneduration imprecision
+            ImprecisionMap.renderImprecisionToMap(score, imprecisionMap_tuning, true);              // add tuning imprecision
         }
 
         // cleanup: remove temporary attributes from all elements in the cleanup list
@@ -553,7 +554,10 @@ public class Performance extends AbstractXmlSubtree {
      * @param msmPart
      * @return the MPM part or null
      */
-    public Part getCorrespondingPart(@NotNull Element msmPart) {
+    public Part getCorrespondingPart(Element msmPart) {
+        if (msmPart == null)
+            return null;
+
         Part mpmPart = this.getPart(Integer.parseInt(Helper.getAttributeValue("number", msmPart)));     // try finding the corresponding mpm part via the number attribute
         if (mpmPart == null) {
             mpmPart = this.getPart(Helper.getAttributeValue("name", msmPart));                          // try finding the corresponding mpm part via the name attribute
