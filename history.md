@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.8.35
+- Export of MEI to MSM and MPM will now keep the `staffDef`'s ID as the ID of the MSM and MPM `part`.
+- Two addition to the instruments dictionary: `Piano Left Hand` and `Piano Right Hand`.
+
+
 #### v0.8.34
 - Added support for attribute `xml:id` on MPM maps in class `meico.mpm.elements.maps.GenericMap`.
 - `meico.mpm.elements.maps.GenericMap` constructor has now full support for MSM `score`.

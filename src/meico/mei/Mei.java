@@ -1882,6 +1882,13 @@ public class Mei extends meico.xml.XmlBase {
 
         part = Msm.makePart(label, number, midiChannel, midiPort);                                              // create MSM part element
 
+        Attribute id = staffDef.getAttribute("id", "http://www.w3.org/XML/1998/namespace");                     // get the xml:id of the staffDef
+        if (id != null) {                                                                                       // if the staffDef has an ID
+            Attribute partId = new Attribute("id", id.getValue());                                              // the MSM part gets it, too
+            partId.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");                                 // set its namespace to xml
+            part.addAttribute(partId);
+        }
+
         part.addAttribute(new Attribute("currentDate", (this.helper.currentMeasure != null) ? this.helper.currentMeasure.getAttributeValue("date") : "0.0"));    // set currentDate of processing
 
         Nodes instrDefs = staffDef.query("descendant::*[local-name()='instrDef']");                             // check if this staffDef contains any instrDef elements; these can be used to specify the MIDI instrument declaration and is particularly useful when the staff's label does not indicate the correct instrument
@@ -1931,8 +1938,12 @@ public class Mei extends meico.xml.XmlBase {
         this.helper.currentMsmMovement.appendChild(part);                                                       // insert it into movement
 
         Part performancePart = Part.createPart(label, Integer.parseInt(number), midiChannel, midiPort);         // create MPM part
-        if (performancePart != null)
+        if (performancePart != null) {
             this.helper.currentPerformance.addPart(performancePart);                                            // add it to the performance
+
+            if (id != null)                                                                                     // if the staffDef has an xml:id
+                performancePart.setId(id.getValue());                                                           // the MPM par will have it, too
+        }
 
         return part;
     }
