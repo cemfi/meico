@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.36
+- Bugfix in `meico.mpm.elements.Dated.addMap()`.
+
+
 #### v0.8.35
 - Export of MEI to MSM and MPM will now keep the `staffDef`'s ID as the ID of the MSM and MPM `part`.
 - Two addition to the instruments dictionary: `Piano Left Hand` and `Piano Right Hand`.

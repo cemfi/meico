@@ -127,7 +127,7 @@ public class Dated extends AbstractXmlSubtree {
                 m = ImprecisionMap.createImprecisionMap(xml);
                 break;
             case Mpm.ORNAMENTATION_MAP:
-                m = OrnamentationMap.createOrnamentationMap();
+                m = OrnamentationMap.createOrnamentationMap(xml);
                 break;
             default:
                 m = GenericMap.createGenericMap(type);
