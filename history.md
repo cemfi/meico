@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.37
+- New method `meico.mpm.Mpm.isInNamespace()`. to check whether a given element name is in the MPM namespace. One of the constructors of `meico.mpm.elements.map.GenericMap` uses this to apply the MPM namespace more properly - it can also be used to create maps that are not in MPM namespace, such as `score` or `channelVolumeMap` in MSM.
+- Methods `meico.mpm.elements.maps.AsynchronyMap.renderAsynchronyToMap()` and `meico.mpm.elements.maps.ImprecisionMap.addOffsetsToAttributes()` have been enhanced, so they do no longer produce negative timings, i.e. shift the timing of events to negative milliseconds dates.
+
 #### v0.8.36
 - Bugfix in `meico.mpm.elements.Dated.addMap()`.
 

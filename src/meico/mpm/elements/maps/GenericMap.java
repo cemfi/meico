@@ -31,10 +31,13 @@ public class GenericMap extends AbstractXmlSubtree {
      * @throws Exception
      */
     protected GenericMap(String type) throws Exception {
-        if (!type.contains("Map") && !type.equals("score")) {
+        if (!type.contains("Map") && !type.equals("score"))
             throw new Exception("Cannot generate GenericMap object. Local name \"" + type + "\" must be non-empty and contain the substring \"Map\", e.g. \"tempoMap\".");
-        }
-        this.parseData(new Element(type, Mpm.MPM_NAMESPACE));
+
+        if (Mpm.createMpm().isInNamespace(type))
+            this.parseData(new Element(type, Mpm.MPM_NAMESPACE));
+        else
+            this.parseData(new Element(type));
     }
 
     /**

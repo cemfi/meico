@@ -644,7 +644,7 @@ public class ImprecisionMap extends GenericMap {
                 }
                 // if the timing resolution is still null or invalid, set a default value
                 if ((dd.millisecondsTimingBasis == null) || (dd.millisecondsTimingBasis <= 0.0))
-                    dd.millisecondsTimingBasis = 100.0;                             // The human brain has a timing grid of approx. 300ms to react and correct etc. Hopwever, motor variances may occur on affect every note individually. Hence, we set the default timing resolution to this compromise value.
+                    dd.millisecondsTimingBasis = 100.0;                             // The human brain has a timing grid of approx. 300ms to react and correct etc. However, motor variances may affect every note individually. Hence, we set the default timing resolution to this compromise value.
             }
 
             // apply distribution to map elements
@@ -740,7 +740,7 @@ public class ImprecisionMap extends GenericMap {
                 ImprecisionMap.shakeOffsets(offsets);       // shake the offsets
         }
 
-        ImprecisionMap.addOffsetsToAttributes(offsets);     // add offsets to corresponding attributes
+        ImprecisionMap.addOffsetsToAttributes(offsets, domain);     // add offsets to corresponding attributes
     }
 
     /**
@@ -903,11 +903,14 @@ public class ImprecisionMap extends GenericMap {
      * This method is called at the end of renderImprecisionToMap().
      * @param offsets
      */
-    private static void addOffsetsToAttributes(HashMap<Double, ArrayList<KeyValue<Double, Attribute>>> offsets) {
+    private static void addOffsetsToAttributes(HashMap<Double, ArrayList<KeyValue<Double, Attribute>>> offsets, int domain) {
         for (Map.Entry<Double, ArrayList<KeyValue<Double, Attribute>>> entries : offsets.entrySet()) {
             for (KeyValue<Double, Attribute> entry : entries.getValue()) {
                 double attValue = Double.parseDouble(entry.getValue().getValue());
-                entry.getValue().setValue(Double.toString((attValue + entry.getKey())));
+                if (domain == ImprecisionMap.TIMING)
+                    entry.getValue().setValue(Double.toString(Math.max(0.0, (attValue + entry.getKey()))));
+                else
+                    entry.getValue().setValue(Double.toString((attValue + entry.getKey())));
             }
         }
     }

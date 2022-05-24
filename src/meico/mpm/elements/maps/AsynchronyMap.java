@@ -137,7 +137,7 @@ public class AsynchronyMap extends GenericMap {
                 if (mapEntry.getKey() >= this.elements.get(asynIndex).getKey()) {                       // if the entry starts at or after the asynchrony instruction
                     Attribute att = Helper.getAttribute("milliseconds.date", mapEntry.getValue());      // get the map element's milliseconds.date attribute
                     if (att != null) {                                                                  // if we have an attribute date
-                        startDateMs = Double.parseDouble(att.getValue()) + offset;                      // parse the attribute value to double and add the offset
+                        startDateMs = Math.max(0.0, Double.parseDouble(att.getValue()) + offset);       // parse the attribute value to double and add the offset; but do not allow negative timing
                         att.setValue(Double.toString(startDateMs));                                     // write the updated value to the attribute
                     }
                 }

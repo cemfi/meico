@@ -394,7 +394,7 @@ public class DynamicsMap extends GenericMap {
             return null;
 
         // a channelVolumeMap will get the channelVolume events for sub-note dynamics
-        GenericMap chanVolMap = GenericMap.createGenericMap("channelVolumeMap");    // create a new channelVolumeMap
+        GenericMap chanVolMap = GenericMap.createGenericMap("channelVolumeMap");                // create a new channelVolumeMap
 
         int mapIndex = 0;
         for (int dynamicsIndex = 0; dynamicsIndex < this.size(); ++dynamicsIndex) {
@@ -426,7 +426,7 @@ public class DynamicsMap extends GenericMap {
                 // and this is also done when we reached the last dynamics instruction because creating a sub-note dynamics series of events until eternity (Double.MAX_DOUBLE) makes no sense;
                 // this way we also ensure that the channelVolume of the MIDI track will always be set to the default value of 100 at the end of the music
                 if (chanVolMap.isEmpty() || !chanVolMap.getLastElement().getAttributeValue("value").equals("100.0")) {
-                    Element e = new Element("volume", Mpm.MPM_NAMESPACE);                       // create an entry in the channelVolumeMap
+                    Element e = new Element("volume", chanVolMap.getXml().getNamespaceURI());   // create an entry in the channelVolumeMap
                     e.addAttribute(new Attribute("date", Double.toString(dd.startDate)));       // at the date of this non-sub-note dynamics instruction
                     e.addAttribute(new Attribute("value", "100.0"));                            // set the channel volume slider to default 100
                     e.addAttribute(new Attribute("mandatory", "true"));                         // make sure this one will mandatorily be rendered to MIDI during MSM to MIDI export
@@ -491,7 +491,7 @@ public class DynamicsMap extends GenericMap {
         ArrayList<Element> es = new ArrayList<>();
 
         for (double[] event : subNoteDynamicsSegment) {
-            Element e = new Element("volume", Mpm.MPM_NAMESPACE);
+            Element e = new Element("volume", channelVolumeMap.getXml().getNamespaceURI());
             e.addAttribute(new Attribute("date", Double.toString(event[0])));
             e.addAttribute(new Attribute("value", Double.toString(event[1])));
 //            System.out.println(e.toXML());

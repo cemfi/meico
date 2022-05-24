@@ -185,6 +185,75 @@ public class Mpm extends AbstractMsm {
     }
 
     /**
+     * check whether the given name is in the Mpm namespace
+     * @param elementName
+     * @return
+     */
+    public boolean isInNamespace(String elementName) {
+        switch (elementName) {
+            case "mpm":
+
+            case "metadata":
+            case "author":
+            case "comment":
+            case "relatedResources":
+            case "resource":
+
+            case "performance":
+            case "global":
+            case "part":
+            case "header":
+            case "styleDef":
+            case Mpm.ARTICULATION_STYLE:
+            case "articulationDef":
+            case Mpm.DYNAMICS_STYLE:
+            case "dynamicsDef":
+            case Mpm.METRICAL_ACCENTUATION_STYLE:
+            case "accentuationPatternDef":
+            case "accentuation ":
+            case Mpm.ORNAMENTATION_STYLE:
+            case "ornamentDef":
+            case "temporalSpread":
+            case "dynamcisGradient":
+            case Mpm.RUBATO_STYLE:
+            case "rubatoDef":
+            case Mpm.TEMPO_STYLE:
+            case "tempoDef":
+
+            case "dated":
+            case "style":
+            case Mpm.ARTICULATION_MAP:
+            case "articulation":
+            case Mpm.ASYNCHRONY_MAP:
+            case "asynchrony":
+            case Mpm.DYNAMICS_MAP:
+            case "dynamics":
+            case Mpm.IMPRECISION_MAP:
+            case Mpm.IMPRECISION_MAP_DYNAMICS:
+            case Mpm.IMPRECISION_MAP_TIMING:
+            case Mpm.IMPRECISION_MAP_TONEDURATION:
+            case Mpm.IMPRECISION_MAP_TUNING:
+            case "distribution.uniform":
+            case "distribution.gaussian":
+            case "distribution.triangular":
+            case "distribution.correlated.brownianNoise":
+            case "distribution.correlated.compensatingTriangle":
+            case "distribution.list":
+            case "measurement":
+            case Mpm.METRICAL_ACCENTUATION_MAP:
+            case "accentuationPattern":
+            case Mpm.ORNAMENTATION_MAP:
+            case "ornament":
+            case Mpm.RUBATO_MAP:
+            case "rubato":
+            case Mpm.TEMPO_MAP:
+            case "tempo":
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * add metadata to the MPM
      * @param author an Author object or null
      * @param comment a Comment object or null
