@@ -86,6 +86,8 @@ public class OrnamentDef extends AbstractDef {
                 case "dynamicsGradient": {
                     this.dynamicsGradient = new DynamicsGradient();
 
+                    this.dynamicsGradient.setXml(transformer);
+
                     Attribute att = Helper.getAttribute("transition.from", transformer);
                     if (att != null)                                                                // if there is a transition.from value
                         this.dynamicsGradient.transitionFrom = Double.parseDouble(att.getValue());  // parse it; otherwise we would leave the default value
@@ -100,6 +102,8 @@ public class OrnamentDef extends AbstractDef {
                 }
                 case "temporalSpread": {
                     this.temporalSpread = new TemporalSpread();
+
+                    this.temporalSpread.setXml(transformer);
 
                     Attribute att1 = Helper.getAttribute("milliseconds.frame.start", transformer);
                     Attribute att2 = Helper.getAttribute("milliseconds.frame.end", transformer);
@@ -182,8 +186,8 @@ public class OrnamentDef extends AbstractDef {
             this.getXml().removeChild(old);
 //            old.detach();
         }
-        
-        if (temporalSpread == null) 
+
+        if (temporalSpread == null)
             return;
 
         // make sure that the frame values do not clash
@@ -202,7 +206,7 @@ public class OrnamentDef extends AbstractDef {
                     ts.addAttribute(new Attribute("frame.start", Double.toString(temporalSpread.frameStart)));
                 if (temporalSpread.frameEnd != 0.0)
                     ts.addAttribute(new Attribute("frame.end", Double.toString(temporalSpread.frameEnd)));
-                break; 
+                break;
             case Milliseconds:
                 if (temporalSpread.frameStart != 0.0)
                     ts.addAttribute(new Attribute("milliseconds.frame.start", Double.toString(temporalSpread.frameStart)));
@@ -227,6 +231,8 @@ public class OrnamentDef extends AbstractDef {
                 ts.addAttribute(new Attribute("noteoff.shift", "monophonic"));
                 break;
         }
+
+        this.temporalSpread.setXml(ts);
 
         this.getXml().appendChild(ts);
     }
@@ -282,6 +288,8 @@ public class OrnamentDef extends AbstractDef {
         if (dynamicsGradient.transitionTo != dynamicsGradient.transitionFrom)
             dg.addAttribute(new Attribute("transition.to", Double.toString(dynamicsGradient.transitionTo)));
 
+        this.dynamicsGradient.setXml(dg);
+
         this.getXml().appendChild(dg);
     }
 
@@ -327,6 +335,7 @@ public class OrnamentDef extends AbstractDef {
         public FrameDomain frameDomain = FrameDomain.Ticks;
         public double intensity = 1.0;
         public NoteOffShift noteOffShift = NoteOffShift.False;
+        private Element xml;
 
         public enum FrameDomain {
             Ticks,
@@ -432,6 +441,31 @@ public class OrnamentDef extends AbstractDef {
                     return chord;
             }
         }
+        /**
+         * a setter for the XML representation
+         * @param xml
+         */
+        public void setXml(Element xml) {
+            this.xml = xml;
+        }
+
+        /**
+         * a getter for the XML representation
+         * @return
+         */
+        public Element getXml() {
+            return this.xml;
+        }
+
+        /**
+         * get the XML string
+         * @return
+         */
+        public String toXml() {
+            if (this.xml == null)
+                return "";
+            return this.xml.toXML();
+        }
     }
 
     /**
@@ -441,6 +475,7 @@ public class OrnamentDef extends AbstractDef {
     public static class DynamicsGradient {
         public double transitionFrom = 0.0;
         public double transitionTo = 0.0;
+        private Element xml = null;
 
         /**
          * constructor
@@ -483,6 +518,31 @@ public class OrnamentDef extends AbstractDef {
                 }
             }
         }
-    }
 
+        /**
+         * a setter for the XML representation
+         * @param xml
+         */
+        public void setXml(Element xml) {
+            this.xml = xml;
+        }
+
+        /**
+         * a getter for the XML representation
+         * @return
+         */
+        public Element getXml() {
+            return this.xml;
+        }
+
+        /**
+         * get the XML string
+         * @return
+         */
+        public String toXml() {
+            if (this.xml == null)
+                return "";
+            return this.xml.toXML();
+        }
+    }
 }
