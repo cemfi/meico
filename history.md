@@ -3,6 +3,7 @@
 
 #### v0.8.38
 - Classes `meico.mpm.elements.styles.defs.OrnamentDef.DynamicsGradient` and `meico.mpm.elements.styles.defs.OrnamentDef.TemporalSpread` have been extended with references to their XML representations.
+- JavaFX externals have been removed from meicoApp as they do not help with Java versions 11+.
 
 
 #### v0.8.37
