@@ -2,6 +2,7 @@
 ## Application Package
 
 [![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg)](https://github.com/cemfi/meico/releases/latest) 
+![Java compatibility](https://img.shields.io/badge/Java-1.8--10-blue)
 [![documentation](https://img.shields.io/badge/doc-JavaDoc-green.svg)](https://github.com/cemfi/meico/blob/meicoApp/docs)
 [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/meicoApp/LICENSE) 
 
