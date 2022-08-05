@@ -52,7 +52,7 @@ With `meicoPy.py` we have also a demo script that shows the usage of [meico in P
 
 The meico application package makes use of the following third party libraries in addition to those that come with the [meico base library](https://github.com/cemfi/meico/tree/master):
 - [Font Awesome](https://fontawesome.com/) v5.2.0 (the free solid icons font `fa-solid-900.ttf`), Fonticons, Inc., [SIL OFL 1.1 License](https://scripts.sil.org/OFL).
-- [Verovio JavaScript Toolkit](https://www.verovio.org/index.xhtml) v3.7.0-dev-e93a13d by Etienne Darbellay, Jean-François Marti, Laurent Pugin, Rodolfo Zitellini and others, GNU Lesser General Public License (LGPL) 3.0.
+- [Verovio JavaScript Toolkit](https://www.verovio.org/index.xhtml) v3.11.0-e2d6db8 by Etienne Darbellay, Jean-François Marti, Laurent Pugin, Rodolfo Zitellini and others, GNU Lesser General Public License (LGPL) 3.0.
 - [JavaFX](https://gluonhq.com/products/javafx/) v11.0.2, GPL 2.0.
 
 We publish the meico application package under GNU GPL version 3.0. Meico's development was part of the ZenMEM project funded by the German Federal Ministry of Education and Research (2015-2019, funding code 01UG1414A–C). All MPM-related parts of meico were part of an R&D project that was funded by the [Fritz Thyssen Foundation](https://www.fritz-thyssen-stiftung.de/en/) (2019-2022). If you integrate meico or parts of it with your project make sure that you do not conflict with any of the above licenses.
