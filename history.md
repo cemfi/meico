@@ -1,6 +1,17 @@
 ### Version History
 
 
+#### v0.8.39
+- The following methods have been made `public`, so applications can request corresponding data from the classes.
+  - `meico.mpm.elements.maps.ArticulationMap.getArticulationDataOf()`,
+  - `meico.mpm.elements.maps.DynamicsMap.getDynamicsDataOf()`,
+  - `meico.mpm.elements.maps.ImprecissionMap.getDistributionDataOf()`,
+  - `meico.mpm.elements.maps.MetricalAccentuationMap.getMetricalAccentuationDataOf()`,
+  - `meico.mpm.elements.maps.OrnamentationMap.getOrnamentationDataOf()`,
+  - `meico.mpm.elements.maps.RubatoMap.getRubatoDataOf()`, and
+  - `meico.mpm.elements.maps.TempoMap.getTempoDataOf()`.
+
+
 #### v0.8.38
 - Classes `meico.mpm.elements.styles.defs.OrnamentDef.DynamicsGradient` and `meico.mpm.elements.styles.defs.OrnamentDef.TemporalSpread` have been extended with references to their XML representations.
 - JavaFX externals have been removed from meicoApp as they do not help with Java versions 11+.

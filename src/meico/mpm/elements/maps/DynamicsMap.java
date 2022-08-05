@@ -294,7 +294,7 @@ public class DynamicsMap extends GenericMap {
      * @param index
      * @return the dynamics data or null if the indexed element is invalid, if the index is lower than 0 or the dynamicsMap is empty default dynamics data is returned
      */
-    private DynamicsData getDynamicsDataOf(int index) {
+    public DynamicsData getDynamicsDataOf(int index) {
         if (this.elements.isEmpty() || (index < 0))
             return null;
 

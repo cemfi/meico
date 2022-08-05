@@ -192,7 +192,7 @@ public class TempoMap extends GenericMap {
      * @param index
      * @return the tempo data or null if the indexed element is invalid, if the index is lower than 0 or the tempoMap is empty default tempo data is returned
      */
-    private TempoData getTempoDataOf(int index) {
+    public TempoData getTempoDataOf(int index) {
         if (this.elements.isEmpty() || (index < 0))
             return null;
 

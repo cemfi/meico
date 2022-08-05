@@ -527,7 +527,7 @@ public class ImprecisionMap extends GenericMap {
      * @param index
      * @return
      */
-    private DistributionData getDistributionDataOf(int index) {
+    public DistributionData getDistributionDataOf(int index) {
         if (this.elements.isEmpty() || (index < 0))
             return null;
 

@@ -179,7 +179,7 @@ public class MetricalAccentuationMap extends GenericMap {
      * @param index
      * @return the metrical accentuation data or null if the indexed element is invalid (or a style switch)
      */
-    private MetricalAccentuationData getMetricalAccentuationDataOf(int index) {
+    public MetricalAccentuationData getMetricalAccentuationDataOf(int index) {
         if (this.elements.isEmpty() || (index < 0))
             return null;
 

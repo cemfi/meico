@@ -141,7 +141,7 @@ public class OrnamentationMap extends GenericMap {
      * @param index
      * @return the ornament data or null if the indexed element is no ornament element or invalid
      */
-    private OrnamentData getOrnamentDataOf(int index) {
+    public OrnamentData getOrnamentDataOf(int index) {
         if (this.elements.isEmpty() || (index < 0))
             return null;
 

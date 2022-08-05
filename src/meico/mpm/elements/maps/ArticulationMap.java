@@ -275,7 +275,7 @@ public class ArticulationMap extends GenericMap {
      * @param index
      * @return
      */
-    private ArticulationData getArticulationDataOf(int index) {
+    public ArticulationData getArticulationDataOf(int index) {
         if (this.elements.isEmpty() || (index < 0))
             return null;
 

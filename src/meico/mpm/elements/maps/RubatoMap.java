@@ -231,7 +231,7 @@ public class RubatoMap extends GenericMap {
      * @param index
      * @return the rubato data or null if the indexed element is invalid, if the index is lower than 0 or the rubatoMap is empty default rubato data is returned
      */
-    private RubatoData getRubatoDataOf(int index) {
+    public RubatoData getRubatoDataOf(int index) {
         if (this.elements.isEmpty() || (index < 0))
             return null;
 
