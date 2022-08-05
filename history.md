@@ -10,6 +10,7 @@
   - `meico.mpm.elements.maps.OrnamentationMap.getOrnamentationDataOf()`,
   - `meico.mpm.elements.maps.RubatoMap.getRubatoDataOf()`, and
   - `meico.mpm.elements.maps.TempoMap.getTempoDataOf()`.
+- Update of meicoApp's internal Verovio to v3.11.0-e2d6db8.
 
 
 #### v0.8.38
