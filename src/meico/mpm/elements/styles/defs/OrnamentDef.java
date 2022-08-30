@@ -84,82 +84,11 @@ public class OrnamentDef extends AbstractDef {
             // parse the transformers and skip invalid elements
             switch (transformer.getLocalName()) {
                 case "dynamicsGradient": {
-                    this.dynamicsGradient = new DynamicsGradient();
-
-                    this.dynamicsGradient.setXml(transformer);
-
-                    Attribute att = Helper.getAttribute("transition.from", transformer);
-                    if (att != null)                                                                // if there is a transition.from value
-                        this.dynamicsGradient.transitionFrom = Double.parseDouble(att.getValue());  // parse it; otherwise we would leave the default value
-
-                    att = Helper.getAttribute("transition.to", transformer);
-                    if (att == null)                                                                // if there is no transition.to value
-                        this.dynamicsGradient.transitionTo = this.dynamicsGradient.transitionFrom;  // we assume constant dynamics, hence set transition.to = transition.from
-                    else                                                                            // if, instead, we have a transition.to value
-                        this.dynamicsGradient.transitionTo = Double.parseDouble(att.getValue());    // parse it
-
+                    this.dynamicsGradient = new DynamicsGradient(transformer);
                     break;
                 }
                 case "temporalSpread": {
-                    this.temporalSpread = new TemporalSpread();
-
-                    this.temporalSpread.setXml(transformer);
-
-                    Attribute att1 = Helper.getAttribute("milliseconds.frame.start", transformer);
-                    Attribute att2 = Helper.getAttribute("milliseconds.frame.end", transformer);
-                    if ((att1 != null) || (att2 != null)) {                                         // if we have frame values in milliseconds, these will dominate over other domains, i.e. non-milliseconds frame attributes are ignored
-                        this.temporalSpread.frameDomain = TemporalSpread.FrameDomain.Milliseconds;
-                        if (att1 != null)
-                            this.temporalSpread.frameStart = Double.parseDouble(att1.getValue());
-                        if (att2 != null)
-                            this.temporalSpread.frameEnd = Double.parseDouble(att2.getValue());
-                    } else {                                                                        // if, instead, we have frame values in ticks, we parse these
-                        att1 = Helper.getAttribute("frame.start", transformer);
-                        att2 = Helper.getAttribute("frame.end", transformer);
-                        if ((att1 != null) || (att2 != null)) {
-                            this.temporalSpread.frameDomain = TemporalSpread.FrameDomain.Ticks;
-                            if (att1 != null)
-                                this.temporalSpread.frameStart = Double.parseDouble(att1.getValue());
-                            if (att2 != null)
-                                this.temporalSpread.frameEnd = Double.parseDouble(att2.getValue());
-                        }
-                        // TODO: what if TemporalSpread.FrameDomain.RelativeToNoteDuration?
-                    }
-                    if (this.temporalSpread.frameStart > this.temporalSpread.frameEnd) {            // if the frame values clash, exchange them
-                        double temp = this.temporalSpread.frameStart;
-                        this.temporalSpread.frameStart = this.temporalSpread.frameEnd;
-                        this.temporalSpread.frameEnd = temp;
-//                        switch (this.temporalSpread.frameDomain) {                                  // update the xml
-//                            case Milliseconds:
-//                                ...
-//                                break;
-//                            case Ticks:
-//                                ...
-//                                break;
-//                            case RelativeToNoteDuration:
-//                                ...
-//                                break;
-//                        }
-                    }
-
-                    att1 = Helper.getAttribute("intensity", transformer);
-                    if (att1 != null)
-                        this.temporalSpread.intensity = Double.parseDouble(att1.getValue());
-
-                    att1 = Helper.getAttribute("noteoff.shift", transformer);
-                    if (att1 != null) {
-                        switch (att1.getValue()) {
-                            case "true":
-                                this.temporalSpread.noteOffShift = TemporalSpread.NoteOffShift.True;
-                                break;
-                            case "false":
-                                this.temporalSpread.noteOffShift = TemporalSpread.NoteOffShift.False;
-                                break;
-                            case "monophonic":
-                                this.temporalSpread.noteOffShift = TemporalSpread.NoteOffShift.Monophonic;
-                                break;
-                        }
-                    }
+                    this.temporalSpread = new TemporalSpread(transformer);
                     break;
                 }
             }
@@ -175,8 +104,8 @@ public class OrnamentDef extends AbstractDef {
     }
 
     /**
-     * set the temporalSpread transformer
-     * @param temporalSpread temporal spread data or null
+     * set or remove the temporalSpread transformer
+     * @param temporalSpread temporal spread data or null to just remove the transformer from the ornament definition
      */
     public void setTemporalSpread(TemporalSpread temporalSpread) {
         this.temporalSpread = temporalSpread;
@@ -187,68 +116,22 @@ public class OrnamentDef extends AbstractDef {
 //            old.detach();
         }
 
-        if (temporalSpread == null)
-            return;
-
-        // make sure that the frame values do not clash
-        if (temporalSpread.frameStart > temporalSpread.frameEnd) {
-            System.err.println("Frame value clash: frameStart is not allowed to be greater than frameEnd! Swapping their values to ensure validity.");
-            double temp = temporalSpread.frameStart;
-            temporalSpread.frameStart = temporalSpread.frameEnd;
-            temporalSpread.frameEnd = temp;
-        }
-
-        // create xml data
-        Element ts = new Element("temporalSpread", Mpm.MPM_NAMESPACE);
-        switch (temporalSpread.frameDomain) {
-            case Ticks:
-                if (temporalSpread.frameStart != 0.0)
-                    ts.addAttribute(new Attribute("frame.start", Double.toString(temporalSpread.frameStart)));
-                if (temporalSpread.frameEnd != 0.0)
-                    ts.addAttribute(new Attribute("frame.end", Double.toString(temporalSpread.frameEnd)));
-                break;
-            case Milliseconds:
-                if (temporalSpread.frameStart != 0.0)
-                    ts.addAttribute(new Attribute("milliseconds.frame.start", Double.toString(temporalSpread.frameStart)));
-                if (temporalSpread.frameEnd != 0.0)
-                    ts.addAttribute(new Attribute("milliseconds.frame.end", Double.toString(temporalSpread.frameEnd)));
-                break;
-//            case RelativeToNoteDuration:
-//                throw new UnsupportedDataTypeException("The feature TemporalSpread.FrameDomain.RelativeToNoteDuration is not yet supported.");
-        }
-
-        if (temporalSpread.intensity != 1.0)
-            ts.addAttribute(new Attribute("intensity", Double.toString(temporalSpread.intensity)));
-
-        switch (temporalSpread.noteOffShift) {
-            case False:
-//                ts.addAttribute(new Attribute("noteoff.shift", "false"));     // not necessary because this is the default value in the absence of the attribute
-                break;
-            case True:
-                ts.addAttribute(new Attribute("noteoff.shift", "true"));
-                break;
-            case Monophonic:
-                ts.addAttribute(new Attribute("noteoff.shift", "monophonic"));
-                break;
-        }
-
-        this.temporalSpread.setXml(ts);
-
-        this.getXml().appendChild(ts);
+        if (temporalSpread != null)
+            this.getXml().appendChild(temporalSpread.generateXML());    // create xml data and add it to the XML tree structure
     }
 
     /**
      * set the temporalSpread transformer
      * @param frameStart
-     * @param frameEnd
+     * @param frameLength must be >= 0.0
      * @param frameDomain
      * @param intensity
      * @param noteOffShift
      */
-    public void setTemporalSpread(double frameStart, double frameEnd, TemporalSpread.FrameDomain frameDomain, double intensity, TemporalSpread.NoteOffShift noteOffShift) {
+    public void setTemporalSpread(double frameStart, double frameLength, TemporalSpread.FrameDomain frameDomain, double intensity, TemporalSpread.NoteOffShift noteOffShift) {
         TemporalSpread temporalSpread = new TemporalSpread();
         temporalSpread.frameStart = frameStart;
-        temporalSpread.frameEnd = frameEnd;
+        temporalSpread.setFrameLength(frameLength);
         temporalSpread.frameDomain = frameDomain;
         temporalSpread.intensity = intensity;
         temporalSpread.noteOffShift = noteOffShift;
@@ -276,21 +159,8 @@ public class OrnamentDef extends AbstractDef {
 //            old.detach();
         }
 
-        if (dynamicsGradient == null)
-            return;
-
-        // create xml data
-        Element dg = new Element("dynamicsGradient", Mpm.MPM_NAMESPACE);
-
-        if (dynamicsGradient.transitionFrom != 0.0)
-            dg.addAttribute(new Attribute("transition.from", Double.toString(dynamicsGradient.transitionFrom)));
-
-        if (dynamicsGradient.transitionTo != dynamicsGradient.transitionFrom)
-            dg.addAttribute(new Attribute("transition.to", Double.toString(dynamicsGradient.transitionTo)));
-
-        this.dynamicsGradient.setXml(dg);
-
-        this.getXml().appendChild(dg);
+        if (dynamicsGradient != null)
+            this.getXml().appendChild(dynamicsGradient.generateXML());  // create xml data and add it to the XML tree structure
     }
 
     /**
@@ -319,7 +189,7 @@ public class OrnamentDef extends AbstractDef {
             case "arpeg":
             case "arpeggio":
                 def.setDynamicsGradient(-1.0, 1.0);
-                def.setTemporalSpread(-22.0, 22.0, TemporalSpread.FrameDomain.Ticks, 1.0, TemporalSpread.NoteOffShift.False);
+                def.setTemporalSpread(-22.0, 44.0, TemporalSpread.FrameDomain.Ticks, 1.0, TemporalSpread.NoteOffShift.False);
         }
 
         return def;
@@ -331,7 +201,7 @@ public class OrnamentDef extends AbstractDef {
      */
     public static class TemporalSpread {
         public double frameStart = 0.0;
-        public double frameEnd = 0.0;
+        private double frameLength = 0.0;    // must be >= 0.0
         public FrameDomain frameDomain = FrameDomain.Ticks;
         public double intensity = 1.0;
         public NoteOffShift noteOffShift = NoteOffShift.False;
@@ -355,6 +225,73 @@ public class OrnamentDef extends AbstractDef {
         public TemporalSpread() {}
 
         /**
+         * constructor
+         * @param xml
+         */
+        public TemporalSpread(Element xml) {
+            this.xml = xml;
+
+            Attribute domain = Helper.getAttribute("time.unit", xml);
+            if (domain == null)
+                this.frameDomain = TemporalSpread.FrameDomain.Ticks;
+            else {
+                switch (domain.getValue()) {
+                    case "milliseconds":
+                        this.frameDomain = TemporalSpread.FrameDomain.Milliseconds;
+                        break;
+                    // TODO: TemporalSpread.FrameDomain.RelativeToNoteDuration?
+                    case "ticks":
+                    default:
+//                                this.temporalSpread.frameDomain = TemporalSpread.FrameDomain.Ticks;   // unnecessary because default
+                        break;
+                }
+            }
+
+            Attribute start = Helper.getAttribute("frame.start", xml);
+            if (start != null)
+                this.frameStart = Double.parseDouble(start.getValue());
+
+            Attribute length = Helper.getAttribute("frameLength", xml);
+            if (length != null)
+                this.setFrameLength(Double.parseDouble(length.getValue()));
+
+            Attribute intensityAtt = Helper.getAttribute("intensity", xml);
+            if (intensityAtt != null)
+                this.intensity = Double.parseDouble(intensityAtt.getValue());
+
+            Attribute noteoffShiftAtt = Helper.getAttribute("noteoff.shift", xml);
+            if (noteoffShiftAtt != null) {
+                switch (noteoffShiftAtt.getValue()) {
+                    case "true":
+                        this.noteOffShift = TemporalSpread.NoteOffShift.True;
+                        break;
+                    case "false":
+                        this.noteOffShift = TemporalSpread.NoteOffShift.False;
+                        break;
+                    case "monophonic":
+                        this.noteOffShift = TemporalSpread.NoteOffShift.Monophonic;
+                        break;
+                }
+            }
+        }
+
+        /**
+         * set the length of the frame
+         * @param length must be positive, otherwise it defaults to 0.0
+         */
+        public void setFrameLength(double length) {
+            this.frameLength = Math.max(0.0, length);
+        }
+
+        /**
+         * get the frame length
+         * @return
+         */
+        public double getFrameLength() {
+            return this.frameLength;
+        }
+
+        /**
          * apply the temporal spread to the chord/note sequence;
          * the notes get new attributes ornament.date.offset or ornament.date.offset.milliseconds,
          * and ornament.duration.offset or ornament.duration.milliseconds
@@ -367,15 +304,14 @@ public class OrnamentDef extends AbstractDef {
             // process all chords/notes except for the final one
             ArrayList<Element> previous = null;
             if (chordSequence.size() > 1) {
-                double constFac = this.frameEnd - this.frameStart;
                 for (int i = 0; i < chordSequence.size() - 1; ++i) {    // for each chord/note until the pre-last
-                    double dateOffset = (Math.pow(((double) i) / (chordSequence.size() - 1), this.intensity) * constFac) + this.frameStart;
+                    double dateOffset = (Math.pow(((double) i) / (chordSequence.size() - 1), this.intensity) * this.frameLength) + this.frameStart;
                     previous = this.setOrnamentDateAtts(dateOffset, chordSequence.get(i), previous);
                 }
             }
 
             // place the final chord at frameEnd
-            this.setOrnamentDateAtts(this.frameEnd, chordSequence.get(chordSequence.size() - 1), previous);
+            this.setOrnamentDateAtts(this.frameStart + this.frameLength, chordSequence.get(chordSequence.size() - 1), previous);
 
         }
 
@@ -454,6 +390,50 @@ public class OrnamentDef extends AbstractDef {
          * @return
          */
         public Element getXml() {
+            if (this.xml == null)
+                return this.generateXML();
+            return this.xml;
+        }
+
+        /**
+         * newly generate the XML code for this temporal spread and overwrite the XML data stored in this.xml so far
+         * @return
+         */
+        public Element generateXML() {
+            Element ts = new Element("temporalSpread", Mpm.MPM_NAMESPACE);
+
+            if (this.frameStart != 0.0)
+                ts.addAttribute(new Attribute("frame.start", Double.toString(this.frameStart)));
+            if (this.frameLength != 0.0)
+                ts.addAttribute(new Attribute("frameLength", Double.toString(this.frameLength)));
+
+            switch (this.frameDomain) {
+                case Ticks:
+                    // not necessary because this is the default value when absent
+                    break;
+                case Milliseconds:
+                    ts.addAttribute(new Attribute("time.units", "milliseconds"));
+                    break;
+//            case RelativeToNoteDuration:
+//                throw new UnsupportedDataTypeException("The feature TemporalSpread.FrameDomain.RelativeToNoteDuration is not yet supported.");
+            }
+
+            if (this.intensity != 1.0)
+                ts.addAttribute(new Attribute("intensity", Double.toString(this.intensity)));
+
+            switch (this.noteOffShift) {
+                case False:
+//                ts.addAttribute(new Attribute("noteoff.shift", "false"));     // not necessary because this is the default value in the absence of the attribute
+                    break;
+                case True:
+                    ts.addAttribute(new Attribute("noteoff.shift", "true"));
+                    break;
+                case Monophonic:
+                    ts.addAttribute(new Attribute("noteoff.shift", "monophonic"));
+                    break;
+            }
+
+            this.setXml(ts);
             return this.xml;
         }
 
@@ -481,6 +461,24 @@ public class OrnamentDef extends AbstractDef {
          * constructor
          */
         public DynamicsGradient() {}
+
+        /**
+         * constructor
+         * @param xml
+         */
+        public DynamicsGradient(Element xml) {
+            this.xml = xml;
+
+            Attribute att = Helper.getAttribute("transition.from", xml);
+            if (att != null)                                                // if there is a transition.from value
+                this.transitionFrom = Double.parseDouble(att.getValue());   // parse it; otherwise we would leave the default value
+
+            att = Helper.getAttribute("transition.to", xml);
+            if (att == null)                                                // if there is no transition.to value
+                this.transitionTo = this.transitionFrom;                    // we assume constant dynamics, hence set transition.to = transition.from
+            else                                                            // if, instead, we have a transition.to value
+                this.transitionTo = Double.parseDouble(att.getValue());     // parse it
+        }
 
         /**
          * apply the dynamics gradient and scale to the given chord/note sequence;
@@ -532,6 +530,25 @@ public class OrnamentDef extends AbstractDef {
          * @return
          */
         public Element getXml() {
+            if (this.xml == null)
+                return this.generateXML();
+            return this.xml;
+        }
+
+        /**
+         * newly generate the XML code for this temporal spread and overwrite the XML data stored in this.xml so far
+         * @return
+         */
+        public Element generateXML() {
+            Element dg = new Element("dynamicsGradient", Mpm.MPM_NAMESPACE);
+
+            if (this.transitionFrom != 0.0)
+                dg.addAttribute(new Attribute("transition.from", Double.toString(this.transitionFrom)));
+
+            if (this.transitionTo != this.transitionFrom)
+                dg.addAttribute(new Attribute("transition.to", Double.toString(this.transitionTo)));
+
+            this.setXml(dg);
             return this.xml;
         }
 

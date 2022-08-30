@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.40
+- Update of MPM ornamentation-related code in correspondence with MPM version 2.0.3.
+
+
 #### v0.8.39
 - The following methods have been made `public`, so applications can request corresponding data from the classes.
   - `meico.mpm.elements.maps.ArticulationMap.getArticulationDataOf()`,
