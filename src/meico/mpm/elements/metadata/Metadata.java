@@ -46,7 +46,7 @@ public class Metadata extends AbstractXmlSubtree {
             metadata.appendChild(comment.getXml());
 
         if ((relatedResources != null) && !relatedResources.isEmpty()) {
-            Element relatedResourcesElt = new Element("relatedResources");
+            Element relatedResourcesElt = new Element("relatedResources", Mpm.MPM_NAMESPACE);
             metadata.appendChild(relatedResourcesElt);
             for (RelatedResource resource : relatedResources)
                 relatedResourcesElt.appendChild(resource.getXml());

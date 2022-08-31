@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.8.41
+- Added missing namespace to the creation of a element `relatedResources` in constructor `meico.elements.metadata.Metadata.Metadata(Author author, Comment comment, Collection<RelatedResource> relatedResources)`.
+- JavaDoc update.
+
+
 #### v0.8.40
 - Update of MPM ornamentation-related code in correspondence with MPM version 2.0.3.
 

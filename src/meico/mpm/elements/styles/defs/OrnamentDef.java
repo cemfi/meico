@@ -123,7 +123,7 @@ public class OrnamentDef extends AbstractDef {
     /**
      * set the temporalSpread transformer
      * @param frameStart
-     * @param frameLength must be >= 0.0
+     * @param frameLength must be greater or equal to 0.0
      * @param frameDomain
      * @param intensity
      * @param noteOffShift
