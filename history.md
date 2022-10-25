@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.42
+- Added all necessary functionality to handle IDs in MPM elements `temporalSpread` and `dynamicsGradient`.
+
+
 #### v0.8.41
 - Added missing namespace to the creation of a element `relatedResources` in constructor `meico.elements.metadata.Metadata.Metadata(Author author, Comment comment, Collection<RelatedResource> relatedResources)`.
 - JavaDoc update.

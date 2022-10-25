@@ -205,6 +205,7 @@ public class OrnamentDef extends AbstractDef {
         public FrameDomain frameDomain = FrameDomain.Ticks;
         public double intensity = 1.0;
         public NoteOffShift noteOffShift = NoteOffShift.False;
+        private String id = null;
         private Element xml;
 
         public enum FrameDomain {
@@ -273,6 +274,10 @@ public class OrnamentDef extends AbstractDef {
                         break;
                 }
             }
+
+            Attribute idAtt = Helper.getAttribute("id", xml);
+            if (idAtt != null)
+                this.id = idAtt.getValue();
         }
 
         /**
@@ -433,6 +438,12 @@ public class OrnamentDef extends AbstractDef {
                     break;
             }
 
+            if ((this.id != null) && !this.id.isEmpty()) {
+                Attribute idAtt = new Attribute("id", this.id);
+                idAtt.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");
+                ts.addAttribute(idAtt);
+            }
+
             this.setXml(ts);
             return this.xml;
         }
@@ -446,6 +457,40 @@ public class OrnamentDef extends AbstractDef {
                 return "";
             return this.xml.toXML();
         }
+
+        /**
+         * set the id
+         * @param id a xml:id string or null
+         */
+        public void setId(String id) {
+            Attribute idAtt = Helper.getAttribute("id", this.getXml());
+            if (id == null) {
+                if (idAtt != null) {
+                    idAtt.detach();
+                    this.id = null;
+                }
+                return;
+            }
+
+            if (idAtt == null) {
+                this.id = id;
+                idAtt = new Attribute("id", id);
+                idAtt.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+                this.getXml().addAttribute(idAtt);
+                return;
+            }
+
+            this.id = id;
+            idAtt.setValue(id);
+        }
+
+        /**
+         * get the id
+         * @return a string or null
+         */
+        public String getId() {
+            return this.id;
+        }
     }
 
     /**
@@ -455,6 +500,7 @@ public class OrnamentDef extends AbstractDef {
     public static class DynamicsGradient {
         public double transitionFrom = 0.0;
         public double transitionTo = 0.0;
+        private String id = null;
         private Element xml = null;
 
         /**
@@ -478,6 +524,10 @@ public class OrnamentDef extends AbstractDef {
                 this.transitionTo = this.transitionFrom;                    // we assume constant dynamics, hence set transition.to = transition.from
             else                                                            // if, instead, we have a transition.to value
                 this.transitionTo = Double.parseDouble(att.getValue());     // parse it
+
+            Attribute idAtt = Helper.getAttribute("id", xml);
+            if (idAtt != null)
+                this.id = idAtt.getValue();
         }
 
         /**
@@ -548,6 +598,12 @@ public class OrnamentDef extends AbstractDef {
             if (this.transitionTo != this.transitionFrom)
                 dg.addAttribute(new Attribute("transition.to", Double.toString(this.transitionTo)));
 
+            if ((this.id != null) && !this.id.isEmpty()) {
+                Attribute idAtt = new Attribute("id", this.id);
+                idAtt.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");
+                dg.addAttribute(idAtt);
+            }
+
             this.setXml(dg);
             return this.xml;
         }
@@ -560,6 +616,40 @@ public class OrnamentDef extends AbstractDef {
             if (this.xml == null)
                 return "";
             return this.xml.toXML();
+        }
+
+        /**
+         * set the id
+         * @param id a xml:id string or null
+         */
+        public void setId(String id) {
+            Attribute idAtt = Helper.getAttribute("id", this.getXml());
+            if (id == null) {
+                if (idAtt != null) {
+                    idAtt.detach();
+                    this.id = null;
+                }
+                return;
+            }
+
+            if (idAtt == null) {
+                this.id = id;
+                idAtt = new Attribute("id", id);
+                idAtt.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");    // set correct namespace
+                this.getXml().addAttribute(idAtt);
+                return;
+            }
+
+            this.id = id;
+            idAtt.setValue(id);
+        }
+
+        /**
+         * get the id
+         * @return a string or null
+         */
+        public String getId() {
+            return this.id;
         }
     }
 }

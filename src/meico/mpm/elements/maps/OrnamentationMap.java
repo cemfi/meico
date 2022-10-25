@@ -278,7 +278,7 @@ public class OrnamentationMap extends GenericMap {
      * Core part of the ornamentation rendering. This method does not add or edit any
      * performance attributes (xx.perf and velocity) on the map elements. It will only
      * add attributes that will later be used to set the performance attributes.
-     * It also adds new notes and marks note to be deleted from the performance via the respective OrnamentData.apply() invokation.
+     * It also adds new notes and marks notes to be deleted from the performance via the respective OrnamentData.apply() invocation.
      * @param maps list of MSM scores
      */
     private void apply(ArrayList<GenericMap> maps) {
@@ -306,7 +306,7 @@ public class OrnamentationMap extends GenericMap {
         for (int i = 0; i < this.size(); ++i) {
             Element ornamentXml = this.getElement(i);
 
-            // get the lookup style for subsequent onraments
+            // get the lookup style for subsequent ornaments
             if (ornamentXml.getLocalName().equals("style")) {
                 if (this.getLocalHeader() != null)
                     style = (OrnamentationStyle) this.getLocalHeader().getStyleDef(Mpm.ORNAMENTATION_STYLE, Helper.getAttributeValue("name.ref", ornamentXml));
@@ -350,7 +350,7 @@ public class OrnamentationMap extends GenericMap {
                 String no = noteOrderAtt.getValue().trim();
                 switch (no) {
                     case "ascending pitch":
-//                        noteOrderAscending = 1;
+//                        noteOrderAscending = 1;               // default initialization
                         break;
                     case "descending pitch":
                         noteOrderAscending = -1;
