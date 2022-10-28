@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.43
+- Bugfix in class `meico.mpm.elements.styles.defs.OrnamentDef`, the attribute `time.units` of element `temporalSpread` is renamed to `time.unit` (without "s") in accordance to the MPM shema definition.
+
+
 #### v0.8.42
 - Added all necessary functionality to handle IDs in MPM elements `temporalSpread` and `dynamicsGradient`.
 

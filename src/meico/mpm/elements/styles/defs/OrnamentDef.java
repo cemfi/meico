@@ -417,7 +417,7 @@ public class OrnamentDef extends AbstractDef {
                     // not necessary because this is the default value when absent
                     break;
                 case Milliseconds:
-                    ts.addAttribute(new Attribute("time.units", "milliseconds"));
+                    ts.addAttribute(new Attribute("time.unit", "milliseconds"));
                     break;
 //            case RelativeToNoteDuration:
 //                throw new UnsupportedDataTypeException("The feature TemporalSpread.FrameDomain.RelativeToNoteDuration is not yet supported.");
