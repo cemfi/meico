@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.44
+- Bugfix in `meico.mpm.elements.maps.OrnamentationMap` methods `renderAllNonmillisecondsModifiersToMap()` and `renderMillisecondsModifiersToMap()`. Temporary attributes from the `temporalSpread` modifier were processed incorrectly.
+
+
 #### v0.8.43
 - Bugfix in class `meico.mpm.elements.styles.defs.OrnamentDef`, the attribute `time.units` of element `temporalSpread` is renamed to `time.unit` (without "s") in accordance to the MPM shema definition.
 

@@ -356,6 +356,7 @@ public class OrnamentationMap extends GenericMap {
                         noteOrderAscending = -1;
                         break;
                     default:                                    // attribute note.order is a list of reference IDs to be read into the notes list
+                        // TODO: parse brackets to create "sub-chords"
                         od.noteOrder = new ArrayList<>(Arrays.asList(no.replaceAll("#", "").split("\\s+")));
                         if (od.noteOrder.isEmpty())             // empty note list, hence no notes to ornament
                             continue;                           // continue with the next ornament
@@ -400,7 +401,7 @@ public class OrnamentationMap extends GenericMap {
             // returned by apply() and added to the first map in maps
             for (ArrayList<Element> chord : od.apply(chordSequence)) {
                 for (Element note : chord) {
-                    maps.get(0).addElement(note);
+                    maps.get(0).addElement(note);   // TODO: is there a better way to find out to which map the note should be added?
                 }
             }
         }
@@ -412,48 +413,53 @@ public class OrnamentationMap extends GenericMap {
      *      - ornament.dynamics
      *      - ornament.date.offset (an offset) ... ornament.milliseconds.date.offset comes later in the rendering pipeline,
      *      - ornament.duration (absolute duration) ... ornament.milliseconds.duration comes later in the rendering pipeline,
-     *      - ornament.noteoff.shift (true/false),
+     *      - ornament.noteoff.shift (true or absent=false),
      * @param map
      */
     private void renderAllNonmillisecondsModifiersToMap(GenericMap map) {
         for (KeyValue<Double, Element> e : map.getAllElementsOfType("note")) {
+            Element note = e.getValue();
+
             // add ornament.dynamics to the velocity value
-            Attribute ornamentDynamics = Helper.getAttribute("ornament.dynamics", e.getValue());
+            Attribute ornamentDynamics = Helper.getAttribute("ornament.dynamics", note);
             if (ornamentDynamics != null) {
-                Attribute velocity = Helper.getAttribute("velocity", e.getValue());
-                if (velocity != null) {                     // this attribute is missing, we have no basic dynamics to add the ornament dynamics to, so this is mandatory
+                Attribute velocity = Helper.getAttribute("velocity", note);
+                if (velocity != null) {                     // if this attribute is missing, we have no basic dynamics to add the ornament dynamics to, so this is mandatory
                     velocity.setValue(String.valueOf(Double.parseDouble(velocity.getValue()) + Double.parseDouble(ornamentDynamics.getValue())));
                 }
             }
 
             // add ornament.date.offset to date.perf, set date.end.perf according to ornament.duration or ornament.noteoff.shift, resp.
-            Attribute ornamentDateOffsetAtt = Helper.getAttribute("ornament.date.offset", e.getValue());
-            if (ornamentDateOffsetAtt != null) {
-                Attribute datePerfAtt = Helper.getAttribute("date.perf", e.getValue());
-                if (datePerfAtt != null) {                  // this attribute is mandatory for all further timing transformations
-                    double datePerf = Double.parseDouble(datePerfAtt.getValue());
-                    double ornamentDateOffset = Double.parseDouble(ornamentDateOffsetAtt.getValue());
-                    datePerfAtt.setValue(String.valueOf(datePerf + ornamentDateOffset));
+            Attribute ornamentDateOffsetAtt = Helper.getAttribute("ornament.date.offset", note);
+            if (ornamentDateOffsetAtt != null) {                                                        // if the ornament shifts the date of the event/note
+                Attribute datePerfAtt = Helper.getAttribute("date.perf", note);                         // get the date of the note so far
+                if (datePerfAtt != null) {                                                              // this attribute is mandatory for all further timing transformations
+                    double datePerf = Double.parseDouble(datePerfAtt.getValue());                       // read its value
+                    double ornamentDateOffset = Double.parseDouble(ornamentDateOffsetAtt.getValue());   // read the value of the offset
+                    datePerfAtt.setValue(String.valueOf(datePerf + ornamentDateOffset));                // update the date with the offset value
 
-                    Attribute dateEndPerfAtt = Helper.getAttribute("date.end.perf", e.getValue());
-                    Attribute durationPerfAtt = Helper.getAttribute("duration.perf", e.getValue());
+                    Attribute dateEndPerfAtt = Helper.getAttribute("date.end.perf", note);              // get the end date attribute
+                    Attribute durationPerfAtt = Helper.getAttribute("duration.perf", note);             // get the duration attribute
 
-                    // ornament.duration
-                    Attribute ornamentDurationAtt = Helper.getAttribute("ornament.duration", e.getValue());
-                    if (ornamentDurationAtt != null) {
-                        if (dateEndPerfAtt != null)
-                            dateEndPerfAtt.setValue(String.valueOf(datePerf + Double.parseDouble(ornamentDurationAtt.getValue())));
+                    Attribute ornamentDurationAtt = Helper.getAttribute("ornament.duration", note);     // does the ornament set an absolute note duration?
+                    if (ornamentDurationAtt != null) {                                                  // apply it to duration.perf and date.end.perf
                         if (durationPerfAtt != null)
-                            durationPerfAtt.setValue(String.valueOf(ornamentDurationAtt.getValue()));
-                    }
-
-                    // ornament.noteoff.shift
-                    Attribute ornamentNoteoffShiftAtt = Helper.getAttribute("ornament.noteoff.shift", e.getValue());
-                    if (ornamentNoteoffShiftAtt != null) {
+                            durationPerfAtt.setValue(ornamentDurationAtt.getValue());                   // update the note's duration
+                        else
+                            note.addAttribute(new Attribute("duration.perf", ornamentDurationAtt.getValue()));
                         if (dateEndPerfAtt != null)
-                            dateEndPerfAtt.setValue(String.valueOf(Double.parseDouble(dateEndPerfAtt.getValue()) + ornamentDateOffset));
+                            dateEndPerfAtt.setValue(String.valueOf(datePerf + ornamentDateOffset + Double.parseDouble(ornamentDurationAtt.getValue()))); // update the end date of the note
+                        else
+                            note.addAttribute(new Attribute("date.end.perf", String.valueOf(datePerf + ornamentDateOffset + Double.parseDouble(ornamentDurationAtt.getValue()))));
+                    } else {                                                                            // act according to noteoff.shift
+                        Attribute ornamentNoteoffShiftAtt = Helper.getAttribute("ornament.noteoff.shift", note);
+                        if (ornamentNoteoffShiftAtt != null) {                                          // this attribute is only created when its value is "true", so we need to update date.end.perf; thus, duration stays the same
+                            if (dateEndPerfAtt != null)
+                                dateEndPerfAtt.setValue(String.valueOf(Double.parseDouble(dateEndPerfAtt.getValue()) + ornamentDateOffset)); // update the end date of the note
+                        } else {                                                                        // ornament.noteOff.shift="false", so we need to update duration.perf; thus, date.end.perf stays the same
                         if (durationPerfAtt != null)
-                            durationPerfAtt.setValue(String.valueOf(Double.parseDouble(durationPerfAtt.getValue()) + ornamentDateOffset));;
+                            durationPerfAtt.setValue(String.valueOf(Double.parseDouble(durationPerfAtt.getValue()) - ornamentDateOffset));;
+                        }
                     }
                 }
             }
@@ -464,6 +470,7 @@ public class OrnamentationMap extends GenericMap {
      * render ornamentation milliseconds modifier attributes into performance attributes:
      *      - ornament.milliseconds.date.offset into milliseconds.date
      *      - ornament.milliseconds.duration into milliseconds.date.end
+     *      - ornament.noteoff.shift (true/false)
      * @param map
      * @param ornamentationMap
      */
@@ -472,27 +479,34 @@ public class OrnamentationMap extends GenericMap {
             return;
 
         for (KeyValue<Double, Element> e : map.getAllElementsOfType("note")) {
-            Attribute millisecondsDateAtt = Helper.getAttribute("milliseconds.date", e.getValue());
-            if (millisecondsDateAtt == null)                // without this attribute we have no reference for all the transformations
+            Element note = e.getValue();
+            Attribute millisecondsDateAtt = Helper.getAttribute("milliseconds.date", note);
+            if (millisecondsDateAtt == null)                                                                            // without this attribute we have no reference for all the transformations
                 continue;
             double millisecondsDate = Double.parseDouble(millisecondsDateAtt.getValue());
 
-            Attribute ornamentMillisecondsDateAtt = Helper.getAttribute("ornament.milliseconds.date.offset", e.getValue());
+            Attribute ornamentMillisecondsDateAtt = Helper.getAttribute("ornament.milliseconds.date.offset", note);
+            double ornamentMillisecondsDateOffset = 0.0;
             if (ornamentMillisecondsDateAtt != null) {
-                millisecondsDate += Double.parseDouble(ornamentMillisecondsDateAtt.getValue());
-                millisecondsDateAtt.setValue(String.valueOf(millisecondsDate));
+                ornamentMillisecondsDateOffset = Double.parseDouble(ornamentMillisecondsDateAtt.getValue());
+                millisecondsDateAtt.setValue(String.valueOf(millisecondsDate + ornamentMillisecondsDateOffset));
             }
 
-            Attribute ornamentMillisecondsDuration = Helper.getAttribute("ornament.milliseconds.duration", e.getValue());
-            if (ornamentMillisecondsDuration == null)
-                continue;
-
-            double millisecondsDateEnd = millisecondsDate + Double.parseDouble(ornamentMillisecondsDuration.getValue());
-            Attribute millisecondsDateEndAtt = Helper.getAttribute("milliseconds.date.end", e.getValue());
-            if (millisecondsDateEndAtt == null)
-                e.getValue().addAttribute(new Attribute("milliseconds.date.end", String.valueOf(millisecondsDateEnd)));
-            else
-                millisecondsDateEndAtt.setValue(String.valueOf(millisecondsDateEnd));
+            Attribute millisecondsDateEndAtt = Helper.getAttribute("milliseconds.date.end", note);
+            Attribute ornamentMillisecondsDurationAtt = Helper.getAttribute("ornament.milliseconds.duration", note);    // does the ornament set an absolute duration?
+            if (ornamentMillisecondsDurationAtt != null) {                                                              // apply it to milliseconds.date.end
+                double ornamentMillisecondsDuration = Double.parseDouble(ornamentMillisecondsDurationAtt.getValue());   // get the new duration value
+                if (millisecondsDateEndAtt != null)
+                    millisecondsDateEndAtt.setValue(String.valueOf(millisecondsDate + ornamentMillisecondsDateOffset + ornamentMillisecondsDuration));  // set milliseconds.date.end
+                else
+                    note.addAttribute(new Attribute("milliseconds.date.end", String.valueOf(millisecondsDate + ornamentMillisecondsDateOffset + ornamentMillisecondsDuration)));
+            } else {                                                                                                    // act according to noteoff.shift
+                Attribute ornamentNoteoffShiftAtt = Helper.getAttribute("ornament.noteoff.shift", note);
+                if (ornamentNoteoffShiftAtt != null) {                                                                  // this attribute is only created when its value is "true", so we need to update milliseconds.date.end.perf; thus, the duration stays the same
+                    if (millisecondsDateEndAtt != null)
+                        millisecondsDateEndAtt.setValue(String.valueOf(Double.parseDouble(millisecondsDateEndAtt.getValue()) + ornamentMillisecondsDateOffset)); // update the end date of the note
+                } // else, ornament.noteOff.shift="false", so milliseconds.date.end remains unalteres
+            }
         }
     }
 }

@@ -316,8 +316,8 @@ public class OrnamentDef extends AbstractDef {
             }
 
             // place the final chord at frameEnd
-            this.setOrnamentDateAtts(this.frameStart + this.frameLength, chordSequence.get(chordSequence.size() - 1), previous);
-
+            ArrayList<Element> finalchord = chordSequence.get(chordSequence.size() - 1);
+            this.setOrnamentDateAtts(this.frameStart + this.frameLength, finalchord, previous);
         }
 
         /**
@@ -325,7 +325,7 @@ public class OrnamentDef extends AbstractDef {
          *      - ornament.date.offset or ornament.milliseconds.date.offset (an offset),
          *      - ornament.duration or ornament.milliseconds.duration (absolute duration),
          *      - ornament.noteoff.shift (true/false)
-         * @param dateOffset
+         * @param dateOffset the offset to the date/milliseconds.date of the chord/notes
          * @param chord
          * @param previous the previous chord, so we can treat its duration according to the chords offset, or null
          * @return the chord, if its duration needs treatment along the processing of the next chord (then as previous); otherwise null
@@ -349,8 +349,7 @@ public class OrnamentDef extends AbstractDef {
             for (Element note : chord) {
                 Attribute ornamentDateAtt = Helper.getAttribute(dateAttName, note);
                 if (ornamentDateAtt != null) {
-                    dateOffset += Double.parseDouble(ornamentDateAtt.getValue());
-                    ornamentDateAtt.setValue(String.valueOf(dateOffset));
+                    ornamentDateAtt.setValue(String.valueOf(dateOffset + Double.parseDouble(ornamentDateAtt.getValue())));
                 } else
                     note.addAttribute(new Attribute(dateAttName, String.valueOf(dateOffset)));
             }
@@ -361,8 +360,7 @@ public class OrnamentDef extends AbstractDef {
                     return null;
                 case True:
                     for (Element note : chord)
-                        if (this.noteOffShift == NoteOffShift.True)
-                            note.addAttribute(new Attribute("ornament.noteoff.shift", "true"));
+                        note.addAttribute(new Attribute("ornament.noteoff.shift", "true"));
                     return null;
                 case Monophonic:
                     if (previous != null) {
@@ -379,9 +377,10 @@ public class OrnamentDef extends AbstractDef {
                     }
                     return chord;
                 default:
-                    return chord;
+                    return null;
             }
         }
+
         /**
          * a setter for the XML representation
          * @param xml
