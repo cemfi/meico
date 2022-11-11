@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.45
+- Bugfix in method `meico.mpm.elements.Performance.getAllMsmPartsAffectedByGlobalMap()` which caused some global performance features not being applied correctly to all affected maps.
+
+
 #### v0.8.44
 - Bugfix in `meico.mpm.elements.maps.OrnamentationMap` methods `renderAllNonmillisecondsModifiersToMap()` and `renderMillisecondsModifiersToMap()`. Temporary attributes from the `temporalSpread` modifier were processed incorrectly.
 

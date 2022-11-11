@@ -577,13 +577,15 @@ public class Performance extends AbstractXmlSubtree {
     private ArrayList<Element> getAllMsmPartsAffectedByGlobalMap(Msm msm, String mapType) {
         ArrayList<Element> msmPartsWithoutLocalMap = new ArrayList<>();
 
-        for (Part part : this.getAllParts()) {                          // check all MPM parts
-            if (part.getDated().getMap(mapType) != null)                // if the part has a local map of the given type
-                continue;                                               // it is not affected by a global map of that type
+        for (Element msmPart : msm.getParts())                          // first we add all parts, later we see which have to be removed
+            msmPartsWithoutLocalMap.add(msmPart);
 
-            Element msmPart = msm.getPart(part.getNumber(), part.getName(), part.getMidiChannel(), part.getMidiPort()); // find the part in the MSM
-            if (msmPart != null)
-                msmPartsWithoutLocalMap.add(msmPart);                   // add it to the list
+        for (Part part : this.getAllParts()) {                          // check all MPM parts
+            if (part.getDated().getMap(mapType) != null) {              // if the part has a local map of the given type
+                Element msmPart = msm.getPart(part.getNumber(), part.getName(), part.getMidiChannel(), part.getMidiPort()); // find the part in the MSM
+                if (msmPart != null)                                    // found it
+                    msmPartsWithoutLocalMap.remove(msmPart);            // remove it from our list
+            }
         }
         return msmPartsWithoutLocalMap;
     }
