@@ -489,6 +489,22 @@ public class GenericMap extends AbstractXmlSubtree {
     }
 
     /**
+     * determine the index of the given element in this map
+     * @param element
+     * @return the index or -1 if the element is null or not in the map
+     */
+    public int getElementIndexOf(Element element) {
+        if ((element == null) || (element.getParent() != this.getXml()))    // if no element is given, or it's XML representation is not a child of this map's XML element
+            return -1;
+
+        for (int i = 0; i < this.elements.size(); ++i)                      // check each map entry
+            if (this.elements.get(i).getValue() == element)                 // until we found the one with the given element
+                return i;                                                   // return its index
+
+        return -1;
+    }
+
+    /**
      * insert the element in the map
      * @param xml it must be non-null and contain an attribute date
      * @return the index at which it has been inserted or -1 if insertion failed
@@ -677,6 +693,15 @@ public class GenericMap extends AbstractXmlSubtree {
      */
     public boolean isEmpty() {
         return this.elements.isEmpty();
+    }
+
+    /**
+     * Check if element is an entry in this map.
+     * @param element
+     * @return
+     */
+    public boolean contains(Element element) {
+        return element.getParent() == this.getXml();
     }
 
     /**

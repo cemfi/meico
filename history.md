@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.8.46
+- Private method `meico.mpm.elements.maps.TempoMap.renderTempoToMap(double date, int ppq, TempoData tempoData)` has been made `public` and refactored to `computeDiffTiming()` to better describe its function.
+- Class `meico.mpm.elements.maps.GenericMap` has new methods:
+  - `contains()` to check whether a given XML element is an entry in this map.
+  - `getElementIndexOf()` to determine the index of a given element.
+
+
 #### v0.8.45
 - Bugfix in method `meico.mpm.elements.Performance.getAllMsmPartsAffectedByGlobalMap()` which caused some global performance features not being applied correctly to all affected maps.
 

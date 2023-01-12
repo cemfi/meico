@@ -2,7 +2,6 @@ package meico.mpm.elements.maps;
 
 import meico.mei.Helper;
 import meico.mpm.Mpm;
-import meico.mpm.elements.styles.GenericStyle;
 import meico.mpm.elements.styles.TempoStyle;
 import meico.supplementary.KeyValue;
 import meico.mpm.elements.maps.data.TempoData;
@@ -376,10 +375,10 @@ public class TempoMap extends GenericMap {
 
             // compute the milliseconds date of the tempo instruction and add it to the tempi list so we do not have to do this again later on
             if (tempi.isEmpty())                                                                // if this is the first tempo instruction
-                td.startDateMilliseconds = TempoMap.renderTempoToMap(td.startDate, ppq, null);
+                td.startDateMilliseconds = TempoMap.computeDiffTiming(td.startDate, ppq, null);
             else {
                 TempoData prevTd = tempi.get(tempi.size() - 1);                                 // the milliseconds date must be computed on the basis of the previous tempo instruction
-                td.startDateMilliseconds = TempoMap.renderTempoToMap(td.startDate, ppq, prevTd);
+                td.startDateMilliseconds = TempoMap.computeDiffTiming(td.startDate, ppq, prevTd);
                 td.startDateMilliseconds += tempi.get(tempi.size() - 1).startDateMilliseconds;  // add the previous tempo instruction's time to get the final timing
             }
             tempi.add(td);
@@ -394,9 +393,9 @@ public class TempoMap extends GenericMap {
                 // compute the milliseconds dates
                 double date = Double.parseDouble(Helper.getAttributeValue("date.perf", mapEntry.getValue()));
                 if (mapEntry.getKey() <= td.startDate)                                                      // if we are before the current tempo instruction
-                    milliseconds = TempoMap.renderTempoToMap(date, ppq, null);
+                    milliseconds = TempoMap.computeDiffTiming(date, ppq, null);
                 else
-                    milliseconds = TempoMap.renderTempoToMap(date, ppq, td) + td.startDateMilliseconds;
+                    milliseconds = TempoMap.computeDiffTiming(date, ppq, td) + td.startDateMilliseconds;
                 mapEntry.getValue().addAttribute(new Attribute("milliseconds.date", Double.toString(milliseconds)));    // add the attribute
 
                 // duration has to be converted, too, but if this element has already a date.end attribute, we go on with this
@@ -421,9 +420,9 @@ public class TempoMap extends GenericMap {
                 if (endDate > td.endDate)
                     continue;
                 if (endDate <= td.startDate)                                                    // if we are before the current tempo instruction
-                    milliseconds = TempoMap.renderTempoToMap(endDate, ppq, null);
+                    milliseconds = TempoMap.computeDiffTiming(endDate, ppq, null);
                 else {
-                    milliseconds = TempoMap.renderTempoToMap(endDate, ppq, td) + td.startDateMilliseconds;
+                    milliseconds = TempoMap.computeDiffTiming(endDate, ppq, td) + td.startDateMilliseconds;
                 }
                 map.elements.get(pd.getValue()).getValue().addAttribute(new Attribute("milliseconds.date.end", Double.toString(milliseconds)));    // add the attribute
                 pendingDurations.remove(pd);
@@ -486,10 +485,10 @@ public class TempoMap extends GenericMap {
                 continue;                                                               // take the next element until it is a tempo element to continue with the timing computations
 
             if (timedMap.isEmpty())                                                                     // computation for the first tempo instruction
-                td.startDateMilliseconds = TempoMap.renderTempoToMap(td.startDate, ppq, null);
+                td.startDateMilliseconds = TempoMap.computeDiffTiming(td.startDate, ppq, null);
             else {                                                                                      // computation for all further instructions
                 TempoData prevTd = timedMap.get(timedMap.size() - 1);                                   // the milliseconds date must be computed on the basis of the previous tempo instruction
-                td.startDateMilliseconds = TempoMap.renderTempoToMap(td.startDate, ppq, prevTd);
+                td.startDateMilliseconds = TempoMap.computeDiffTiming(td.startDate, ppq, prevTd);
                 td.startDateMilliseconds += timedMap.get(timedMap.size() - 1).startDateMilliseconds;    // add the previous tempo instructions time to get the final timing
             }
             timedMap.add(td);
@@ -499,13 +498,14 @@ public class TempoMap extends GenericMap {
     }
 
     /**
-     * convenience method for timing computation
+     * convenience method for timing computation; computes the milliseconds difference between the tick date and the date of the tempo instruction (tempoData);
+     * in other word, how many milliseconds is date after the tempo instruction
      * @param date
      * @param ppq
-     * @param tempoData a TempoData instance or null (if no tempo information is geiven)
+     * @param tempoData a TempoData instance of the instruction that precedes date or null (if no tempo information is given)
      * @return date in milliseconds (in case of tempoData != null the result is the difference between the actual milliseconds date and the milliseconds date of the tempo instruction)
      */
-    private static double renderTempoToMap(double date, int ppq, TempoData tempoData) {
+    public static double computeDiffTiming(double date, int ppq, TempoData tempoData) {
         // no tempo data
         if (tempoData == null)
             return TempoMap.computeMillisecondsForNoTempo(date, ppq);
