@@ -566,4 +566,121 @@ public class TempoMap extends GenericMap {
 
         return resultConst * resultSum;
     }
+
+    /**
+     * simplifies the whole tempoMap at once
+     * @param equalTempoRange
+     * @param ppq
+     * @return
+     */
+    public double simplify(double equalTempoRange, int ppq) {
+        // collect and compute all tempo data
+        ArrayList<TempoData> tempi = new ArrayList<>();
+        for (int i = 0; i < this.size(); ++i) {
+            if (this.elements.get(i).getValue().getLocalName().equals("tempo")) {
+                TempoData tempo = this.getTempoDataOf(i);
+                tempi.add(tempo);
+
+                // some regularisation to simplify further processing
+                if (tempo.transitionTo == null)
+                    tempo.transitionTo = tempo.bpm;
+                else if (tempo.bpm == null)
+                    tempo.bpm = tempo.transitionTo;
+            }
+        }
+
+        // there must be at least 3 tempo instructions in the map
+        if (tempi.size() < 3)
+            return 0.0;
+
+        double error = 0.0;
+
+        ArrayList<TempoData> series = new ArrayList<>();                                            // this holds the series of tempo instructions to be simplified
+        double monotony = 0.0;                                                                      // monotonously rising = 1, falling = -1, constant = 0
+
+        for (int i = 0; i < tempi.size(); ++i) {
+            TempoData tempo = tempi.get(i);
+
+            if (series.isEmpty()) {
+                series.add(tempo);                                                                  // add this instruction to the series
+                double tempoDiff = tempo.transitionTo - tempo.bpm;
+                monotony = (Math.abs(tempoDiff) < equalTempoRange) ? 0.0 : Math.signum(tempoDiff);  // monotonously rising = 1, falling = -1, constant = 0
+                continue;
+            }
+
+            // if we have a series of tempo instructions, check if the monotony changes, thus the series would end and get simplified
+            double diffToPrev = tempo.bpm - series.get(series.size() - 1).transitionTo;                                 // compute tempo difference to the previous instruction's transitionTo value
+            double monotonyToPrev = (Math.abs(diffToPrev) < equalTempoRange) ? monotony : Math.signum(diffToPrev);      // if the tempo step is in the equality range, we keep the monotony, otherwise we take it from the signum
+
+            double innerDiff = tempo.transitionTo - tempo.bpm;
+            double innerMonotony = (Math.abs(innerDiff) < equalTempoRange) ? monotony : Math.signum(innerDiff);         // if the tempo transition is in the equality range, we keep the monotony, otherwise we take it from the signum
+
+            if (false) {    // TODO: does this instruction end the series? (this is also the case when this is the last instruction in tempi)
+                // TODO: then simplify to constant or continuous
+
+                series.clear();                                                                     // start a new series
+                --i;                                                                                // with the current tempo instruction
+                continue;
+            }
+
+            series.add(tempo);                                                                      // add this instruction to teh series
+        }
+
+        return error;
+    }
+
+    /**
+     * simplify a single tempo instruction
+     * @param tempo must have all required information that are generated via TempoMap.getTempoDataOf(i)
+     * @param equalTempoRange the maximum tempo difference allowed to make the tempo constant
+     * @param ppq
+     * @return the timing error in milliseconds introduced by simplification
+     */
+    public double simplify(TempoData tempo, double equalTempoRange, int ppq) {
+        double tempoDiff = tempo.transitionTo - tempo.bpm;
+        if ((tempoDiff == 0.0) || (Math.abs(tempoDiff) > equalTempoRange))                  // if it is already a constant tempo or the continuous transition is too pronounced to make it constant
+            return 0.0;                                                                     // done
+
+        double millisecondsOld = TempoMap.computeDiffTiming(tempo.endDate, ppq, tempo);
+        this.simplifyFast(tempo);
+        return TempoMap.computeDiffTiming(tempo.endDate, ppq, tempo) - millisecondsOld;     // compute the timing error
+    }
+
+    /**
+     * a faster version of simplify(TempoData tempo, double equalTempoRange, int ppq);
+     * this method simplifies a single tempo instruction to a constant tempo; it does not compute timing error
+     * @param tempo the tempo instruction must be member of this tempoMap
+     */
+    public void simplifyFast(TempoData tempo) {
+        if (!this.contains(tempo.xml))
+            return;
+
+        // some regularisation to simplify further processing
+        if (tempo.transitionTo == null)
+            tempo.transitionTo = tempo.bpm;
+        else if (tempo.bpm == null)
+            tempo.bpm = tempo.transitionTo;
+
+        // compute the average tempo and set it as constant tempo
+        if (tempo.meanTempoAt != null)
+            tempo.bpm = (tempo.bpm * tempo.meanTempoAt) + (tempo.transitionTo * (1.0 - tempo.meanTempoAt)); // this is an approximation based on the meanTempoAt value
+        else
+            tempo.bpm = (tempo.bpm + tempo.transitionTo) * 0.5;
+        tempo.transitionTo = tempo.bpm;
+
+        // remove the old tempo entry, crceate and add a new one to the tempoMap
+        this.removeElement(tempo.xml);
+        tempo.xml = null;
+        this.addTempo(tempo);
+    }
+
+    /**
+     * simplify a monotonic series of tempo instructions
+     * @param series the series of tempo data to simplify; the first instruction wil be edited, the last remains unchanged, all in-between will be deleted
+     * @param ppq
+     * @return the timing error in milliseconds at the end of the simplification frame
+     */
+    public double simplify(ArrayList<TempoData> series, int ppq) {
+        return 0.0;
+    }
 }

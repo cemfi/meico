@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.47
+- New methods `meico.mpm.elements.maps.TempoMap.simplify()` that reduces monotonous series of successive tempo instructions to one instruction. Successive instructions with the same (or nearly the same) tempo are also combined into one instruction.
+
+
 #### v0.8.46
 - Private method `meico.mpm.elements.maps.TempoMap.renderTempoToMap(double date, int ppq, TempoData tempoData)` has been made `public` and refactored to `computeDiffTiming()` to better describe its function.
 - Class `meico.mpm.elements.maps.GenericMap` has new methods:
