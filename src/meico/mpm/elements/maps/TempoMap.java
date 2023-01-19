@@ -2,6 +2,7 @@ package meico.mpm.elements.maps;
 
 import meico.mei.Helper;
 import meico.mpm.Mpm;
+import meico.mpm.elements.Performance;
 import meico.mpm.elements.styles.TempoStyle;
 import meico.supplementary.KeyValue;
 import meico.mpm.elements.maps.data.TempoData;
@@ -210,7 +211,7 @@ public class TempoMap extends GenericMap {
             if (beatLengthAtt == null)                                              // if there is no beatLength defined in this tempo element
                 return null;                                                        // search on
 
-            td.startDate = this.elements.get(index).getKey();;                      // store the start date of the tempo instruction
+            td.startDate = this.elements.get(index).getKey();// store the start date of the tempo instruction
             td.endDate = this.getEndDate(index);                                    // get the date of the subsequent tempo element
             td.xml = e;
             td.beatLength = Double.parseDouble(beatLengthAtt.getValue());
@@ -598,14 +599,15 @@ public class TempoMap extends GenericMap {
         ArrayList<TempoData> series = new ArrayList<>();                                            // this holds the series of tempo instructions to be simplified
         double monotony = 0.0;                                                                      // monotonously rising = 1, falling = -1, constant = 0
 
-        for (int i = 0; i < tempi.size(); ++i) {
-            TempoData tempo = tempi.get(i);
-
+        for (TempoData tempo : tempi) {
             if (series.isEmpty()) {
                 series.add(tempo);                                                                  // add this instruction to the series
                 double tempoDiff = tempo.transitionTo - tempo.bpm;
                 monotony = (Math.abs(tempoDiff) < equalTempoRange) ? 0.0 : Math.signum(tempoDiff);  // monotonously rising = 1, falling = -1, constant = 0
                 continue;
+            } else if (tempo.beatLength != series.get(0).beatLength) {                              // make sure that all tempo values have the same beatLength basis as the first instruction
+                tempo.bpm = (tempo.bpm * tempo.beatLength) / series.get(0).beatLength;
+                tempo.transitionTo = (tempo.transitionTo * tempo.beatLength) / series.get(0).beatLength;
             }
 
             // if we have a series of tempo instructions, check if the monotony changes, thus the series would end and get simplified
@@ -615,16 +617,242 @@ public class TempoMap extends GenericMap {
             double innerDiff = tempo.transitionTo - tempo.bpm;
             double innerMonotony = (Math.abs(innerDiff) < equalTempoRange) ? monotony : Math.signum(innerDiff);         // if the tempo transition is in the equality range, we keep the monotony, otherwise we take it from the signum
 
-            if (false) {    // TODO: does this instruction end the series? (this is also the case when this is the last instruction in tempi)
-                // TODO: then simplify to constant or continuous
+            // does this instruction end the series? (this is also the case when this is the last instruction in tempi)
+            if (monotony == 0.0) {                                      // constant tempo
+                if (series.size() > 1) {                                // there are more than on tempo instruction in the series, so this might be a candidate for simplification to a constant tempo
+                    if (monotonyToPrev == 0.0) {                        // connection is constant
+                        if (innerMonotony != 0.0) {                     // ...___/ or inverse
+                            series.add(tempo);
+                            error += this.simplify(series, true, ppq);  // simplify the series to constant
+                            series.clear();                             // start the series anew
+                            monotony = innerMonotony;
+                        }
+                    } else {                                            // connection is monotonously rising or falling
+                        error += this.simplify(series, true, ppq);      // simplify the series to constant
+                        TempoData prev = series.get(series.size() - 1);
+                        series.clear();                                 // start the series anew
+                        if (monotonyToPrev == -innerMonotony) {         // with the current instruction (is done after the else block anyway)
+                            monotony = innerMonotony;
+                        } else {
+                            series.add(prev);                           // with the previous instruction
+                            monotony = monotonyToPrev;
+                        }
+                    }
+                } else {                                                // there is just one instruction in the series
+                    if (monotonyToPrev == 0.0) {
+                        if (innerMonotony != 0.0)                       // _/ or inverse
+                            monotony = innerMonotony;
+                    } else {
+                        if (monotonyToPrev == -innerMonotony) {         // -/ or inverse or _\ or inverse
+                            series.clear();                             // start the series anew
+                            monotony = innerMonotony;
+                        }
+                    }
+                }
+                series.add(tempo);
+            } else {                                                    // non-constant tempo, i.e. monotonously rising or falling
+                if (series.size() > 1) {                                // there are more than one instruction in the series, so this might be a candidate for simplification
+                    if ((monotonyToPrev == monotony) || (monotonyToPrev == 0.0)) {
+                        if (monotony != innerMonotony) {                // /\ or \/ or \_ or inverse
+                            series.add(tempo);
+                            error += this.simplify(series, false, ppq); // simplify to continuous transition
+                            series.clear();
+                            monotony = innerMonotony;
+                        }
+                    } else {                                            // the connection has opposite monotony
+                        error += this.simplify(series, false, ppq);     // simplify to continuous transition
+                        TempoData prev = series.get(series.size() - 1);
+                        series.clear();                                 // start the series anew
+                        if (monotonyToPrev == -innerMonotony) {         // with the current instruction (is done after the else block anyway)
+                            monotony = innerMonotony;
+                        } else {
+                            series.add(prev);                           // with the previous instruction
+                            monotony = monotonyToPrev;
+                        }
+                    }
+                } else {                                                // there is just one instruction in the series
+                    if ((monotonyToPrev == monotony) || (monotonyToPrev == 0.0)) {
+                        if (innerMonotony == -monotony) {               // /\ or \/
+                            series.clear();                             // start the series anew
+                            monotony = innerMonotony;
+                        }
+                    } else {                                            // the connection has opposite monotony
+                        series.clear();
+                        monotony = innerMonotony;
+                    }
+                }
+                series.add(tempo);
+            }
+        }
 
-                series.clear();                                                                     // start a new series
-                --i;                                                                                // with the current tempo instruction
-                continue;
+        this.simplify(series, false, ppq);                              // simplify the final series of instructions, if possible
+
+        return error;
+    }
+
+    /**
+     * simplify a monotonic series of tempo instructions
+     * @param series the series of tempo data to simplify; the first instruction will be edited, the last remains unchanged, all in-between will be deleted
+     * @param ppq
+     * @param toConstant set true if the series should be simplified to a constant instruction
+     * @return the timing error in milliseconds at the end of the simplification frame
+     */
+    public double simplify(ArrayList<TempoData> series, boolean toConstant, int ppq) {
+        if ((series == null) || (series.size() < 2))            // nothing there to simplify
+            return 0.0;                                         // done
+
+        double millisecondsOld = 0.0;
+
+        if (toConstant) {
+            // compute the timing from the first instruction in the series to the beginning of the last instruction
+            for (int i = 1; i < series.size(); ++i)
+                millisecondsOld += TempoMap.computeDiffTiming(series.get(i).startDate, ppq, series.get(i - 1));
+
+            int lastIndex = series.size() - 1;
+
+            // define a new tempo instruction and compute the average tempo of the series
+            TempoData newTempo = new TempoData();
+            newTempo.xmlId = series.get(0).xmlId;
+            newTempo.startDate = series.get(0).startDate;
+            newTempo.endDate = series.get(lastIndex).startDate;
+            newTempo.beatLength = series.get(0).beatLength;
+            newTempo.bpm = (15000 * (newTempo.endDate - newTempo.startDate)) / (millisecondsOld * newTempo.beatLength * ppq);
+//            newTempo.transitionTo = newTempo.bpm;
+
+            // do the updating and housekeeping
+            for (int i = series.size() - 2; i >= 0; --i)        // the last instruction remains untouched; all others are deleted
+                this.removeElement(series.get(i).xml);
+
+            this.addTempo(newTempo);                            // add the new instruction to the map
+
+            return 0.0;
+        }
+
+        // as we want to simplify to continuous tempo we need at least 3 instructions in the series
+        if (series.size() < 3)
+            return 0.0;
+
+        // make sure every instruction, except for the last one, has a bpm and transitionTo value, also store the min and max tempo values
+        double minTempo = series.get(0).bpm;
+        double maxTempo = series.get(0).bpm;
+        for (int i = 0; i < series.size() - 1; ++i) {
+            TempoData tempo = series.get(i);
+
+            if (tempo.bpm == null) {
+                if (tempo.transitionTo == null) {
+                    System.err.println("Error when simplifying tempoMap: A tempo element contains neither a bpm nor transitionTo value. Cancelling operation.");
+                    return 0.0;
+                }
+                tempo.bpm = tempo.transitionTo;
             }
 
-            series.add(tempo);                                                                      // add this instruction to teh series
+            minTempo = Math.min(minTempo, tempo.bpm);
+            maxTempo = Math.max(maxTempo, tempo.bpm);
+
+            if (tempo.transitionTo == null)
+                tempo.transitionTo = tempo.bpm;
+            else {
+                minTempo = Math.min(minTempo, tempo.transitionTo);
+                maxTempo = Math.max(maxTempo, tempo.transitionTo);
+            }
         }
+
+        if (minTempo == maxTempo) {                         // constant or monotony == 0.0
+            for (int i = series.size() - 2; i > 0; --i)     // the first and last instruction remain untouched; all in-between are deleted
+                this.removeElement(series.get(i).xml);
+            return 0.0;
+        }
+
+        // make sure the last instruction has a bpm value
+        TempoData last = series.get(series.size() - 1);
+        TempoData preLast = series.get(series.size() - 2);
+        if (last.bpm == null) {
+            if (last.transitionTo != null)
+                last.bpm = last.transitionTo;
+            else {
+                last.bpm = preLast.transitionTo;
+                last.beatLength = preLast.beatLength;
+            }
+        }
+
+        // compute the timing from the first instruction in the series to the beginning of the last instruction; furthermore normalise the beatLength basis for all instructions, except the last
+        for (int i = 1; i < series.size() - 1; ++i) {
+            millisecondsOld += TempoMap.computeDiffTiming(series.get(i).startDate, ppq, series.get(i - 1));
+
+            // make sure that all tempo values have the same beatLength basis as the first instruction
+            TempoData tempo = series.get(i);
+            if (tempo.beatLength != series.get(0).beatLength) {
+                tempo.bpm = (tempo.bpm * tempo.beatLength) / series.get(0).beatLength;
+                tempo.transitionTo = (tempo.transitionTo * tempo.beatLength) / series.get(0).beatLength;
+//                tempo.beatLength = series.get(0).beatLength;    // not necessary as this is not used anymore
+            }
+        }
+        // now do the same for the last instruction
+        millisecondsOld += TempoMap.computeDiffTiming(last.startDate, ppq, preLast);
+        if (last.beatLength != series.get(0).beatLength) {
+            last.bpm = (last.bpm * last.beatLength) / series.get(0).beatLength;
+//            last.beatLength = series.get(0).beatLength;         // not necessary as this is not used anymore
+        }
+
+        // construct new tempo instruction
+        TempoData newTempo = new TempoData();
+        newTempo.xmlId = series.get(0).xmlId;
+        newTempo.bpm = series.get(0).bpm;
+        newTempo.bpmString = series.get(0).bpmString;
+        newTempo.startDate = series.get(0).startDate;
+        newTempo.endDate = last.startDate;
+        newTempo.beatLength = series.get(0).beatLength;
+        newTempo.meanTempoAt = 0.5;                                             // must be computed
+        newTempo.exponent = Math.log(0.5) / Math.log(newTempo.meanTempoAt);     // same here
+
+        if (Math.signum(preLast.transitionTo - newTempo.bpm) == Math.signum(last.bpm - preLast.transitionTo)) { // if monotony to preLast.transitionTo is equal to the monotony from preLast.transitionTo to last.bpm
+            newTempo.transitionTo = last.bpm;
+            newTempo.transitionToString = last.bpmString;
+        } else {
+            newTempo.transitionTo = preLast.transitionTo;
+            newTempo.transitionToString = preLast.transitionToString;
+        }
+
+        boolean isRitardando = newTempo.bpm > newTempo.transitionTo;
+
+        // check if all tempo are within the interval [newTempo.bpm, newTempo.transitionTo]
+        if (isRitardando) {
+            if ((minTempo < newTempo.transitionTo) || (maxTempo > newTempo.bpm))    // if not, we cannot find a monotonous tempo curve for simplification
+                return this.simplify(series, true, ppq);                            // simplify to constant tempo
+        } else {
+            if ((minTempo < newTempo.bpm) || (maxTempo > newTempo.transitionTo))    // if not, we cannot find a monotonous tempo curve for simplification
+                return this.simplify(series, true, ppq);                            // simplify to constant tempo
+        }
+
+        // bisection
+        double min = 0.0;
+        double max = 1.0;
+        double error = TempoMap.computeDiffTiming(newTempo.endDate, ppq, newTempo) - millisecondsOld;
+        for (; Math.abs(error) >= 1.0; error = TempoMap.computeDiffTiming(newTempo.endDate, ppq, newTempo) - millisecondsOld) {
+            if (isRitardando) {
+                if (error > 0.0)
+                    min = newTempo.meanTempoAt;
+                else
+                    max = newTempo.meanTempoAt;
+            } else {                                        // is accelerando
+                if (error > 0.0)
+                    max = newTempo.meanTempoAt;
+                else
+                    min = newTempo.meanTempoAt;
+            }
+
+            newTempo.meanTempoAt = (min + max) * 0.5;
+            if (Math.abs(newTempo.meanTempoAt) >= 0.9999999999999999)   // if we run into numeric issues (and infinite loop as a consequence)
+                return this.simplify(series, true, ppq);    // simplify the series to constant
+
+            newTempo.exponent = Math.log(0.5) / Math.log(newTempo.meanTempoAt);
+        }
+
+        // do the updating and housekeeping
+        for (int i = series.size() - 2; i >= 0; --i)        // the last instruction remains untouched; all others are deleted
+            this.removeElement(series.get(i).xml);
+
+        this.addTempo(newTempo);                            // add the new instruction to the map
 
         return error;
     }
@@ -672,15 +900,5 @@ public class TempoMap extends GenericMap {
         this.removeElement(tempo.xml);
         tempo.xml = null;
         this.addTempo(tempo);
-    }
-
-    /**
-     * simplify a monotonic series of tempo instructions
-     * @param series the series of tempo data to simplify; the first instruction wil be edited, the last remains unchanged, all in-between will be deleted
-     * @param ppq
-     * @return the timing error in milliseconds at the end of the simplification frame
-     */
-    public double simplify(ArrayList<TempoData> series, int ppq) {
-        return 0.0;
     }
 }
