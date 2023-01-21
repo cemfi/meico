@@ -2,7 +2,8 @@
 
 
 #### v0.8.47
-- New methods `meico.mpm.elements.maps.TempoMap.simplify()` that reduces monotonous series of successive tempo instructions to one instruction. Successive instructions with the same (or nearly the same) tempo are also combined into one instruction.
+- Potential bus fix in method `meico.mpm.elements.maps.TempoMap.getTempoAt()` that ensures that the exponent attribute of a `TempoData` object is present.
+- New methods were added to class `meico.mpm.elements.maps.TempoMap` that reduces (monotonous) series of successive tempo instructions to one instruction.
 
 
 #### v0.8.46
