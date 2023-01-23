@@ -4,6 +4,7 @@
 #### v0.8.47
 - Potential bus fix in method `meico.mpm.elements.maps.TempoMap.getTempoAt()` that ensures that the exponent attribute of a `TempoData` object is present.
 - New methods were added to class `meico.mpm.elements.maps.TempoMap` that reduces (monotonous) series of successive tempo instructions to one instruction.
+- MeicoApp now imports MIDI files with extension `.mid` (as before) and `.midi` (this is new).
 
 
 #### v0.8.46
