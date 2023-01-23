@@ -178,6 +178,7 @@ class DataObject extends Group {
             case ".mpm":
                 return new Mpm(file);
             case ".mid":
+            case ".midi":
                 return new Midi(file);
             case ".wav":
             case ".mp3":
