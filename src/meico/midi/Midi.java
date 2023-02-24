@@ -242,12 +242,10 @@ public class Midi {
                 if (onlyNotes && (command != EventMaker.NOTE_ON) && (command != EventMaker.NOTE_OFF))
                     continue;
 
-                if ((command == EventMaker.NOTE_ON) || (command == EventMaker.NOTE_OFF)) {
-                    for (int subdivs = maxSubdivisions; subdivs <= ppq; subdivs *= 2) {
-                        if ((event.getTick() % (ppq / subdivs)) == 0) {
-                            maxSubdivisions = Math.max(maxSubdivisions, subdivs);
-                            break;
-                        }
+                for (int subdivs = maxSubdivisions; subdivs <= ppq; subdivs *= 2) {
+                    if ((event.getTick() % (ppq / subdivs)) == 0) {
+                        maxSubdivisions = Math.max(maxSubdivisions, subdivs);
+                        break;
                     }
                 }
             }
