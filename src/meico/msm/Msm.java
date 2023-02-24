@@ -10,10 +10,7 @@ import meico.supplementary.KeyValue;
 import nu.xom.*;
 import org.xml.sax.SAXException;
 
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.Track;
+import javax.sound.midi.*;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.URL;
@@ -256,31 +253,29 @@ public class Msm extends AbstractMsm {
      */
     public int getMinimalPPQ() {
         int ppq = this.getPPQ();
-        int minDur = ppq;                                                                                                       // this will get the shortest note duration
-        int minDateDif = ppq;                                                                                                   // this will hold the smallest number of ticks between notes on the time grid
+        int maxSubdivisions = 1;
 
-        Elements parts = this.getParts();
-        for (int p=0; p < parts.size(); ++p) {                                                                                  // go through all parts
-            Elements notes = parts.get(p).getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note"); // get all notes in its score
+        for (Element part : this.getParts()) {                                                                                  // go through all parts
+            for (Element note : part.getFirstChildElement("dated").getFirstChildElement("score").getChildElements("note")) {    // go through all notes
+                int dur = (int) Math.round(Double.parseDouble(note.getAttributeValue("duration")));                             // get the note's duration (rounding is necessary for avoiding numeric problems with tripltes)
+                for (int subdivs = maxSubdivisions; subdivs <= ppq; subdivs *= 2) {
+                    if ((dur % (ppq / subdivs)) == 0) {
+                        maxSubdivisions = Math.max(maxSubdivisions, subdivs);
+                        break;
+                    }
+                }
 
-            for (int n=0; n < notes.size(); ++n) {                                                                              // go through all notes
-                Element note = notes.get(n);
-                int dur = (int) Math.round(Double.parseDouble(note.getAttributeValue("duration")));                        // get the note's duration (rounding is necessary for avoiding numeric problems with tripltes)
-                dur %= ppq;                                                                                                     // this operation returns 0.0 if the duration is an integer multiple of ppq and it returns something > 0.0 in case of a dotted or smaller note value
-                if ((dur != 0.0) && (dur < minDur))                                                                             // in case of a shorter or dotted note that is even shorter than the shortest we had so far
-                    minDur = dur;                                                                                               // store it
-
-                int date = (int) Math.round(Double.parseDouble(note.getAttributeValue("date")));                           // get the note's date (rounding is necessary for avoiding numeric problems with tripltes)
-                date %= ppq;                                                                                                    // this operation returns 0.0 if the note is on the quarternote grid and it returns something > 0.0 when it is in-between
-                if ((date != 0.0) && (date < minDateDif))                                                                       // if we found evidence for a finer grid than the quarternote grid of ppq
-                    minDateDif = date;                                                                                          // store the value
+                int date = (int) Math.round(Double.parseDouble(note.getAttributeValue("date")));                                // get the note's date (rounding is necessary for avoiding numeric problems with tripltes)
+                for (int subdivs = maxSubdivisions; subdivs <= ppq; subdivs *= 2) {
+                    if ((date % (ppq / subdivs)) == 0) {
+                        maxSubdivisions = Math.max(maxSubdivisions, subdivs);
+                        break;
+                    }
+                }
             }
         }
 
-        int minPPQDur = ppq / minDur;                               // compute the smallest number of pulses per quarter from the durations
-        int minPPQDate = ppq / minDateDif;                          // compute the smallest number of pulses per quarter from the dates
-
-        return Math.max(minPPQDate, minPPQDur);                     // return the larger number of the above computations
+        return maxSubdivisions;
     }
 
     /**

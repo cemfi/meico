@@ -1,5 +1,6 @@
 package meico.midi;
 
+import com.sun.istack.internal.NotNull;
 import meico.audio.Audio;
 import meico.mei.Helper;
 import meico.mpm.elements.maps.TempoMap;
@@ -10,6 +11,7 @@ import javax.sound.sampled.AudioInputStream;
 import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.InvalidPropertiesFormatException;
 
 /**
  * This class holds Midi data and provides som functionality for it.
@@ -177,6 +179,81 @@ public class Midi {
             return this.sequence.getResolution();
         }
         throw new Exception("Error: MIDI timing is in SMTPE, not PPQ!");
+    }
+
+    /**
+     * This method converts the timing basis, i.e., it sets the new ppq value and converts all events' date accordingly.
+     * A new MIDI sequence is created which replaces the old one. If the change should also go into the source file,
+     * invoke writeMidi().
+     * @param ppq
+     * @throws Exception
+     */
+    public void convertPPQ(int ppq) throws Exception {
+        int ppqOld = this.getPPQ();
+        if (ppqOld == ppq)
+            return;
+
+        System.out.println("Converting timing basis of \"" + this.getFile().getName() + "\" from " + ppqOld + " to " + ppq + " pulses per quarter note.");
+
+        Sequence newSequence = new Sequence(Sequence.PPQ, ppq);     // create a new MIDI sequence
+        for (Track track : this.sequence.getTracks()) {             // for each track in the old sequence
+            Track newTrack = newSequence.createTrack();             // create a new track in the new sequence
+            for (int e = 0; e < track.size(); ++e) {                // for each MIDI event in the old track
+                MidiEvent event = track.get(e);
+                MidiMessage newMessage = (MidiMessage) event.getMessage().clone();  // clone its message
+                long newDate = (event.getTick() * ppq) / ppqOld;                    // scale its date to the new ppq timing basis
+                MidiEvent newEvent = new MidiEvent(newMessage, newDate);            // create a new event
+                newTrack.add(newEvent);                                             // add it to the new track
+            }
+        }
+
+        this.sequence = newSequence;    // replace the old sequence by the new one
+    }
+
+    /**
+     * computes the minimal integer timing resolution (in pulses per quarter note) necessary for an accurate representation of the MIDI sequence
+     * @param onlyNotes set false to consider all events; set true to consider only noteOn and noteOff events
+     * @return
+     * @throws Exception
+     */
+    public int getMinimalPPQ(boolean onlyNotes) throws Exception {
+        return Midi.getMinimalPPQ(this.getSequence(), onlyNotes);
+    }
+
+    /**
+     * computes the minimal integer timing resolution (in pulses per quarter note) necessary for an accurate representation of the specified sequence
+     * @param sequence
+     * @param onlyNotes set false to consider all events; set true to consider only noteOn and noteOff events
+     * @return
+     * @throws Exception
+     */
+    public static int getMinimalPPQ(@NotNull Sequence sequence, boolean onlyNotes) throws Exception {
+        if (sequence.getDivisionType() != Sequence.PPQ)
+            throw new Exception("Error: MIDI sequence is not of division type PPQ.");
+
+        int ppq = sequence.getResolution();
+        int maxSubdivisions = 1;
+
+        for (Track track : sequence.getTracks()) {
+            for (int e = 0; e < track.size(); ++e) {
+                MidiEvent event = track.get(e);
+                int command = event.getMessage().getStatus() & 0xF0;
+
+                if (onlyNotes && (command != EventMaker.NOTE_ON) && (command != EventMaker.NOTE_OFF))
+                    continue;
+
+                if ((command == EventMaker.NOTE_ON) || (command == EventMaker.NOTE_OFF)) {
+                    for (int subdivs = maxSubdivisions; subdivs <= ppq; subdivs *= 2) {
+                        if ((event.getTick() % (ppq / subdivs)) == 0) {
+                            maxSubdivisions = Math.max(maxSubdivisions, subdivs);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return maxSubdivisions;
     }
 
     /**

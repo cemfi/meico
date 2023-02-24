@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.8.48
+- Added new methods `meico.midi.Midi.getMinimalPPQ()` that computes the minimal integer timing resolution (in pulses per quarter note) necessary for an accurate representation of a MIDI sequence.
+- The eponymous method in class `meico.msm.Msm` has been updated with the same algorithm.
+- Another addition is method `meico.midi.Midi.convertPPQ()` that allows to convert the timing basis of a MIDI sequence, similar to the eponymous method in class `meico.msm.Msm`.
+
+
 #### v0.8.47
 - Potential bus fix in method `meico.mpm.elements.maps.TempoMap.getTempoAt()` that ensures that the exponent attribute of a `TempoData` object is present.
 - New methods were added to class `meico.mpm.elements.maps.TempoMap` that reduces (monotonous) series of successive tempo instructions to one instruction.
