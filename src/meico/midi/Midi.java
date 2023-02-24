@@ -1,6 +1,5 @@
 package meico.midi;
 
-import com.sun.istack.internal.NotNull;
 import meico.audio.Audio;
 import meico.mei.Helper;
 import meico.mpm.elements.maps.TempoMap;
@@ -8,10 +7,11 @@ import meico.msm.Msm;
 
 import javax.sound.midi.*;
 import javax.sound.sampled.AudioInputStream;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.InvalidPropertiesFormatException;
 
 /**
  * This class holds Midi data and provides som functionality for it.
@@ -227,7 +227,10 @@ public class Midi {
      * @return
      * @throws Exception
      */
-    public static int getMinimalPPQ(@NotNull Sequence sequence, boolean onlyNotes) throws Exception {
+    public static int getMinimalPPQ(Sequence sequence, boolean onlyNotes) throws Exception {
+        if (sequence == null)
+            throw new NullPointerException("Error: MIDI sequence is null.");
+
         if (sequence.getDivisionType() != Sequence.PPQ)
             throw new Exception("Error: MIDI sequence is not of division type PPQ.");
 
