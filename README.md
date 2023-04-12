@@ -18,8 +18,9 @@ Meico is a converter framework for MEI files. MEI offers an invaluable combinati
 - MIDI to PCM audio and MP3 conversion (with freely choosable SoundFont and Downloadable Sounds),
 - MIDI to MSM conversion,
 - PCM audio (WAV) to MP3 conversion and vice versa,
-- MEI score rendering (based on Verovio),
+- MEI score rendering (based on Verovio, only in the meicoApp),
 - MEI processing functions (validation, `xml:id` generation, resolution of elements with `copyof` attribute, conversion of `expansion` elements into "through-composed" MEI code ...),
+- MusicXML processing (via the ProxyMusic functionalities),
 - MSM processing functions (validation, remove rest elements from the score, expand repetitions encoded in the `sequencingMap` ...),
 - MPM processing functions (validation, making part-specific tempo and dynamics instructions global, meico integrates the official MPM API with all its functionality for creation, editing and performance rendering)
 - an instrument dictionary and several string matching algorithms to map staff names to MIDI program change numbers,
@@ -99,6 +100,8 @@ Meico makes use of the following third party libraries:
 - [Midi2WavRenderer](https://github.com/cemfi/meico/tree/master/src/meico/midi/Midi2AudioRenderer.java) by Karl Helgason, copyright notice in the class header.
 - [Gervill Software Sound Synthesizer](https://sourceforge.net/projects/rasmusdsp/files/gervill/Gervill%201.0/) v1.0.1 by Karl Helgason, GPL 2.0.
 - [Jipes](https://www.tagtraum.com/jipes/) v0.9.17 by Hendrik Schreiber, GNU Lesser General Public License (LGPL) version 2.1.
+- [ProxyMusic](https://github.com/Audiveris/proxymusic) v3.0.1 by Hervé Bitteur, Maxim Poliakovski and Peter Greth, GNU LGPL version 3.0.
+- [SLF4J API](https://www.slf4j.org/) v2.0.7 and [SLF4J Simple](https://www.slf4j.org/) v2.0.7 by QOS.CH Sarl, MIT license.
 
 We publish meico under GNU GPL version 3.0. Meico's development was part of the ZenMEM project funded by the German Federal Ministry of Education and Research (2015-2019, funding code 01UG1414A–C). All MPM-related parts of meico were part of an R&D project that was funded by the [Fritz Thyssen Foundation](https://www.fritz-thyssen-stiftung.de/en/) (2019-2022). If you integrate meico or parts of it with your project make sure that you do not conflict with any of the above licenses.
 

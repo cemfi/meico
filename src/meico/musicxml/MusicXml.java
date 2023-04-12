@@ -1,168 +1,306 @@
 package meico.musicxml;
 
-import meico.mei.Mei;
+import meico.mei.Helper;
 import meico.xml.XmlBase;
+import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
-import org.xml.sax.SAXException;
+import org.audiveris.proxymusic.ObjectFactory;
+import org.audiveris.proxymusic.ScorePartwise;
+import org.audiveris.proxymusic.ScoreTimewise;
+import org.audiveris.proxymusic.mxl.Mxl;
+import org.audiveris.proxymusic.mxl.RootFile;
+import org.audiveris.proxymusic.opus.Opus;
+import org.audiveris.proxymusic.util.Marshalling;
 
-import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.bind.JAXBException;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.zip.DataFormatException;
+import java.util.zip.ZipEntry;
 
 /**
- * TODO
- *  - A musicXML Java library for some format-specific functionality
- *     - https://github.com/Audiveris/proxymusic
- *  - Verovio for MusicXML2MEI conversion and SVG export?
- *  - SVG2PDF ...
- *
+ * This class represents a MusicXML document.
+ * It relies heaily on the framework <a href="https://github.com/Audiveris/proxymusic">ProxyMusic</a>.
  * @author Axel Berndt
  */
-
 public class MusicXml extends XmlBase {
+    private ScorePartwise scorePartwise = null;
+    private ScoreTimewise scoreTimewise = null;
+    private Opus opus = null;
 
     /**
      * constructor
      */
     public MusicXml() {
-        super();
+        ObjectFactory factory = new ObjectFactory();
+        this.scorePartwise = factory.createScorePartwise();
     }
 
     /**
      * constructor
-     *
-     * @param document the data as XOM Document
-     */
-    public MusicXml(Document document) {
-        super(document);
-    }
-
-    /**
-     * constructor
-     *
-     * @param file the data file to be read, should be an uncompressed musicxml file!
+     * @param document an instance of a XOM Document
+     * @throws Marshalling.UnmarshallingException
      * @throws IOException
-     * @throws ParsingException
      */
-    public MusicXml(File file) throws IOException, ParsingException, SAXException, ParserConfigurationException {
-        super(file);
+    public MusicXml(Document document) throws Marshalling.UnmarshallingException, IOException {
+        this(document.toXML());
     }
 
     /**
      * constructor
-     * @param file the data file to be read, should be an uncompressed musicxml file!
-     * @param validate
-     * @param schema can be null
+     * @param file MusicXML file, compressed MusicXML (.mxl) is also supported
      * @throws IOException
-     * @throws ParsingException
+     * @throws Marshalling.UnmarshallingException
      */
-    public MusicXml(File file, boolean validate, URL schema) throws IOException, ParsingException, SAXException, ParserConfigurationException {
-        super(file, validate, schema);
+    public MusicXml(File file) throws IOException, Marshalling.UnmarshallingException {
+        this(Files.newInputStream(file.toPath()));
+        this.setFile(file);
+    }
+
+    public ArrayList<MusicXml> fromFile(File file) {
+        ArrayList<MusicXml> out = new ArrayList<>();
+
+        String extension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
+        if (extension.equals("mxl")) {
+            Mxl.Input mxlInput;
+            try {
+                mxlInput = new Mxl.Input(file);
+            } catch (IOException | Mxl.MxlException | JAXBException e) {
+                e.printStackTrace();
+                return out;
+            }
+
+            for (RootFile rootFile : mxlInput.getRootFiles()) {
+                ZipEntry zipEntry;
+                try {
+                    zipEntry = mxlInput.getEntry(rootFile.fullPath);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+                ..........https://www.w3.org/2021/06/musicxml40/tutorial/compressed-mxl-files/
+            }
+        }
+
+        try {
+            out.add(new MusicXml(file));
+        } catch (IOException | Marshalling.UnmarshallingException e) {
+            e.printStackTrace();
+        }
+
+        return  out;
     }
 
     /**
      * constructor
-     * @param xml xml code as UTF8 String
+     * @param xml MusicXML string
+     * @throws Marshalling.UnmarshallingException
      * @throws IOException
-     * @throws ParsingException
      */
-    public MusicXml(String xml) throws IOException, ParsingException {
-        super(xml);
+    public MusicXml(String xml) throws Marshalling.UnmarshallingException, IOException {
+        this(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
      * constructor
-     * @param xml xml code as UTF8 String
-     * @param validate validate the code?
-     * @param schema can be null
+     * @param inputStream
+     * @throws Marshalling.UnmarshallingException
      * @throws IOException
-     * @throws ParsingException
      */
-    public MusicXml(String xml, boolean validate, URL schema) throws IOException, ParsingException {
-        super(xml, validate, schema);
+    public MusicXml(InputStream inputStream) throws Marshalling.UnmarshallingException, IOException {
+        Object o = Marshalling.unmarshal(inputStream);
+        inputStream.close();
+        if (o instanceof ScorePartwise)
+            this.scorePartwise = (ScorePartwise) o;
+        else if (o instanceof Opus)
+            this.opus = (Opus) o;
+        else if (o instanceof ScoreTimewise)        // not yet supported by ProxyMusic, but maybe in the future
+            this.scoreTimewise = (ScoreTimewise) o;
+        else
+            throw new IllegalArgumentException("Input stream cannot be unmarshalled into an instance of ScorePartwise, ScoreTimewise or Opus.");
     }
 
     /**
-     * constructor
-     * @param inputStream read from this input stream
-     * @throws IOException
-     * @throws ParsingException
+     * deterine if this object holds MusicXML data
+     * @return
      */
-    public MusicXml(InputStream inputStream) throws IOException, ParsingException {
-        super(inputStream);
+    @Override
+    public boolean isEmpty() {
+        return (this.opus == null) && (this.scorePartwise == null) && (this.scoreTimewise == null);
     }
 
     /**
-     * constructor
-     * @param inputStream read from this input stream
-     * @param validate
-     * @param schema can be null
-     * @throws IOException
-     * @throws ParsingException
+     * Load and unmarshall a new XML document into this object. This will effectively replace all MusicXML data
+     * stored in this object so far. The document itself will not be stored in this object as it will not
+     * reflect any editings done afterward on the unmarshalled datastructure.
+     * @param document
      */
-    public MusicXml(InputStream inputStream, boolean validate, URL schema) throws IOException, ParsingException {
-        super(inputStream, validate, schema);
+    @Override
+    public synchronized void setDocument(Document document) {
+        String xml = document.toXML();
+        InputStream inputStream = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+        Object o;
+        try {
+            o = Marshalling.unmarshal(inputStream);
+        } catch (Marshalling.UnmarshallingException e) {
+            e.printStackTrace();
+            try {
+                inputStream.close();
+            } catch (IOException ex) {
+                e.printStackTrace();
+            }
+            return;
+        }
+
+        if (o instanceof ScorePartwise) {
+            this.scorePartwise = (ScorePartwise) o;
+            this.scoreTimewise = null;
+            this.opus = null;
+        } else if (o instanceof Opus) {
+            this.opus = (Opus) o;
+            this.scorePartwise = null;
+            this.scoreTimewise = null;
+        } else if (o instanceof ScoreTimewise) {        // not yet supported by ProxyMusic, but maybe in the future
+            this.scoreTimewise = (ScoreTimewise) o;
+            this.scorePartwise = null;
+            this.opus = null;
+        } else {
+            System.err.println("Input stream cannot be unmarshalled into an instance of ScorePartwise, ScoreTimewise or Opus.");
+        }
     }
 
     /**
-     * writes the data document to a file at this.file (it must be != null);
-     * if there is already a file with this name, it is replaces!
-     *
-     * @return true if success, false if an error occured
+     * from the MusicXML data in this object construct a Document
+     * @return
      */
-    public boolean writeMusicXml() {
-        return super.writeFile();
+    @Override
+    public Document getDocument() {
+        Document document = null;
+        Builder builder = new Builder(false);           // if the validate argument in the Builder constructor is true, the data should be valid
+        try {
+            document = builder.build(new ByteArrayInputStream(this.toXML().getBytes(StandardCharsets.UTF_8)));
+        } catch (ValidityException e) {                 // in case of a ValidityException (no valid data)
+            document = e.getDocument();                 // make the XOM Document anyway, we may nonetheless be able to work with it
+        } catch (ParsingException | IOException e) {
+            e.printStackTrace();
+        }
+        return document;
     }
 
     /**
-     * writes the document to a file (filename should include the path and the extension)
-     *
-     * @param filename the filename string; it should include the path and the extension
-     * @return true if success, false if an error occured
+     * returns the MusicXML data as XML string or null if this is empty
+     * @return
      */
-    public synchronized boolean writeMusicXml(String filename) {
-        return super.writeFile(filename);
+    @Override
+    public synchronized String toXML() {
+        String out = null;
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        try {
+            if (this.scorePartwise != null) {
+                Marshalling.marshal(this.scorePartwise, outputStream, false, 4);
+                out = outputStream.toString();
+            }
+            else if (this.scoreTimewise != null) {        // not yet supported by ProxyMusic
+//                Marshalling.marshal(this.scoreTimewise, outputStream, true, 4);
+//                out = outputStream.toString();
+                throw new DataFormatException("MusicXML ScoreTimewise format is not supported for marshalling to String.");
+            }
+            else if (this.opus != null) {
+                Marshalling.marshal(this.opus, outputStream);
+                out = outputStream.toString();
+            }
+        } catch (Marshalling.MarshallingException | DataFormatException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return out;
     }
 
-    /**
-     * converts the MusicXML data to MEI
-     * @param useOnlineVerovio true (uses the latest version of Verovio, requires Internet connection), false (use meico's internal Verovio version)
-     * @return the Mei instance or null if failed
-     * TODO: The current implementation based on Verovio does not work! And even if, the conversion of MusicXML features to MEI would be rather limited.
-     */
-    public Mei exportMei(boolean useOnlineVerovio) {
+    @Override
+    public boolean isValid() {
+        return true;
+    }
+
+    @Override
+    public synchronized String validate(URL schema) {
+        return "MusicXml.validate() is not supported.";
+    }
+
+    @Override
+    public boolean writeFile() {
+        throw new UnsupportedOperationException("MusicXml.writeFile() is not supported.");
+    }
+
+    @Override
+    public synchronized boolean writeFile(String filename) {
+        throw new UnsupportedOperationException("MusicXml.writeFile() is not supported.");
+    }
+
+    @Override
+    public Element getRootElement() {
+        System.err.println("MusicXml.getRootElement() is not supported.");
         return null;
+    }
 
-//        long startTime = System.currentTimeMillis();                            // we measure the time that the conversion consumes
-//        System.out.println("\nConverting " + ((this.file != null) ? this.file.getName() : "MusicXml data") + " to MEI.");
-//
-//        ScriptEngineManager manager = new ScriptEngineManager();                // init Script Manager
-//        ScriptEngine engine = manager.getEngineByName("JavaScript");            // create Script Engine for JavaScript
-//
-//        String verovio = (useOnlineVerovio) ? VerovioProvider.getVerovio(this) : VerovioProvider.getLocalVerovio(this); // get the Verovio Toolkit script
-//        if (verovio == null) {
-//            System.err.println("MusicXML to MEI conversion failed: Verovio Toolkit not available. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-//            return null;
-//        }
-//
-//        engine.put("data", this.toXML());
-//        Mei mei = null;
-//
-//        try {
-//            engine.eval(verovio);                                                                               // this imports Verovio in the script engine's context, however, TODO: this fails because Verovio requires a browser environment
-//            String script = "var vrvToolkit = new verovio.toolkit(); var mei = vrvToolkit.getMEI(0, true);";    // getMEI(int:pageNumber, bool:trueMei)
-//            engine.eval(script);
-//            mei = new Mei((String)engine.get("mei"));
-//        } catch (ScriptException | IOException | ParsingException e) {
-//            System.err.println("MusicXML to MEI conversion failed: script evaluation failed. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-////            e.printStackTrace();
-//            return null;
-//        }
-//
-//        if (this.getFile() != null)
-//            mei.setFile(Helper.getFilenameWithoutExtension(this.getFile().getPath()) + ".mei"); // set the filename extension of the export object to mei
-//
-//        System.err.println("MusicXML to MEI conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-//        return mei;
+    @Override
+    public int removeAllElements(String localName) {
+        System.err.println("MusicXml.removeAllElements() is not supported.");
+        return 0;
+    }
+
+    @Override
+    public int removeAllAttributes(String attributeName) {
+        System.err.println("MusicXml.removeAllAttributes() is not supported.");
+        return 0;
+    }
+
+    /**
+     * generate an XML document and apply an XSL Transform to it
+     * @param xslt
+     * @return result of the transform as XOM Document instance
+     */
+    @Override
+    public Document xslTransformToDocument(File xslt) {
+        return Helper.xslTransformToDocument(this.getDocument(), xslt);
+    }
+
+    /**
+     * generate an XML document and apply an XSL Transform to it
+     * @param transform
+     * @return result of the transform as XOM Document instance
+     */
+    @Override
+    public Document xslTransformToDocument(Xslt30Transformer transform) {
+        return Helper.xslTransformToDocument(this.getDocument(), transform);
+    }
+
+    /**
+     * generate an XML document and apply an XSL Transform to it
+     * @param xslt
+     * @return result of the transform as String instance
+     */
+    @Override
+    public String xslTransformToString(File xslt) {
+        return Helper.xslTransformToString(this.toXML(), xslt);
+    }
+
+    /**
+     * generate an XML document and apply an XSL Transform to it
+     * @param transform
+     * @return result of the transform as String instance
+     */
+    @Override
+    public String xslTransformToString(Xslt30Transformer transform) {
+        return Helper.xslTransformToString(this.toXML(), transform);
     }
 }

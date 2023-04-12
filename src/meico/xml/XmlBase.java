@@ -86,14 +86,14 @@ public class XmlBase {
      * @throws ParsingException
      */
     public XmlBase(String xml, boolean validate, URL schema) throws IOException, ParsingException {
-        Builder builder = new Builder(false);                    // if the validate argument in the Builder constructor is true, the data should be valid
+        Builder builder = new Builder(false);           // if the validate argument in the Builder constructor is true, the data should be valid
         try {
             this.data = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
-        } catch (ValidityException e) {                             // in case of a ValidityException (no valid data)
-            this.data = e.getDocument();                            // make the XOM Document anyway, we may nonetheless be able to work with it
+        } catch (ValidityException e) {                 // in case of a ValidityException (no valid data)
+            this.data = e.getDocument();                // make the XOM Document anyway, we may nonetheless be able to work with it
         }
-        if (validate && (schema != null))                           // if the mei file should be validated
-            System.out.println(this.validate(schema));              // do so, the result is stored in this.isValid
+        if (validate && (schema != null))               // if the mei file should be validated
+            System.out.println(this.validate(schema));  // do so, the result is stored in this.isValid
     }
 
     /**
@@ -310,7 +310,7 @@ public class XmlBase {
      * if the constructor was unable to load the file, the data is empty and no further operations
      * @return true if the data document is empty, else false
      */
-    public  boolean isEmpty() {
+    public boolean isEmpty() {
         return (this.data == null);
     }
 

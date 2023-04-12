@@ -905,7 +905,7 @@ public class TempoMap extends GenericMap {
      * This class gives information about the changes that are done to the tempoMap in the process of simplification.
      * @author Axel Berndt
      */
-    public class TempoMapSimplificationResults {
+    public static class TempoMapSimplificationResults {
         public double error = 0.0;
         public ArrayList<TempoData> deletions = new ArrayList<>();
         public ArrayList<KeyValue<TempoData, TempoData>> replacements = new ArrayList<>();

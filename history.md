@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.8.49
+- Added basic MusicXML integration to meico and meicoApp.
+
+
 #### v0.8.48
 - Added new methods `meico.midi.Midi.getMinimalPPQ()` that computes the minimal integer timing resolution (in pulses per quarter note) necessary for an accurate representation of a MIDI sequence.
 - The eponymous method in class `meico.msm.Msm` has been updated with the same algorithm.
