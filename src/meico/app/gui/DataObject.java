@@ -41,6 +41,7 @@ import meico.xml.XmlBase;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
+import org.audiveris.proxymusic.util.Marshalling;
 import org.xml.sax.SAXException;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -83,7 +84,7 @@ class DataObject extends Group {
      * @throws UnsupportedAudioFileException
      * @throws IOException
      */
-    public DataObject(Object data, Workspace workspace) throws NullPointerException, InvalidMidiDataException, ParsingException, UnsupportedAudioFileException, IOException, SaxonApiException, SAXException, ParserConfigurationException {
+    public DataObject(Object data, Workspace workspace) throws NullPointerException, InvalidMidiDataException, ParsingException, UnsupportedAudioFileException, IOException, SaxonApiException, SAXException, ParserConfigurationException, Marshalling.UnmarshallingException {
         this.workspace = workspace;
         if (data instanceof File) {
             this.data = this.readFile((File) data);
@@ -160,7 +161,7 @@ class DataObject extends Group {
      * given an input file, from its extension this method decides which type of object to instantiate and returns the result or null if unknown
      * @param file
      */
-    protected synchronized Object readFile(File file) throws InvalidMidiDataException, IOException, ParsingException, UnsupportedAudioFileException, SaxonApiException, SAXException, ParserConfigurationException {
+    protected synchronized Object readFile(File file) throws InvalidMidiDataException, IOException, ParsingException, UnsupportedAudioFileException, SaxonApiException, SAXException, ParserConfigurationException, Marshalling.UnmarshallingException {
         int index = file.getName().lastIndexOf(".");
         if (index < 0) {                                                    // if the file has no extension
             this.workspace.getApp().getStatuspanel().setMessage("Input file type is not supported by meico.");
@@ -196,9 +197,8 @@ class DataObject extends Group {
             case ".txt":
                 return new TxtData(file);
             case ".musicxml":
-                return new MusicXml(file);
             case ".mxl":
-                throw new IOException("File type .mxl (compressed MusicXML) is not supported by meico.");
+                return MusicXml.fromFile(file);
             default:
 //                this.workspace.getApp().getStatuspanel().setMessage("Input file type " + extension + " is not supported by meico.");
                 throw new IOException("File type " + extension + " is not supported as input by meico.");
@@ -210,7 +210,7 @@ class DataObject extends Group {
      * @param file
      * @return
      */
-    public Object readXmlFileToCorrectType(File file) throws SAXException, ParsingException, ParserConfigurationException, IOException, SaxonApiException {
+    public Object readXmlFileToCorrectType(File file) throws SAXException, ParsingException, ParserConfigurationException, IOException, SaxonApiException, Marshalling.UnmarshallingException {
         XmlBase xml = new XmlBase(file);                                        // parse the xml file into an instance of XmlBase
         XmlBase o;                                                              // this will be the output object that has to get the right type
 
@@ -226,6 +226,7 @@ class DataObject extends Group {
                 break;
             case "score-partwise":                                              // seems to be a musicxml
             case "score-timewise":
+            case"opus":
                 o = new MusicXml(xml.getDocument());
                 break;
             case "stylesheet":                                                  // seems to be an xslt
@@ -283,13 +284,15 @@ class DataObject extends Group {
     private synchronized String getName() {
         String name = "";
         if (this.data instanceof Mei)
-            name = ((Mei)this.data).getTitle();
+            name = ((Mei) this.data).getTitle();
+        else if (this.data instanceof MusicXml)
+            name = ((MusicXml) this.data).getTitle();
         else if (this.data instanceof SvgCollection)
             name = ((SvgCollection)this.data).getTitle();
         else if (this.data instanceof Msm)
-            name = ((Msm)this.data).getTitle();
+            name = ((Msm) this.data).getTitle();
         else if (this.data instanceof Performance)
-            name = ((Performance)this.data).getName();
+            name = ((Performance) this.data).getName();
         return (name.isEmpty()) ? this.getFileName() : name;    // if the name string is (still) empty, return the filename
     }
 
@@ -2301,52 +2304,52 @@ class DataObject extends Group {
                     });
                     break;
                 case "Save":
-                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        Thread thread = new Thread(() -> {
-                            RotateTransition ani = this.startComputeAnimation();
-                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MusicXML data " + ((((MusicXml)this.getData()).writeMusicXml()) ? ("to " + ((MusicXml)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
-                            this.stopComputeAnimation(ani);
-                        });
-                        this.start(thread);
-                    });
+//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+//                        Thread thread = new Thread(() -> {
+//                            RotateTransition ani = this.startComputeAnimation();
+//                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MusicXML data " + ((((MusicXml)this.getData()).writeMusicXml()) ? ("to " + ((MusicXml)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
+//                            this.stopComputeAnimation(ani);
+//                        });
+//                        this.start(thread);
+//                    });
                     break;
                 case "Save As":
-                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        MusicXml mxl = ((MusicXml)this.getData());                                     // the object
-                        FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
-                        File initialDir = new File(mxl.getFile().getParent());          // get the directory of the object's source file
-                        if (!initialDir.exists())                                       // if that does not exist
-                            initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
-                        chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
-                        chooser.setInitialFileName(mxl.getFile().getName());            // set the initial filename
-                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MusicXML files (*.musicxml)", "*.musicxml"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
-                        if (file != null) {                                             // if it returns a file to save the data, do the save operation
-                            Thread thread = new Thread(() -> {
-                                RotateTransition ani = this.startComputeAnimation();
-                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MSM data " + ((mxl.writeMusicXml(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
-                                this.stopComputeAnimation(ani);
-                            });
-                            this.start(thread);
-                        }
-                    });
+//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+//                        MusicXml mxl = ((MusicXml)this.getData());                                     // the object
+//                        FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
+//                        File initialDir = new File(mxl.getFile().getParent());          // get the directory of the object's source file
+//                        if (!initialDir.exists())                                       // if that does not exist
+//                            initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
+//                        chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
+//                        chooser.setInitialFileName(mxl.getFile().getName());            // set the initial filename
+//                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MusicXML files (*.musicxml)", "*.musicxml"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
+//                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
+//                        if (file != null) {                                             // if it returns a file to save the data, do the save operation
+//                            Thread thread = new Thread(() -> {
+//                                RotateTransition ani = this.startComputeAnimation();
+//                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MSM data " + ((mxl.writeMusicXml(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+//                                this.stopComputeAnimation(ani);
+//                            });
+//                            this.start(thread);
+//                        }
+//                    });
                     break;
 //                case "Close":
 //                    break;
                 case "to MEI":
-                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-                        Thread thread = new Thread(() -> {
-                            RotateTransition ani = this.startComputeAnimation();
-                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI ...");
-                            Mei mei = ((MusicXml)this.getData()).exportMei(Settings.useLatestVerovio);   // do the conversion
-                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
-                                this.addOneChild(mouseEvent, mei);
-                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI: done.");
-                            }
-                            this.stopComputeAnimation(ani);
-                        });
-                        this.start(thread);
-                    });
+//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+//                        Thread thread = new Thread(() -> {
+//                            RotateTransition ani = this.startComputeAnimation();
+//                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI ...");
+//                            Mei mei = ((MusicXml)this.getData()).exportMei(Settings.useLatestVerovio);   // do the conversion
+//                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+//                                this.addOneChild(mouseEvent, mei);
+//                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI: done.");
+//                            }
+//                            this.stopComputeAnimation(ani);
+//                        });
+//                        this.start(thread);
+//                    });
                     break;
                 case "XSL Transform":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
@@ -2576,7 +2579,7 @@ class DataObject extends Group {
                 dataObject.lines.add(line);
             });
             return dataObject;
-        } catch (InvalidMidiDataException | ParsingException | IOException | UnsupportedAudioFileException | SaxonApiException | SAXException | ParserConfigurationException e) {
+        } catch (InvalidMidiDataException | ParsingException | IOException | UnsupportedAudioFileException | SaxonApiException | SAXException | ParserConfigurationException | Marshalling.UnmarshallingException e) {
             this.workspace.getApp().getStatuspanel().setMessage(e.toString());
             e.printStackTrace();
             return null;
