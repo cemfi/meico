@@ -17,7 +17,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 
@@ -27,16 +26,14 @@ import java.util.zip.ZipEntry;
  * @author Axel Berndt
  */
 public class MusicXml extends XmlBase {
-    private ScorePartwise scorePartwise = null;
-    private ScoreTimewise scoreTimewise = null;
-    private Opus opus = null;
+    protected Object data = null;
 
     /**
      * constructor
      */
     public MusicXml() {
         ObjectFactory factory = new ObjectFactory();
-        this.scorePartwise = factory.createScorePartwise();
+        this.data = factory.createScorePartwise();
     }
 
     /**
@@ -50,48 +47,15 @@ public class MusicXml extends XmlBase {
     }
 
     /**
-     * constructor
-     * @param file MusicXML file, compressed MusicXML (.mxl) is also supported
+     * constructor; this constructor is private as the handling of compressed and uncompressed MusicXML files needs
+     * different treatment that is implemented in the factory method fromFile()
+     * @param file MusicXML file; for compressed MusicXML (.mxl) use the fromFile() factory!
      * @throws IOException
      * @throws Marshalling.UnmarshallingException
      */
-    public MusicXml(File file) throws IOException, Marshalling.UnmarshallingException {
+    private MusicXml(File file) throws IOException, Marshalling.UnmarshallingException {
         this(Files.newInputStream(file.toPath()));
         this.setFile(file);
-    }
-
-    public ArrayList<MusicXml> fromFile(File file) {
-        ArrayList<MusicXml> out = new ArrayList<>();
-
-        String extension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
-        if (extension.equals("mxl")) {
-            Mxl.Input mxlInput;
-            try {
-                mxlInput = new Mxl.Input(file);
-            } catch (IOException | Mxl.MxlException | JAXBException e) {
-                e.printStackTrace();
-                return out;
-            }
-
-            for (RootFile rootFile : mxlInput.getRootFiles()) {
-                ZipEntry zipEntry;
-                try {
-                    zipEntry = mxlInput.getEntry(rootFile.fullPath);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    continue;
-                }
-                ..........https://www.w3.org/2021/06/musicxml40/tutorial/compressed-mxl-files/
-            }
-        }
-
-        try {
-            out.add(new MusicXml(file));
-        } catch (IOException | Marshalling.UnmarshallingException e) {
-            e.printStackTrace();
-        }
-
-        return  out;
     }
 
     /**
@@ -106,21 +70,44 @@ public class MusicXml extends XmlBase {
 
     /**
      * constructor
-     * @param inputStream
+     * @param inputStream this method will also close the inputStream
      * @throws Marshalling.UnmarshallingException
      * @throws IOException
      */
     public MusicXml(InputStream inputStream) throws Marshalling.UnmarshallingException, IOException {
-        Object o = Marshalling.unmarshal(inputStream);
+        this.data = Marshalling.unmarshal(inputStream);
         inputStream.close();
-        if (o instanceof ScorePartwise)
-            this.scorePartwise = (ScorePartwise) o;
-        else if (o instanceof Opus)
-            this.opus = (Opus) o;
-        else if (o instanceof ScoreTimewise)        // not yet supported by ProxyMusic, but maybe in the future
-            this.scoreTimewise = (ScoreTimewise) o;
-        else
-            throw new IllegalArgumentException("Input stream cannot be unmarshalled into an instance of ScorePartwise, ScoreTimewise or Opus.");
+    }
+
+    /**
+     * use this factory to read a file (.musicxml, .xml, .mxl) into a MusicXml instance
+     * @param file the input file should be of type .musicxml, .xml or .mxl
+     * @return the MusicXml object or null
+     */
+    public static MusicXml fromFile(File file) {
+        String extension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
+        if (extension.equals("mxl")) {                                          // if it is a compressed MusicXML
+            try {
+                Mxl.Input mxlInput = new Mxl.Input(file);
+                RootFile musicXmlRootFile = mxlInput.getRootFiles().get(0);     // the first rootfile entry should be the MusicXML root, according to https://www.w3.org/2021/06/musicxml40/tutorial/compressed-mxl-files/
+                ZipEntry zipEntry = mxlInput.getEntry(musicXmlRootFile.fullPath);
+                InputStream inputStream = mxlInput.getInputStream(zipEntry);
+                MusicXml out = new MusicXml(inputStream);
+                out.setFile(Helper.getFilenameWithoutExtension(file.getPath()) + ".musicxml");
+                return out;
+            } catch (IOException | Marshalling.UnmarshallingException | Mxl.MxlException | JAXBException e) {
+                e.printStackTrace();
+            }
+        }
+        else {                                                                  // if it is a raw/uncompressed MuxicXml file
+            try {
+                return new MusicXml(file);
+            } catch (IOException | Marshalling.UnmarshallingException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return null;                                                            // if the file could not be unmarshalled, return null
     }
 
     /**
@@ -129,7 +116,7 @@ public class MusicXml extends XmlBase {
      */
     @Override
     public boolean isEmpty() {
-        return (this.opus == null) && (this.scorePartwise == null) && (this.scoreTimewise == null);
+        return this.data == null;
     }
 
     /**
@@ -142,7 +129,7 @@ public class MusicXml extends XmlBase {
     public synchronized void setDocument(Document document) {
         String xml = document.toXML();
         InputStream inputStream = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
-        Object o;
+        Object o = null;
         try {
             o = Marshalling.unmarshal(inputStream);
         } catch (Marshalling.UnmarshallingException e) {
@@ -155,21 +142,10 @@ public class MusicXml extends XmlBase {
             return;
         }
 
-        if (o instanceof ScorePartwise) {
-            this.scorePartwise = (ScorePartwise) o;
-            this.scoreTimewise = null;
-            this.opus = null;
-        } else if (o instanceof Opus) {
-            this.opus = (Opus) o;
-            this.scorePartwise = null;
-            this.scoreTimewise = null;
-        } else if (o instanceof ScoreTimewise) {        // not yet supported by ProxyMusic, but maybe in the future
-            this.scoreTimewise = (ScoreTimewise) o;
-            this.scorePartwise = null;
-            this.opus = null;
-        } else {
+        if (o != null)
+            this.data = o;
+        else
             System.err.println("Input stream cannot be unmarshalled into an instance of ScorePartwise, ScoreTimewise or Opus.");
-        }
     }
 
     /**
@@ -191,6 +167,63 @@ public class MusicXml extends XmlBase {
     }
 
     /**
+     * access the MusicXML data structure in this object
+     * @return
+     */
+    public Object getData() {
+        return this.data;
+    }
+
+    /**
+     * query the type of MusicXML data in this object
+     * @return
+     */
+    public MusicXmlType getType() {
+        if (this.data instanceof ScorePartwise)
+            return MusicXmlType.scorePartwise;
+        if (this.data instanceof ScoreTimewise)
+            return MusicXmlType.scoreTimewise;
+        if (this.data instanceof Opus)
+            return MusicXmlType.opus;
+        return MusicXmlType.unknown;
+    }
+
+    /**
+     * get the title of the MusicXML
+     * @return
+     */
+    public String getTitle() {
+        if (this.data == null)
+            return "";
+
+        switch (this.getType()) {
+            case scorePartwise:
+                ScorePartwise sp = (ScorePartwise) this.data;
+                if ((sp.getWork() != null) && (sp.getWork().getWorkTitle() != null))
+                    return sp.getWork().getWorkTitle();
+                break;
+            case scoreTimewise:
+                ScoreTimewise st = (ScoreTimewise) this.data;
+                if ((st.getWork() != null) && (st.getWork().getWorkTitle() != null))
+                    return st.getWork().getWorkTitle();
+                break;
+            case opus:
+                Opus op = (Opus) this.data;
+                if (op.getTitle() != null)
+                    return op.getTitle();
+                break;
+            case unknown:
+            default:
+                break;
+        }
+
+        if (this.getFile() != null)
+            return this.getFile().getName();
+
+        return "";
+    }
+
+    /**
      * returns the MusicXML data as XML string or null if this is empty
      * @return
      */
@@ -200,18 +233,23 @@ public class MusicXml extends XmlBase {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         try {
-            if (this.scorePartwise != null) {
-                Marshalling.marshal(this.scorePartwise, outputStream, false, 4);
-                out = outputStream.toString();
-            }
-            else if (this.scoreTimewise != null) {        // not yet supported by ProxyMusic
-//                Marshalling.marshal(this.scoreTimewise, outputStream, true, 4);
-//                out = outputStream.toString();
-                throw new DataFormatException("MusicXML ScoreTimewise format is not supported for marshalling to String.");
-            }
-            else if (this.opus != null) {
-                Marshalling.marshal(this.opus, outputStream);
-                out = outputStream.toString();
+            switch (this.getType()) {
+                case scorePartwise:
+                    Marshalling.marshal((ScorePartwise) this.data, outputStream, false, 4);
+                    out = outputStream.toString();
+                    break;
+                case scoreTimewise:                     // not yet supported by ProxMusic
+//                    Marshalling.marshal((ScoreTimewise) this.data, outputStream, false, 4);
+//                    out = outputStream.toString();
+//                    break;
+                    throw new DataFormatException("MusicXML ScoreTimewise format is not supported for marshalling to String.");
+                case opus:
+                    Marshalling.marshal((Opus) this.data, outputStream);
+                    out = outputStream.toString();
+                    break;
+                case unknown:
+                default:
+                    break;
             }
         } catch (Marshalling.MarshallingException | DataFormatException e) {
             e.printStackTrace();
@@ -226,11 +264,20 @@ public class MusicXml extends XmlBase {
         return out;
     }
 
+    /**
+     * check validity of the XML; always true for MusicXML, as XML code is generated via marshalling of the data structure
+     * @return
+     */
     @Override
     public boolean isValid() {
         return true;
     }
 
+    /**
+     * XML validation is not supported for MusicXml instances
+     * @param schema
+     * @return
+     */
     @Override
     public synchronized String validate(URL schema) {
         return "MusicXml.validate() is not supported.";
@@ -246,18 +293,32 @@ public class MusicXml extends XmlBase {
         throw new UnsupportedOperationException("MusicXml.writeFile() is not supported.");
     }
 
+    /**
+     * this method is inactive; invoke MusicXml.getDocument().getRootElement() instead
+     * @return
+     */
     @Override
     public Element getRootElement() {
         System.err.println("MusicXml.getRootElement() is not supported.");
         return null;
     }
 
+    /**
+     * this method is inactive for MusicXml instances
+     * @param localName the elements to be removed
+     * @return
+     */
     @Override
     public int removeAllElements(String localName) {
         System.err.println("MusicXml.removeAllElements() is not supported.");
         return 0;
     }
 
+    /**
+     * this method is inactive for MusicXml instances
+     * @param attributeName the attribute name
+     * @return
+     */
     @Override
     public int removeAllAttributes(String attributeName) {
         System.err.println("MusicXml.removeAllAttributes() is not supported.");
@@ -302,5 +363,15 @@ public class MusicXml extends XmlBase {
     @Override
     public String xslTransformToString(Xslt30Transformer transform) {
         return Helper.xslTransformToString(this.toXML(), transform);
+    }
+
+    /**
+     * enumeration of the different datatypes behind a MusicXml instance
+     */
+    public enum MusicXmlType {
+        scorePartwise,
+        scoreTimewise,
+        opus,
+        unknown
     }
 }
