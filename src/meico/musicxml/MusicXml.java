@@ -14,10 +14,9 @@ import org.audiveris.proxymusic.util.Marshalling;
 
 import javax.xml.bind.JAXBException;
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.net.URL;
-import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 
 /**
@@ -26,6 +25,7 @@ import java.util.zip.ZipEntry;
  * @author Axel Berndt
  */
 public class MusicXml extends XmlBase {
+    private static final boolean INJECT_SIGNATURE = false;
     protected Object data = null;
 
     /**
@@ -235,23 +235,23 @@ public class MusicXml extends XmlBase {
         try {
             switch (this.getType()) {
                 case scorePartwise:
-                    Marshalling.marshal((ScorePartwise) this.data, outputStream, false, 4);
+                    Marshalling.marshal((ScorePartwise) this.data, outputStream, INJECT_SIGNATURE, 4);
                     out = outputStream.toString();
                     break;
                 case scoreTimewise:                     // not yet supported by ProxMusic
-//                    Marshalling.marshal((ScoreTimewise) this.data, outputStream, false, 4);
+//                    Marshalling.marshal((ScoreTimewise) this.data, outputStream, INJECT_SIGNATURE, 4);
 //                    out = outputStream.toString();
 //                    break;
-                    throw new DataFormatException("MusicXML ScoreTimewise format is not supported for marshalling to String.");
+                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling."));
                 case opus:
                     Marshalling.marshal((Opus) this.data, outputStream);
                     out = outputStream.toString();
                     break;
                 case unknown:
                 default:
-                    break;
+                    throw new Marshalling.MarshallingException(new Throwable("Unknown data format for MusicXML, unable to marshal."));
             }
-        } catch (Marshalling.MarshallingException | DataFormatException e) {
+        } catch (Marshalling.MarshallingException e) {
             e.printStackTrace();
         }
 
@@ -283,14 +283,191 @@ public class MusicXml extends XmlBase {
         return "MusicXml.validate() is not supported.";
     }
 
+    /**
+     * writes the MusicXML to a file at this.file (it must be != null);
+     * if there is already a file with this name, it is replaces!
+     * @return true if success, false if an error occured
+     */
     @Override
     public boolean writeFile() {
-        throw new UnsupportedOperationException("MusicXml.writeFile() is not supported.");
+        return this.writeMusicXml();
     }
 
+    /**
+     * writes the MusicXML to a file (filename should include the path and the extension)
+     * @param filename the filename string; it should include the path and the extension
+     * @return true if success, false if an error occured
+     */
     @Override
     public synchronized boolean writeFile(String filename) {
-        throw new UnsupportedOperationException("MusicXml.writeFile() is not supported.");
+        return this.writeMusicXml(filename);
+    }
+
+    /**
+     * writes the MusicXML to a file at this.file (it must be != null);
+     * if there is already a file with this name, it is replaces!
+     * @return true if success, false if an error occured
+     */
+    public boolean writeMusicXml() {
+        if (this.file == null) {
+            System.err.println("Cannot write to the file system. Path and filename are not specified.");
+            return false;
+        }
+
+        if (this.isEmpty()) {
+            System.err.println("Empty document, cannot write file.");
+            return false;
+        }
+
+        return this.writeMusicXml(this.file.getPath());
+    }
+
+    /**
+     * writes the MusicXML to a file (filename should include the path and the extension)
+     * @param filename the filename string; it should include the path and the extension
+     * @return true if success, false if an error occured
+     */
+    public synchronized boolean writeMusicXml(String filename) {
+        if (this.isEmpty()) {
+            System.err.println("Empty document, cannot write file.");
+            return false;
+        }
+
+        // create the file in the file system
+        File file = new File(filename);
+        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        try {
+            file.createNewFile();                                   // create the file if it does not already exist
+        } catch (IOException | SecurityException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        OutputStream os;
+        try {
+            os = new FileOutputStream(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        boolean success = true;
+        try {
+            switch (this.getType()) {
+                case scorePartwise:
+                    Marshalling.marshal((ScorePartwise) this.data, os, INJECT_SIGNATURE, 4);
+                    break;
+                case scoreTimewise:
+//                    Marshalling.marshal((ScoreTimewise) this.data, os, INJECT_SIGNATURE, 4);
+//                    break;
+                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling."));
+                case opus:
+                    Marshalling.marshal((Opus) this.data, os);
+                    break;
+                case unknown:
+                default:
+                    throw new Marshalling.MarshallingException(new Throwable("Unknown data format for MusicXML, unable to marshal."));
+            }
+        } catch (Marshalling.MarshallingException e) {
+            e.printStackTrace();
+            success = false;
+        }
+
+        try {
+            os.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (this.file == null)
+            this.file = file;
+
+        return success;
+    }
+
+    /**
+     * writes the MusicXML to a .mxl file with the path and name of this.file (it must be != null);
+     * if there is already a file with this name, it is replaces!
+     * @return true if success, false if an error occured
+     */
+    public boolean writeCompressedMusicXml() {
+        if (this.file == null) {
+            System.err.println("Cannot write to the file system. Path and filename are not specified.");
+            return false;
+        }
+
+        if (this.isEmpty()) {
+            System.err.println("Empty document, cannot write file.");
+            return false;
+        }
+
+        return this.writeCompressedMusicXml(Helper.getFilenameWithoutExtension(this.file.getPath()) + ".mxl");
+    }
+
+    /**
+     * writes the MusicXML to an .mxl file (filename should include the path and the extension)
+     * @param filename the filename string; it should include the path and the extension
+     * @return true if success, false if an error occured
+     */
+    public synchronized boolean writeCompressedMusicXml(String filename) {
+        if (this.isEmpty()) {
+            System.err.println("Empty document, cannot write file.");
+            return false;
+        }
+
+        // create the file in the file system
+        File file = new File(filename);
+        file.getParentFile().mkdirs();                              // ensure that the directory exists
+        try {
+            file.createNewFile();                                   // create the file if it does not already exist
+        } catch (IOException | SecurityException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        Mxl.Output mof;
+        try {
+            mof = new Mxl.Output(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        boolean success = true;
+        OutputStream zos = mof.getOutputStream();
+        String rootfilename = Helper.getFilenameWithoutExtension(filename) + ".musicxml";
+        try {
+            mof.addEntry(new RootFile(rootfilename, RootFile.MUSICXML_MEDIA_TYPE));
+            switch (this.getType()) {
+                case scorePartwise:
+                    Marshalling.marshal((ScorePartwise) this.data, zos, INJECT_SIGNATURE, 4);
+                    break;
+                case scoreTimewise:
+//                    Marshalling.marshal((ScoreTimewise) this.data, zos, INJECT_SIGNATURE, 4);
+//                    break;
+                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling."));
+                case opus:
+                    Marshalling.marshal((Opus) this.data, zos);
+                    break;
+                case unknown:
+                default:
+                    throw new Marshalling.MarshallingException(new Throwable("Unknown data format for MusicXML, unable to marshal."));
+            }
+        } catch (Marshalling.MarshallingException | Mxl.MxlException e) {
+            e.printStackTrace();
+            success = false;
+        }
+
+        try {
+            zos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (this.file == null)
+            this.file = new File(rootfilename);
+
+        return success;
     }
 
     /**
