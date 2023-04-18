@@ -4,6 +4,7 @@
 #### v0.8.49
 - Added basic MusicXML integration to meico and meicoApp. Both MusicXML file formats, raw (`.musicxml`, `.xml`) and compressed (`.mxl`) are supported for reading and writing.
 - Integration of MusicXML basic functionality in meicoApp.
+- New class `meico.mei.Mei2MsmMpmConverter` has been added to implement a better modularization of different conversion options. All con version functionality from MEI to MSM and MPM moved from `meico.mei.MEI` into this class.
 
 
 #### v0.8.48

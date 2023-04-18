@@ -26,7 +26,7 @@ import java.util.zip.ZipEntry;
  */
 public class MusicXml extends XmlBase {
     private static final boolean INJECT_SIGNATURE = false;
-    protected Object data = null;
+    protected Object data;
 
     /**
      * constructor
