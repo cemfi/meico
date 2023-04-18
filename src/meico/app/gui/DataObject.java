@@ -226,7 +226,7 @@ class DataObject extends Group {
                 break;
             case "score-partwise":                                              // seems to be a musicxml
             case "score-timewise":
-            case"opus":
+            case "opus":
                 o = new MusicXml(xml.getDocument());
                 break;
             case "stylesheet":                                                  // seems to be an xslt
@@ -613,7 +613,7 @@ class DataObject extends Group {
             }
         }
         else if (this.data instanceof MusicXml) {
-            String[] leftItems = {"Show", "Validate", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Save", "Save as MXL", "Save As", "Close"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -864,7 +864,7 @@ class DataObject extends Group {
                             initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
                         chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
                         chooser.setInitialFileName(mei.getFile().getName());            // set the initial filename
-                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MEI files (*.mei)", "*.mei"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
+                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MEI files (*.mei)", "*.mei"), new FileChooser.ExtensionFilter("XML files (*.xml)", "*.xml"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
                         File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
                         if (file != null) {                                             // if it returns a file to save the data, do the save operation
                             Thread thread = new Thread(() -> {
@@ -2293,46 +2293,46 @@ class DataObject extends Group {
                         this.start(thread);
                     });
                     break;
-                case "Validate":
+                case "Save":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
-                            this.validate();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MusicXML data " + ((((MusicXml)this.getData()).writeMusicXml()) ? ("to " + ((MusicXml)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
                     });
                     break;
-                case "Save":
-//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-//                        Thread thread = new Thread(() -> {
-//                            RotateTransition ani = this.startComputeAnimation();
-//                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MusicXML data " + ((((MusicXml)this.getData()).writeMusicXml()) ? ("to " + ((MusicXml)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
-//                            this.stopComputeAnimation(ani);
-//                        });
-//                        this.start(thread);
-//                    });
+                case "Save as MXL":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Saving Compressed MusicXML (.mxl) data " + ((((MusicXml)this.getData()).writeCompressedMusicXml()) ? ("to " + ((MusicXml)this.getData()).getFile().getAbsolutePath() + ".") : "failed."));
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
                     break;
                 case "Save As":
-//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-//                        MusicXml mxl = ((MusicXml)this.getData());                                     // the object
-//                        FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
-//                        File initialDir = new File(mxl.getFile().getParent());          // get the directory of the object's source file
-//                        if (!initialDir.exists())                                       // if that does not exist
-//                            initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
-//                        chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
-//                        chooser.setInitialFileName(mxl.getFile().getName());            // set the initial filename
-//                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MusicXML files (*.musicxml)", "*.musicxml"), new FileChooser.ExtensionFilter("All files", "*.*"));   // some extensions to filter
-//                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
-//                        if (file != null) {                                             // if it returns a file to save the data, do the save operation
-//                            Thread thread = new Thread(() -> {
-//                                RotateTransition ani = this.startComputeAnimation();
-//                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MSM data " + ((mxl.writeMusicXml(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
-//                                this.stopComputeAnimation(ani);
-//                            });
-//                            this.start(thread);
-//                        }
-//                    });
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        MusicXml musicXml = ((MusicXml) this.getData());                // the object
+                        FileChooser chooser = new FileChooser();                        // the file chooser to select file location and name
+                        File initialDir = new File(musicXml.getFile().getParent());     // get the directory of the object's source file
+                        if (!initialDir.exists())                                       // if that does not exist
+                            initialDir = new File(System.getProperty("user.dir"));      // get the current working directory
+                        chooser.setInitialDirectory(initialDir);                        // set the chooser's initial directory
+                        chooser.setInitialFileName(musicXml.getFile().getName());       // set the initial filename
+                        chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("MusicXML files (*.musicxml)", "*.musicxml"), new FileChooser.ExtensionFilter("Compressed MusicXML files (*.mxl)", "*.mxl"), new FileChooser.ExtensionFilter("XML files (*.xml)", "*.xml"), new FileChooser.ExtensionFilter("All files", "*.*"));    // some extensions to filter
+                        File file = chooser.showSaveDialog(this.getWorkspace().getApp().getStage());   // show the save dialog
+                        if (file != null) {                                             // if it returns a file to save the data, do the save operation
+                            Thread thread = new Thread(() -> {
+                                RotateTransition ani = this.startComputeAnimation();
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Saving MusicXML data " + ((musicXml.writeMusicXml(file.getAbsolutePath())) ? ("to " + file.getAbsolutePath() + ".") : "failed."));
+                                this.stopComputeAnimation(ani);
+                            });
+                            this.start(thread);
+                        }
+                    });
                     break;
 //                case "Close":
 //                    break;
