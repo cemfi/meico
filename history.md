@@ -3,6 +3,7 @@
 
 #### v0.8.49
 - Added basic MusicXML integration to meico and meicoApp. Both MusicXML file formats, raw (`.musicxml`, `.xml`) and compressed (`.mxl`) are supported for reading and writing.
+- Integration of MusicXML basic functionality in meicoApp.
 
 
 #### v0.8.48

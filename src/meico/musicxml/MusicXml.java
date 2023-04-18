@@ -333,6 +333,12 @@ public class MusicXml extends XmlBase {
             return false;
         }
 
+        boolean isMxl = filename.substring(filename.lastIndexOf('.')).equals(".mxl");
+        if (isMxl) {
+            System.out.println("According to the file extension, a Compressed MusicXML should be written. Switching to the corresponding method.");
+            return this.writeCompressedMusicXml(filename);
+        }
+
         // create the file in the file system
         File file = new File(filename);
         file.getParentFile().mkdirs();                              // ensure that the directory exists
@@ -435,7 +441,7 @@ public class MusicXml extends XmlBase {
 
         boolean success = true;
         OutputStream zos = mof.getOutputStream();
-        String rootfilename = Helper.getFilenameWithoutExtension(filename) + ".musicxml";
+        String rootfilename = Helper.getFilenameWithoutExtension(file.getName()) + ".musicxml";
         try {
             mof.addEntry(new RootFile(rootfilename, RootFile.MUSICXML_MEDIA_TYPE));
             switch (this.getType()) {
