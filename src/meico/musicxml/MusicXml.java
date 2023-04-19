@@ -38,6 +38,30 @@ public class MusicXml extends XmlBase {
 
     /**
      * constructor
+     * @param scorePartwise
+     */
+    public MusicXml(ScorePartwise scorePartwise) {
+        this.data = scorePartwise;
+    }
+
+    /**
+     * constructor
+     * @param scoreTimewise
+     */
+    public MusicXml(ScoreTimewise scoreTimewise) {
+        this.data = scoreTimewise;
+    }
+
+    /**
+     * constructor
+     * @param opus
+     */
+    public MusicXml(Opus opus) {
+        this.data = opus;
+    }
+
+    /**
+     * constructor
      * @param document an instance of a XOM Document
      * @throws Marshalling.UnmarshallingException
      * @throws IOException
