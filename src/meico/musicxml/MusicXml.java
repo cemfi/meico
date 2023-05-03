@@ -1,12 +1,14 @@
 package meico.musicxml;
 
 import meico.mei.Helper;
+import meico.mei.Mei;
+import meico.mpm.Mpm;
+import meico.msm.Msm;
+import meico.supplementary.KeyValue;
 import meico.xml.XmlBase;
 import net.sf.saxon.s9api.Xslt30Transformer;
 import nu.xom.*;
-import org.audiveris.proxymusic.ObjectFactory;
-import org.audiveris.proxymusic.ScorePartwise;
-import org.audiveris.proxymusic.ScoreTimewise;
+import org.audiveris.proxymusic.*;
 import org.audiveris.proxymusic.mxl.Mxl;
 import org.audiveris.proxymusic.mxl.RootFile;
 import org.audiveris.proxymusic.opus.Opus;
@@ -14,6 +16,7 @@ import org.audiveris.proxymusic.util.Marshalling;
 
 import javax.xml.bind.JAXBException;
 import java.io.*;
+import java.lang.String;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,8 +28,8 @@ import java.util.zip.ZipEntry;
  * @author Axel Berndt
  */
 public class MusicXml extends XmlBase {
-    private static final boolean INJECT_SIGNATURE = false;
-    protected Object data;
+    private static final boolean INJECT_SIGNATURE = false;  // if true, ProxyMusic signs the marshalled MusicXML files
+    protected Object data;                                  // this replaces the data Document from XmlBase, its datatype is either ScorePartwise, ScoreTimewise or Opus, depending on the input data
 
     /**
      * constructor
@@ -132,6 +135,134 @@ public class MusicXml extends XmlBase {
         }
 
         return null;                                                            // if the file could not be unmarshalled, return null
+    }
+
+    /**
+     * Convert this object into a score-partwise representation of the MusicXML.
+     * If this is already a score-partwise MusicXML, the result is this.
+     * If this is an opus MusicXML, the result is null.
+     * Otherwise, the result is a new MusicXml instance with the converted data.
+     * @return the result or null
+     */
+    public MusicXml toScorePartwise() {
+        if (this.data instanceof ScorePartwise)
+            return this;
+
+        if (this.data instanceof Opus)
+            return null;
+
+        ScorePartwise scorePartwise = new ScorePartwise();
+        ScoreTimewise scoreTimewise = (ScoreTimewise) this.data;
+
+        scorePartwise.setWork(scoreTimewise.getWork());
+        scorePartwise.setDefaults(scoreTimewise.getDefaults());
+        scorePartwise.setIdentification(scoreTimewise.getIdentification());
+        scorePartwise.setVersion(scoreTimewise.getVersion());
+        scorePartwise.setMovementTitle(scoreTimewise.getMovementTitle());
+        scorePartwise.setMovementNumber(scoreTimewise.getMovementNumber());
+        scorePartwise.getCredit().addAll(scoreTimewise.getCredit());
+        scorePartwise.setPartList(scoreTimewise.getPartList());
+
+        // create parts in scorePartwise
+        for (Object part : scoreTimewise.getPartList().getPartGroupOrScorePart()) {
+            if (!(part instanceof ScorePart))
+                continue;
+            ScorePartwise.Part spwPart = new ScorePartwise.Part();
+            scorePartwise.getPart().add(spwPart);
+            spwPart.setId(part);
+        }
+
+        // translate the measures' parts to the parts' measures
+        for (ScoreTimewise.Measure stwMeasure : scoreTimewise.getMeasure()) {       // for each measure
+            // for each measure's part create a measure in the scorePartwise part
+            for (ScoreTimewise.Measure.Part stwPart : stwMeasure.getPart()) {      // for each part in the measure
+                // find the corresponding scorePartwise part
+                ScorePartwise.Part spwPart = null;
+                for (ScorePartwise.Part p : scorePartwise.getPart()) {
+                    if (p.getId().equals(stwPart.getId())) {
+                        spwPart = p;
+                        break;
+                    }
+                }
+
+                // if no scorePartwise part was found, create one
+                if (spwPart == null) {
+                    spwPart = new ScorePartwise.Part();
+                    scorePartwise.getPart().add(spwPart);
+                    spwPart.setId(stwPart);
+                }
+
+                // create a measure in the corresponding scorePartwise part and fill it
+                ScorePartwise.Part.Measure spwMeasure = new ScorePartwise.Part.Measure();
+                spwPart.getMeasure().add(spwMeasure);
+                spwMeasure.setImplicit(stwMeasure.getImplicit());
+                spwMeasure.setNumber(stwMeasure.getNumber());
+                spwMeasure.setWidth(stwMeasure.getWidth());
+                spwMeasure.setNonControlling(stwMeasure.getNonControlling());
+                spwMeasure.getNoteOrBackupOrForward().addAll(stwPart.getNoteOrBackupOrForward());   // add the contents to the measure
+            }
+        }
+
+        MusicXml out = new MusicXml(scorePartwise);
+        out.setFile(Helper.getFilenameWithoutExtension(file.getPath()) + "_as_score-partwise.musicxml");
+        return out;
+    }
+
+    /**
+     * Convert this object into a score-timewise representation of the MusicXML.
+     * If this is already a score-timewise MusicXML, the result is this.
+     * If this is an opus MusicXML, the result is null.
+     * Otherwise, the result is a new MusicXml instance with the converted data.
+     * @return the result or null
+     */
+    public MusicXml toScoreTimewise() {
+        if (this.data instanceof ScoreTimewise)
+            return this;
+
+        if (this.data instanceof Opus)
+            return null;
+
+        ScoreTimewise scoreTimewise = new ScoreTimewise();
+        ScorePartwise scorePartwise = (ScorePartwise) this.data;
+
+        scoreTimewise.setWork(scorePartwise.getWork());
+        scoreTimewise.setDefaults(scorePartwise.getDefaults());
+        scoreTimewise.setIdentification(scorePartwise.getIdentification());
+        scoreTimewise.setVersion(scorePartwise.getVersion());
+        scoreTimewise.setMovementTitle(scorePartwise.getMovementTitle());
+        scoreTimewise.setMovementNumber(scorePartwise.getMovementNumber());
+        scoreTimewise.getCredit().addAll(scorePartwise.getCredit());
+        scoreTimewise.setPartList(scorePartwise.getPartList());
+
+        // translate each part's measure to parts in a measure
+        for (ScorePartwise.Part spwPart : scorePartwise.getPart()) {                // for each part
+            for (int measureNumber = 0; measureNumber < spwPart.getMeasure().size(); ++measureNumber) { // for each measure in the part
+                ScorePartwise.Part.Measure spwMeasure = spwPart.getMeasure().get(measureNumber);
+
+                // find or create the corresponding score-timewise measure
+                ScoreTimewise.Measure stwMeasure;
+                while (scoreTimewise.getMeasure().size() <= measureNumber) {
+                    stwMeasure = new ScoreTimewise.Measure();
+                    scoreTimewise.getMeasure().add(stwMeasure);
+                    stwMeasure.setImplicit(spwMeasure.getImplicit());
+                    stwMeasure.setNumber(spwMeasure.getNumber());
+                    stwMeasure.setWidth(spwMeasure.getWidth());
+                    stwMeasure.setNonControlling(spwMeasure.getNonControlling());
+                }
+                stwMeasure = scoreTimewise.getMeasure().get(measureNumber);
+
+                // create and add the part to the measure
+                ScoreTimewise.Measure.Part stwPart = new ScoreTimewise.Measure.Part();
+                stwPart.setId(spwPart.getId());
+                stwPart.getNoteOrBackupOrForward().addAll(spwMeasure.getNoteOrBackupOrForward());
+                stwMeasure.getPart().add(stwPart);
+            }
+        }
+
+        MusicXml out = new MusicXml(scoreTimewise);
+        out.setFile(Helper.getFilenameWithoutExtension(file.getPath()) + "_as_score-timewise.musicxml");
+
+        return out;
     }
 
     /**
@@ -248,6 +379,24 @@ public class MusicXml extends XmlBase {
     }
 
     /**
+     * convert the MusicXML to an MSM and MPM pair
+     * @return
+     */
+    public KeyValue<Msm, Mpm> exportMsmMpm() {
+        System.err.println("MusicXML to MSM and MPM conversion is not yet supported.");
+        return null;
+    }
+
+    /**
+     * convert MusicXML to MEI
+     * @return
+     */
+    public Mei exportMei() {
+        System.err.println("MusicXML to MEI conversion is not yet supported.");
+        return null;
+    }
+
+    /**
      * returns the MusicXML data as XML string or null if this is empty
      * @return
      */
@@ -266,7 +415,7 @@ public class MusicXml extends XmlBase {
 //                    Marshalling.marshal((ScoreTimewise) this.data, outputStream, INJECT_SIGNATURE, 4);
 //                    out = outputStream.toString();
 //                    break;
-                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling."));
+                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling. Execute toScorePartwise() first."));
                 case opus:
                     Marshalling.marshal((Opus) this.data, outputStream);
                     out = outputStream.toString();
@@ -390,7 +539,7 @@ public class MusicXml extends XmlBase {
                 case scoreTimewise:
 //                    Marshalling.marshal((ScoreTimewise) this.data, os, INJECT_SIGNATURE, 4);
 //                    break;
-                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling."));
+                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling. Execute toScorePartwise() first."));
                 case opus:
                     Marshalling.marshal((Opus) this.data, os);
                     break;
@@ -475,7 +624,7 @@ public class MusicXml extends XmlBase {
                 case scoreTimewise:
 //                    Marshalling.marshal((ScoreTimewise) this.data, zos, INJECT_SIGNATURE, 4);
 //                    break;
-                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling."));
+                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling. Execute toScorePartwise() first."));
                 case opus:
                     Marshalling.marshal((Opus) this.data, zos);
                     break;

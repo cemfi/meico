@@ -91,7 +91,7 @@ public class Midi2MsmConverter {
 
         // add all parts to the msm object
         for (Map.Entry<String, Element> entry : this.parts.entrySet())
-            msm.addPart(entry.getValue());
+            this.msm.addPart(entry.getValue());
     }
 
     /**

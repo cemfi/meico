@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class Mei2MsmMpmConverter {
     private Helper helper;                          // some variables and methods to make life easier
-    private Mei mei = null;
+    private Mei mei = null;                         // the MEI to be converted
     private boolean ignoreExpansions = false;       // set this true to have a 1:1 conversion of MEI to MSM without the rearrangement that MEI's expansion elements produce
     private boolean cleanup = true;                 // set true to return a clean msm file or false to keep all the crap from the conversion
 
