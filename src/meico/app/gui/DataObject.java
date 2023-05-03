@@ -473,7 +473,7 @@ class DataObject extends Group {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {"to MSM & MPM", "to MIDI", "to Audio", "Score Rendering", "XSL Transform"};
+            String[] rightItems = {"to MSM & MPM", "to MusicXML", "to MIDI", "to Audio", "Score Rendering", "XSL Transform"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -619,7 +619,7 @@ class DataObject extends Group {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
                 menu.getChildren().add(item);
             }
-            String[] rightItems = {/*TODO:"to MEI",*/ "XSL Transform"};
+            String[] rightItems = {"to MSM & MPM", "to MEI", "XSL Transform"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(rightItems);
             for (int i = 0; i < rightItems.length; ++i) {
                 Group item = this.makeMenuItem(rightItems[i], -(((float)(rightItems.length - 1) * itemHeight) / 2) + (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -892,6 +892,21 @@ class DataObject extends Group {
                                 }
                                 this.addSeveralChildren(mouseEvent, lo);
                                 this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to MSM and MPM: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "to MusicXML":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to MusicXML ...");
+                            List<MusicXml> musicXmls = ((Mei)this.getData()).exportMusicXml(Settings.Mei2Msm_ignoreExpansions);     // do the conversion
+                            if (this.getWorkspace() != null) {                                       // it is possible that the data object has been removed from workspace in the meantime
+                                this.addSeveralChildren(mouseEvent, musicXmls);
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MEI to MusicXML: done.");
                             }
                             this.stopComputeAnimation(ani);
                         });
@@ -2336,20 +2351,42 @@ class DataObject extends Group {
                     break;
 //                case "Close":
 //                    break;
+                case "to MSM & MPM":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MSM and MPM ...");
+                            KeyValue<Msm, Mpm> msmpm = ((MusicXml)this.getData()).exportMsmMpm();   // do the conversion
+                            if (this.getWorkspace() != null) {                                      // it is possible that the data object has been removed from workspace in the meantime
+                                if (msmpm != null) {
+                                    ArrayList<Object> lo = new ArrayList<>();                           // sort the msm and mpm in this list
+                                    if (msmpm.getKey() != null)
+                                        lo.add(msmpm.getKey());                                         // add msm
+                                    if (msmpm.getValue() != null)
+                                        lo.add(msmpm.getValue());                                       // add the corresponding mpm right next to the msm
+                                    this.addSeveralChildren(mouseEvent, lo);
+                                }
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MSM and MPM: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
                 case "to MEI":
-//                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
-//                        Thread thread = new Thread(() -> {
-//                            RotateTransition ani = this.startComputeAnimation();
-//                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI ...");
-//                            Mei mei = ((MusicXml)this.getData()).exportMei(Settings.useLatestVerovio);   // do the conversion
-//                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
-//                                this.addOneChild(mouseEvent, mei);
-//                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI: done.");
-//                            }
-//                            this.stopComputeAnimation(ani);
-//                        });
-//                        this.start(thread);
-//                    });
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI ...");
+                            Mei mei = ((MusicXml)this.getData()).exportMei();    // do the conversion
+                            if (this.getWorkspace() != null) {                   // it is possible that the data object has been removed from workspace in the meantime
+                                this.addOneChild(mouseEvent, mei);
+                                this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MEI: done.");
+                            }
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
                     break;
                 case "XSL Transform":
                     this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
