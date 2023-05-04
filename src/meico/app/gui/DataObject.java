@@ -2356,7 +2356,7 @@ class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.getWorkspace().getApp().getStatuspanel().setMessage("Converting MusicXML to MSM and MPM ...");
-                            KeyValue<Msm, Mpm> msmpm = ((MusicXml)this.getData()).exportMsmMpm();   // do the conversion
+                            KeyValue<Msm, Mpm> msmpm = ((MusicXml)this.getData()).exportMsmMpm(Settings.Mei2Msm_ppq, Settings.Mei2Msm_msmCleanup);   // do the conversion
                             if (this.getWorkspace() != null) {                                      // it is possible that the data object has been removed from workspace in the meantime
                                 if (msmpm != null) {
                                     ArrayList<Object> lo = new ArrayList<>();                           // sort the msm and mpm in this list
