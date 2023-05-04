@@ -1,5 +1,6 @@
 package meico.mei;
 
+import meico.Meico;
 import meico.midi.InstrumentsDictionary;
 import meico.mpm.Mpm;
 import meico.mpm.elements.Part;
@@ -81,7 +82,7 @@ public class Mei2MsmMpmConverter {
             return new KeyValue<>(new ArrayList<Msm>(), new ArrayList<Mpm>());  // return empty lists
 
         // check whether the  shortest duration in the mei (note value can go down to 2048th) is captured by the defined ppq resolution; adjust ppq automatically and output a message
-        int minPPQ = this.mei.computeMinimalPPQ();                                   // compute the minimal required ppq resolution
+        int minPPQ = this.mei.computeMinimalPPQ();                              // compute the minimal required ppq resolution
         int originalPPQ = this.helper.ppq;                                      // keep the original ppq value, so we can switch back to it after the conversion process
         if (minPPQ > this.helper.ppq) {                                         // if it is greater than the specified resolution
             this.helper.ppq = minPPQ;                                           // adjust the specified ppq to ensure viable results
@@ -604,10 +605,10 @@ public class Mei2MsmMpmConverter {
         if (this.mei.getFile() != null) {
             ArrayList<RelatedResource> relatedResources = new ArrayList<>();
             relatedResources.add(RelatedResource.createRelatedResource(this.mei.getFile().getAbsolutePath(), "mei"));
-            Comment comment = Comment.createComment("This MPM has been generated from '" + this.mei.getFile().getName() + "' using the meico MEI converter.", null);
+            Comment comment = Comment.createComment("This MPM has been generated from '" + this.mei.getFile().getName() + "' using the meico MEI converter v" + Meico.version + ".", null);
             mpm.addMetadata(Author.createAuthor("meico", null, null), comment, relatedResources);
         } else {
-            Comment comment = Comment.createComment("This MPM has been generated from MEI code using the meico MEI converter.", null);
+            Comment comment = Comment.createComment("This MPM has been generated from MEI code using the meico MEI converter v" + Meico.version + ".", null);
             mpm.addMetadata(Author.createAuthor("meico", null, null), comment, null);
         }
         Performance performance = Performance.createPerformance("MEI export performance");  // generate a Performance object

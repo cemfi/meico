@@ -645,9 +645,8 @@ public class Helper {
      * @param msms
      */
     public static void msmCleanup(List<Msm> msms) {
-        for (int i=0; i < msms.size(); ++i) {                       // go through all msm objects in the input list
-            msmCleanup(msms.get(i));                                // make the cleanup
-        }
+        for (Msm msm : msms)                            // go through all msm objects in the input list
+            msmCleanup(msm);                            // make the cleanup
     }
 
     /**
@@ -674,9 +673,8 @@ public class Helper {
      * @param mpms
      */
     public static void mpmPostprocessing(List<Mpm> mpms) {
-        for (int i=0; i < mpms.size(); ++i) {                       // go through all mpm objects in the input list
-            mpmPostprocessing(mpms.get(i));                         // do the postprocessing
-        }
+        for (Mpm mpm : mpms)                        // go through all mpm objects in the input list
+            mpmPostprocessing(mpm);                 // do the postprocessing
     }
 
     /**

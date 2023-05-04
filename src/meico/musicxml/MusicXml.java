@@ -351,26 +351,39 @@ public class MusicXml extends XmlBase {
         if (this.data == null)
             return "";
 
+        String out = null;
+
         switch (this.getType()) {
             case scorePartwise:
                 ScorePartwise sp = (ScorePartwise) this.data;
                 if ((sp.getWork() != null) && (sp.getWork().getWorkTitle() != null))
-                    return sp.getWork().getWorkTitle();
+                    out = sp.getWork().getWorkTitle();
+                if (sp.getMovementNumber() != null)
+                    out += " " + sp.getMovementNumber();
+                if (sp.getMovementTitle() != null)
+                    out += " " + sp.getMovementTitle();
                 break;
             case scoreTimewise:
                 ScoreTimewise st = (ScoreTimewise) this.data;
                 if ((st.getWork() != null) && (st.getWork().getWorkTitle() != null))
-                    return st.getWork().getWorkTitle();
+                    out = st.getWork().getWorkTitle();
+                if (st.getMovementNumber() != null)
+                    out += " " + st.getMovementNumber();
+                if (st.getMovementTitle() != null)
+                    out += " " + st.getMovementTitle();
                 break;
             case opus:
                 Opus op = (Opus) this.data;
                 if (op.getTitle() != null)
-                    return op.getTitle();
+                    out = op.getTitle();
                 break;
             case unknown:
             default:
                 break;
         }
+
+        if (out != null)
+            return out;
 
         if (this.getFile() != null)
             return this.getFile().getName();
@@ -379,12 +392,39 @@ public class MusicXml extends XmlBase {
     }
 
     /**
+     * get the part-list of the MusicXML
+     * @return the PartList object or null if none exists
+     */
+    public PartList getPartList() {
+        switch (this.getType()) {
+            case scorePartwise:
+                return ((ScorePartwise) this.data).getPartList();
+            case scoreTimewise:
+                return ((ScoreTimewise) this.data).getPartList();
+            case opus:
+            case unknown:
+            default:
+                break;
+        }
+        return null;
+    }
+
+    /**
      * convert the MusicXML to an MSM and MPM pair
      * @return
      */
     public KeyValue<Msm, Mpm> exportMsmMpm() {
-        System.err.println("MusicXML to MSM and MPM conversion is not yet supported.");
-        return null;
+        return this.exportMsmMpm(720, true);
+    }
+
+    /**
+     * convert the MusicXML to an MSM and MPM pair
+     * @param ppq pulses per quarter time resolution
+     * @param cleanup set true to return a clean msm file or false to keep all the crap from the conversion
+     * @return
+     */
+    public KeyValue<Msm, Mpm> exportMsmMpm(int ppq, boolean cleanup) {
+        return (new MusicXml2MsmMpmConverter(ppq, cleanup)).convert(this);
     }
 
     /**

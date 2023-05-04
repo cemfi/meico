@@ -25,6 +25,11 @@ public class Mei2MusicXmlConverter {
         this.ignoreExpansions = ignoreExpansions;
     }
 
+    /**
+     * start the conversion process
+     * @param mei
+     * @return
+     */
     public List<MusicXml> convert(Mei mei) {
         if (mei == null) {
             System.out.println("\nThe provided MEI object is null and cannot be converted.");
@@ -41,6 +46,8 @@ public class Mei2MusicXmlConverter {
         LinkedList<MusicXml> out = new LinkedList<>();
 
         // TODO ...
+        System.err.println("MEI to MusicXML conversion is not yet implemented.");
+
 
         // cleanup
         this.mei.setDocument(orig);                                             // restore the unaltered version of the mei data
