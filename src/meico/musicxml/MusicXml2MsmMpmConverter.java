@@ -87,7 +87,8 @@ public class MusicXml2MsmMpmConverter {
             this.msm.setFile(filename + ".msm");
             this.mpm.setFile(filename + ".mpm");
             ArrayList<RelatedResource> relatedResources = new ArrayList<>();
-            relatedResources.add(RelatedResource.createRelatedResource(this.musicXml.getFile().getAbsolutePath(), "musicxml"));
+            relatedResources.add(RelatedResource.createRelatedResource(this.musicXml.getFile().getName(), "musicxml"));
+            relatedResources.add(RelatedResource.createRelatedResource(this.msm.getFile().getName(), "msm"));
             Comment comment = Comment.createComment("This MPM has been generated from '" + this.musicXml.getFile().getName() + "' using the meico MEI converter v" + Meico.version + ".", null);
             this.mpm.addMetadata(Author.createAuthor("meico", null, null), comment, relatedResources);
         } else {
@@ -127,7 +128,7 @@ public class MusicXml2MsmMpmConverter {
         int midiChannel = 0;                                                        // default initial value
         int midiPort = 0;                                                           // default initial value
         for (Object entry : partList.getPartGroupOrScorePart()) {
-            // keep the part-group elements so we can add their names to the part names
+            // keep the part-group elements, so we can add their names to the part names
             if (entry instanceof PartGroup) {
                 PartGroup partGroup = (PartGroup) entry;
                 switch (partGroup.getType()) {
@@ -149,7 +150,7 @@ public class MusicXml2MsmMpmConverter {
             // convert MusicXml score-part to MSM and MPM part
             ScorePart scorePart = (ScorePart) entry;
             String id = scorePart.getId();                                          // required attribute
-            String name = groupName + " " + scorePart.getPartName().getValue();     // required child element
+            String name = (groupName.isEmpty()) ? scorePart.getPartName().getValue() : groupName + " " + scorePart.getPartName().getValue();     // required child element
 
             boolean foundPort = false;
             boolean foundChannel = false;

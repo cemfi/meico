@@ -128,12 +128,12 @@ public class Mei2MsmMpmConverter {
             }
             if (mpms.size() == 1) {                                                                                         // if only one msm object (no numbering needed)
                 mpms.get(0).setFile(Helper.getFilenameWithoutExtension(this.mei.getFile().getPath()) + ".mpm");                 // replace the file extension mei with msm and make this the filename
-                mpms.get(0).getMetadata().addRelatedResource(RelatedResource.createRelatedResource(msms.get(0).getFile().getAbsolutePath(), "msm"));    // add the msm to the reference music
+                mpms.get(0).getMetadata().addRelatedResource(RelatedResource.createRelatedResource(msms.get(0).getFile().getName(), "msm"));    // add the msm to the reference music
             }
             else {                                                                                                          // multiple msm objects created (or none)
                 for (int i = 0; i < mpms.size(); ++i) {                                                                     // for each msm object
                     mpms.get(i).setFile(Helper.getFilenameWithoutExtension(this.mei.getFile().getPath()) + "-" + i + ".mpm");   // replace the extension by the number and the .msm extension
-                    mpms.get(i).getMetadata().addRelatedResource(RelatedResource.createRelatedResource(msms.get(i).getFile().getAbsolutePath(), "msm"));// add the corresponding msm to the reference music
+                    mpms.get(i).getMetadata().addRelatedResource(RelatedResource.createRelatedResource(msms.get(i).getFile().getName(), "msm"));// add the corresponding msm to the reference music
                 }
             }
         }
@@ -604,7 +604,7 @@ public class Mei2MsmMpmConverter {
         Mpm mpm = Mpm.createMpm();                                                  // generate an Mpm object
         if (this.mei.getFile() != null) {
             ArrayList<RelatedResource> relatedResources = new ArrayList<>();
-            relatedResources.add(RelatedResource.createRelatedResource(this.mei.getFile().getAbsolutePath(), "mei"));
+            relatedResources.add(RelatedResource.createRelatedResource(this.mei.getFile().getName(), "mei"));
             Comment comment = Comment.createComment("This MPM has been generated from '" + this.mei.getFile().getName() + "' using the meico MEI converter v" + Meico.version + ".", null);
             mpm.addMetadata(Author.createAuthor("meico", null, null), comment, relatedResources);
         } else {
