@@ -351,26 +351,34 @@ public class MusicXml extends XmlBase {
         if (this.data == null)
             return "";
 
-        String out = null;
+        String out = "";
 
         switch (this.getType()) {
             case scorePartwise:
                 ScorePartwise sp = (ScorePartwise) this.data;
-                if ((sp.getWork() != null) && (sp.getWork().getWorkTitle() != null))
-                    out = sp.getWork().getWorkTitle();
+                if (sp.getWork() != null) {
+                    if (sp.getWork().getWorkNumber() != null)
+                        out += sp.getWork().getWorkNumber();
+                    if (sp.getWork().getWorkTitle() != null)
+                        out += out.isEmpty() ? sp.getWork().getWorkTitle() : " " + sp.getWork().getWorkTitle();
+                }
                 if (sp.getMovementNumber() != null)
-                    out += " " + sp.getMovementNumber();
+                    out += out.isEmpty() ? sp.getMovementNumber() : " " + sp.getMovementNumber();
                 if (sp.getMovementTitle() != null)
-                    out += " " + sp.getMovementTitle();
+                    out += out.isEmpty() ? sp.getMovementTitle() : " " + sp.getMovementTitle();
                 break;
             case scoreTimewise:
                 ScoreTimewise st = (ScoreTimewise) this.data;
-                if ((st.getWork() != null) && (st.getWork().getWorkTitle() != null))
-                    out = st.getWork().getWorkTitle();
+                if (st.getWork() != null) {
+                    if (st.getWork().getWorkNumber() != null)
+                        out += st.getWork().getWorkNumber();
+                    if (st.getWork().getWorkTitle() != null)
+                        out += out.isEmpty() ? st.getWork().getWorkTitle() : " " + st.getWork().getWorkTitle();
+                }
                 if (st.getMovementNumber() != null)
-                    out += " " + st.getMovementNumber();
+                    out += out.isEmpty() ? st.getMovementNumber() : " " + st.getMovementNumber();
                 if (st.getMovementTitle() != null)
-                    out += " " + st.getMovementTitle();
+                    out += out.isEmpty() ? st.getMovementTitle() : " " + st.getMovementTitle();
                 break;
             case opus:
                 Opus op = (Opus) this.data;

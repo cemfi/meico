@@ -18,6 +18,8 @@ import org.audiveris.proxymusic.*;
 import java.io.IOException;
 import java.lang.String;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -123,7 +125,7 @@ public class MusicXml2MsmMpmConverter {
         if (partList == null)
             return;
 
-        String groupName = "";
+        HashMap<Integer, PartGroup> groups = new HashMap<>();                       // group number, part-group element
         int number = 0;                                                             // default initial value
         int midiChannel = 0;                                                        // default initial value
         int midiPort = 0;                                                           // default initial value
@@ -133,11 +135,10 @@ public class MusicXml2MsmMpmConverter {
                 PartGroup partGroup = (PartGroup) entry;
                 switch (partGroup.getType()) {
                     case START:
-                        if (partGroup.getGroupName() != null)
-                            groupName = partGroup.getGroupName().getValue();
+                        groups.put((partGroup.getNumber() != null) ? Integer.parseInt(partGroup.getNumber()) : -1, partGroup);
                         break;
                     case STOP:
-                        groupName = "";
+                        groups.remove((partGroup.getNumber() != null) ? Integer.parseInt(partGroup.getNumber()) : -1);
                         break;
                 }
                 continue;
@@ -150,7 +151,12 @@ public class MusicXml2MsmMpmConverter {
             // convert MusicXml score-part to MSM and MPM part
             ScorePart scorePart = (ScorePart) entry;
             String id = scorePart.getId();                                          // required attribute
-            String name = (groupName.isEmpty()) ? scorePart.getPartName().getValue() : groupName + " " + scorePart.getPartName().getValue();     // required child element
+            String name = "";
+            for (PartGroup pg : groups.values()) {
+                if (pg.getGroupName() != null)
+                    name += name.isEmpty() ? pg.getGroupName().getValue() : " " + pg.getGroupName().getValue();
+            }
+            name += name.isEmpty() ? scorePart.getPartName().getValue() : " " + scorePart.getPartName().getValue(); // required child element
 
             boolean foundPort = false;
             boolean foundChannel = false;

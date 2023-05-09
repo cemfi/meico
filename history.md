@@ -7,6 +7,7 @@
 - Integration of MusicXML basic functionality in meicoApp.
 - New class `meico.mei.Mei2MsmMpmConverter` has been added to implement a better modularization of different conversion options. All con version functionality from MEI to MSM and MPM moved from `meico.mei.MEI` into this class.
 - Slight changes in methods `convert()` and `makeMovement()` of class `meico.mei.Mei2MsmMpmConverter`. The `relatedResources` entries in the MPM are now only with filenames and no longer with the absloute path on the local machine.
+- Added MusicXML Coverage Documentation.
 
 #### v0.8.48
 - Added new methods `meico.midi.Midi.getMinimalPPQ()` that computes the minimal integer timing resolution (in pulses per quarter note) necessary for an accurate representation of a MIDI sequence.
