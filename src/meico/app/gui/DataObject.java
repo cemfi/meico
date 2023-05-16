@@ -198,7 +198,7 @@ class DataObject extends Group {
                 return new TxtData(file);
             case ".musicxml":
             case ".mxl":
-                return MusicXml.fromFile(file);
+                return MusicXml.from(file);
             default:
 //                this.workspace.getApp().getStatuspanel().setMessage("Input file type " + extension + " is not supported by meico.");
                 throw new IOException("File type " + extension + " is not supported as input by meico.");
@@ -227,7 +227,7 @@ class DataObject extends Group {
             case "score-partwise":                                              // seems to be a musicxml
             case "score-timewise":
             case "opus":
-                o = new MusicXml(xml.getDocument());
+                o = MusicXml.from(xml.getDocument());
                 break;
             case "stylesheet":                                                  // seems to be an xslt
                 return new meico.app.gui.XSLTransform(file);
