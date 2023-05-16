@@ -58,7 +58,7 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public AbstractMsm(String xml) throws IOException, ParsingException {
+    public AbstractMsm(String xml) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml);
     }
 
@@ -70,7 +70,7 @@ public abstract class AbstractMsm extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public AbstractMsm(String xml, boolean validate, URL schema) throws IOException, ParsingException {
+    public AbstractMsm(String xml, boolean validate, URL schema) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml, validate, schema);
     }
 

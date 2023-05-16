@@ -69,7 +69,7 @@ public class Msm extends AbstractMsm {
      * @throws IOException
      * @throws ParsingException
      */
-    public Msm(String xml) throws IOException, ParsingException {
+    public Msm(String xml) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml);
     }
 
@@ -81,7 +81,7 @@ public class Msm extends AbstractMsm {
      * @throws IOException
      * @throws ParsingException
      */
-    public Msm(String xml, boolean validate, URL schema) throws IOException, ParsingException {
+    public Msm(String xml, boolean validate, URL schema) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml, validate, schema);
     }
 

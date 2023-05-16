@@ -64,7 +64,7 @@ public class Svg extends XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public Svg(String svg) throws IOException, ParsingException {
+    public Svg(String svg) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(svg);
     }
 
@@ -76,7 +76,7 @@ public class Svg extends XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public Svg(String svg, boolean validate, URL schema) throws IOException, ParsingException {
+    public Svg(String svg, boolean validate, URL schema) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(svg, validate, schema);
     }
 

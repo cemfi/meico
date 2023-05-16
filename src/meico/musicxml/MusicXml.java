@@ -13,13 +13,20 @@ import org.audiveris.proxymusic.mxl.Mxl;
 import org.audiveris.proxymusic.mxl.RootFile;
 import org.audiveris.proxymusic.opus.Opus;
 import org.audiveris.proxymusic.util.Marshalling;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
 import java.lang.String;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.zip.ZipEntry;
 
 /**
@@ -69,7 +76,7 @@ public class MusicXml extends XmlBase {
      * @throws Marshalling.UnmarshallingException
      * @throws IOException
      */
-    public MusicXml(Document document) throws Marshalling.UnmarshallingException, IOException {
+    private MusicXml(Document document) throws Marshalling.UnmarshallingException, IOException {
         this(document.toXML());
     }
 
@@ -91,7 +98,7 @@ public class MusicXml extends XmlBase {
      * @throws Marshalling.UnmarshallingException
      * @throws IOException
      */
-    public MusicXml(String xml) throws Marshalling.UnmarshallingException, IOException {
+    private MusicXml(String xml) throws Marshalling.UnmarshallingException, IOException {
         this(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
     }
 
@@ -111,30 +118,175 @@ public class MusicXml extends XmlBase {
      * @param file the input file should be of type .musicxml, .xml or .mxl
      * @return the MusicXml object or null
      */
-    public static MusicXml fromFile(File file) {
+    public static MusicXml from(File file) {
+        String content;
+        String filename = file.getPath();
         String extension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
         if (extension.equals("mxl")) {                                          // if it is a compressed MusicXML
+            StringBuilder stringBuilder = new StringBuilder();
             try {
                 Mxl.Input mxlInput = new Mxl.Input(file);
                 RootFile musicXmlRootFile = mxlInput.getRootFiles().get(0);     // the first rootfile entry should be the MusicXML root, according to https://www.w3.org/2021/06/musicxml40/tutorial/compressed-mxl-files/
                 ZipEntry zipEntry = mxlInput.getEntry(musicXmlRootFile.fullPath);
                 InputStream inputStream = mxlInput.getInputStream(zipEntry);
-                MusicXml out = new MusicXml(inputStream);
-                out.setFile(Helper.getFilenameWithoutExtension(file.getPath()) + ".musicxml");
-                return out;
-            } catch (IOException | Marshalling.UnmarshallingException | Mxl.MxlException | JAXBException e) {
+
+//                MusicXml out = new MusicXml(inputStream);
+                // we do not instantiate the MusicXml from the file directly; we read the file into a String, so we can react if it is a score-timewise that has to be converted into a score-partwise
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                    stringBuilder.append("\n");
+                }
+                bufferedReader.close();
+            } catch (IOException | Mxl.MxlException | JAXBException e) {
                 e.printStackTrace();
+                return null;
             }
-        }
-        else {                                                                  // if it is a raw/uncompressed MuxicXml file
+            content = stringBuilder.toString();
+            filename = Helper.getFilenameWithoutExtension(file.getPath()) + ".musicxml";
+        } else {                                                                // if it is a raw/uncompressed MuxicXml file
             try {
-                return new MusicXml(file);
-            } catch (IOException | Marshalling.UnmarshallingException e) {
+//                return new MusicXml(file);
+                // we do not instantiate the MusicXml from the file directly; we read the file into a String, so we can react if it is a score-timewise that has to be converted into a score-partwise
+                content = new String(Files.readAllBytes(file.toPath()));
+            } catch (IOException e) {
                 e.printStackTrace();
+                return null;
             }
         }
 
-        return null;                                                            // if the file could not be unmarshalled, return null
+        MusicXml out = MusicXml.from(content);
+        if (out != null)
+            out.setFile(filename);
+        return out;
+    }
+
+    /**
+     * Use this constructor to create a MusicXml instance from a XOM Document.
+     * @param document
+     * @return the MusicXml instance or null
+     */
+    public static MusicXml from(Document document) {
+        if (document == null)
+            return null;
+
+        switch (document.getRootElement().getLocalName()) {
+            case "score-timewise":
+                // ProxyMusic does not support unmarshalling of score-timewise; so we first have to convert the document into a score-partwise, create a MusicXML and make a score-timewise from it again
+                Document preprocessedDocument = toScorePartwise(document);
+                if (preprocessedDocument != null) {
+                    try {
+                        return new MusicXml(preprocessedDocument).toScoreTimewise();
+                    } catch (Marshalling.UnmarshallingException | IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            case "score-partwise":
+            case "opus":
+                try {
+                    return new MusicXml(document);
+                } catch (Marshalling.UnmarshallingException | IOException e) {
+                    e.printStackTrace();
+                }
+                break;
+        }
+        return null;
+    }
+
+    /**
+     * Use this factory method to create a MusicXml instance from an XML string.
+     * @param xml
+     * @return the MusicXml instance or null
+     */
+    public static MusicXml from(String xml) {
+        if (xml == null)
+            return null;
+
+        try {
+            return MusicXml.from((new XmlBase(xml)).getDocument());
+        } catch (IOException | ParsingException | ParserConfigurationException | SAXException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * ProxyMusic does not support unmarshalling of score-timewise MusicXML. This method is meant to
+     * work around this limitation. It converts a score-timewise XML Document to a score-partwise one, so
+     * it can be used to create a MusicXml object.
+     * @param scoreTimewise
+     * @return
+     */
+    public static Document toScorePartwise(Document scoreTimewise) {
+        switch (scoreTimewise.getRootElement().getLocalName()) {
+            case "score-timewise":          // it is a score-timewise
+                break;                      // continue with the processing
+            case "score-partwise":          // if it is already a score-partwise
+                return scoreTimewise;       // no processing necessary; just return it
+            default:                        // data not convertible
+                System.out.println("A " + scoreTimewise.getRootElement().getLocalName() + " document cannot be converted into a score-partwise representation.");
+                return null;                // cancel and return nothing
+        }
+
+        Document scorePartwise = (new MusicXml()).getDocument();
+        Element root = scorePartwise.getRootElement();
+
+        // create deep copies of all elements in scoreTimewise and add them to scorePartwise, except for the measures
+        Elements firstChildren = scoreTimewise.getRootElement().getChildElements();
+        ArrayList<Element> measures = new ArrayList<>();
+        Element partList = null;
+        for (Element e : firstChildren) {
+            if (e.getLocalName().equals("measure")) {
+                measures.add(e);
+                continue;
+            }
+
+            Element clone = e.copy();
+            root.appendChild(clone);
+
+            if (clone.getLocalName().equals("part-list"))
+                partList = clone;
+        }
+
+        // create the parts
+        HashMap<String, Element> partMap = new HashMap<>();
+        if (partList != null) {
+            for (Element part : partList.getChildElements("score-part")) {
+                Attribute id = part.getAttribute("id");
+                if (id == null)
+                    continue;
+                Element newPart = new Element("part");
+                newPart.addAttribute(new Attribute("id", id.getValue()));
+                root.appendChild(newPart);
+                partMap.put(id.getValue(), newPart);
+            }
+        }
+
+        // translate the measures' parts to the parts' measures
+        for (Element measure : measures) {
+            // for each measure's part create a measure in the scorePartwise part
+            for (Element part : measure.getChildElements("part")) {
+                Attribute id = part.getAttribute("id");
+                if (id == null)
+                    continue;
+
+                Element newPart = partMap.get(id.getValue());
+                if (newPart == null)
+                    continue;
+
+                // clone the part contents and add them to the partwise measure
+                Element measureClone = Helper.cloneElement(measure);    // flat clone of the measure element to be used as partwise measure
+                newPart.appendChild(measureClone);
+                for (Element measureChild : part.getChildElements())
+                    measureClone.appendChild(measureChild.copy());
+            }
+        }
+
+        System.out.println(scorePartwise.toXML());
+
+        return scorePartwise;
     }
 
     /**
@@ -204,7 +356,10 @@ public class MusicXml extends XmlBase {
         }
 
         MusicXml out = new MusicXml(scorePartwise);
-        out.setFile(Helper.getFilenameWithoutExtension(file.getPath()) + "_as_score-partwise.musicxml");
+
+        if (this.file != null)
+            out.setFile(Helper.getFilenameWithoutExtension(this.file.getPath()) + "_as_score-partwise.musicxml");
+
         return out;
     }
 
@@ -260,7 +415,9 @@ public class MusicXml extends XmlBase {
         }
 
         MusicXml out = new MusicXml(scoreTimewise);
-        out.setFile(Helper.getFilenameWithoutExtension(file.getPath()) + "_as_score-timewise.musicxml");
+
+        if (this.file != null)
+            out.setFile(Helper.getFilenameWithoutExtension(this.file.getPath()) + "_as_score-timewise.musicxml");
 
         return out;
     }
@@ -277,7 +434,9 @@ public class MusicXml extends XmlBase {
     /**
      * Load and unmarshall a new XML document into this object. This will effectively replace all MusicXML data
      * stored in this object so far. The document itself will not be stored in this object as it will not
-     * reflect any editings done afterward on the unmarshalled datastructure.
+     * reflect any editings done afterward on the unmarshalled datastructure. The Document should be of type
+     * score-partwise or opus. If it is score-timewise, use the from() factory instead to create a new MusicXml
+     * instance.
      * @param document
      */
     @Override
@@ -310,7 +469,21 @@ public class MusicXml extends XmlBase {
     @Override
     public Document getDocument() {
         Document document = null;
-        Builder builder = new Builder(false);           // if the validate argument in the Builder constructor is true, the data should be valid
+
+        SAXParserFactory parserFactory = SAXParserFactory.newInstance();    // create a SAX parser (see https://stackoverflow.com/questions/51072419/how-use-xmlreaderfactory-now-because-this-is-deprecated)
+        SAXParser parser;
+        XMLReader xmlreader;
+        try {
+            parser = parserFactory.newSAXParser();
+            xmlreader = parser.getXMLReader();                        // with the SAX parser create an xml reader
+            xmlreader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);  // disable fetching of DTD as this usually does not work with XOM (see https://stackoverflow.com/questions/8081214/ignoring-dtd-when-parsing-xml)
+        } catch (ParserConfigurationException | SAXException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        Builder builder = new Builder(xmlreader);                           // if the validate argument in the Builder constructor is true, the data should be valid
+
         try {
             document = builder.build(new ByteArrayInputStream(this.toXML().getBytes(StandardCharsets.UTF_8)));
         } catch (ValidityException e) {                 // in case of a ValidityException (no valid data)
@@ -459,11 +632,11 @@ public class MusicXml extends XmlBase {
                     Marshalling.marshal((ScorePartwise) this.data, outputStream, INJECT_SIGNATURE, 4);
                     out = outputStream.toString();
                     break;
-                case scoreTimewise:                     // not yet supported by ProxMusic
+                case scoreTimewise:                     // not yet supported by ProxMusic, so we have to convert to ScorePartwise
 //                    Marshalling.marshal((ScoreTimewise) this.data, outputStream, INJECT_SIGNATURE, 4);
-//                    out = outputStream.toString();
-//                    break;
-                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling. Execute toScorePartwise() first."));
+                    Marshalling.marshal((ScorePartwise) this.toScorePartwise().data, outputStream, INJECT_SIGNATURE, 4);
+                    out = outputStream.toString();
+                    break;
                 case opus:
                     Marshalling.marshal((Opus) this.data, outputStream);
                     out = outputStream.toString();
@@ -585,9 +758,9 @@ public class MusicXml extends XmlBase {
                     Marshalling.marshal((ScorePartwise) this.data, os, INJECT_SIGNATURE, 4);
                     break;
                 case scoreTimewise:
-//                    Marshalling.marshal((ScoreTimewise) this.data, os, INJECT_SIGNATURE, 4);
-//                    break;
-                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling. Execute toScorePartwise() first."));
+//                    Marshalling.marshal((ScoreTimewise) this.data, os, INJECT_SIGNATURE, 4);                  // not supported by ProxyMusic
+                    Marshalling.marshal((ScorePartwise) this.toScorePartwise().data, os, INJECT_SIGNATURE, 4);  // so we convert it to ScorePartwise
+                    break;
                 case opus:
                     Marshalling.marshal((Opus) this.data, os);
                     break;
@@ -671,8 +844,8 @@ public class MusicXml extends XmlBase {
                     break;
                 case scoreTimewise:
 //                    Marshalling.marshal((ScoreTimewise) this.data, zos, INJECT_SIGNATURE, 4);
-//                    break;
-                    throw new Marshalling.MarshallingException(new Throwable("MusicXML ScoreTimewise format is not supported for marshalling. Execute toScorePartwise() first."));
+                    Marshalling.marshal((ScorePartwise) this.toScorePartwise().data, zos, INJECT_SIGNATURE, 4);
+                    break;
                 case opus:
                     Marshalling.marshal((Opus) this.data, zos);
                     break;

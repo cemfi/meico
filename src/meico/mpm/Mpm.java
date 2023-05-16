@@ -99,7 +99,7 @@ public class Mpm extends AbstractMsm {
      * @throws IOException
      * @throws ParsingException
      */
-    public Mpm(String xml) throws IOException, ParsingException {
+    public Mpm(String xml) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml);
         this.parseData();
     }
@@ -112,7 +112,7 @@ public class Mpm extends AbstractMsm {
      * @throws IOException
      * @throws ParsingException
      */
-    public Mpm(String xml, boolean validate, URL schema) throws IOException, ParsingException {
+    public Mpm(String xml, boolean validate, URL schema) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml, validate, schema);
         this.parseData();
     }

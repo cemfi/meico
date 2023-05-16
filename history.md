@@ -1,13 +1,16 @@
 ### Version History
 
 
-#### v0.8.49
+#### v0.9.0
 - Added basic MusicXML integration to meico and meicoApp. Both MusicXML file formats, raw (`.musicxml`, `.xml`) and compressed (`.mxl`) are supported for reading and writing.
 - While the ProxyMusic framework does not support marshalling and demarshalling of MusicXML `score-timewise`, class `meico.musicxml.MusicXml` supports conversion of `score-timewise` to `score-partwise` and vice versa.
 - Integration of MusicXML basic functionality in meicoApp.
 - New class `meico.mei.Mei2MsmMpmConverter` has been added to implement a better modularization of different conversion options. All con version functionality from MEI to MSM and MPM moved from `meico.mei.MEI` into this class.
 - Slight changes in methods `convert()` and `makeMovement()` of class `meico.mei.Mei2MsmMpmConverter`. The `relatedResources` entries in the MPM are now only with filenames and no longer with the absloute path on the local machine.
 - Added MusicXML Coverage Documentation.
+- XOM update to v1.3.8.
+- Enhancement in `meico.xml.XmlBase.XmlBase(String xml)` constructor. The added exceptions may require some applications to extend their exception handling also for other classes that are based on `XmlBase`.
+- Added new class `meico.supplementary.InputStream2StringConverter`.
 
 #### v0.8.48
 - Added new methods `meico.midi.Midi.getMinimalPPQ()` that computes the minimal integer timing resolution (in pulses per quarter note) necessary for an accurate representation of a MIDI sequence.

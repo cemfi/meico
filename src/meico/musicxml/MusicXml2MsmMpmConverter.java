@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.lang.String;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -28,8 +27,8 @@ import java.util.UUID;
  * @author Axel Berndt
  */
 public class MusicXml2MsmMpmConverter {
-    private int ppq;                        // pulses per quarter time resolution
-    private boolean cleanup;                // set true to return a clean msm file or false to keep all the crap from the conversion
+    private final int ppq;                        // pulses per quarter time resolution
+    private final boolean cleanup;                // set true to return a clean msm file or false to keep all the crap from the conversion
     private MusicXml musicXml = null;
     private Msm msm = null;
     private Mpm mpm = null;
@@ -52,7 +51,7 @@ public class MusicXml2MsmMpmConverter {
      */
     public KeyValue<Msm, Mpm> convert(MusicXml musicXml) {
         if (musicXml == null) {
-            System.out.println("\nThe provided MusicXML object is null and cannot be converted.");
+            System.out.println("\nThe provided MusicXML object is null and cannot be converted to MSM/MPM.");
             return new KeyValue<>(null, null);                                                      // return empty pair
         }
 
@@ -62,11 +61,11 @@ public class MusicXml2MsmMpmConverter {
             case scoreTimewise:
                 break;
             case opus:
-                System.out.println("MusicXML Opus type cannot be converted.");
+                System.out.println("MusicXML Opus type cannot be converted to MSM/MPM.");
                 return new KeyValue<>(null, null);                                                  // return empty pair
             case unknown:
             default:
-                System.out.println("Unknown MusicXML type. Cannot be converted.");
+                System.out.println("Unknown MusicXML type. Cannot be converted to MSM/MPM.");
                 return new KeyValue<>(null, null);                                                  // return empty pair
         }
 

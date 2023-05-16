@@ -73,7 +73,7 @@ public class XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public XmlBase(String xml) throws IOException, ParsingException {
+    public XmlBase(String xml) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         this(xml, false, null);
     }
 
@@ -85,8 +85,14 @@ public class XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public XmlBase(String xml, boolean validate, URL schema) throws IOException, ParsingException {
-        Builder builder = new Builder(false);           // if the validate argument in the Builder constructor is true, the data should be valid
+    public XmlBase(String xml, boolean validate, URL schema) throws IOException, ParsingException, ParserConfigurationException, SAXException {
+        SAXParserFactory parserFactory = SAXParserFactory.newInstance();    // create a SAX parser (see https://stackoverflow.com/questions/51072419/how-use-xmlreaderfactory-now-because-this-is-deprecated)
+        SAXParser parser = parserFactory.newSAXParser();
+        XMLReader xmlreader = parser.getXMLReader();                        // with the SAX parser create an xml reader
+        xmlreader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);  // disable fetching of DTD as this usually does not work with XOM (see https://stackoverflow.com/questions/8081214/ignoring-dtd-when-parsing-xml)
+        Builder builder = new Builder(xmlreader);                           // if the validate argument in the Builder constructor is true, the data should be valid
+        this.isValid = false;
+
         try {
             this.data = builder.build(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
         } catch (ValidityException e) {                 // in case of a ValidityException (no valid data)

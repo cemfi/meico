@@ -65,7 +65,7 @@ public class Mei extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public Mei(String xml) throws IOException, ParsingException {
+    public Mei(String xml) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml);
     }
 
@@ -77,7 +77,7 @@ public class Mei extends meico.xml.XmlBase {
      * @throws IOException
      * @throws ParsingException
      */
-    public Mei(String xml, boolean validate, URL schema) throws IOException, ParsingException {
+    public Mei(String xml, boolean validate, URL schema) throws IOException, ParsingException, ParserConfigurationException, SAXException {
         super(xml, validate, schema);
     }
 
