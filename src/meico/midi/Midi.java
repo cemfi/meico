@@ -2,6 +2,7 @@ package meico.midi;
 
 import meico.audio.Audio;
 import meico.mei.Helper;
+import meico.mei.Mei2MsmMpmConverter;
 import meico.mpm.elements.maps.TempoMap;
 import meico.msm.Msm;
 
@@ -664,7 +665,7 @@ public class Midi {
 
         // cleanup the msm code, remove empty maps
         if (cleanup)
-            Helper.msmCleanup(msm);
+            Mei2MsmMpmConverter.msmCleanup(msm);
 
         System.out.println("MIDI to MSM conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
 

@@ -5,7 +5,7 @@
 - Added basic MusicXML integration to meico and meicoApp. Both MusicXML file formats, raw (`.musicxml`, `.xml`) and compressed (`.mxl`) are supported for reading and writing.
 - While the ProxyMusic framework does not support marshalling and demarshalling of MusicXML `score-timewise`, class `meico.musicxml.MusicXml` supports conversion of `score-timewise` to `score-partwise` and vice versa.
 - Integration of MusicXML basic functionality in meicoApp.
-- New class `meico.mei.Mei2MsmMpmConverter` has been added to implement a better modularization of different conversion options. All con version functionality from MEI to MSM and MPM moved from `meico.mei.MEI` into this class.
+- New class `meico.mei.Mei2MsmMpmConverter` has been added to implement a better modularization of different conversion options. All conversion functionality from MEI to MSM and MPM moved from `meico.mei.MEI` and `meico.mei.Helper` into this class. Class `meico.mei.Helper` still holds all static methods, as these are useful also outside of this particular conversion.
 - Slight changes in methods `convert()` and `makeMovement()` of class `meico.mei.Mei2MsmMpmConverter`. The `relatedResources` entries in the MPM are now only with filenames and no longer with the absloute path on the local machine.
 - Added MusicXML Coverage Documentation.
 - XOM update to v1.3.8.

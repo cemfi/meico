@@ -2,6 +2,7 @@ package meico.musicxml;
 
 import meico.Meico;
 import meico.mei.Helper;
+import meico.mei.Mei2MsmMpmConverter;
 import meico.midi.InstrumentsDictionary;
 import meico.mpm.Mpm;
 import meico.mpm.elements.Part;
@@ -109,7 +110,7 @@ public class MusicXml2MsmMpmConverter {
 
         // cleanup
         if (this.cleanup)
-            Helper.msmCleanup(this.msm);                                                            // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
+            Mei2MsmMpmConverter.msmCleanup(this.msm);                                                            // cleanup of the msm objects to remove all conversion related and no longer needed entries in the msm objects
 
         System.out.println("MusicXML to MSM and MPM conversion finished. Time consumed: " + (System.currentTimeMillis() - startTime) + " milliseconds");
 

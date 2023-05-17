@@ -78,10 +78,13 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.8.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
     <pathelement location="${basedir}/externals/jipes-0.9.17.jar"/>
+    <pathelement location="${basedir}/externals/proxymusic-3.0.1.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-api-2.0.7.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-simple-2.0.7.jar"/>
   </path>
 
   <path id="meico.runtime.production.module.classpath">
@@ -90,10 +93,13 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.8.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
     <pathelement location="${basedir}/externals/jipes-0.9.17.jar"/>
+    <pathelement location="${basedir}/externals/proxymusic-3.0.1.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-api-2.0.7.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-simple-2.0.7.jar"/>
   </path>
 
   <path id="meico.module.classpath">
@@ -102,10 +108,13 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.8.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
     <pathelement location="${basedir}/externals/jipes-0.9.17.jar"/>
+    <pathelement location="${basedir}/externals/proxymusic-3.0.1.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-api-2.0.7.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-simple-2.0.7.jar"/>
   </path>
 
   <path id="meico.runtime.module.classpath">
@@ -115,10 +124,13 @@
     <pathelement location="${basedir}/externals/jing-20091111.jar"/>
     <pathelement location="${basedir}/externals/json-simple-3.0.2.jar"/>
     <pathelement location="${basedir}/externals/saxon9he.jar"/>
-    <pathelement location="${basedir}/externals/xom-1.3.2.jar"/>
+    <pathelement location="${basedir}/externals/xom-1.3.8.jar"/>
     <pathelement location="${basedir}/externals/gervill.jar"/>
     <pathelement location="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
     <pathelement location="${basedir}/externals/jipes-0.9.17.jar"/>
+    <pathelement location="${basedir}/externals/proxymusic-3.0.1.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-api-2.0.7.jar"/>
+    <pathelement location="${basedir}/externals/slf4j-simple-2.0.7.jar"/>
   </path>
 
 
@@ -192,12 +204,15 @@
       <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
       <zipfileset src="${basedir}/externals/json-simple-3.0.2.jar"/>
       <zipfileset src="${basedir}/externals/java-string-similarity-1.0.0.jar"/>
-      <zipfileset src="${basedir}/externals/xom-1.3.2.jar"/>
+      <zipfileset src="${basedir}/externals/xom-1.3.8.jar"/>
       <zipfileset src="${basedir}/externals/saxon9he.jar"/>
       <zipfileset src="${basedir}/externals/gervill.jar"/>
       <zipfileset src="${basedir}/externals/jing-20091111.jar"/>
       <zipfileset src="${basedir}/externals/net.sourceforge.lame-3.98.4.jar"/>
       <zipfileset src="${basedir}/externals/jipes-0.9.17.jar"/>
+      <zipfileset src="${basedir}/externals/proxymusic-3.0.1.jar"/>
+      <zipfileset src="${basedir}/externals/slf4j-api-2.0.7.jar"/>
+      <zipfileset src="${basedir}/externals/slf4j-simple-2.0.7.jar"/>
       <manifest>
         <attribute name="Main-Class" value="meico.app.Main"/>
       </manifest>

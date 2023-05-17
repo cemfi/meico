@@ -631,4 +631,61 @@ public class Mei extends meico.xml.XmlBase {
 
         return e.size();
     }
+
+    /**
+     * returns the layer element in the mei tree of ofThis
+     * @param ofThis
+     * @return the layer element or null if ofThis is not in a layer
+     */
+    protected static Element getLayer(Element ofThis) {
+        for (Node e = ofThis.getParent(); e != ofThis.getDocument().getRootElement(); e = e.getParent()) {  // search for a layer element among the parents of ofThis
+            if ((e instanceof Element) && (((Element)e).getLocalName().equals("layer")))                    // found one
+                return (Element)e;
+        }
+        return null;
+    }
+
+    /**
+     * returns the def or n attribute value of an mei layer element or empty string if it is no layer or both attributes are missing
+     * @param layer
+     * @return def, n or empty string
+     */
+    protected static String getLayerId(Element layer) {
+        if ((layer == null) || !layer.getLocalName().equals("layer"))   // if the element is null or no layer
+            return "";                                                  // return empty string
+        if (layer.getAttribute("def") != null)                          // check for the def attribute (preferred over n)
+            return layer.getAttributeValue("def");                      // return its string
+        if (layer.getAttribute("n") != null)                            // check for the n attribute
+            return layer.getAttributeValue("n");                        // return its string
+        return "";                                                      // no def or n attribute, hence, return empty string
+    }
+
+    /**
+     * returns the staff element in the mei tree of ofThis
+     * @param ofThis
+     * @return the staff element or null if ofThis is not in a staff
+     */
+    protected static Element getStaff(Element ofThis) {
+        for (Node e = ofThis.getParent(); e != ofThis.getDocument().getRootElement(); e = e.getParent()) {  // search for a staff element among the parents of ofThis
+            if ((e instanceof Element) && (((Element)e).getLocalName().equals("staff")))                    // found one
+                return (Element)e;
+        }
+        return null;
+    }
+
+    /**
+     * returns the def or n attribute value of an mei staff element or empty string if it is no staff or both attributes are missing
+     * @param staff
+     * @return def, n or empty string
+     */
+    protected static String getStaffId(Element staff) {
+        if ((staff == null) || !staff.getLocalName().equals("staff"))   // if the element is null or no staff
+            return "";                                                  // return empty string
+        if (staff.getAttribute("def") != null)                          // check for the def attribute (preferred over n)
+            return staff.getAttributeValue("def");                      // return its string
+        if (staff.getAttribute("n") != null)                            // check for the n attribute
+            return staff.getAttributeValue("n");                        // return its string
+        return "";                                                      // no def or n attribute, hence, return empty string
+    }
+
 }
