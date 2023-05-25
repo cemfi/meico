@@ -3,12 +3,15 @@
 [![GitHub release](https://img.shields.io/github/release/cemfi/meico.svg)](https://github.com/cemfi/meico/releases/latest) 
 [![documentation](https://img.shields.io/badge/doc-JavaDoc-green.svg)](http://cemfi.github.io/meico/)
 [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/master/LICENSE) 
-![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)
 
 Author: [Axel Berndt](https://github.com/axelberndt)<br>
 MEI support: [Benjamin W. Bohl](https://github.com/bwbohl), [Johannes Kepper](https://github.com/kepper)<br>
 Contributor: [Simon Waloschek](https://github.com/sonovice)<br>
 [Center of Music and Film Informatics](http://www.cemfi.de/), Detmold
+
+#### Java Compatibility
+- meico ![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)
+- meicoApp ![Java compatibility](https://img.shields.io/badge/Java-1.8--10-blue)
 
 Meico is a converter framework for MEI files. MEI offers an invaluable combination of symbolic music data and additional information far beyond the typical metadata found in other formats. All this is often based on musicological research and features an accordingly high scientific quality. Digital music editions motivate new interesting research questions highly relevant to the field of Music Information Retrieval (MIR) and the demand to gain deeper insight into subjects such as composition styles, performance practices, historical change processes in music tradition, and how all these reflect in the musical works edited. In this, MIR can make valuable contributions to musicology, for instance by providing tools to work on large corpora of MEI encoded music. Further application scenarios include digital music stand technology, music notation and music production. Even though MEI is a quasi-standard for digital music editions, there is few software support for it. Processing MEI encoded music is by far not a trivial task and many application scenarios have their own more established and efficient formats. With meico we address these issues. Meico implements methods to convert MEI data to several other formats, making MEI encodings accessible to a variety of applications. We presented meico at the Audio Mostly conference in 2018, the paper can be found [here](http://www.cemfi.de/wp-content/papercite-data/pdf/berndt-2018-meico.pdf) and in the ACM Digital Library. The following features are implemented:
 
