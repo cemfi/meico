@@ -117,13 +117,10 @@
             function render() {
                 if (oneLineScore) {                                                                                                 // print all music in one line
                     options = {
-                        format: "mei",
-                        type: "svg",
-                        noLayout: 1,
-                        ignoreLayout: 1,
+                        inputFrom: "mei",
                         scale: 40,
                         font: "Leipzig",
-                        noFooter: true
+                        usePgFooterForAll: false
                     };
                     var svg = vrvToolkit.renderData(data, options);   // this generates an endless system
                     var zoomOutButton = document.getElementById("zoomOut").outerHTML;
@@ -134,22 +131,21 @@
                 else {                                                                                                              // page-wise rendering
                     options = {
                         allPages: 0,
-                        format: "mei",
-                        type: "svg",
+                        page: 1,
+                        inputFrom: "mei",
                         adjustPageHeight: 0,
                         breaks: "auto",
                         evenNoteSpacing: 0,
-                        landscape: 0,
-                        noLayout: 0,
-                        ignoreLayout: 0,
+                        landscape: true,
                         scale: 40,
                         font: "Leipzig",
-                        noFooter: true
+                        usePgFooterForAll: false
                     };
-                    vrvToolkit.loadData(data);                                                                                      // load the music
-                    vrvToolkit.setOptions(options);                                                                                 // set the Verovio options
+                    // vrvToolkit.loadData(data);                                                                                      // load the music
+                    // vrvToolkit.setOptions(options);                                                                                 // set the Verovio options
                     pageCount = vrvToolkit.getPageCount();                                                                          // get the page count
-                    var svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                    options.page = page;
+                    var svg = vrvToolkit.renderData(data, options);                                                                 // render a page
                     document.getElementById("svg_output").innerHTML = svg;                                                          // print it
                     updateNavigation();                                                                                             // update page navigation bar
                 }
@@ -173,7 +169,7 @@
                 if (oneLineScore) {
                     vrvToolkit.renderData(data, options);
                 }
-                return vrvToolkit.renderPage(index);
+                return vrvToolkit.renderData(data, options);
             }
 
             /**
@@ -226,13 +222,14 @@
             function nextPage() {
                 if (page < pageCount) {
                     page++;
+                    options.page = page;
 
                     var svg;
                     if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
                         svg = svgs[page];
                     }
                     else {
-                        svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                        svg = vrvToolkit.renderData(data, options);                                                                          // render a page
                     }
 
                     document.getElementById("svg_output").innerHTML = svg;                                                          // print it
@@ -248,13 +245,14 @@
             function previousPage() {
                 if (page > 1) {
                     page--;
+                    options.page = page;
 
                     var svg;
                     if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
                         svg = svgs[page];
                     }
                     else {
-                        svg = vrvToolkit.renderPage(page);                                                                          // render a page
+                        svg = vrvToolkit.renderData(data, options);                                                                          // render a page
                     }
 
                     document.getElementById("svg_output").innerHTML = svg;                                                          // print it
