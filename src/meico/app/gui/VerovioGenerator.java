@@ -59,8 +59,8 @@ class VerovioGenerator {
             return "<html>Error: Failed to read prototype HTML. <br><br> " + e.toString() + "</html>";      // print the exception message also to the WebView to give an immediate feedback
         }
 
-        if (!useLatestVerovio || !WebBrowser.isNetAvailable("https://www.verovio.org/javascript/develop/verovio-toolkit.js"))   // if the internal Verovio should be used or no internet connection available
-            html = html.replace("https://www.verovio.org/javascript/develop/verovio-toolkit.js", caller.getClass().getResource("/resources/Verovio/verovio-toolkit.js").toExternalForm());  // replace the online reference in the HTML by the local reference
+        if (!useLatestVerovio || !WebBrowser.isNetAvailable("https://www.verovio.org/javascript/latest/verovio-toolkit.js"))   // if the internal Verovio should be used or no internet connection available
+            html = html.replace("https://www.verovio.org/javascript/latest/verovio-toolkit.js", caller.getClass().getResource("/resources/Verovio/verovio-toolkit.js").toExternalForm());  // replace the online reference in the HTML by the local reference
 
         html = html.replace("oneLineScore", Boolean.toString(oneLineScore))                                 // the oneLineScore flag is also set
                 .replace("Leipzig", font)
