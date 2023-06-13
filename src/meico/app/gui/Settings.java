@@ -92,7 +92,6 @@ class Settings {
     protected static File schema = null;                                // here it is possible to set a default schema
 
     // Score rendering settings
-    protected static boolean oneLineScore = false;                      // if true, the score rendering in the WebView will output all music in one line
     protected static boolean useLatestVerovio = true;                   // if set true, meico will try to use the latest online available version of verovio-toolkit.js
     protected static String scoreFont = "Leipzig";                      // the font used for score rendering
 
@@ -399,10 +398,6 @@ class Settings {
         separator3.setOpacity(0.5);
 
         // Score rendering
-        CheckBox oneLineScore = new CheckBox("Score rendering in one score line (no system breaks)");
-        oneLineScore.setSelected(Settings.oneLineScore);
-        oneLineScore.setTextFill(Color.GRAY);
-
         // latest online Verovio version
         CheckBox latestVerovio = new CheckBox("Use latest Verovio version (requires internet connection)");
         latestVerovio.setSelected(Settings.useLatestVerovio);
@@ -426,7 +421,6 @@ class Settings {
             Settings.OutputExpressiveMsmWhenExpressiveMidiRendering = expressiveMsm.isSelected();
             Settings.Msm2Midi_defaultTempo = tempo.getValue();
             Settings.savePitchesWithPrettyPrint = jsonPretty.isSelected();
-            Settings.oneLineScore = oneLineScore.isSelected();
             Settings.useLatestVerovio = latestVerovio.isSelected();
             stage.close();
         });
@@ -450,7 +444,7 @@ class Settings {
         container.setAlignment(Pos.CENTER_LEFT);
         container.setPadding(new Insets(spacing, spacing, spacing, spacing));
         container.setSpacing(spacing * 1.25);
-        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, expressiveMsm, soundbankPane, xsltPane, schemaPane, jsonPretty, oneLineScore, latestVerovio, separator3, closePane);
+        container.getChildren().addAll(titlePane, subtitle, separator1, generalSettingsLabel, windowSizePane/*, webview*/, player, accordion, logfile, debug, separator2, conversionOptions, ppqPane, tempoPane, expan, channel10, prog, expressiveMsm, soundbankPane, xsltPane, schemaPane, jsonPretty, latestVerovio, separator3, closePane);
 
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setStyle(Settings.BACKGROUND_GRAY);
@@ -533,9 +527,6 @@ class Settings {
                 case "prettyJson":
                     Settings.savePitchesWithPrettyPrint = line.equals("1");
                     break;
-                case "oneLineScore":
-                    Settings.oneLineScore = line.equals("1");
-                    break;
                 case "useLatestVerovio":
                     Settings.useLatestVerovio = line.equals("1");
                     break;
@@ -580,7 +571,6 @@ class Settings {
                 + "\n\n# expressiveMsmOutput\n" + (Settings.OutputExpressiveMsmWhenExpressiveMidiRendering ? "1" : "0")
                 + "\n\n# tempo\n" + Settings.Msm2Midi_defaultTempo
                 + "\n\n# prettyJson\n" + (Settings.savePitchesWithPrettyPrint ? "1" : "0")
-                + "\n\n# oneLineScore\n" + (Settings.oneLineScore ? "1" : "0")
                 + "\n\n# useLatestVerovio\n" + (Settings.useLatestVerovio ? "1" : "0")
                 + "\n\n# scoreFont\n" + Settings.scoreFont
                 + "\n\n# soundbank\n" + ((Settings.soundbank == null) ? "default" : Settings.soundbank.getAbsolutePath())

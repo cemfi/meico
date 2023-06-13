@@ -1072,7 +1072,7 @@ class DataObject extends Group {
                             RotateTransition ani = this.startComputeAnimation();
                             Platform.runLater(() -> {
                                 if (this.getWorkspace().getApp().getWeb() != null) {
-                                    String html = VerovioGenerator.generate((SvgCollection)this.getData(), Settings.oneLineScore, this);
+                                    String html = VerovioGenerator.generate((SvgCollection)this.getData(), this);
                                     this.getWorkspace().getApp().getWeb().printContent(html, false);             // webEngine, do your job
 
                                     if (this.getWorkspace().getApp().getWebAccordion() != null) {

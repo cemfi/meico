@@ -115,40 +115,26 @@
              * the initial rendering when the html page is opened
              */
             function render() {
-                if (oneLineScore) {                                                                                                 // print all music in one line
-                    options = {
-                        inputFrom: "mei",
-                        scale: 40,
-                        font: "Leipzig",
-                        usePgFooterForAll: false
-                    };
-                    var svg = vrvToolkit.renderData(data, options);   // this generates an endless system
-                    var zoomOutButton = document.getElementById("zoomOut").outerHTML;
-                    var zoomInButton = document.getElementById("zoomIn").outerHTML;
-                    var verovioVersion = document.getElementById("verovio_version").outerHTML;
-                    document.getElementById("page_navigation").parentElement.innerHTML = "<div style='position: fixed; vertical-align: top; background-color: transparent'>" + zoomOutButton + zoomInButton + "</div><br><br>" + svg + "<div style='text-align: left'>" + verovioVersion + "</div>";   // replace the page_navigation by this score, keep the zoom buttons at the top and the Verovio version at the bottom
-                }
-                else {                                                                                                              // page-wise rendering
-                    options = {
-                        allPages: 0,
-                        page: 1,
-                        inputFrom: "mei",
-                        adjustPageHeight: 0,
-                        breaks: "auto",
-                        evenNoteSpacing: 0,
-                        landscape: true,
-                        scale: 40,
-                        font: "Leipzig",
-                        usePgFooterForAll: false
-                    };
-                    // vrvToolkit.loadData(data);                                                                                      // load the music
-                    // vrvToolkit.setOptions(options);                                                                                 // set the Verovio options
-                    pageCount = vrvToolkit.getPageCount();                                                                          // get the page count
-                    options.page = page;
-                    var svg = vrvToolkit.renderData(data, options);                                                                 // render a page
-                    document.getElementById("svg_output").innerHTML = svg;                                                          // print it
-                    updateNavigation();                                                                                             // update page navigation bar
-                }
+                options = {
+                    allPages: 0,
+                    page: 1,
+                    inputFrom: "mei",
+                    adjustPageHeight: 0,
+                    breaks: "auto",
+                    evenNoteSpacing: 0,
+                    landscape: true,
+                    scale: 30,
+                    font: "Leipzig",
+                    usePgFooterForAll: false
+                };
+                vrvToolkit.loadData(data);                                                                                      // load the music
+                vrvToolkit.setOptions(options);                                                                                 // set the Verovio options
+                pageCount = vrvToolkit.getPageCount();                                                                          // get the page count
+                // var svg = vrvToolkit.renderData(data, options);                                                                 // render a page
+                var svg = vrvToolkit.renderToSVG(page, false);                                                                 // render a page
+                document.getElementById("svg_output").innerHTML = svg;                                                          // print it
+                updateNavigation();                                                                                             // update page navigation bar
+
                 svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
                 width = svgElement.getAttribute("width").slice(0, -2);                                                              // get its width
                 height = svgElement.getAttribute("height").slice(0, -2);                                                            // get its height
@@ -166,27 +152,19 @@
                     }
                     return "";
                 }
-                if (oneLineScore) {
-                    vrvToolkit.renderData(data, options);
-                }
-                return vrvToolkit.renderData(data, options);
+                // return vrvToolkit.renderData(data, options);
+                return vrvToolkit.renderToSVG(page, false);                                                                 // render a page
+
             }
 
             /**
              * display an SVG in the HTML
              */
             function printSvgs() {
-                if (oneLineScore) {                                                                                                 // print all music in one line
-                    var zoomOutButton = document.getElementById("zoomOut").outerHTML;
-                    var zoomInButton = document.getElementById("zoomIn").outerHTML;
-                    var verovioVersion = document.getElementById("verovio_version").outerHTML;
-                    document.getElementById("page_navigation").parentElement.innerHTML = "<div style='position: fixed; vertical-align: top; background-color: transparent'>" + zoomOutButton + zoomInButton + "</div><br><br>" + svgs[0] + "<div style='text-align: left'>" + verovioVersion + "</div>";   // replace the page_navigation by this score, keep the zoom buttons at the top and the Verovio version at the bottom
-                }
-                else {                                                                                                              // page-wise rendering
-                    pageCount = svgs.length;                                                                                         // get the page count
-                    document.getElementById("svg_output").innerHTML = svg[page-1];                                                  // print it
-                    updateNavigation();                                                                                             // update page navigation bar
-                }
+                pageCount = svgs.length;                                                                                         // get the page count
+                document.getElementById("svg_output").innerHTML = svg[page-1];                                                  // print it
+                updateNavigation();                                                                                             // update page navigation bar
+
                 svgElement = document.getElementsByTagName("svg")[0];                                                               // get the svg element in the html tree
                 width = svgElement.getAttribute("width").slice(0, -2);                                                              // get its width
                 height = svgElement.getAttribute("height").slice(0, -2);                                                            // get its height
@@ -201,11 +179,9 @@
                 svgElement.setAttribute("width", String(width) + "px");
                 svgElement.setAttribute("height", String(height) + "px");
 
-                if (!oneLineScore) {                                                                                                // for a page-wise score rendering
-                    svgElement.style.backgroundColor = "#fffcf7";                                                                   // set the page's  background color
-                    svgElement.style.margin = "15px";                                                                               // and margin
-                    svgElement.style.boxShadow = "0 2px 15px 1px #c5c5c5";                                                          // and shadow
-                }
+                svgElement.style.backgroundColor = "#fffcf7";                                                                   // set the page's  background color
+                svgElement.style.margin = "15px";                                                                               // and margin
+                svgElement.style.boxShadow = "0 2px 15px 1px #c5c5c5";                                                          // and shadow
             }
 
             /**
@@ -222,14 +198,14 @@
             function nextPage() {
                 if (page < pageCount) {
                     page++;
-                    options.page = page;
 
                     var svg;
                     if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
                         svg = svgs[page];
                     }
                     else {
-                        svg = vrvToolkit.renderData(data, options);                                                                          // render a page
+                        // svg = vrvToolkit.renderData(data, options);                                                                          // render a page
+                        svg = vrvToolkit.renderToSVG(page, false);                                                                 // render a page
                     }
 
                     document.getElementById("svg_output").innerHTML = svg;                                                          // print it
@@ -245,14 +221,14 @@
             function previousPage() {
                 if (page > 1) {
                     page--;
-                    options.page = page;
 
                     var svg;
                     if ((typeof svgs !== 'undefined') && (svgs.length > 0)) {
                         svg = svgs[page];
                     }
                     else {
-                        svg = vrvToolkit.renderData(data, options);                                                                          // render a page
+                        // svg = vrvToolkit.renderData(data, options);                                                                          // render a page
+                        svg = vrvToolkit.renderToSVG(page, false);                                                                 // render a page
                     }
 
                     document.getElementById("svg_output").innerHTML = svg;                                                          // print it
