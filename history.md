@@ -11,6 +11,7 @@
 - XOM update to v1.3.8.
 - Enhancement in `meico.xml.XmlBase.XmlBase(String xml)` constructor. The added exceptions may require some applications to extend their exception handling also for other classes that are based on `XmlBase`.
 - Added new class `meico.supplementary.InputStream2StringConverter`.
+- Verovio update to v3.15.0-5abc7c0 and fix (due to broken backward compatibility).
 
 #### v0.8.48
 - Added new methods `meico.midi.Midi.getMinimalPPQ()` that computes the minimal integer timing resolution (in pulses per quarter note) necessary for an accurate representation of a MIDI sequence.
