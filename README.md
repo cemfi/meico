@@ -7,7 +7,7 @@
 [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/meicoApp/LICENSE) 
 
 Author: [Axel Berndt](https://github.com/axelberndt)<br>
-[Center of Music and Film Informatics](http://www.cemfi.de/), Detmold
+[Paderborn University](https://www.muwi-detmold-paderborn.de/personen/professorinnen-und-professoren/prof-dr-ing-axel-berndt), Detmold
 
 This is the meico application package. From meico version 0.8.0 on it is no longer part of the base library but is delivered separately in this GitHub branch and as a self-contained release asset `meicoApp.jar`.
 
