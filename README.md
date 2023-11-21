@@ -4,10 +4,9 @@
 [![documentation](https://img.shields.io/badge/doc-JavaDoc-green.svg)](http://cemfi.github.io/meico/)
 [![LGPL v3](https://img.shields.io/github/license/cemfi/meico.svg)](https://github.com/cemfi/meico/blob/master/LICENSE) 
 
-Author: [Axel Berndt](https://github.com/axelberndt)<br>
+Author: [Axel Berndt](https://github.com/axelberndt) ([Paderborn University](https://www.muwi-detmold-paderborn.de/personen/professorinnen-und-professoren/prof-dr-ing-axel-berndt), Detmold)<br>
 MEI support: [Benjamin W. Bohl](https://github.com/bwbohl), [Johannes Kepper](https://github.com/kepper)<br>
 Contributor: [Simon Waloschek](https://github.com/sonovice)<br>
-[Center of Music and Film Informatics](http://www.cemfi.de/), Detmold
 
 #### Java Compatibility
 - meico ![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)
