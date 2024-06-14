@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class Mei2MusicXmlConverter {
     private Mei mei = null;                         // the MEI to be converted
-    private boolean ignoreExpansions = false;       // set this true to have a 1:1 conversion of MEI to MSM without the rearrangement that MEI's expansion elements produce
+    private boolean ignoreExpansions = false;       // set this true to have a 1:1 conversion of MEI to MusicXML without the rearrangement that MEI's expansion elements produce
 
     /**
      * constructor
@@ -27,7 +27,7 @@ public class Mei2MusicXmlConverter {
 
     /**
      * start the conversion process
-     * @param mei
+     * @param mei the Mei object to be converted
      * @return
      */
     public List<MusicXml> convert(Mei mei) {
@@ -45,9 +45,18 @@ public class Mei2MusicXmlConverter {
 
         LinkedList<MusicXml> out = new LinkedList<>();
 
-        // TODO ...
-        System.err.println("MEI to MusicXML conversion is not yet implemented.");
+        // TODO: convert Mei header
 
+        // convert Mei music
+        if (this.mei.isEmpty() || (this.mei.getMusic() == null) || (this.mei.getMusic().getFirstChildElement("body", this.mei.getMusic().getNamespaceURI()) == null))      // if no mei music data available
+            return out;
+
+        this.mei.resolveCopyofsAndSameas();                                     // replace the slacker elements with copyof and sameas attributes by copies of the referred elements
+        if (!this.ignoreExpansions) this.mei.resolveExpansions();               // if expansions should be realized, render expansion elements in the MEI score to a "through-composed"/regularized score without expansions
+
+        // TODO: convert Mei music
+
+        System.err.println("MEI to MusicXML conversion is not yet implemented.");
 
         // cleanup
         this.mei.setDocument(orig);                                             // restore the unaltered version of the mei data

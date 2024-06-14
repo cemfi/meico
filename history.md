@@ -1,6 +1,9 @@
 ### Version History
 
 
+#### v0.9.1
+- Some minor preparations in class `meico.mei.Mei2MusicXmlConverter` for MEI to MusicXML conversion.
+
 #### v0.9.0
 - Added basic MusicXML integration to meico and meicoApp. Both MusicXML file formats, raw (`.musicxml`, `.xml`) and compressed (`.mxl`) are supported for reading and writing.
 - While the ProxyMusic framework does not support marshalling and demarshalling of MusicXML `score-timewise`, class `meico.musicxml.MusicXml` supports conversion of `score-timewise` to `score-partwise` and vice versa.
