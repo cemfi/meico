@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.9.2
+- Expansion of search for the title in method `meico.mei.Mei.getTitle()`, so it supports MEI 3.0 (`workDesc`) and MEI 4.0+ (`workList`).
+
+
 #### v0.9.1
 - Some minor preparations in class `meico.mei.Mei2MusicXmlConverter` for MEI to MusicXML conversion.
 

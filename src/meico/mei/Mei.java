@@ -142,18 +142,24 @@ public class Mei extends meico.xml.XmlBase {
     public String getTitle() {
         Element title;
 
-        try {                                               // try to read the title from mei/meiHead/workDesc/work/titleStmt/title
+        try {                                               // try to read the title from mei/meiHead/fileDesc/titleStmt/title
             title = Helper.getFirstChildElement("fileDesc", this.getMeiHead());
             title = Helper.getFirstChildElement("titleStmt", title);
             title = Helper.getFirstChildElement("title", title);
         } catch (NullPointerException ex1) {                // if that does not exist
-            try {                                           // try to get the title from  mei/meiHead/fileDesc/titleStmt/title
+            try {                                           // try to get the title from MEI 3.0 mei/meiHead/workDesc/work/titleStmt/title
                 title = Helper.getFirstChildElement("workDesc", this.getMeiHead());
                 title = Helper.getFirstChildElement("work", title);
                 title = Helper.getFirstChildElement("titleStmt", title);
                 title = Helper.getFirstChildElement("title", title);
             } catch (NullPointerException ex2) {            // if that does not exist
-                return (this.getFile() == null) ? "" : Helper.getFilenameWithoutExtension(this.getFile().getName());    // return the filename without extension or (if that does not exist either) return empty string
+                try {                                       // try to get the title from MEI 4.0+ mei/meiHead/workList/work/title
+                    title = Helper.getFirstChildElement("workList", this.getMeiHead());
+                    title = Helper.getFirstChildElement("work", title);
+                    title = Helper.getFirstChildElement("title", title);
+                } catch (NullPointerException ex3) {
+                    return (this.getFile() == null) ? "" : Helper.getFilenameWithoutExtension(this.getFile().getName());    // return the filename without extension or (if that does not exist either) return empty string
+                }
             }
         }
         return (title != null) ? title.getValue() : ((this.getFile() == null) ? "" : Helper.getFilenameWithoutExtension(this.getFile().getName()));  // return the title string
