@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.9.3
+- Added new methods `getAllMdivs()` to class `meico.mei.Mei` to retrieve all `mdiv` elements in the MEI's `music` environment. However, in case of nested `mdiv` elements, only the leaf ones are returned. I.e., the returned list will only contain `mdiv` elements that do not contain other `mdiv` elements.
+- Added new methods `getAllVariantEncodings()` to class `meico.mei.Mei` to retrieve all `app` and `choice` elements from the MEI.
+
 #### v0.9.2
 - Expansion of search for the title in method `meico.mei.Mei.getTitle()`, so it supports MEI 3.0 (`workDesc`) and MEI 4.0+ (`workList`).
 

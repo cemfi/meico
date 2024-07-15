@@ -180,6 +180,70 @@ public class Mei extends meico.xml.XmlBase {
     }
 
     /**
+     * Retrieve all mdiv elements from this MEI's music environment.
+     * In case of nested mdivs, only the leaf mdivs are returned.
+     * @return a list of mdiv elements; can be empty
+     */
+    public ArrayList<Element> getAllMdivs() {
+        ArrayList<Element> result = new ArrayList<>();
+
+        Element music = this.getMusic();
+        if (music != null)
+            result.addAll(this.getAllMdivs(music));
+
+        return result;
+    }
+
+    /**
+     * Recursively retrieve mdiv elements.
+     * In case of nested mdivs, only the leaf mdivs are returned.
+     * @param inThis search them in this subtree
+     * @return
+     */
+    private ArrayList<Element> getAllMdivs(Element inThis) {
+        ArrayList<Element> result = new ArrayList<>();
+
+        for (Element e : inThis.getChildElements()) {
+            switch (e.getLocalName()) {
+                case "body":
+                case "group":
+                    result.addAll(this.getAllMdivs(e));
+                    break;
+                case "mdiv":
+                    ArrayList<Element> subMdivs = this.getAllMdivs(e);  // check for nested mdivs
+                    if (subMdivs.isEmpty())                             // if no nested mdivs in this mdiv
+                        result.add(e);                                  // add this mdiv to the results
+                    else                                                // otherwise
+                        result.addAll(subMdivs);                        // add the leaf mdivs found in this subtree
+                    break;
+//                default:
+//                    continue;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Retrieve all cariant encodings, i.e. all app and choice elements, in this MEI.
+     * @return a list of Node objects that can be cast to Element
+     */
+    public Nodes getAllVariantEncodings() {
+        return Mei.getAllVariantEncodings(this.getRootElement());
+    }
+
+    /**
+     * Retrieve all variant encodings, i.e. all app and choice elements,
+     * in the subtree of the specified element.
+     * @param inThis
+     * @return a list of Node objects that can be cast to Element
+     */
+    public static Nodes getAllVariantEncodings(Element inThis) {
+        Nodes e = inThis.query("descendant::*[(local-name()='choice' or local-name()='app')]");
+        return e;
+    }
+
+    /**
      * convert MEI to SVG
      * @return
      */
