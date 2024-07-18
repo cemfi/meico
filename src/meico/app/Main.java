@@ -8,6 +8,7 @@ import meico.mpm.elements.Part;
 import meico.mpm.elements.Performance;
 import meico.mpm.elements.maps.ArticulationMap;
 import meico.mpm.elements.maps.GenericMap;
+import meico.musicxml.MusicXml;
 import meico.pitches.Pitches;
 import meico.mei.Helper;
 import meico.mei.Mei;
@@ -67,6 +68,7 @@ public class Main {
 //                System.out.println("[-g] or [--svg]                         convert to SVGs");
                 System.out.println("[-m] or [--msm]                         convert to MSM");
                 System.out.println("[-f] or [--mpm]                         convert to MPM");
+                System.out.println("[-mx] or [--musicxml]                   convert to MusicXML (uncompressed)");
                 System.out.println("[-o] or [--chroma]                      convert to chromas");
                 System.out.println("[-h] or [--pitches]                     convert to pitches");
                 System.out.println("[-i] or [--midi]                        convert to MIDI");
@@ -95,6 +97,7 @@ public class Main {
 //        boolean svg = false;
         boolean msm = false;
         boolean mpm = false;
+        boolean musicxml = false;
         boolean chroma = false;
         boolean pitches = false;
         boolean midi = false;
@@ -127,6 +130,7 @@ public class Main {
 //            if ((args[i].equals("-g")) || (args[i].equals("--svg"))) { svg = true; continue; }
             if ((args[i].equals("-m")) || (args[i].equals("--msm"))) { msm = true; continue; }
             if ((args[i].equals("-f")) || (args[i].equals("--mpm"))) { mpm = true; continue; }
+            if ((args[i].equals("-mx")) || (args[i].equals("--musicxml"))) { musicxml = true; continue; }
             if ((args[i].equals("-o")) || (args[i].equals("--chroma"))) { chroma = true; continue; }
             if ((args[i].equals("-h")) || (args[i].equals("--pitches"))) { pitches = true; continue; }
             if ((args[i].equals("-i")) || (args[i].equals("--midi"))) { midi = true; continue; }
@@ -217,6 +221,16 @@ public class Main {
 //            SvgCollection svgs = mei.exportSvg();
 //            svgs.writeSvgs();
 //        }
+
+        // convert to MusicXML
+        if (musicxml) {
+            System.out.println("Converting MEI to MusicXML.");
+            List<MusicXml> musicxmls = mei.exportMusicXml(ignoreExpansions);
+            for (MusicXml musicXml : musicxmls) {
+                musicXml.writeMusicXml();
+                System.out.println("\t" + musicXml.getFile().getPath());
+            }
+        }
 
         if (!(msm || mpm || pitches || chroma || midi || wav || mp3 || cqt)) return 0;     // if no conversion is required, we are done here
 
