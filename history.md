@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.9.4
+- Conversion of MEI to MusicXML has been added to the commandline interface of meicoApp.
+
+
 #### v0.9.3
 - Added new methods `getAllMdivs()` to class `meico.mei.Mei` to retrieve all `mdiv` elements in the MEI's `music` environment. However, in case of nested `mdiv` elements, only the leaf ones are returned. I.e., the returned list will only contain `mdiv` elements that do not contain other `mdiv` elements.
 - Added new methods `getAllVariantEncodings()` to class `meico.mei.Mei` to retrieve all `app` and `choice` elements from the MEI.
