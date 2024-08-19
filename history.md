@@ -1,6 +1,13 @@
 ### Version History
 
 
+#### v0.10.0
+- Conversion of MEI to MusicXML implemented. Thanks to [Matthias Nowakowski](https://github.com/mnowakow).
+  - `meiHead` nearly completely.
+  - `music` most of the note-related data.
+  - See `MEI2MusixXml_Coverage_Documentation.md` for more detail. 
+
+
 #### v0.9.4
 - Conversion of MEI to MusicXML has been added to the commandline interface of meicoApp.
 

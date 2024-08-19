@@ -6,7 +6,7 @@
 
 Author: [Axel Berndt](https://github.com/axelberndt) ([Paderborn University](https://www.muwi-detmold-paderborn.de/personen/professorinnen-und-professoren/prof-dr-ing-axel-berndt), Detmold)<br>
 MEI support: [Benjamin W. Bohl](https://github.com/bwbohl), [Johannes Kepper](https://github.com/kepper)<br>
-Contributor: [Simon Waloschek](https://github.com/sonovice)<br>
+Contributor: [Matthias Nowakowski](https://github.com/mnowakow), [Simon Waloschek](https://github.com/sonovice)<br>
 
 #### Java Compatibility
 - meico ![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)

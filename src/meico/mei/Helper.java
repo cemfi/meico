@@ -8,25 +8,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.thaiopensource.relaxng.jaxp.XMLSyntaxSchemaFactory;
-import meico.mpm.Mpm;
-import meico.mpm.elements.Part;
-import meico.mpm.elements.Performance;
 import meico.mpm.elements.maps.GenericMap;
-import meico.mpm.elements.maps.data.TempoData;
-import meico.mpm.elements.styles.TempoStyle;
-import meico.mpm.elements.styles.defs.TempoDef;
-import meico.msm.Msm;
-import meico.supplementary.KeyValue;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.s9api.Serializer;
 import nu.xom.*;
-import org.audiveris.proxymusic.Attributes;
-import org.w3c.dom.Attr;
 import org.xml.sax.SAXException;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
@@ -125,14 +112,14 @@ public class Helper {
      * @param ofThis
      * @return
      */
-    public static LinkedList<Element> getAllDescendants(String name, Element ofThis) {
+    public static LinkedList<Element> getAllDescendantsByName(String name, Element ofThis) {
         if ((ofThis == null) || name.isEmpty()) return null;
         LinkedList<Element> children = new LinkedList<>();
-        for(Element ch : Helper.getAllChildElements(ofThis)){
-            children.addAll(Helper.getAllDescendants(name, ch));
+        for(Element ch : Helper.getAllChildElements(ofThis)) {
+            if(ch.getLocalName().equals(name))
+                children.add(ch);
+            children.addAll(Helper.getAllDescendantsByName(name, ch));
         }
-        List<Element> c = getAllChildElements(name, ofThis);
-        if(c != null) children.addAll(c);
         return children;
     }
 
@@ -142,12 +129,13 @@ public class Helper {
      * @param ofThis
      * @return
      */
-    public static LinkedList<Element> getAllDescendantsByAttribute(String attrName, Element ofThis) {
+    public static LinkedList<Element> getAllDescendantsWithAttribute(String attrName, Element ofThis) {
         if ((ofThis == null) || attrName.isEmpty()) return null;
         LinkedList<Element> children = new LinkedList<>();
-        for(Element ch : Helper.getAllChildElements(ofThis)){
-            children.addAll(Helper.getAllDescendantsByAttribute(attrName, ch));
-            if(ch.getAttribute(attrName) != null) children.add(ch);
+        for(Element ch : Helper.getAllChildElements(ofThis)) {
+            if(ch.getAttribute(attrName) != null)
+                children.add(ch);
+            children.addAll(Helper.getAllDescendantsWithAttribute(attrName, ch));
         }
         return children;
     }

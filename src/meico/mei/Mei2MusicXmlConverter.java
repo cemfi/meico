@@ -2220,7 +2220,7 @@ public class Mei2MusicXmlConverter {
             Element prevSection = Helper.getPreviousSiblingElement("section", section); // find previous section
             if(prevSection != null){
                 List<Element> measureChildren = Helper.getAllChildElements("measure", prevSection);
-                measureChildren = measureChildren == null || measureChildren.isEmpty() ? Helper.getAllDescendants("measure", prevSection) : measureChildren; // measures can be hidden in endings
+                measureChildren = measureChildren == null || measureChildren.isEmpty() ? Helper.getAllDescendantsByName("measure", prevSection) : measureChildren; // measures can be hidden in endings
                 if(measureChildren != null && !measureChildren.isEmpty()) prevMeasure = measureChildren.get(measureChildren.size() - 1); // get last measure in measure list
             }
         }
@@ -3193,7 +3193,7 @@ public class Mei2MusicXmlConverter {
             if(num == null || num.isEmpty()) return; // tuplet parent may be present but cannot process ratios
             int numInt = Integer.parseInt(num);
             numbase = (numbase == null || numbase.isEmpty()) && (numInt & (numInt - 1)) == 0 ? "" + numInt : "" + (Integer.highestOneBit(numInt) );
-            List<Element> descendants = Helper.getAllDescendantsByAttribute("dur", parentTuplet);
+            List<Element> descendants = Helper.getAllDescendantsWithAttribute("dur", parentTuplet);
             isFirst = descendants.indexOf(e) == 0;
             Collections.reverse(descendants); // reverse list to find last element
             isLast = descendants.indexOf(e) == 0;
@@ -3203,7 +3203,7 @@ public class Mei2MusicXmlConverter {
             for(String tVal : tupletVals) {
                 Element parentLayer = Helper.getClosest("layer", e); // search beginning with layer, since e may be e.g. in a beam.
                 // all tuplet elements have to be in same descendant tree; tuplets can't cross measure boundaries
-                List<Element> tupletElements = Helper.getAllDescendantsByAttribute("tuplet", parentLayer);
+                List<Element> tupletElements = Helper.getAllDescendantsWithAttribute("tuplet", parentLayer);
                 if (tupletElements == null || tupletElements.isEmpty()) break;
                 num = "" + tupletElements.size();
                 int numInt = Integer.parseInt(num);
