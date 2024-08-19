@@ -1,4 +1,4 @@
-# Meico: MEI Coverage Documentation
+# Meico: MEI to MSM/MPM Coverage Documentation
 
 The following MEI elements are supported, i.e. processed by meico during MEI-to-MSM/MPM conversion. The set of supported elements will be extended in the future.
 

@@ -20,8 +20,13 @@ import meico.supplementary.KeyValue;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.s9api.Serializer;
 import nu.xom.*;
+import org.audiveris.proxymusic.Attributes;
+import org.w3c.dom.Attr;
 import org.xml.sax.SAXException;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
@@ -115,6 +120,53 @@ public class Helper {
     }
 
     /**
+     * Create a flat list of all descendants of a certain name (beginning with ofThis)
+     * @param name
+     * @param ofThis
+     * @return
+     */
+    public static LinkedList<Element> getAllDescendants(String name, Element ofThis) {
+        if ((ofThis == null) || name.isEmpty()) return null;
+        LinkedList<Element> children = new LinkedList<>();
+        for(Element ch : Helper.getAllChildElements(ofThis)){
+            children.addAll(Helper.getAllDescendants(name, ch));
+        }
+        List<Element> c = getAllChildElements(name, ofThis);
+        if(c != null) children.addAll(c);
+        return children;
+    }
+
+    /**
+     * Create a flat list of all descendants with a certain attribute (beginning with ofThis)
+     * @param attrName
+     * @param ofThis
+     * @return
+     */
+    public static LinkedList<Element> getAllDescendantsByAttribute(String attrName, Element ofThis) {
+        if ((ofThis == null) || attrName.isEmpty()) return null;
+        LinkedList<Element> children = new LinkedList<>();
+        for(Element ch : Helper.getAllChildElements(ofThis)){
+            children.addAll(Helper.getAllDescendantsByAttribute(attrName, ch));
+            if(ch.getAttribute(attrName) != null) children.add(ch);
+        }
+        return children;
+    }
+
+    /**
+     * this method is an alternative to XOM's getChildElements() which sometimes doesn't seem to work
+     * @param ofThis
+     * @return
+     */
+    public static LinkedList<Element> getAllChildElements(Element ofThis) {
+        if (ofThis == null) return null;
+        Nodes e = ofThis.query("child::*");   // find all children ofThis
+        LinkedList<Element> es = new LinkedList<>();
+        for (int i = 0; i < e.size(); ++i)
+            es.add((Element)e.get(i));
+        return es;
+    }
+
+    /**
      * get the next sibling element of ofThis irrespective of its name
      * @param ofThis
      * @return
@@ -180,6 +232,7 @@ public class Helper {
         return (Element) ofThis.getParent().getChild(index - 1);
     }
 
+
     /**
      * get the previous sibling element of ofThis with a specific name
      * @param name
@@ -206,6 +259,23 @@ public class Helper {
         }
 
         return null;                                                        // ofThis is the final element and has no next sibling
+    }
+
+    /**
+     * Get all previous element Siblings up to ofThis parent of a specific name.
+     * List is in order of distance to ofThis.
+     * @param name
+     * @param ofThis
+     * @return
+     */
+    public static List<Element> getAllPreviousSiblingElements(String name, Element ofThis) {
+        Element sibling = Helper.getPreviousSiblingElement(name, ofThis);
+        List<Element> siblings = new ArrayList<>();
+        while(sibling != null) {
+            siblings.add(sibling);
+            sibling = Helper.getPreviousSiblingElement(name, sibling);
+        }
+        return siblings;
     }
 
     /**
@@ -382,6 +452,39 @@ public class Helper {
     }
 
     /**
+     * Returns the closest element of a certain name along the parent tree.
+     * ofThis is not checked for name, since it cannot be a predecessor of itself.
+     * @param name
+     * @param ofThis
+     * @return
+     */
+    public static Element getClosest(String name, Element ofThis){
+        Element parent = Helper.getParentElement(ofThis);
+        while(parent != null && !parent.equals(ofThis.getDocument().getRootElement())){
+            if(parent.getLocalName().equals(name)) return parent;
+            parent = Helper.getParentElement(parent);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the closest element that contains a certain attribute name along the parent tree.
+     * ofThis is not checked for the attribute, since it cannot be a predecessor of itself.
+     * @param attrName
+     * @param ofThis
+     * @return
+     */
+    public static Element getClosestByAttr(String attrName, Element ofThis){
+        Element parent = Helper.getParentElement(ofThis);
+        while(parent != null && !parent.equals(ofThis.getDocument().getRootElement())){
+            String attr = Helper.getAttributeValue(attrName, parent);
+            if(attr != null && !attr.isEmpty()) return parent;
+            parent = Helper.getParentElement(parent);
+        }
+        return null;
+    }
+
+    /**
      * When articulationMaps are expanded via GenericMap.applySequencingMap() the noteid attribute is not updated.
      * Therefor, we get a HashMap from Msm.resolveRepetitions() and apply it to the already expanded articulationMap via this method.
      * It is used in classes meico.app.gui.DataObject and meico.app.Main. At the moment of invoking this method the maps have been expanded and only the noteids need to be updated.
@@ -430,6 +533,27 @@ public class Helper {
             case "2048":  return 0.00048828125;
         }
         return 0.0;
+    }
+
+    public static String duration2word(String durString) {
+        switch (durString) {
+            case "maxima":
+            case "long":
+            case "breve": return durString;
+            case "1":     return "whole";
+            case "2":     return "half";
+            case "4":     return "quarter";
+            case "8":     return "eighth";
+            case "16":    return durString + "th";
+            case "32":    return durString + "nd";
+            case "64":
+            case "128":
+            case "256":   return durString + "th";
+            case "512":   return durString + "nd";
+            case "1024":
+            case "2048":  return durString + "th";
+        }
+        return durString;
     }
 
     /**
@@ -525,6 +649,81 @@ public class Helper {
             case "3qs":  accidentals = 1.5;  break;
         }
         return accidentals;
+    }
+
+    /**
+     * Compute the string value of a Decimal (given as String or Double Object).
+     * Will take the most simple accidental sign (avoids combinations with neutral signs).
+     * @param accidObject
+     * @return
+     */
+    public static String accidDecimal2String(Object accidObject) {
+        String accid = "";
+        if (accidObject instanceof String) {
+            accid = accidObject.toString();
+        }else if(accidObject instanceof Double){
+            accid = Double.toString((Double)accidObject);
+        }else{
+            return null;
+        }
+
+        switch (accid) {
+            case "1":
+            case "1.0":
+                accid = "s"; break;
+            case "-1":
+            case "-1.0":
+                accid = "f";break;
+            case "2":
+            case "2.0":
+                accid = "ss"; break;
+            case "-2":
+            case "-2.0":
+                accid = "ff"; break;
+            case "3":
+            case "3.0":
+                accid = "xs"; break;
+            case "-3":
+            case "-3.0":
+                accid = "tf"; break;
+            case "0":
+            case "0.0":
+                accid = "n"; break;
+            case "-0.5": accid = "1qf"; break;
+            case "-1.5": accid = "3qf"; break;
+            case "0.5": accid = "1qs"; break;
+            case "1.5": accid = "3qs"; break;
+        }
+
+        return accid;
+    }
+
+    public static String accidString2word(String accid){
+        String accidental = "";
+        switch (accid) {
+            case "s":    accidental = "sharp";    break;
+            case "f":    accidental = "flat";   break;
+            case "ss":   accidental = "sharp-sharp";    break;
+            case "x":    accidental = "double-sharp";    break;
+            case "ff":   accidental = "flat-flat";   break;
+            case "xs":
+            case "ts":   accidental = "triple-sharp";    break;
+            case "tf":   accidental = "triple-flat";   break;
+            case "n":    accidental = "natural"; break;
+            case "nf":   accidental = "natural-flat";   break;
+            case "ns":   accidental = "natural-sharp";    break;
+            case "su":   accidental = "sharp-up";  break;
+            case "sd":   accidental = "sharp-down";  break;
+            case "fu":   accidental = "flat-up"; break;
+            case "fd":   accidental = "flat-down"; break;
+            case "nu":   accidental = "natural-up";  break;
+            case "nd":   accidental = "natural-down"; break;
+            case "1qf":  accidental = "quarter-flat"; break;
+            case "3qf":  accidental = "three-quarters-flat"; break;
+            case "1qs":  accidental = "quarter-sharp";  break;
+            case "3qs":  accidental = "three-quarters-sharp";  break;
+        }
+        return accidental;
     }
 
     /**
@@ -753,6 +952,41 @@ public class Helper {
                 pnameAccid[0] = "";
                 pnameAccid[1] = "";
         }
+    }
+
+    /**
+     * Extends midi2PnameAndAccid to set octave value from midi pitch.
+     * @param useSharpInsteadOfFlat
+     * @param midipitch
+     * @param pnameAccidOct
+     */
+    public static void midi2PnameAccidOct(boolean useSharpInsteadOfFlat, double midipitch, String[] pnameAccidOct){
+        if (pnameAccidOct.length < 3) {
+            System.err.println("Error in method meico.mei.Helper.midi2PnameAccidOct: Array length of pnameAccidOct should be at least 3.");
+            return;
+        }
+        midi2PnameAndAccid(useSharpInsteadOfFlat, midipitch, pnameAccidOct);
+        if(pnameAccidOct[0].isEmpty()) return;
+        pnameAccidOct[2] = Double.toString(getMidiOctave(midipitch));
+    }
+
+    /**
+     * Map midi pitch to octave.
+     * @param midiPitch
+     * @return
+     */
+    private static double getMidiOctave(double midiPitch){
+        if(midiPitch >=21 && midiPitch <= 23) return 0;
+        if(midiPitch >=24 && midiPitch <= 35) return 1;
+        if(midiPitch >=36 && midiPitch <= 47) return 2;
+        if(midiPitch >=48 && midiPitch <= 59) return 3;
+        if(midiPitch >=60 && midiPitch <= 71) return 4;
+        if(midiPitch >=72 && midiPitch <= 83) return 5;
+        if(midiPitch >=84 && midiPitch <= 95) return 6;
+        if(midiPitch >=96 && midiPitch <=107) return 7;
+        if(midiPitch >=108) return 8;
+
+        return -1;
     }
 
     /**
@@ -1020,5 +1254,4 @@ public class Helper {
         }
         return indent.toString();
     }
-
 }
