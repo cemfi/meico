@@ -1,4 +1,4 @@
-# Meico: MusicXML Coverage Documentation
+# Meico: MusicXML to MSM/MPM Coverage Documentation
 
 The following MusicXML elements are supported, i.e. processed by meico during MEI-to-MSM/MPM conversion. The set of supported elements will be extended in the future.
 
