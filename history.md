@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.11.0
+- Added file `/resources/minimal.mei` which is used by constructor `meico.mei.Mei.Mei()` to instantiate an empty Mei object. The object now contains an MEI with no meaningful content, but when writing it to a file it is valid now. Using this constructor will now require exception handling!
+
+
 #### v0.10.0
 - Conversion of MEI to MusicXML implemented. Thanks to [Matthias Nowakowski](https://github.com/mnowakow).
   - `meiHead` nearly completely.

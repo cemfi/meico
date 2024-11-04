@@ -24,8 +24,8 @@ public class Mei extends meico.xml.XmlBase {
     /**
      * a default constructor that creates an empty Mei instance
      */
-    public Mei() {
-        super();
+    public Mei() throws ParsingException, IOException {
+        super(Mei.class.getResourceAsStream("/resources/minimal.mei"));
     }
 
     /**
