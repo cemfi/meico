@@ -1,6 +1,5 @@
 package meico.mei;
 
-import com.sun.xml.internal.ws.util.StringUtils;
 import meico.musicxml.MusicXml;
 import nu.xom.*;
 import org.audiveris.proxymusic.*;
@@ -1386,7 +1385,7 @@ public class Mei2MusicXmlConverter {
         if(val == null || val.isEmpty()) {return;}
         val = this.sanitize(val.trim());
         StringBuilder addressBuilder = new StringBuilder();
-        addressBuilder.insert(0, StringUtils.capitalize(e.getLocalName()) +  ":"); // Distributor and Address have very similar children
+        addressBuilder.insert(0, Character.toUpperCase(e.getLocalName().charAt(0)) + e.getLocalName().substring(1) +  ":"); // Distributor and Address have very similar children
         addressBuilder.append(this.endLine);
         addressBuilder.append(val).append(this.endLine);
         this.sourceBuilder.append(addressBuilder);
