@@ -171,6 +171,40 @@ public class Midi {
     }
 
     /**
+     * Append the provided Midi to this. Differing PPQ will be adapted.
+     * @param midi the Midi whose sequence should be appended
+     */
+    public void append(Midi midi) {
+        if ((midi == null) || midi.isEmpty())
+            return;
+
+        Midi clone = new Midi(Midi.cloneSequence(midi.getSequence()));      // in case we have to apply changes we do so with a clone and not the original
+        try {
+            clone.convertPPQ(this.getPPQ()); // adapt the PPQ timing basis if necessary
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        while (this.getSequence().getTracks().length < clone.getSequence().getTracks().length) {
+            this.getSequence().createTrack();
+        }
+        long tickLength = this.getSequence().getTickLength();               // get length of the sequence so far
+
+        for (int t=0; t < clone.getSequence().getTracks().length; ++t) {     // go through all tracks of the sequence to be added
+            Track sourceTrack = clone.getSequence().getTracks()[t];
+            Track tragetTrack = this.getSequence().getTracks()[t];
+
+            for (int e=0; e < sourceTrack.size(); ++e) {
+                MidiEvent event = sourceTrack.get(e);
+                MidiMessage message = event.getMessage();
+                long newTick = event.getTick() + tickLength;
+                tragetTrack.add(new MidiEvent(message, newTick));
+            }
+        }
+    }
+
+    /**
      * this getter returns the timing resolution of the Midi sequence (in PPQ) or throws an exception if the timing concept is not PPQ
      * @return
      * @throws Exception
