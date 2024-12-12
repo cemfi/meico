@@ -4,6 +4,7 @@
 #### v0.11.1
 - Small fix in class `meico.mei.Mei2MusicXmlConverter` to address issue #30.
 - Added method `meico.midi.Midi.append()` to concatenate MIDI sequences.
+- Enhancement of method `meico.mei.Mei.resolveExpansions()`. It now also updates references (e.g., `startid`, `endid`) to newly created elements in an expanded subtree. This should now preserve the functionality of performance instructions, ties etc.
 
 
 #### v0.11.0

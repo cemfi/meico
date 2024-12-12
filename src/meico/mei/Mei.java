@@ -655,21 +655,41 @@ public class Mei extends meico.xml.XmlBase {
             // now append the former children according to the plist
             for (String aPlist : plist) {                                                   // for each plist entry
                 Element child = childHash.get(aPlist);                                      // get the child with the id from the HashMap
-                if (child != null) {
-                    try {
-                        regularizedRoot.appendChild(child);                                 // try to append it to regularizedRoot, this will fail if it has already been added
-                    } catch (MultipleParentException e) {                                   // when it has already been added
-                        Element copy = (Element) child.copy();                              // make a deep copy of child
+                if (child == null)
+                    continue;
 
-                        Nodes cs = copy.query("descendant-or-self::*[@xml:id or @id]");     // find all elements with an id attribute
-                        for (int i = 0; i < cs.size(); ++i) {                               // give them all unique ids
-                            Element c = (Element) cs.get(i);
-                            Attribute id = Helper.getAttribute("id", c);
-                            id.setValue("meico_expansion_of_" + id.getValue() + "_" + UUID.randomUUID().toString()); // the new IDs are of the following form: "meico_oldID_newUUID"
-                        }
+                try {
+                    regularizedRoot.appendChild(child);                                     // try to append it to regularizedRoot, this will fail if it has already been added
+                } catch (MultipleParentException e) {                                       // when it has already been added
+                    Element copy = (Element) child.copy();                                  // make a deep copy of child
+                    HashMap<String, String> idOldAndNew = new HashMap<>();                  // HashMap with (oldId, newId) pairs, so we can also update references to these IDs
 
-                        regularizedRoot.appendChild(copy);                                  // add the copy
+                    Nodes cs = copy.query("descendant-or-self::*[@xml:id or @id]");         // find all elements with an id attribute
+                    for (int i = 0; i < cs.size(); ++i) {                                   // give them all unique ids
+                        Element c = (Element) cs.get(i);
+                        Attribute id = Helper.getAttribute("id", c);
+                        String newId = "meico_expansion_of_" + id.getValue() + "_" + UUID.randomUUID().toString();  // the new IDs are of the following form: "meico_oldID_newUUID"
+                        idOldAndNew.put("#" + id.getValue(), "#" + newId);
+                        id.setValue(newId);                                                 // set the new ID
                     }
+
+                    // check the copy's children for references to copies that now have a new ID and update theirs references
+                    Nodes copyDescendants = copy.query(".//*");                             // get all descendant elements of copy
+                    for (Node cd : copyDescendants) {                // get all descendants of copy
+                        Element copyDescendant = (Element) cd;
+                        for (int a=0; a < copyDescendant.getAttributeCount(); ++a) {        // search all attributes if they hold a reference
+                            Attribute attr = copyDescendant.getAttribute(a);                // get the attribute
+                            String oldId = attr.getValue();                                 // get the attribute value
+                            if (!oldId.startsWith("#"))                                     // references start with #; if this attribute value does not, it is no reference
+                                continue;
+                            String newId = idOldAndNew.get(oldId);                          // get the replacement ID
+                            if (newId == null)                                              // if there is no replacement ID
+                                continue;                                                   // we have nothing to replace
+                            attr.setValue(newId);
+                        }
+                    }
+
+                    regularizedRoot.appendChild(copy);                                      // add the copy
                 }
             }
         }
