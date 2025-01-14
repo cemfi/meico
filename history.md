@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.11.2
+- Added method `meico.xml.XmlBase.fixDuplicateIds()`. This is a convenience tool to check for duplicate IDs and fix them. The functionality was also added to the meicoApp commandline and GUI mode.
+
+
 #### v0.11.1
 - Small fix in class `meico.mei.Mei2MusicXmlConverter` to address issue #30.
 - Added method `meico.midi.Midi.append()` to concatenate MIDI sequences.

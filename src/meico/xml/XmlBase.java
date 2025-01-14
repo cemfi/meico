@@ -12,6 +12,8 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.TreeSet;
+import java.util.UUID;
 
 /**
  * This class is a primitive for all XML-based classes in meico.
@@ -437,5 +439,30 @@ public class XmlBase {
         if (this.isEmpty())
             return null;
         return Helper.xslTransformToString(this.data, transform);
+    }
+
+    /**
+     * find duplicate IDs and change every further appearance
+     * @return the number of changed IDs
+     */
+    public int fixDuplicateIds() {
+        int duplicates = 0;
+        TreeSet<String> uniqueIds = new TreeSet<String>();          // a set of IDs in the document
+
+        Nodes attributes = this.getRootElement().query("descendant-or-self::node()/attribute::xml:id");   // get all xml:id attribute
+        for (int i = 0; i < attributes.size(); ++i) {               // check all attributes
+            Attribute attribute = (Attribute)attributes.get(i);     // get the attribute
+            boolean duplicate = false;
+            while (uniqueIds.contains(attribute.getValue())) {
+                duplicate = true;
+                attribute.setValue("meico_" + UUID.randomUUID().toString());
+            }
+            uniqueIds.add(attribute.getValue());
+            duplicates += (duplicate ? 1 : 0);
+        }
+
+        System.out.println(duplicates);
+
+        return duplicates;
     }
 }
