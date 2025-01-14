@@ -89,6 +89,7 @@ public class Main {
         boolean validate = false;
         URL schema = null;
         boolean addIds = false;
+        boolean fixDuplicateIds = false;
         boolean resolveCopyOfs = false;
         boolean ignoreRepetitions = false;
         boolean ignoreExpansions = false;
@@ -123,6 +124,7 @@ public class Main {
                 continue;
             }
             if ((args[i].equals("-a")) || (args[i].equals("--add-ids"))) { addIds = true; continue; }
+            if ((args[i].equals("-u")) || (args[i].equals("--fix-duplicate-ids"))) { fixDuplicateIds = true; continue; }
             if ((args[i].equals("-r")) || (args[i].equals("--resolve-copy-ofs"))) { resolveCopyOfs = true; continue; }
             if ((args[i].equals("-n")) || (args[i].equals("--ignore-repetitions"))) { ignoreRepetitions = true; continue; }
             if ((args[i].equals("-e")) || (args[i].equals("--ignore-expansions"))) { ignoreExpansions = true; continue; }
@@ -212,7 +214,11 @@ public class Main {
             System.out.println("Processing MEI: adding xml:ids.");
             mei.addIds();                               // generate ids for note, rest, mRest, multiRest, and chord elements that have no xml:id attribute
         }
-        if (resolveCopyOfs || addIds) {
+        if (fixDuplicateIds) {
+            System.out.println("Processing MEI: fixing duplicate xml:ids.");
+            mei.fixDuplicateIds();
+        }
+        if (resolveCopyOfs || addIds || fixDuplicateIds) {
             mei.writeMei();                             // this outputs an expanded mei file with more xml:id attributes and resolved copyof's
         }
 

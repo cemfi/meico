@@ -467,7 +467,7 @@ class DataObject extends Group {
         Group menu = new Group();
 
         if (this.data instanceof Mei) {
-            String[] leftItems = {"Show", "Validate", "Add IDs", "Resolve copyof/sameas", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Validate", "Add IDs", "Fix duplicate IDs", "Resolve copyof/sameas", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -808,6 +808,16 @@ class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.getWorkspace().getApp().getStatuspanel().setMessage(((Mei)this.getData()).addIds() + " IDs added.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Fix duplicate IDs":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage(((Mei)this.getData()).fixDuplicateIds() + " duplicate IDs fixed.");
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
@@ -1210,6 +1220,16 @@ class DataObject extends Group {
                         Thread thread = new Thread(() -> {
                             RotateTransition ani = this.startComputeAnimation();
                             this.getWorkspace().getApp().getStatuspanel().setMessage(((Msm)this.getData()).addIds() + " IDs added.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Fix duplicate IDs":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage(((Msm)this.getData()).fixDuplicateIds() + " duplicate IDs fixed.");
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
