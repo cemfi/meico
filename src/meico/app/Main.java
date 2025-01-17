@@ -60,6 +60,7 @@ public class Main {
                 System.out.println("[-?] or [--help]                        show this help text");
                 System.out.println("[-v argument] or [--validate argument]  validate loaded MEI file against the griven RNG schema definition");
                 System.out.println("[-a] or [--add-ids]                     add xml:ids to note, rest and chord elements in MEI, as far as they do not have an id; meico will output a revised MEI file");
+                System.out.println("[-u] or [--fix-duplicate-ids]           fix duplicate xml:ids");
                 System.out.println("[-r] or [--resolve-copy-ofs]            resolve elements with 'copyof' and 'sameas' attributes into selfcontained elements with own xml:id; meico will output a revised MEI file");
                 System.out.println("[-n] or [--ignore-repetitions]          meico automatically expands repetition marks, use this option to prevent this step");
                 System.out.println("[-e] or [--ignore-expansions]           expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step");
