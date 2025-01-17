@@ -50,6 +50,7 @@ Usage: `java -jar meicoApp.jar [OPTIONS] FILE`
 | `-?`, `--help`                    | show this help text                                                                                                                 |
 | `-v FILE`, `--validate FILE`      | validate loaded MEI file against given schema (e.g. `C:\mei-CMN.rng`)                                                               |
 | `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
+| `-u`, `--fix-duplicate-ids`       | fix duplicate `xml:id`s                                                                                                             |
 | `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` and `sameas` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
 | `-n`, `--ignore-repetitions`      | meico automatically expands repetition marks, use this option to prevent this step                                                  |
 | `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
