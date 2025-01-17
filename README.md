@@ -19,29 +19,30 @@ The command line mode expects the following command line options:
 
 Usage: `java -jar meicoApp.jar [OPTIONS] FILE`
 
-| Option                            | Description                                                                                                                         |
-|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| `-?`, `--help`                    | show this help text                                                                                                                 |
-| `-v FILE`, `--validate FILE`      | validate loaded MEI file against given schema (e.g. `C:\mei-CMN.rng`)                                                               |
-| `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
-| `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` and `sameas` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
-| `-n`, `--ignore-repetitions`      | meico automatically expands repetition marks, use this option to prevent this step                                                  |
-| `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
-| `-ex`, `--expressive`             | convert to expressive MIDI                                                                                                          |
+| Option                                     | Description                                                                                                                                                |
+|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-?`, `--help`                             | show this help text                                                                                                                                        |
+| `-v FILE`, `--validate FILE`               | validate loaded MEI file against given schema (e.g. `C:\mei-CMN.rng`)                                                                                      |
+| `-a`, `--add-ids`                          | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                                                     |
+| `-u`, `--fix-duplicate-ids`                | fix duplicate `xml:id`s                                                                                                                                    |
+| `-r`, `--resolve-copy-ofs`                 | resolve elements with `copyof` and `sameas` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file           |
+| `-n`, `--ignore-repetitions`               | meico automatically expands repetition marks, use this option to prevent this step                                                                         |
+| `-e`, `--ignore-expansions`                | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                                                    |
+| `-ex`, `--expressive`                      | convert to expressive MIDI                                                                                                                                 |
 | `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
-| `-m`, `--msm`                     | convert to MSM                                                                                                                      |
-| `-f`, `--mpm`                     | convert to MPM                                                  |
-| `-o`, `--chroma`                  | convert to chromas                                                                                                                  |
-| `-h`, `--pitches`                 | convert to pitches                                                                                                                  |
-| `-i`, `--midi`                    | convert to MIDI                                                                               |
-| `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                           |
-| `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                        |
-| `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                            |
-| `-w`, `--wav`                     | convert to Wave                                                                                                                     |
-| `-3`, `--mp3`                     | convert to MP3                                                                                                                      |
-| `-q`, `--cqt`                     | convert the audio to CQT spectrogram                                                                                                |
-| `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                     |
-| `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                      |
+| `-m`, `--msm`                              | convert to MSM                                                                                                                                             |
+| `-f`, `--mpm`                              | convert to MPM                                                                                                                                             |
+| `-o`, `--chroma`                           | convert to chromas                                                                                                                                         |
+| `-h`, `--pitches`                          | convert to pitches                                                                                                                                         |
+| `-i`, `--midi`                             | convert to MIDI                                                                                                                                            |
+| `-p`, `--no-program-changes`               | suppress program change events in MIDI, all music will be played by piano                                                                                  |
+| `-c`, `--dont-use-channel-10`              | do not use channel 10 (drum channel) in MIDI                                                                                                               |
+| `-t argument`, `--tempo argument`          | set MIDI tempo (bpm), default is 120 bpm                                                                                                                   |
+| `-w`, `--wav`                              | convert to Wave                                                                                                                                            |
+| `-3`, `--mp3`                              | convert to MP3                                                                                                                                             |
+| `-q`, `--cqt`                              | convert the audio to CQT spectrogram                                                                                                                       |
+| `-s FILE`, `--soundbank FILE`              | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                                            |
+| `-d`, `--debug`                            | write additional debug versions of MEI and MSM                                                                                                             |
 
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
