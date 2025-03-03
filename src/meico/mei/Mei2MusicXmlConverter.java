@@ -1376,7 +1376,7 @@ public class Mei2MusicXmlConverter {
 
     /**
      * Take the element and write it to SourceBuilder.
-     * Will be concatenated and progressively and added to <source> in MusicXML at the end.
+     * Will be concatenated and progressively and added to source in MusicXML at the end.
      *
      * @param e any Element suitable for source information
      */
@@ -2144,8 +2144,8 @@ public class Mei2MusicXmlConverter {
      * There are no new times in the middle of a measure.
      *
      * If `@sym` is not present, both attributes have to be present to process `meterSig`.
-     * - `@count` => `//time/beats`
-     * - `@unit` => `//time/beat-type`
+     * - `@count` maps to `//time/beats`
+     * - `@unit` maps to `//time/beat-type`
      *
      * Has first priority to be mapped. `@count` and `@unit` do not have to be present.
      * The attribute is directly mapped to `//time//symbol`.
@@ -2436,8 +2436,8 @@ public class Mei2MusicXmlConverter {
     }
 
     /**
-     * Map `scoreDef[@music.name]` => `//defaults/music-font`
-     * Map `scoreDef[@text.name]` => `//defaults/muisc-font`
+     * Map `scoreDef[@music.name]` maps to `//defaults/music-font`
+     * Map `scoreDef[@text.name]` maps to `//defaults/muisc-font`
      * @param fontname
      * @param targetElement
      */
@@ -2452,7 +2452,7 @@ public class Mei2MusicXmlConverter {
     }
 
     /**
-     * Maps `scoreDef[@lyric.name]` => `//defaults/lyric-font`.
+     * Maps `scoreDef[@lyric.name]` maps to `//defaults/lyric-font`.
      * Has own method, sice it does not use Emptyfont.class to set value.
      * @param fontname
      */
@@ -3355,9 +3355,9 @@ public class Mei2MusicXmlConverter {
      * Find divisions of current MEI to add to //attributes/divisions Element.
      * A division is the number of symbolic durations that are needed to create a quaver, dependent on the shortest duration in the piece.
      *
-     * Durations in MEI are represented as denominators: dur=4 => 1/4.
-     * Examples: Shortest duration = 16 => division = 4.
-     * Shortest duration = 8 => division = 2.
+     * Durations in MEI are represented as denominators: dur=4 maps to 1/4.
+     * Examples: Shortest duration = 16 maps to division = 4.
+     * Shortest duration = 8 maps to division = 2.
      *
      * Durations in //note elements are multiples of these divisions.
      * @return division
@@ -3403,7 +3403,7 @@ public class Mei2MusicXmlConverter {
 
 
     /**
-     * Find corresponding definition to given Element (probably a note, rest, etc... something that is held within a <layer></layer>).
+     * Find corresponding definition to given Element (probably a note, rest, etc... something that is held within a layer).
      * Follow all possible nodes up to the root,
      * Check regularly if all attributes are set, to get sure that all closest attributes can be applied and stop the function.
      * @param e
@@ -3571,7 +3571,6 @@ public class Mei2MusicXmlConverter {
      * Fill DefinitionType with scoreDef, staffDef or layerDef information (layerDef info has priority)
      * @param dType
      * @param targetElement
-     * @return
      */
     private void setStaffDefOrLayerDefToDtype(DefinitionType dType, Element targetElement) {
         Element staffDef = targetElement;
