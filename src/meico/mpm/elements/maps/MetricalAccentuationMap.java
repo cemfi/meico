@@ -153,6 +153,9 @@ public class MetricalAccentuationMap extends GenericMap {
         e.addAttribute(new Attribute("scale", Double.toString(data.scale)));
         e.addAttribute(new Attribute("loop", Boolean.toString(data.loop)));
 
+        if (!data.stickToMeasures)      // since default is true, we need to add this attribute only when false
+            e.addAttribute(new Attribute("stickToMeasures", Boolean.toString(false)));
+
         if (data.xmlId != null)
             e.addAttribute(new Attribute("xml:id", "http://www.w3.org/XML/1998/namespace", data.xmlId));
 
