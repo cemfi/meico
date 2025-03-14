@@ -1,6 +1,13 @@
 ### Version History
 
 
+### v0.11.4
+- Handled a series of potential NullPointerExceptions in class `meico.mei.Mei2MusicXmlConverter`.
+- Added method `isChildOf()` to class `meico.mei.Helper`.
+- Some further minor tweaks in class `meico.mei.Helper`.
+- Epanded method `meico.mei.Mei.resolveCopyofs()`. Now, it also looks for elements that refer to elements that got copied. If these elements got copied, too, their references are updated. Otherwise, those elements are copied and those copies' references are updated. This should preserve more of the integrity of inter-element relationships.
+
+
 #### v0.11.3
 - Small bugfix in method `meico.mpm.elements.maps.MetricalAccentuationMap.addAccentuationPattern(MetricalAccentuationData data)`. Insufficient handling of attribute `stickToMeasures`.
 

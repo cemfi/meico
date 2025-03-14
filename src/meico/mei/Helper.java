@@ -51,7 +51,8 @@ public class Helper {
      * @return
      */
     public static Element getFirstChildElement(Element ofThis) {
-        if (ofThis == null) return null;
+        if (ofThis == null)
+            return null;
 
         Elements es = ofThis.getChildElements();
         if (es.size() == 0)
@@ -67,7 +68,8 @@ public class Helper {
      * @return
      */
     public static Element getFirstChildElement(Element ofThis, String localname) {
-        if ((ofThis == null) || localname.isEmpty()) return null;
+        if ((ofThis == null) || localname.isEmpty())
+            return null;
         Nodes e = ofThis.query("child::*[local-name()='" + localname + "']");   // find the elements with the localname by an XPath query
         if (e.size() == 0) return null;                                         // if nothing found, return null
         return (Element)e.get(0);                                               // else return the first element
@@ -98,7 +100,8 @@ public class Helper {
      * @return
      */
     public static LinkedList<Element> getAllChildElements(String name, Element ofThis) {
-        if ((ofThis == null) || name.isEmpty()) return null;
+        if ((ofThis == null) || name.isEmpty())
+            return null;
         Nodes e = ofThis.query("child::*[local-name()='" + name + "']");   // find the elements with the localname by an XPath query
         LinkedList<Element> es = new LinkedList<>();
         for (int i = 0; i < e.size(); ++i)
@@ -113,7 +116,8 @@ public class Helper {
      * @return
      */
     public static LinkedList<Element> getAllDescendantsByName(String name, Element ofThis) {
-        if ((ofThis == null) || name.isEmpty()) return null;
+        if ((ofThis == null) || name.isEmpty())
+            return null;
         LinkedList<Element> children = new LinkedList<>();
         for(Element ch : Helper.getAllChildElements(ofThis)) {
             if(ch.getLocalName().equals(name))
@@ -130,7 +134,8 @@ public class Helper {
      * @return
      */
     public static LinkedList<Element> getAllDescendantsWithAttribute(String attrName, Element ofThis) {
-        if ((ofThis == null) || attrName.isEmpty()) return null;
+        if ((ofThis == null) || attrName.isEmpty())
+            return null;
         LinkedList<Element> children = new LinkedList<>();
         for(Element ch : Helper.getAllChildElements(ofThis)) {
             if(ch.getAttribute(attrName) != null)
@@ -146,7 +151,8 @@ public class Helper {
      * @return
      */
     public static LinkedList<Element> getAllChildElements(Element ofThis) {
-        if (ofThis == null) return null;
+        if (ofThis == null)
+            return null;
         Nodes e = ofThis.query("child::*");   // find all children ofThis
         LinkedList<Element> es = new LinkedList<>();
         for (int i = 0; i < e.size(); ++i)
@@ -433,10 +439,28 @@ public class Helper {
      * @return
      */
     public static Element getParentElement(Element ofThis) {
-        for (Node e = ofThis.getParent(); e != ofThis.getDocument().getRootElement(); e = e.getParent()) {
+        if (ofThis == null)
+            return null;
+        for (Node e = ofThis.getParent(); e != null; e = e.getParent()) {
             if (e instanceof Element) return (Element)e;
         }
         return null;
+    }
+
+    /**
+     * determines if the child is in the subtree of parent
+     * @param child
+     * @param parent
+     * @return
+     */
+    public static boolean isChildOf(Element child, Element parent) {
+        if ((child == null) || (parent == null))
+            return false;
+        for (Element par = Helper.getParentElement(child); par != null; par = Helper.getParentElement(par)) {
+            if (par == parent)
+                return true;
+        }
+        return false;
     }
 
     /**
@@ -447,10 +471,9 @@ public class Helper {
      * @return
      */
     public static Element getClosest(String name, Element ofThis){
-        Element parent = Helper.getParentElement(ofThis);
-        while(parent != null && !parent.equals(ofThis.getDocument().getRootElement())){
-            if(parent.getLocalName().equals(name)) return parent;
-            parent = Helper.getParentElement(parent);
+        for (Element parent = Helper.getParentElement(ofThis); parent != null; parent = Helper.getParentElement(parent)) {
+            if(parent.getLocalName().equals(name))
+                return parent;
         }
         return null;
     }
@@ -466,7 +489,8 @@ public class Helper {
         Element parent = Helper.getParentElement(ofThis);
         while(parent != null && !parent.equals(ofThis.getDocument().getRootElement())){
             String attr = Helper.getAttributeValue(attrName, parent);
-            if(attr != null && !attr.isEmpty()) return parent;
+            if(attr != null && !attr.isEmpty())
+                return parent;
             parent = Helper.getParentElement(parent);
         }
         return null;

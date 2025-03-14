@@ -457,12 +457,41 @@ public class Mei extends meico.xml.XmlBase {
         Element e = this.getRootElement();                                                              // this also includes the meiHead section, not only the music section, as there might be reference from music into the head
         if (e == null) return null;
 
-        ArrayList<String> notResolved = new ArrayList<String>();                                             // store those ids that are not resolved
-        HashMap<Element, String> previousPlaceholders = new HashMap<Element, String>();                               // this is a copy of the placeholders hashmap in the while loop; if it does not change from one iteration to the next, there is a placeholder refering to another placeholder refering back to the first; this cannot be resolved and leads to an infinite loop; this hashmap here is to detect this situation
-
         System.out.print("Resolving copyofs and sameas's:");
 
-        while (true) {                                                                                  // this loop can only be exited if no placeholders are left (it is possible that multiple runs are necessary when placeholders are within placeholders)
+        ArrayList<String> notResolved = new ArrayList<String>();                                             // store those ids that are not resolved
+        HashMap<Element, String> previousPlaceholders = new HashMap<Element, String>();                               // this is a copy of the placeholders hashmap in the while loop; if it does not change from one iteration to the next, there is a placeholder referring to another placeholder referring back to the first; this cannot be resolved and leads to an infinite loop; this hashmap here is to detect this situation
+        HashMap<String, ArrayList<KeyValue<Element, ArrayList<KeyValue<String, Attribute>>>>> elementsWithReferences = new HashMap<>();    // a HashMap of all IDs that an element refers to with the element and all IDs it references (ID, listOf(element, listOf(ID, attribute))))
+
+        // get all elements with references, these have to be processed after creating copies
+        for (Node node : e.query("descendant::*[attribute::*[starts-with(., '#')]]")) {                 // get all elements with attributes that begin with '#' and process each of them
+            if ((((Element) node).getAttribute("copyof") != null) || ((Element) node).getAttribute("sameas") != null)   // keep those elements that get replaced by copies out of the HashMap
+                continue;
+
+            KeyValue<Element, ArrayList<KeyValue<String, Attribute>>> elementAndItsReferences = new KeyValue<>((Element) node, new ArrayList<>());   // this holds the element and its references; if the references list stays empty, it needs no treatment
+
+            for (int a = 0; a < elementAndItsReferences.getKey().getAttributeCount(); ++a) {            // for each attribute that this element has
+                Attribute attribute = elementAndItsReferences.getKey().getAttribute(a);                 // get the attribute
+                String id = attribute.getValue();                                                       // get its value
+                if (!id.startsWith("#"))                                                                // if it is no reference to another element in this document
+                    continue;                                                                           // check next attribute
+                elementAndItsReferences.getValue().add(new KeyValue<>(id.substring(1), attribute));     // add the id to the list of references of this element, but leave the '#' away
+            }
+
+//            if (elementAndItsReferences.getValue().isEmpty())                                           // if this element has no references (should not be the case)
+//                continue;                                                                               // we are done with it
+
+            for (KeyValue<String, Attribute> reference : elementAndItsReferences.getValue()) {          // for each reference
+                if (!elementsWithReferences.containsKey(reference.getKey())) {                          // if the entry does not exist yet
+                    ArrayList<KeyValue<Element, ArrayList<KeyValue<String, Attribute>>>> list = new ArrayList<>();  // create it
+                    elementsWithReferences.put(reference.getKey(), list);                               // and add it to the HashMap
+                }
+                elementsWithReferences.get(reference.getKey()).add(elementAndItsReferences);            // make an entry in the HashMap
+            }
+        }
+
+        // this loop can only be exited if no placeholders are left (it is possible that multiple runs are necessary when placeholders are within placeholders)
+        while (true) {
             HashMap<String, Element> elements = new HashMap<String, Element>();                                       // this hashmap will be filled with elements and their ids
             HashMap<Element, String> placeholders = new HashMap<Element, String>();                                   // this hashmap will be filled with placeholder elements that have a copyof attribute and the id in the copyof
 
@@ -486,7 +515,8 @@ public class Mei extends meico.xml.XmlBase {
                 }
             }
 
-            if (placeholders.size() == 0) break;                                                        // we are done, this stops the while loop
+            if (placeholders.isEmpty())
+                break;                                                                                  // we are done, this stops the while loop
 
             // detect placeholders that cannot be resolved but lead to infinite loops because of circular references
             if ((placeholders.values().containsAll(previousPlaceholders.values()))
@@ -503,8 +533,8 @@ public class Mei extends meico.xml.XmlBase {
 
             System.out.print(" " + placeholders.size() + " copyofs and sameas's ...");
 
-            // replace alle placeholders in the xml tree by copies of the source
-            for (Map.Entry<Element, String> placeholder : placeholders.entrySet()) {                    // for each placeholder
+            // replace all placeholders in the xml tree by copies of the source
+            for (Map.Entry<Element, String> placeholder : placeholders.entrySet()) {                    // for each placeholder, i.e. element with copyof or sameas
                 Element found = elements.get(placeholder.getValue());                                   // search the elements hashmap for the id
 
                 if (found == null) {                                                                    // if no element with this id has been found
@@ -527,17 +557,83 @@ public class Mei extends meico.xml.XmlBase {
                 }
 
                 // generate new ids for those elements with a copied id
+                HashMap<String, String> idReplacements = new HashMap<>();                                                   // this holds key-value pairs (originalId, newId) for later reference
                 Nodes ids = copy.query("descendant-or-self::*[@xml:id]");                                                   // get all the nodes with an xml:id attribute
                 for (int j = 0; j < ids.size(); ++j) {                                                                      // go through all the nodes
-                    Element idElement = (Element) ids.get(j);
-                    String uuid = idElement.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace") + "_meico_" + UUID.randomUUID().toString();   // generate new ids for them
-                    idElement.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(uuid);                    // and write into the attribute
+                    Attribute idAtt = ((Element) ids.get(j)).getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+                    String originalId = idAtt.getValue();                                                                   // get the original ID
+                    String newId = originalId + "_meico_" + UUID.randomUUID().toString();                                   // generate a new ID
+                    idAtt.setValue(newId);                                                                                  // and write into the attribute
+                    idReplacements.put(originalId, newId);                                                                  // store the ID replacement info
                 }
 
                 // but keep the possibly existing placeholder id for the copy's root node
                 Attribute id = placeholder.getKey().getAttribute("id", "http://www.w3.org/XML/1998/namespace");             // get the placeholder's xml:id
                 if (id != null) {                                                                                           // if the placeholder has one
-                    copy.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(id.getValue());     // set the copy's id to the id of the placeholder
+                    copy.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(id.getValue());                // set the copy's id to the id of the placeholder
+//                    idReplacements.put(copy.getAttributeValue("id", "http://www.w3.org/XML/1998/namespace"), id.getValue()); // store the ID replacement info ... not needed as we do not touch references to the original of the copy's root note
+                }
+
+                // use idReplacements to process elements that refer to the originalIds
+                // QUESTION: Should we exclude the root of the subtree?
+                // ANSWER: Yes. Imagine 8 notes, all copies of the 1st. Outside we have a slur starting at the 1st, ending at the 8th. That slur should not be copied to each note!
+                // for readability: elementsWithReferences is a HashMap of this structure: (ID, listOf(element, listOf(ID, attribute))))
+                for (String originalId : idReplacements.keySet()) {                                                         // for each ID that got replaced
+                    ArrayList<KeyValue<Element, ArrayList<KeyValue<String, Attribute>>>> elementsAndReferences = elementsWithReferences.get(originalId);
+                    if (elementsAndReferences == null)                                                                      // if there are no elements referencing the ID just checked
+                        continue;                                                                                           // check the next ID
+
+                    for (KeyValue<Element, ArrayList<KeyValue<String, Attribute>>> elementAndReferences : elementsAndReferences) {  // for each element that refers to this ID
+                        if (!Helper.isChildOf(elementAndReferences.getKey(), found)) {                                      // if the element is not part of the subtree just copied
+                            Element elementCopy = elementAndReferences.getKey().copy();                                     // create a deep copy of the element
+
+                            // give it a unique ID
+                            Attribute elementCopyId = elementCopy.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+                            if (elementCopyId != null) {
+                                String origId = elementCopyId.getValue();                                                   // get the original ID
+                                String newId = origId + "_meico_" + UUID.randomUUID().toString();                           // generate a new ID
+                                elementCopyId.setValue(newId);                                                              // set the new ID
+                            }
+
+                            Helper.getParentElement(elementAndReferences.getKey()).appendChild(elementCopy);                // add it to the original's parent
+                        }
+
+                        // update all references that point inside the subtree with the new IDs, i.e. can be found in idReplacements
+                        boolean hasReferencesOutsideSubtree = false;
+                        for (KeyValue<String, Attribute> referenceAndAttribute : elementAndReferences.getValue()) {         // for each reference
+                            if (idReplacements.containsKey(referenceAndAttribute.getKey())) {                               // if the reference points inside the subtree
+                                referenceAndAttribute.getValue().setValue("#" + idReplacements.get(referenceAndAttribute.getKey()));    // replace the reference by the new ID
+                            } else {                                                                                        // if the referencing element also has references outside the subtree
+                                hasReferencesOutsideSubtree = true;                                                         // we will have to add it to the list of elements with references
+                            }
+                        }
+
+                        // if the referencing element also has references outside the subtree, put the element into the list of elements with references
+                        if (hasReferencesOutsideSubtree) {
+                            // put the element into the list of elements with references
+                            KeyValue<Element, ArrayList<KeyValue<String, Attribute>>> elementAndItsReferences = new KeyValue<>(elementAndReferences.getKey(), new ArrayList<>());   // this holds the element and its references; if the references list stays empty, it needs no treatment
+
+                            for (int a = 0; a < elementAndItsReferences.getKey().getAttributeCount(); ++a) {                // for each attribute that this element has
+                                Attribute attribute = elementAndItsReferences.getKey().getAttribute(a);                     // get the attribute
+                                String refId = attribute.getValue();                                                        // get its value
+                                if (!refId.startsWith("#"))                                                                 // if it is no reference to another element in this document
+                                    continue;                                                                               // check next attribute
+                                elementAndItsReferences.getValue().add(new KeyValue<>(refId.substring(1), attribute));      // add the id to the list of references of this element, but leave the '#' away
+                            }
+
+//                            if (elementAndItsReferences.getValue().isEmpty())                                               // if this element has no references (should not be the case)
+//                                continue;                                                                                   // we are done with it
+
+                            for (KeyValue<String, Attribute> reference : elementAndItsReferences.getValue()) {              // for each reference
+                                if (!elementsWithReferences.containsKey(reference.getKey())) {                              // if the entry does not exist yet
+                                    ArrayList<KeyValue<Element, ArrayList<KeyValue<String, Attribute>>>> list = new ArrayList<>();  // create it
+                                    elementsWithReferences.put(reference.getKey(), list);                                   // and add it to the HashMap
+                                }
+                                elementsWithReferences.get(reference.getKey()).add(elementAndItsReferences);                // make an entry in the HashMap
+                            }
+
+                        }
+                    }
                 }
             }
         }
