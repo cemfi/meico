@@ -1,11 +1,15 @@
 ### Version History
 
 
+#### v0.11.5
+- Rework of the new functionality in `meico.mei.Mei.resolveCopyofs()` from update v0.11.4. This version is more stable, efficient, covers more complicated cases, and is more readable.
+
+
 ### v0.11.4
 - Handled a series of potential NullPointerExceptions in class `meico.mei.Mei2MusicXmlConverter`.
 - Added method `isChildOf()` to class `meico.mei.Helper`.
 - Some further minor tweaks in class `meico.mei.Helper`.
-- Epanded method `meico.mei.Mei.resolveCopyofs()`. Now, it also looks for elements that refer to elements that got copied. If these elements got copied, too, their references are updated. Otherwise, those elements are copied and those copies' references are updated. This should preserve more of the integrity of inter-element relationships.
+- Expanded method `meico.mei.Mei.resolveCopyofs()`. Now, it also looks for elements that refer to elements that got copied. If these elements got copied, too, their references are updated. Otherwise, those elements are copied and those copies' references are updated. This should preserve more of the integrity of inter-element relationships.
 
 
 #### v0.11.3

@@ -443,7 +443,7 @@ public class Mei2MusicXmlConverter {
                 case "history":
                     continue;
                 case "identifier":
-                    if(Helper.getClosest("title", e) != null){
+                    if(Helper.getClosestParent("title", e) != null){
                         this.processTitle(e);
                     }
                     continue;
@@ -1167,7 +1167,7 @@ public class Mei2MusicXmlConverter {
                             break;
                         }
                     } else if (this.pwIsCurrent) { // in part wise a scoredef is at the beginning of every part (hopefully)
-                        Element scoreDef = Helper.getClosest("scoreDef", e);
+                        Element scoreDef = Helper.getClosestParent("scoreDef", e);
                         if (scoreDef != null) {
                             Element parent = Helper.getParentElement(scoreDef);
                             if ((parent == null) || !parent.getLocalName().equals("part")) {
@@ -1184,7 +1184,7 @@ public class Mei2MusicXmlConverter {
                         break;
 
                 case "staffGrp":
-                    if(Helper.getClosest("section", e) != null) continue; // if the staffGrp is within a section, just continue (the section staffGrps are processed while looking for corresponding defs (this.findCorrespondingDefinition())
+                    if(Helper.getClosestParent("section", e) != null) continue; // if the staffGrp is within a section, just continue (the section staffGrps are processed while looking for corresponding defs (this.findCorrespondingDefinition())
                     this.processStaffGrp(e);
                     continue; // recursion takes place in function, because start and stop attribute of part-group is clear that way
 
@@ -1317,7 +1317,7 @@ public class Mei2MusicXmlConverter {
         String value = titleChild.getValue();
         if(value == null || value.isEmpty()) {return;} // If there is value, there can be no mapping to the work title
         if((title.getLocalName().equals("title") && (attr == null || attr.isEmpty())) || title.getLocalName().equals("identifier")) {attr = "main";} //else{return;} // don't do this for titlePart since title needs no attributes to be mapped correctly
-        if(Helper.getClosest("titleStmt", title) == null) return; // {attr = "subordinate";} // Every other title that is not in a titleStmt will be a subtitle
+        if(Helper.getClosestParent("titleStmt", title) == null) return; // {attr = "subordinate";} // Every other title that is not in a titleStmt will be a subtitle
         value = value.trim();
         String workTitle = this.header.getWork().getWorkTitle();
         switch (attr) {
@@ -2014,7 +2014,7 @@ public class Mei2MusicXmlConverter {
         List<ScorePartwise.Part.Measure> mList = this.currentPartPW.getMeasure();
 
         if(this.measureListMEI.isEmpty()) {
-            Element closest = Helper.getClosest("part", measure);
+            Element closest = Helper.getClosestParent("part", measure);
             if (closest != null) {
                 Nodes ml = closest.query(".//mei:measure", this.xPathContext); //Helper.getAllChildElements("measure", Helper.getParentElement(measure));
                 for (Node node : ml) {
@@ -2693,11 +2693,11 @@ public class Mei2MusicXmlConverter {
     private void processSectionPW (Element section){
         if(Helper.getFirstChildElement("measure", section) == null) return; // no measures = no musical information to be processed, and can't be mapped to part-list
 
-        Element part = Helper.getClosest("part", section);
+        Element part = Helper.getClosestParent("part", section);
         int sectionIdx = Objects.requireNonNull(Helper.getAllChildElements("section", part)).indexOf(section);
         if(sectionIdx > 0 )
             return; // set the currentPart just during the first section in the part
-        List<Element> parts = Helper.getAllChildElements("part", Helper.getClosest("parts", section));
+        List<Element> parts = Helper.getAllChildElements("part", Helper.getClosestParent("parts", section));
         if (parts == null)
             return;
         int partIdx = parts.indexOf(part);
@@ -2769,7 +2769,7 @@ public class Mei2MusicXmlConverter {
         this.createMeasureListTW(measure);
 
         if(this.measureListMEI.isEmpty()) {
-            Element closest = Helper.getClosest("score", measure);
+            Element closest = Helper.getClosestParent("score", measure);
             if(closest == null)
                 return;
             Nodes mList = closest.query(".//mei:measure", this.xPathContext);
@@ -3120,7 +3120,7 @@ public class Mei2MusicXmlConverter {
                 n.setPitch(pitch);
 
                 // if note has a chord as a parent, add chord tag to all elements following the first note (= first note has no chord tag)
-                Element parentChord = Helper.getClosest("chord", e);
+                Element parentChord = Helper.getClosestParent("chord", e);
                 if(parentChord != null){
                     int noteIdx = Helper.getAllChildElements("note", parentChord).indexOf(e);
                     if(noteIdx >= 1){
@@ -3158,7 +3158,7 @@ public class Mei2MusicXmlConverter {
         //Set Duration and NoteType
         //If the note has no duration attribute itself, find the next parent with duration
         //can be chord, bTrem, fTrem, trem,
-        Element closestWithDuration = Helper.getClosestByAttr("dur", e);
+        Element closestWithDuration = Helper.getClosestParentByAttr("dur", e);
         Element elementWithDuration = (e.getAttributeValue("dur") == null ||
                 e.getAttributeValue("dur").isEmpty()) &&
                 closestWithDuration != null ?
@@ -3200,7 +3200,7 @@ public class Mei2MusicXmlConverter {
      * @param e
      */
     private void processTuplet(Note note, Element e){
-        Element parentTuplet = Helper.getClosest("tuplet", e);
+        Element parentTuplet = Helper.getClosestParent("tuplet", e);
         String tupletAttr = e.getAttributeValue("tuplet");
         String num = "";
         String numbase = "";
@@ -3220,7 +3220,7 @@ public class Mei2MusicXmlConverter {
         }else if(tupletAttr != null && !tupletAttr.isEmpty()) { // will enter this block when element with Attribute tuplet is found
             String[] tupletVals = tupletAttr.split(" "); // tuplet attribute can contain a list of values devided by spaces
             for(String tVal : tupletVals) {
-                Element parentLayer = Helper.getClosest("layer", e); // search beginning with layer, since e may be e.g. in a beam.
+                Element parentLayer = Helper.getClosestParent("layer", e); // search beginning with layer, since e may be e.g. in a beam.
                 // all tuplet elements have to be in same descendant tree; tuplets can't cross measure boundaries
                 List<Element> tupletElements = Helper.getAllDescendantsWithAttribute("tuplet", parentLayer);
                 if (tupletElements == null || tupletElements.isEmpty()) break;
@@ -3539,7 +3539,7 @@ public class Mei2MusicXmlConverter {
                     }
                 }
             }
-            targetElement = Helper.getClosest("section", targetElement);
+            targetElement = Helper.getClosestParent("section", targetElement);
         }while(targetElement != null);
 
         return dType;

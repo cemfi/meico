@@ -470,7 +470,7 @@ public class Helper {
      * @param ofThis
      * @return
      */
-    public static Element getClosest(String name, Element ofThis){
+    public static Element getClosestParent(String name, Element ofThis){
         for (Element parent = Helper.getParentElement(ofThis); parent != null; parent = Helper.getParentElement(parent)) {
             if(parent.getLocalName().equals(name))
                 return parent;
@@ -485,7 +485,7 @@ public class Helper {
      * @param ofThis
      * @return
      */
-    public static Element getClosestByAttr(String attrName, Element ofThis){
+    public static Element getClosestParentByAttr(String attrName, Element ofThis){
         Element parent = Helper.getParentElement(ofThis);
         while(parent != null && !parent.equals(ofThis.getDocument().getRootElement())){
             String attr = Helper.getAttributeValue(attrName, parent);
