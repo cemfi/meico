@@ -50,6 +50,10 @@ public class AttributesWithIds {
 //        System.out.println("reference set size " + this.references.size());
     }
 
+    public HashMap<String, ArrayList<Attribute>> getReferences() {
+        return this.references;
+    }
+
     /**
      * getter for the copyofs HashMap
      * @return

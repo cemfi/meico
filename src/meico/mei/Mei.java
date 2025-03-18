@@ -1,12 +1,10 @@
 package meico.mei;
 
-import com.sun.media.sound.InvalidDataException;
 import meico.mpm.Mpm;
 import meico.msm.Msm;
 import meico.musicxml.MusicXml;
 import meico.supplementary.KeyValue;
 import meico.svg.SvgCollection;
-import net.sf.saxon.ma.map.MapFunctionSet;
 import nu.xom.*;
 import org.xml.sax.SAXException;
 
@@ -517,7 +515,23 @@ public class Mei extends meico.xml.XmlBase {
                     copy.getAttribute("id", "http://www.w3.org/XML/1998/namespace").setValue(id.getValue());    // set the copy's id to the id of the placeholder
                 }
 
-                // TODO: handle attributes/elements that reference the elements we just copied
+                // handle attributes/elements that reference the elements we just copied
+                AttributesWithIds internalReferences = new AttributesWithIds(copy);
+                for (Map.Entry<String, String> idReplacement : idReplacements.entrySet()) {             // for each ID for which we have a mapping
+                    String originalId = idReplacement.getKey();
+                    String newId = idReplacement.getValue();
+
+                    // check internal elements first, these are not in the attributesWithIds, yet
+                    ArrayList<Attribute> attributes = internalReferences.getReferences().get(originalId);   // get all attributes that refer to this ID
+                    if (attributes != null) {
+                        for (Attribute attribute : attributes)
+                            attribute.setValue("#" + newId);                                            // we just update the reference
+                    }
+
+                    // now the external elements with references into the original subtree, here we need new elements that do the same for the copied subtree
+                    attributes = attributesWithIds.getReferences().get(originalId);
+                    // TODO: I have no idea what the best solution should be
+                }
             }
         }
 
