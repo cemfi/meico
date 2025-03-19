@@ -14,8 +14,8 @@ import java.util.HashMap;
 public class AttributesWithIds {
     private final Element root;
     private HashMap<Attribute, String> copyofs = new HashMap<>();
-    private HashMap<String, Attribute> ids = new HashMap<>();
-    private HashMap<String, ArrayList<Attribute>> references = new HashMap<>();
+    private final HashMap<String, Attribute> ids = new HashMap<>();
+    private final HashMap<String, ArrayList<Attribute>> references = new HashMap<>();
 
     /**
      * constructor

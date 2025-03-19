@@ -517,6 +517,7 @@ public class Mei extends meico.xml.XmlBase {
 
                 // handle attributes/elements that reference the elements we just copied
                 AttributesWithIds internalReferences = new AttributesWithIds(copy);
+                HashMap<Element, ArrayList<Attribute>> originalElementsNewAttributes = new HashMap<>();
                 for (Map.Entry<String, String> idReplacement : idReplacements.entrySet()) {             // for each ID for which we have a mapping
                     String originalId = idReplacement.getKey();
                     String newId = idReplacement.getValue();
@@ -530,7 +531,24 @@ public class Mei extends meico.xml.XmlBase {
 
                     // now the external elements with references into the original subtree, here we need new elements that do the same for the copied subtree
                     attributes = attributesWithIds.getReferences().get(originalId);
-                    // TODO: I have no idea what the best solution should be
+                    if (attributes == null)
+                        continue;
+                    for (Attribute originalAttribute : attributes) {
+                        Element originalElement = (Element) originalAttribute.getParent();              // get the element that we will have to copy and edit its attribute(s)
+                        ArrayList<Attribute> newAttributes = originalElementsNewAttributes.computeIfAbsent(originalElement, k -> new ArrayList<>()); // get or create the list of attributes to be edited
+                        Attribute newAttribute = originalAttribute.copy();                              // create a new Attribute
+                        newAttribute.setValue("#" + newId);                                             // set its value to the new ID reference
+                        newAttributes.add(newAttribute);                                                // add it to the list
+                    }
+                }
+                for (Map.Entry<Element, ArrayList<Attribute>> origEltNewAtt : originalElementsNewAttributes.entrySet()) {   // for each external element that must be copied and gets new attribute(s)
+                    Element newElt = origEltNewAtt.getKey().copy();                                     // create the new element
+                    for (Attribute newAtt : origEltNewAtt.getValue())
+                        newElt.addAttribute(newAtt);                                                    // this replaces the original attribute by the new one
+                    Attribute newEltId = newElt.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
+                    if (newEltId != null)                                                               // if the original element has an ID
+                        newEltId.setValue(newEltId.getValue() + "_meico_" + UUID.randomUUID().toString());  // the new element needs a unique one
+                    origEltNewAtt.getKey().getParent().appendChild(newElt);                             // add hte new element to the XML tree as sibling of the original element
                 }
             }
         }

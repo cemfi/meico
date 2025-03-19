@@ -3,6 +3,8 @@
 
 #### v0.11.5
 - Rework of method `meico.mei.Mei.resolveCopyofs()`. This version is more stable, efficient, covers more of the complicated cases, and the code is more readable.
+  - The resolution of elements with `copyof` or `sameas` attribute does basically the same as before, just a bit more efficient.
+  - Furthermore, meico will check the whole XML document for elements that refer to those copied. If these referring elements are within the same subtree just copied, their referencing attributes are updated to the ID of the copied elements. If they are outside the subtree just copied, meico creates copies of these elements, too, and then sets their referencing attributes to the copied elements. This mechanism should preserve more of the integrity of the notation. However, there are cases possible (because MEI allows ambiguous use of `copyof`/`sameas`) that still require manual correction.
 
 
 #### v0.11.4
