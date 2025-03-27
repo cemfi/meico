@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.11.6
+- New method `meico.msm.Msm.fitMidiPitches()` added.
+- Added several value range checks in class `meico.midi.EventMaker` for better stability in case of invalid MIDI data.
+
+
 #### v0.11.5
 - Rework of method `meico.mei.Mei.resolveCopyofs()`. This version is more stable, efficient, covers more of the complicated cases, and the code is more readable.
   - The resolution of elements with `copyof` or `sameas` attribute does basically the same as before, just a bit more efficient.

@@ -787,6 +787,43 @@ public class Msm extends AbstractMsm {
     }
 
     /**
+     * make sure that the MIDI pitch values are in the specified limits; if they break the limits,
+     * the pitches are transposed down/up
+     * @param min min inclusive (for MIDI compatibility 0)
+     * @param max max inclusive (for MIDI compatibility 127)
+     */
+    public synchronized void fitMidiPitches(double min, double max) {
+        // if min is greater than max, switch the values
+        if (min > max) {
+            double x = min;
+            min = max;
+            max = x;
+        }
+
+        Elements parts = this.getParts();
+        for (Element part : parts) {                                                    // in each part
+            Element dated = Helper.getFirstChildElement("dated", part);             // get the part's dated environment
+            if (dated == null)
+                continue;
+            Element score = Helper.getFirstChildElement("score", dated);            // get the score element
+            if (score == null)
+                continue;
+            LinkedList<Element> notes = Helper.getAllChildElements("note", score);  // get all note elements in the score
+            for (Element note : notes) {                                                // for each note
+                Attribute midiPitchAtt = Helper.getAttribute("midi.pitch", note);   // get its pitch
+                if (midiPitchAtt == null)
+                    continue;
+                double value = Double.parseDouble(midiPitchAtt.getValue());               // read the attribute's value into a double
+                while (value < min)
+                    value += 12;
+                while (value > max)
+                    value -= 12;
+                midiPitchAtt.setValue(Double.toString(value));
+            }
+        }
+    }
+
+    /**
      * This method checks whether the velocity values hold the specified limits. If not, they are scaled down.
      * @param min
      * @param max
@@ -1034,7 +1071,7 @@ public class Msm extends AbstractMsm {
                 track.add(EventMaker.createNoteOff(chan, date + dur, pitch, 0));
             }
 
-            // TODO: process text (not implemented in mei-to-msm-export, yet, but planned to be added in the future)
+            // TODO: process text
         }
     }
 

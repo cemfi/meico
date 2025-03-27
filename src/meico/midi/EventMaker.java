@@ -391,18 +391,30 @@ public class EventMaker {
      * @return
      */
     public static MidiEvent createNoteOff(int chan, long date, int pitch, int vel) {
-        if (vel > 127)
-            vel = 127;
-        else if (vel < 0)
+        if (chan < 0)
+            chan = 0;
+        else if (chan > 15)
+            chan = 15;
+
+        if (vel < 0)
             vel = 0;
+        else if (vel > 15)
+            vel = 15;
+
+        while (pitch > 127)
+            pitch -= 12;
+        while (pitch < 0)
+            pitch += 12;
 
         MidiEvent e;
+        ShortMessage sm;
         try {
-            e = new MidiEvent(new ShortMessage(NOTE_OFF, chan, pitch, vel), date);
+            sm = new ShortMessage(NOTE_OFF, chan, pitch, vel);
         } catch (InvalidMidiDataException e1) {
             e1.printStackTrace();
             return null;
         }
+        e = new MidiEvent(sm, date);
         return e;
     }
 
@@ -416,18 +428,30 @@ public class EventMaker {
      * @return
      */
     public static MidiEvent createNoteOn(int chan, long date, int pitch, int vel) {
-        if (vel > 127)
-            vel = 127;
-        else if (vel < 0)
+        if (chan < 0)
+            chan = 0;
+        else if (chan > 15)
+            chan = 15;
+
+        if (vel < 0)
             vel = 0;
+        else if (vel > 15)
+            vel = 15;
+
+        while (pitch > 127)
+            pitch -= 12;
+        while (pitch < 0)
+            pitch += 12;
 
         MidiEvent e;
+        ShortMessage sm;
         try {
-            e = new MidiEvent(new ShortMessage(NOTE_ON, chan, pitch, vel), date);
+            sm = new ShortMessage(NOTE_ON, chan, pitch, vel);
         } catch (InvalidMidiDataException e1) {
             e1.printStackTrace();
             return null;
         }
+        e = new MidiEvent(sm, date);
         return e;
     }
 
@@ -457,6 +481,11 @@ public class EventMaker {
      * @return
      */
     public static MidiEvent createProgramChange(int chan, long date, short programNumber) {
+        if (chan < 0)
+            chan = 0;
+        else if (chan > 15)
+            chan = 15;
+
         try {
             return new MidiEvent(new ShortMessage(PROGRAM_CHANGE, chan, programNumber, 0), date);
         } catch (InvalidMidiDataException e) {
@@ -474,6 +503,11 @@ public class EventMaker {
      * @return
      */
     public static MidiEvent createControlChange(int chan, long date, int controllerNumber, int controllerValue) {
+        if (chan < 0)
+            chan = 0;
+        else if (chan > 15)
+            chan = 15;
+
         if (controllerValue > 127)
             controllerValue = 127;
         else if (controllerValue < 0)
