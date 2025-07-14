@@ -3632,7 +3632,7 @@ public class Mei2MsmMpmConverter {
 
         // compute beatLength
         Attribute mmUnit = tempo.getAttribute("mm.unit");
-        tempoData.beatLength = (mmUnit != null) ? Helper.duration2decimal(mmUnit.getValue()) : (1.0 / this.getCurrentTimeSignature(msmPartContext)[1]);    // use the specified mm.unit for beatLength or (if missing) use the denominator of the underlying time signature
+        tempoData.beatLength = (mmUnit != null) ? Helper.meiDuration2decimal(mmUnit.getValue()) : (1.0 / this.getCurrentTimeSignature(msmPartContext)[1]);    // use the specified mm.unit for beatLength or (if missing) use the denominator of the underlying time signature
         Attribute mmDots = tempo.getAttribute("mm.dots");
         if (mmDots != null) {                                                                                   // are there dots involved in the beatLength
             int dots = Integer.parseInt(mmDots.getValue());                                                     // get their number

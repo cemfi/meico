@@ -226,7 +226,6 @@ public class Helper {
         return (Element) ofThis.getParent().getChild(index - 1);
     }
 
-
     /**
      * get the previous sibling element of ofThis with a specific name
      * @param name
@@ -262,14 +261,18 @@ public class Helper {
      * @param ofThis
      * @return
      */
-    public static List<Element> getAllPreviousSiblingElements(String name, Element ofThis) {
-        Element sibling = Helper.getPreviousSiblingElement(name, ofThis);
-        List<Element> siblings = new ArrayList<>();
-        while(sibling != null) {
-            siblings.add(sibling);
-            sibling = Helper.getPreviousSiblingElement(name, sibling);
+    public static ArrayList<Element> getAllPreviousSiblingElements(String name, Element ofThis) {
+        Elements allSiblings = ((Element) ofThis.getParent()).getChildElements();
+        ArrayList<Element> prevSiblings = new ArrayList<>();
+        for (int i = 0; i < allSiblings.size(); ++i) {
+            Element sib = allSiblings.get(i);
+            if (!sib.getLocalName().equals(name))   // if not the right name
+                continue;                           // continue with the next
+            if (sib == ofThis)                      // if we reached the pivot element ofThis
+                break;                              // done, all further elements are not previous
+            prevSiblings.add(sib);                  // found an element, add it to the list
         }
-        return siblings;
+        return prevSiblings;
     }
 
     /**
@@ -485,7 +488,7 @@ public class Helper {
      * @param ofThis
      * @return
      */
-    public static Element getClosestParentByAttr(String attrName, Element ofThis){
+    public static Element getClosestParentByAttribute(String attrName, Element ofThis){
         Element parent = Helper.getParentElement(ofThis);
         while(parent != null && !parent.equals(ofThis.getDocument().getRootElement())){
             String attr = Helper.getAttributeValue(attrName, parent);
@@ -522,11 +525,11 @@ public class Helper {
     }
 
     /**
-     * convert the duration string into decimal (e.g., 4 -&gt; 1/4) and returns the result
+     * convert the MEI duration string into decimal (e.g., 4 -&gt; 1/4) and returns the result
      * @param durString
      * @return
      */
-    public static double duration2decimal(String durString) {
+    public static double meiDuration2decimal(String durString) {
         switch (durString) {
             case "maxima":return 8.0;
             case "long":  return 4.0;
@@ -547,7 +550,12 @@ public class Helper {
         return 0.0;
     }
 
-    public static String duration2word(String durString) {
+    /**
+     * convert MEI duration to MusicXML duration
+     * @param durString
+     * @return
+     */
+    public static String meiDuration2MusicxmlDuration(String durString) {
         switch (durString) {
             case "maxima":
             case "long":
@@ -664,53 +672,42 @@ public class Helper {
     }
 
     /**
-     * Compute the string value of a Decimal (given as String or Double Object).
-     * Will take the most simple accidental sign (avoids combinations with neutral signs).
-     * @param accidObject
+     * Convert a decimal accidental to an MEI accidental string
+     * @param accid
      * @return
      */
-    public static String accidDecimal2String(Object accidObject) {
-        String accid = "";
-        if (accidObject instanceof String) {
-            accid = accidObject.toString();
-        }else if(accidObject instanceof Double){
-            accid = Double.toString((Double)accidObject);
-        }else{
-            return null;
-        }
-
-        switch (accid) {
-            case "1":
-            case "1.0":
-                accid = "s"; break;
-            case "-1":
-            case "-1.0":
-                accid = "f";break;
-            case "2":
-            case "2.0":
-                accid = "ss"; break;
-            case "-2":
-            case "-2.0":
-                accid = "ff"; break;
-            case "3":
-            case "3.0":
-                accid = "xs"; break;
-            case "-3":
-            case "-3.0":
-                accid = "tf"; break;
-            case "0":
-            case "0.0":
-                accid = "n"; break;
-            case "-0.5": accid = "1qf"; break;
-            case "-1.5": accid = "3qf"; break;
-            case "0.5": accid = "1qs"; break;
-            case "1.5": accid = "3qs"; break;
-        }
-
-        return accid;
+    public static String accidDecimal2String(double accid) {
+        if (accid == 1.0)
+            return "s";
+        if (accid == -1.0)
+            return "f";
+        if (accid == 2.0)
+            return "ss";
+        if (accid == -2.0)
+            return "ff";
+        if (accid == 3.0)
+            return "xs";
+        if (accid == -3.0)
+            return "tf";
+        if (accid == 0.0)
+            return "n";
+        if (accid == -0.5)
+            return "1qf";
+        if (accid == -1.5)
+            return "3qf";
+        if (accid == 0.5)
+            return "1qs";
+        if (accid == 1.5)
+            return "3qs";
+        return "";
     }
 
-    public static String accidString2word(String accid){
+    /**
+     * convert an MEI accid string to a MusicXML accid string
+     * @param accid
+     * @return
+     */
+    public static String meiAccid2MusicxmlAccid(String accid){
         String accidental = "";
         switch (accid) {
             case "s":    accidental = "sharp";    break;
@@ -852,7 +849,7 @@ public class Helper {
         int pitchclass = (int)Math.round(midipitch % 12.0);
         switch (pitchclass) {
             case 0:  return "C";
-            case 1:  return "C# Db";
+            case 1:  return "C# Db";    // Never change these enharmonic writings, method midiPitch2Mei() relys on this!
             case 2:  return "D";
             case 3:  return "D# Eb";
             case 4:  return "E";
@@ -967,38 +964,43 @@ public class Helper {
     }
 
     /**
-     * Extends midi2PnameAndAccid to set octave value from midi pitch.
-     * @param useSharpInsteadOfFlat
-     * @param midipitch
-     * @param pnameAccidOct
-     */
-    public static void midi2PnameAccidOct(boolean useSharpInsteadOfFlat, double midipitch, String[] pnameAccidOct){
-        if (pnameAccidOct.length < 3) {
-            System.err.println("Error in method meico.mei.Helper.midi2PnameAccidOct: Array length of pnameAccidOct should be at least 3.");
-            return;
-        }
-        midi2PnameAndAccid(useSharpInsteadOfFlat, midipitch, pnameAccidOct);
-        if(pnameAccidOct[0].isEmpty()) return;
-        pnameAccidOct[2] = Double.toString(getMidiOctave(midipitch));
-    }
-
-    /**
      * Map midi pitch to octave.
      * @param midiPitch
      * @return
      */
-    private static double getMidiOctave(double midiPitch){
-        if(midiPitch >=21 && midiPitch <= 23) return 0;
-        if(midiPitch >=24 && midiPitch <= 35) return 1;
-        if(midiPitch >=36 && midiPitch <= 47) return 2;
-        if(midiPitch >=48 && midiPitch <= 59) return 3;
-        if(midiPitch >=60 && midiPitch <= 71) return 4;
-        if(midiPitch >=72 && midiPitch <= 83) return 5;
-        if(midiPitch >=84 && midiPitch <= 95) return 6;
-        if(midiPitch >=96 && midiPitch <=107) return 7;
-        if(midiPitch >=108) return 8;
+    public static int midi2Octave(double midiPitch){
+        return (int) Math.floor(midiPitch / 12.0) - 1;
+    }
 
-        return -1;
+    /**
+     * convert MIDI pitch number to MEI strings
+     * @param midiPitch
+     * @param useSharpInsteadOfFlat
+     * @return a String array with [pname, accidental, octave]
+     */
+    public static String[] midiPitch2Mei(double midiPitch, boolean useSharpInsteadOfFlat) {
+        String pnameWithAcc = Helper.midi2pname(midiPitch);
+
+        // pname and accidental
+        String pname;
+        String acc = "";
+        if (pnameWithAcc.length() < 2)
+            pname = pnameWithAcc;
+        else {                                              // if the string is longer than 1 character, it contains a # for the first and a b for the enharmonic second in pname
+            if (useSharpInsteadOfFlat) {                    // use the first version
+                pname = pnameWithAcc.substring(0, 1);
+                acc = "s";
+            } else {                                        // use the enharmonic counterpart
+                pname = pnameWithAcc.substring(3, 4);
+                acc = "f";
+            }
+        }
+        pname = pname.toLowerCase();
+
+        // octave
+        String oct = Integer.toString(Helper.midi2Octave(midiPitch));
+
+        return new String[]{pname, acc, oct};
     }
 
     /**

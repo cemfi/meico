@@ -2332,7 +2332,7 @@ public class Mei2MusicXmlConverter {
         Note n = new Note();
         n.setVoice("1");
         NoteType nt = new NoteType();
-        nt.setValue(Helper.duration2word(dur.toString()));
+        nt.setValue(Helper.meiDuration2MusicxmlDuration(dur.toString()));
         n.setType(nt);
         n.setRest(new Rest()); // new Note is rest with duration of any sibling measure
         n.setDuration(dur);
@@ -2368,7 +2368,7 @@ public class Mei2MusicXmlConverter {
             pitch.setAlter(BigDecimal.valueOf(Helper.accidString2decimal(accidVal)));
             if (accid.getAttributeValue("accid.ges") == null) {
                 Accidental acc = new Accidental();
-                acc.setValue(AccidentalValue.fromValue(Helper.accidString2word(accidVal)));
+                acc.setValue(AccidentalValue.fromValue(Helper.meiAccid2MusicxmlAccid(accidVal)));
                 this.currentNote.setAccidental(acc);
             }
         }
@@ -3089,13 +3089,13 @@ public class Mei2MusicXmlConverter {
                 octave = octave == null ? e.getAttributeValue("oct.ges") : octave;
 
                 //take pnum only as a fallback, when there is no step, accid or octave
-                if(e.getAttribute("pnum") != null && step == null && accid == null && octave == null){
-                    step = e.getAttributeValue("pnum");
-                    String[] arr = new String[3];
-                    Helper.midi2PnameAccidOct(false, Double.parseDouble(step), arr);
+                Attribute pnum = e.getAttribute("pnum");
+                if(pnum != null && step == null && accid == null && octave == null){
+                    step = pnum.getValue();
+                    String[] arr = Helper.midiPitch2Mei(Double.parseDouble(step), false);
                     if(arr[0] != null && !arr[0].isEmpty()){
                         step = arr[0];
-                        accid = Helper.accidDecimal2String(arr[1]);
+                        accid = Helper.accidDecimal2String(Double.parseDouble(arr[1]));
                         octave = arr[2].substring(0,1);
                     }
                 }
@@ -3107,7 +3107,7 @@ public class Mei2MusicXmlConverter {
                     pitch.setAlter(BigDecimal.valueOf(Helper.accidString2decimal(accid)));
                     if(e.getAttributeValue("accid.ges") == null) { // when accid.ges is found, don't write the accidental, alteration is sufficient
                         Accidental acc = new Accidental();
-                        acc.setValue(AccidentalValue.fromValue(Helper.accidString2word(accid)));
+                        acc.setValue(AccidentalValue.fromValue(Helper.meiAccid2MusicxmlAccid(accid)));
                         n.setAccidental(acc);
                     }
                 }
@@ -3158,7 +3158,7 @@ public class Mei2MusicXmlConverter {
         //Set Duration and NoteType
         //If the note has no duration attribute itself, find the next parent with duration
         //can be chord, bTrem, fTrem, trem,
-        Element closestWithDuration = Helper.getClosestParentByAttr("dur", e);
+        Element closestWithDuration = Helper.getClosestParentByAttribute("dur", e);
         Element elementWithDuration = (e.getAttributeValue("dur") == null ||
                 e.getAttributeValue("dur").isEmpty()) &&
                 closestWithDuration != null ?
@@ -3174,7 +3174,7 @@ public class Mei2MusicXmlConverter {
         }
         if(durAttr != null){
             NoteType nt = new NoteType();
-            nt.setValue(Helper.duration2word(durAttr));
+            nt.setValue(Helper.meiDuration2MusicxmlDuration(durAttr));
             n.setType(nt);
         }
         if(dotAttr != null && !dotAttr.isEmpty()){
@@ -3399,7 +3399,7 @@ public class Mei2MusicXmlConverter {
                 if(durString.matches(".*\\d.*")){
                     dur = Double.parseDouble(durString);
                 }else{
-                    dur = Helper.duration2decimal(durString);
+                    dur = Helper.meiDuration2decimal(durString);
                     if (dur == 2.0) {
                         dur = 0.5;
                     } else if (dur == 4.0) {
@@ -3450,19 +3450,17 @@ public class Mei2MusicXmlConverter {
         if(dType.isFull()) return dType;
         // next: try measure
         if(targetElement.getLocalName().equals("measure")){ // can there be a case where a scoreDef appears after <measure> Element?
-            List<Element> scoreDefs = Helper.getAllPreviousSiblingElements("scoreDef", targetElement); // go through all previous scoreDefs (maybe multiple per section)
-            Element staff = Helper.getPreviousSiblingElement("staff", targetElement);
             Element prevMeasure = Helper.getPreviousSiblingElement("measure", targetElement);
             List<Element> staffDefCandidates = Helper.getAllPreviousSiblingElements("staffDef", targetElement);
             Element staffDefCandidate = null;
             for(Element sdc : staffDefCandidates){ // staffDefCandidate must be last staffDef for given staff
                 String sdcN = sdc.getAttributeValue("n");
-                if(sdcN != null && staffN.equals(sdcN)){
+                if(staffN.equals(sdcN)){
                     staffDefCandidate = sdc;
                     break; //
                 }
             }
-            Element measureParent = Helper.getParentElement(targetElement);
+//            Element measureParent = Helper.getParentElement(targetElement);
             //Get Staffdef information, if staffDef is just before targetElement (= after previous measure).
             // Calling "getPreviousSiblingElement(ofThis)" does not work, since there are arbitrary text nodes in the tree.
             if(prevMeasure != null && staffDefCandidate != null
@@ -3471,8 +3469,9 @@ public class Mei2MusicXmlConverter {
                 this.setStaffDefOrLayerDefToDtype(dType, staffDefCandidate);
             }
 
-            if(staffN != null && !staffN.isEmpty()){
+            if(!staffN.isEmpty()){
                 //find staffGrp with fitting staffDef
+                List<Element> scoreDefs = Helper.getAllPreviousSiblingElements("scoreDef", targetElement); // go through all previous scoreDefs (maybe multiple per section)
                 for(Element scoreDef : scoreDefs){
                     Element staffDef = this.findStaffDefInScoreDef(staffN, scoreDef);
                     if(staffDef != null) {
@@ -3482,18 +3481,21 @@ public class Mei2MusicXmlConverter {
                 }
 
 
-            }else if(staff != null) { // there can also be a staff in the section!
-                Element staffDef = Helper.getFirstChildElement("staffDef", staff);
-                if(staffDef != null){
-                    this.setStaffDefOrLayerDefToDtype(dType, staffDef);
-                }else {
-                    this.setStaffDefOrLayerDefToDtype(dType, staff);
+            } else {
+                Element staff = Helper.getPreviousSiblingElement("staff", targetElement);
+                if(staff != null) { // there can also be a staff in the section!
+                    Element staffDef = Helper.getFirstChildElement("staffDef", staff);
+                    if(staffDef != null){
+                        this.setStaffDefOrLayerDefToDtype(dType, staffDef);
+                    }else {
+                        this.setStaffDefOrLayerDefToDtype(dType, staff);
+                    }
                 }
             }
             targetElement = Helper.getParentElement(targetElement);
         }
 
-        if(dType.isFull()) return dType;
+        if (dType.isFull()) return dType;
         // next: try section (also loop through nested upwards)
         do {
             if (targetElement.getLocalName().equals("section")) {
@@ -3514,13 +3516,13 @@ public class Mei2MusicXmlConverter {
                         Element staffDefCandidate = null;
                         for (Element sdc : staffDefCandidates) { // staffDefCandidate must be last staffDef for given staff
                             String sdcN = sdc.getAttributeValue("n");
-                            if (sdcN != null && staffN.equals(sdcN)) {
+                            if (staffN.equals(sdcN)) {
                                 staffDefCandidate = sdc;
                                 break; //
                             }
                         }
 
-                        //Get Staffdef information, if staffDef is just before targetElement (= after previous measure).
+                        // Get Staffdef information, if staffDef is just before targetElement (= after previous measure).
                         // Calling "getPreviousSiblingElement(ofThis)" does not work, since there can be arbitrary text nodes in the tree.
                         if (prevMeasure != null && staffDefCandidate != null) {
                             this.setStaffDefOrLayerDefToDtype(dType, staffDefCandidate);
@@ -3528,7 +3530,7 @@ public class Mei2MusicXmlConverter {
                     }
                 }
 
-                if (staffN != null && !staffN.isEmpty()) {
+                if (!staffN.isEmpty()) {
                     //find staffGrp with fitting staffDef
                     for (Element scoreDef : scoreDefs) {
                         Element staffDef = this.findStaffDefInScoreDef(staffN, scoreDef);
@@ -3644,7 +3646,7 @@ public class Mei2MusicXmlConverter {
         if(durVal.matches(".*\\d.*")){
             duration = Double.parseDouble(durVal);
         }else{
-            duration = Helper.duration2decimal(durVal);
+            duration = Helper.meiDuration2decimal(durVal);
             if (duration == 2.0) {
                 duration = 0.5;
             } else if (duration == 4.0) {

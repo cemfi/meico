@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.11.7
+- Several bugfixes and optimizations in class `meico.mei.Helper`.
+- Fixed potential bug in `meico.supplementary.RandomNumberProvider.setSeed()`.
+
+
 #### v0.11.6
 - New method `meico.msm.Msm.fitMidiPitches()` added.
 - Added several value range checks in class `meico.midi.EventMaker` for better stability in case of invalid MIDI data.
