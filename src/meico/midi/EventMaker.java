@@ -398,8 +398,8 @@ public class EventMaker {
 
         if (vel < 0)
             vel = 0;
-        else if (vel > 15)
-            vel = 15;
+        else if (vel > 127)
+            vel = 127;
 
         while (pitch > 127)
             pitch -= 12;
@@ -435,8 +435,8 @@ public class EventMaker {
 
         if (vel < 0)
             vel = 0;
-        else if (vel > 15)
-            vel = 15;
+        else if (vel > 127)
+            vel = 127;
 
         while (pitch > 127)
             pitch -= 12;

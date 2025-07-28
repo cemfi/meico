@@ -172,7 +172,7 @@ public class Midi {
 
     /**
      * Append the provided Midi to this. Differing PPQ will be adapted.
-     * @param midi the Midi whose sequence should be appended
+     * @param midi the Midi of which the sequence should be appended
      */
     public void append(Midi midi) {
         if ((midi == null) || midi.isEmpty())

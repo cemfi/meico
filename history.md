@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.11.8
+- Fixed wrong value range checks in methods `meico.midi.createNoteOn()` and `meico.midi.createNoteOff()`.
+
+
 #### v0.11.7
 - Several bugfixes and optimizations in class `meico.mei.Helper`.
 - Fixed potential bug in `meico.supplementary.RandomNumberProvider.setSeed()`.
