@@ -427,7 +427,7 @@ public class Mei extends meico.xml.XmlBase {
         double dur = 4.0;                                                       // initial value is "long"
         for (int i = durs.size()-1; i >= 0; --i) {
             double d = (((Element) durs.get(i)).getAttribute("dur") != null) ? Helper.meiDuration2decimal(((Element) durs.get(i)).getAttributeValue("dur")) : 4.0;  // get the dur value
-            int dots = (((Element)durs.get(i)).getAttribute("dots") != null) ? Integer.parseInt(((Element)durs.get(i)).getAttributeValue("dots")) : 0;          // dotted values require the prcision to be doubled
+            int dots = (((Element)durs.get(i)).getAttribute("dots") != null) ? Integer.parseInt(((Element)durs.get(i)).getAttributeValue("dots")) : 0;          // dotted values require the precision to be doubled
             for (; dots > 0; --dots)                                            // for each dot; variable d holds what has to be added to the dur value
                 d /= 2;                                                         // half d
             if (dur > d) dur = d;

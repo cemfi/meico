@@ -622,6 +622,42 @@ public class Helper {
     }
 
     /**
+     * generate an HTML Unicode string with the note/rest value and dots according to the specified duration
+     * @param duration
+     * @param isRest
+     * @return
+     */
+    public static String decimalDuration2Utf16SurrogatePair(double duration, boolean isRest) {
+        if (duration < 0.0078125)
+            return isRest ? "rest" : "note";
+        if (duration < 0.015625)
+            return (isRest ? "\uD834\uDD42" : "\uD834\uDD64") + durationRemainder2UnicodeDots(0.0078125, duration - 0.0078125);
+        if (duration < 0.03125)
+            return (isRest ? "\uD834\uDD41" : "\uD834\uDD63") + durationRemainder2UnicodeDots(0.015625, duration - 0.015625);
+        if (duration < 0.0625)
+            return (isRest ? "\uD834\uDD40" : "\uD834\uDD62") + durationRemainder2UnicodeDots(0.03125, duration - 0.03125);
+        if (duration < 0.125)
+            return (isRest ? "\uD834\uDD3F" : "\uD834\uDD61") + durationRemainder2UnicodeDots(0.0625, duration - 0.0625);
+        if (duration < 0.25)
+            return (isRest ? "\uD834\uDD3E" : "\uD834\uDD60") + durationRemainder2UnicodeDots(0.125, duration - 0.125);
+        if (duration < 0.5)
+            return (isRest ? "\uD834\uDD3D" : "\uD834\uDD5F") + durationRemainder2UnicodeDots(0.25, duration - 0.25);
+        if (duration < 1.0)
+            return (isRest ? "\uD834\uDD3C" : "\uD834\uDD5E") + durationRemainder2UnicodeDots(0.5, duration - 0.5);
+        if (duration < 2.0)
+            return (isRest ? "\uD834\uDD3B" : "\uD834\uDD5D") + durationRemainder2UnicodeDots(1.0, duration - 1.0);
+        if (duration < 4.0)
+            return (isRest ? "2 \uD834\uDD3A" : "\uD834\uDD5C") + durationRemainder2UnicodeDots(2.0, duration - 2.0);
+        if (duration < 8.0)
+            return (isRest ? "4 \uD834\uDD3A" : "\uD834\uDDB7") + durationRemainder2UnicodeDots(4.0, duration - 4.0);
+        if (duration == 8.0)
+            return (isRest ? "8 \uD834\uDD3A" : "\uD834\uDDB6");
+        else
+            return isRest ? "rest" : "note";
+    }
+
+
+    /**
      * This is a helper method for decimalDuration2HtmlUnicode().
      * From a decimal duration value, take the undotted note value and the remainder. This method computes the number of dots and
      * @param undottedNoteValue

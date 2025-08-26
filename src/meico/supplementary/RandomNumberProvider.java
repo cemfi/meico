@@ -162,7 +162,8 @@ public class RandomNumberProvider {
      */
     public void setSeed(long seed) {
         this.random.setSeed(seed);
-        this.setInitialValue(this.series.get(this.series.size() - 1));
+        if (!this.series.isEmpty())
+            this.setInitialValue(this.series.get(this.series.size() - 1));
     }
 
     /**

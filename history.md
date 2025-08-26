@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.11.9
+- Added method `meico.mei.decimalDuration2Utf16SurrogatePair()` as an alternative to get musical symbols.
+- Bugfix in `meico.supplementary.RandomNumberProvider.setSeed()`.
+
+
 #### v0.11.8
 - Fixed wrong value range checks in methods `meico.midi.createNoteOn()` and `meico.midi.createNoteOff()`.
 
