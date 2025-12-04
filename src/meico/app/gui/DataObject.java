@@ -467,7 +467,7 @@ class DataObject extends Group {
         Group menu = new Group();
 
         if (this.data instanceof Mei) {
-            String[] leftItems = {"Show", "Validate", "Add IDs", "Fix duplicate IDs", "Resolve copyof/sameas", "Resolve Expansions", "Reload", "Save", "Save As", "Close"};
+            String[] leftItems = {"Show", "Validate", "Add IDs", "Fix duplicate IDs", "Resolve copyof/sameas", "Resolve Expansions", "Split up multi-layer staffs", "Reload", "Save", "Save As", "Close"};
             outerRadius = innerRadius + this.computeVisualLengthOfLongestString(leftItems);
             for (int i = 0; i < leftItems.length; ++i) {
                 Group item = this.makeMenuItem(leftItems[i], 180 + (((float)(leftItems.length - 1) * itemHeight) / 2) - (i * itemHeight), itemHeight, innerRadius, outerRadius);
@@ -840,6 +840,17 @@ class DataObject extends Group {
                             RotateTransition ani = this.startComputeAnimation();
                             ((Mei)this.getData()).resolveExpansions();
                             this.getWorkspace().getApp().getStatuspanel().setMessage("Resolving expansions: done.");
+                            this.stopComputeAnimation(ani);
+                        });
+                        this.start(thread);
+                    });
+                    break;
+                case "Split up multi-layer staffs":
+                    this.menuItemInteractionGeneric(item, label, body, (MouseEvent mouseEvent) -> {
+                        Thread thread = new Thread(() -> {
+                            RotateTransition ani = this.startComputeAnimation();
+                            ((Mei)this.getData()).layersToStaffs();
+                            this.getWorkspace().getApp().getStatuspanel().setMessage("Converting multi-layer staffs to single-layer staffs: done.");
                             this.stopComputeAnimation(ani);
                         });
                         this.start(thread);
