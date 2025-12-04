@@ -1,6 +1,11 @@
 ### Version History
 
 
+#### v0.11.10
+- Made classes `meico.xml.XmlBase` and all its derived classes clonable.
+- Added method `meico.mei.layersToStaffs()`. This method allows converting MEI staffs with multiple layers into a single staff per layer. The method takes attribute `n` into account to generate a reasonable order of `staffDef` elements that replace the original ones.
+
+
 #### v0.11.9
 - Added method `meico.mei.decimalDuration2Utf16SurrogatePair()` as an alternative to get musical symbols.
 - Bugfix in `meico.supplementary.RandomNumberProvider.setSeed()`.

@@ -20,7 +20,7 @@ import java.util.UUID;
  * @author Axel Berndt
  */
 
-public class XmlBase {
+public class XmlBase implements Cloneable {
 
     protected File file = null;             // the data file
     protected Document data = null;         // the xom Document representation of the XML data
@@ -461,8 +461,21 @@ public class XmlBase {
             duplicates += (duplicate ? 1 : 0);
         }
 
-        System.out.println(duplicates);
+        System.out.println("Duplicate IDs found and fixed: " + duplicates);
 
         return duplicates;
+    }
+
+    /**
+     * create a clone of this object
+     * @return
+     */
+    @Override
+    public XmlBase clone() {
+        XmlBase clone = new XmlBase();
+        clone.data = this.data.copy();
+        clone.file = this.file;
+        clone.isValid = this.isValid;
+        return clone;
     }
 }

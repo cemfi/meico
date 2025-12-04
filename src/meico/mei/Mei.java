@@ -1,5 +1,6 @@
 package meico.mei;
 
+import javafx.collections.transformation.SortedList;
 import meico.mpm.Mpm;
 import meico.msm.Msm;
 import meico.musicxml.MusicXml;
@@ -20,7 +21,7 @@ import java.util.*;
  * @author Axel Berndt.
  */
 
-public class Mei extends meico.xml.XmlBase {
+public class Mei extends meico.xml.XmlBase implements Cloneable {
     /**
      * a default constructor that creates an empty Mei instance
      */
@@ -103,7 +104,7 @@ public class Mei extends meico.xml.XmlBase {
         super(inputStream, validate, schema);
     }
 
-    /** 
+    /**
      * writes the mei document to a ...-meico.mei file at the same location as the original mei file; this method is mainly relevant for debug output after calling exportMsm()
      * @return true if success, false if an error occured
      */
@@ -734,6 +735,100 @@ public class Mei extends meico.xml.XmlBase {
     }
 
     /**
+     * This method separates staffs with multiple layers into staffs with one layer each. This alters the MEI data.
+     * If the application needs to keep the original MEI as well, clone it first before invoking this method!
+     */
+    public void layersToStaffs() {
+        ArrayList<Element> mdivs = this.getAllMdivs();
+        for (Element mdiv : mdivs) {        // each mdiv has to be processed individually
+            Element score = Helper.getFirstChildElement("score", mdiv);
+            if (score == null)
+                continue;
+
+            HashMap<String, Element> origStaffDefs = new HashMap<>();
+            Element scoreDef = Helper.getFirstChildElement("scoreDef", score);
+            if (scoreDef == null) {
+                scoreDef = new Element("scoreDef", this.getRootElement().getNamespaceURI());    // add <staffDef> elements here; if it is not empty at the end, add it to <score>
+            } else {
+                Nodes staffDefs = scoreDef.query("descendant::*[local-name()='staffDef']");
+                for (Node staffDef : staffDefs) {
+                    Attribute n = ((Element) staffDef).getAttribute("n");
+                    if (n != null)
+                        origStaffDefs.put(n.getValue(), (Element) staffDef);
+                }
+            }
+
+            HashMap<String, String> newStaffOrigStaff = new HashMap<>();                // store for each new staff number, what was the original staff number, so we can generate new staffDefs with the correct original contents
+
+            Nodes staffsOriginal = score.query("descendant::*[local-name()='staff' or local-name()='oStaff']");
+            for (Node staffNode : staffsOriginal) {                                             // in each staff or oStaff element
+                Element staff = (Element) staffNode;
+                Element staffContainer = (Element) staff.getParent();
+
+                // get the staff's @n for naming the newly generated staffs
+                Attribute nStaff = staff.getAttribute("n");                             // get the staff's @n; needed for naming the newly generated staffs
+                String staffN = (nStaff != null) ? nStaff.getValue() : "1000000";       // if the staff has no @n, generate a default one
+
+                // process the layers, generate new staffs and move the layers there
+                Nodes layers = staff.query("descendant::*[local-name()='layer']");
+                for (int l = 0; l < layers.size(); ++l) {                               // for each layer
+                    Element layer = (Element) layers.get(l);                            // get it as Eleement
+                    Attribute nLayer = layer.getAttribute("n");                         // get its @n
+                    String layerN = (nLayer != null) ? nLayer.getValue() : String.valueOf(l * 1000000); // if the layer has no @n, generate a default one
+
+                    String newStaffN = staffN.concat(layerN);                           // generate the new n value for the new staff
+                    newStaffOrigStaff.put(newStaffN, staffN);                           // store the mapping, so we can generate correct staffDefs later on
+
+                    layer.detach();                                                     // remove layer from its original staff
+                    layer.addAttribute(new Attribute("n", "1"));                    // this staff contains only one layer, hence we give the layer number 1
+                    Element newStaff = new Element("staff", this.getRootElement().getNamespaceURI());   // create a new staff element
+                    newStaff.addAttribute(new Attribute("n", newStaffN));               // give it an @n
+                    newStaff.appendChild(layer);                                        // add the layer to it
+                    staffContainer.appendChild(newStaff);                                 // add the new staff to the staff container
+                }
+
+                staff.detach();                                                         // remove the original staff from its parent, we just replaced it by the newly generated staffs
+            }
+
+            // generate new staffDefs in scoreDef, delete the original ones
+            TreeMap<Integer, KeyValue<Element, Element>> newStaffDefs = new TreeMap<>();    // (@n, (newStaffDef, container))
+            for (Map.Entry<String, String> newAndOrigStaffN : newStaffOrigStaff.entrySet()) {
+                Element origStaffDef = origStaffDefs.get(newAndOrigStaffN.getValue());  // get the original staffDef
+                Element container;                                                      // this will hold the parent of the original staffDef, so we can hang the related new staffDefs in here
+                Element newStaffDef;
+                if (origStaffDef != null) {                                             // if we have an original staffDef that the new one is related to
+                    newStaffDef = origStaffDef.copy();                                  // create a deep copy of it
+                    container = (Element) origStaffDef.getParent();
+                } else {
+                    newStaffDef = new Element("staffDef", this.getRootElement().getNamespaceURI());
+                    container = scoreDef;
+                }
+                Attribute n = new Attribute("n", newAndOrigStaffN.getKey());
+                newStaffDef.addAttribute(n);                                            // set the new value for @n
+
+                Integer staffN = Integer.parseInt(n.getValue());
+                KeyValue<Element, Element> kv = new KeyValue<>(newStaffDef, container);
+                newStaffDefs.put(staffN, kv);                                           // we cannot add the new staffDef here, because we have to ensure the correct sequence according to @n
+            }
+
+            // add the new staffDef to the MEI
+            newStaffDefs.values().forEach(kv -> kv.getValue().appendChild(kv.getKey()));
+
+            // remove all original staffDefs from the tree
+            for (Map.Entry<String, Element> origStaffDef : origStaffDefs.entrySet()) {
+                origStaffDef.getValue().detach();
+            }
+
+            // if we had to generate a new scoreDef, and it is not empty (i.e., we added staffDefs), add it to the score
+            if ((scoreDef.getParent() == null) && (scoreDef.getChildCount() > 0)) {
+                score.appendChild(scoreDef);
+            }
+        }
+
+        this.fixDuplicateIds();
+    }
+
+    /**
      * returns the layer element in the mei tree of ofThis
      * @param ofThis
      * @return the layer element or null if ofThis is not in a layer
@@ -788,5 +883,4 @@ public class Mei extends meico.xml.XmlBase {
             return staff.getAttributeValue("n");                        // return its string
         return "";                                                      // no def or n attribute, hence, return empty string
     }
-
 }
