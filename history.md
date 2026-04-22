@@ -1,6 +1,12 @@
 ### Version History
 
 
+#### v0.11.12
+- Added new method `meico.mei.Helper.haveSameParent()` to check whether the provided XML nodes have the same parent.
+- Added support for MEI's `data.DURATION.mensural` duration values. However, they are always interpreted in a dyadic meter, not triadic!
+- Enhancement of method `meico.mei.Mei.layersToStaffs()` to ensure that the sequence of elements within a `measure` does not get mixed up.
+
+
 #### v0.11.11
 - Slight enhancement in method `meico.msm.Msm.convertPPQ()`.
 - New method `compareFlatElements()` in class `meico.mei.Helper` that compares two `Element` objects for equal `local-name` and attributes, but not for possible child elements.
@@ -11,6 +17,7 @@
 - Class `meico.xml.AbstractXmlSubtree` got an implementation of method `equals()` that compares two XML trees via string comparison on the basis of canonicalized XML code.
   - Specialized overrides of the aforementioned method `equals()` are provided in classes `meico.mpm.elements.styles.GenericStyle` and `meico.mpm.elements.styles.defs.AbstractDef`.
 - New methods `clone()` have been implemented for all `...Def` classes.
+
 
 #### v0.11.10
 - Made classes `meico.xml.XmlBase` and all its derived classes clonable.

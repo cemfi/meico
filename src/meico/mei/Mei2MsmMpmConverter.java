@@ -3862,6 +3862,7 @@ public class Mei2MsmMpmConverter {
     /**
      * compute midi tick duration of a note or rest, if fail return 0.0;
      * the stuff from data.DURATION.gestural is not supported! Because we need pure note values here.
+     * The data.DURATION.mensural literals are resolved into dyads, not triads!
      * @param ofThis
      * @return
      */
@@ -3921,9 +3922,25 @@ public class Mei2MsmMpmConverter {
             }
 
             switch (sdur) {
-                case "breve":  dur = 8.0 * this.ppq;  break;
-                case "long":   dur = 16.0 * this.ppq; break;
-                default:       dur = (4.0 * this.ppq) / Integer.parseInt(sdur);         // compute midi tick duration
+                case "semifusa":    dur = 0.25 * this.ppq;  break;
+                case "fusa":        dur = 0.5 * this.ppq;  break;
+                case "semiminima":  dur = 1.0 * this.ppq;  break;
+                case "minima":      dur = 2.0 * this.ppq;  break;
+                case "semibrevis":  dur = 4.0 * this.ppq;  break;
+                case "breve":
+                case "brevis":      dur = 8.0 * this.ppq;  break;
+                case "long":
+                case "longa":       dur = 16.0 * this.ppq; break;
+                case "maxima":      dur = 32.0 * this.ppq; break;
+                default: {
+                    try {
+                        int numericDuration = Integer.parseInt(sdur);
+                        dur = (4.0 * this.ppq) / numericDuration;       // compute midi tick duration
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid duration: " + sdur + " defaults to 1/4.");
+                        dur = (4.0 * this.ppq) / 4;;
+                    }
+                }
             }
         }
 

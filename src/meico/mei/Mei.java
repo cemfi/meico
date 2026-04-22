@@ -763,6 +763,7 @@ public class Mei extends meico.xml.XmlBase implements Cloneable {
             for (Node staffNode : staffsOriginal) {                                             // in each staff or oStaff element
                 Element staff = (Element) staffNode;
                 Element staffContainer = (Element) staff.getParent();
+                int index = staffContainer.indexOf(staff);
 
                 // get the staff's @n for naming the newly generated staffs
                 Attribute nStaff = staff.getAttribute("n");                             // get the staff's @n; needed for naming the newly generated staffs
@@ -783,7 +784,8 @@ public class Mei extends meico.xml.XmlBase implements Cloneable {
                     Element newStaff = new Element("staff", this.getRootElement().getNamespaceURI());   // create a new staff element
                     newStaff.addAttribute(new Attribute("n", newStaffN));               // give it an @n
                     newStaff.appendChild(layer);                                        // add the layer to it
-                    staffContainer.appendChild(newStaff);                                 // add the new staff to the staff container
+//                    staffContainer.appendChild(newStaff);                                 // add the new staff to the staff container
+                    staffContainer.insertChild(newStaff, ++index);                      // insert the new staffs at the position directly behind the original staff
                 }
 
                 staff.detach();                                                         // remove the original staff from its parent, we just replaced it by the newly generated staffs

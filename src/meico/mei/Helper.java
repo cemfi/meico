@@ -276,6 +276,25 @@ public class Helper {
     }
 
     /**
+     * check if all provided nodes have the same parent
+     * @param nodes
+     * @return
+     */
+    public static boolean haveSameParent(Nodes nodes) {
+        if (nodes == null)
+            return false;
+        if (nodes.size() < 2)
+            return true;
+
+        ParentNode parent = nodes.get(0).getParent();
+        for (int i = 1; i < nodes.size(); ++i) {
+            if (parent != nodes.get(i).getParent())
+                return false;
+        }
+        return true;
+    }
+
+    /**
      * make a comparison of two elements; ignore their child elements
      * @param a
      * @param b

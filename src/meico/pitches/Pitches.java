@@ -15,8 +15,8 @@ import java.util.ArrayList;
 
 public class Pitches {
     private File file = null;
-    private ArrayList<FeatureVector> features;      // the timeframe-wise list of pitch features
-    private meico.pitches.Key key;                  // the reference key for the pitch features
+    private final ArrayList<FeatureVector> features;      // the timeframe-wise list of pitch features
+    private final meico.pitches.Key key;                  // the reference key for the pitch features
 
     /**
      * default constructor
@@ -218,7 +218,7 @@ public class Pitches {
     }
 
     /**
-     * returns the jason string in its compact form (pretty print = false)
+     * returns the json string in its compact form (pretty print = false)
      * @return
      */
     public String getAsString() {
