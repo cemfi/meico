@@ -428,7 +428,7 @@ public class Mei2MsmMpmConverter {
                     break;
 
                 case "oLayer":                                                  // layer that contains an alternative to material in another layer
-                    this.processLayer(e);
+                    this.processOLayer(e);
                     continue;
 
                 case "orig":                                                    // contains material which is marked as following the original, rather than being normalized or corrected
