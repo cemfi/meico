@@ -267,13 +267,16 @@ Attribute `staff` can be used to associate the octave instruction with one or mo
 For computing the `date` of the pedal instruction, attributes `tstamp.ges`, `tstamp`, `startid` and `plist` are supported. For the optional end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
 
 #### oLayer
-This element is processed by the same routine as MEI `layer` elements.
+This element is processed by the same routine as MEI `layer` elements. This is an alternative the usual `layer` and should not be processed in addition to that. Hence, meico checks if the parent element `ossia` does contain a corresponding `layer` element with the same value for attribute `n` (if present). If so, meico prefers the `layer` over the `oLayer`.
 
 #### orig
 This element is processed as part of the `choice` environment and also outside of that environment, assuming it is part of an `orig`-`reg` pair.
 
 #### oStaff
-This element is processed by the same routine as MEI `staff` elements.
+This element is processed by the same routine as MEI `staff` elements. This is an alternative the usual `staff` and should not be processed in addition to that. Hence, meico checks if the parent element `ossia` does contain a corresponding `staff` element with the same value for attribute `n` (if present). If so, meico prefers the `staff` over the `oStaff`.
+
+#### ossia
+The contents of this element get processed. See elements `oStaff` and `oLayer` for further details.
 
 #### parts
 There is no special processing routine for this element. Meico just processes its children.
