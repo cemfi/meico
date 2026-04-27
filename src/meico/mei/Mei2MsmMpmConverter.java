@@ -435,10 +435,10 @@ public class Mei2MsmMpmConverter {
                     break;                                                      // when it does not appear in a choice environment as member of an orig-reg pair it has to be processed
 
                 case "ossia":
-                    continue;                                                   // TODO: ignored for the moment but may be included later on
+                    break;                                                      // process its contentws
 
                 case "oStaff":                                                  // staff that holds an alternative passage which may be played instead of the original material
-                    this.processStaff(e);
+                    this.processOStaff(e);
                     continue;
 
                 case "parts":                                                   // just dive into it
@@ -859,9 +859,40 @@ public class Mei2MsmMpmConverter {
         Helper.addToMap(Helper.cloneElement(staffDef), this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // make a flat copy of the element and put it into the global miscMap
 
         // process the child elements
-        this.convert(staffDef);                                     // process the staff's children
+        this.convert(staffDef);                              // process the staff's children
         this.accid.clear();                                  // accidentals are valid within one measure, but not in the succeeding measures, so forget them
         this.currentPart = parentPart;                       // after this staff entry and its children are processed, set currentPart back to the parent staff
+    }
+
+     /**
+     * process an oStaff element
+     * @param oStaff the oStaff element
+     */
+    private void processOStaff(Element oStaff) {
+        if (oStaff == null)
+            return;
+
+        // if the ossia has a staff element with the same @n, it is preferred
+        Attribute on = Helper.getAttribute("n", oStaff);
+        Element ossia = (Element) oStaff.getParent();
+        if (ossia == null)
+            return;
+
+        LinkedList<Element> staffs = Helper.getAllChildElements("staff", ossia);
+        for (Element staff : staffs) {
+            Attribute n = Helper.getAttribute("n", staff);
+            if (on == null) {
+                if (n == null)
+                    return;
+                continue;
+            }
+
+            // on != null
+            if (n.getValue().equals(on.getValue()))     // we have a staff with the same @n
+                return;                                 // so we prefer it
+        }
+
+        this.processStaff(oStaff);
     }
 
     /** process an mei staff element
@@ -917,6 +948,37 @@ public class Mei2MsmMpmConverter {
         }
 
         Helper.addToMap(Helper.cloneElement(layerDef), this.currentPart.getFirstChildElement("dated").getFirstChildElement("miscMap"));  // otherwise make a flat copy of the element and put it into the local miscMap
+    }
+
+    /**
+     * process an oLayer element
+     * @param oLayer the oLayer element
+     */
+    private void processOLayer(Element oLayer) {
+        if (oLayer == null)
+            return;
+
+        // if the ossia has a staff element with the same @n, it is preferred
+        Attribute on = Helper.getAttribute("n", oLayer);
+        Element ossia = (Element) oLayer.getParent();
+        if (ossia == null)
+            return;
+
+        LinkedList<Element> layers = Helper.getAllChildElements("layer", ossia);
+        for (Element layer : layers) {
+            Attribute n = Helper.getAttribute("n", layer);
+            if (on == null) {
+                if (n == null)
+                    return;
+                continue;
+            }
+
+            // on != null
+            if (n.getValue().equals(on.getValue()))     // we have a layer with the same @n
+                return;                                 // so we prefer it
+        }
+
+        this.processLayer(oLayer);
     }
 
     /**

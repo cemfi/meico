@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.11.13
+- Expanded handling of MEI elements `oStaff` and `oLayer`. Element `ossia` will now be processed
+
+
 #### v0.11.12
 - Added new method `meico.mei.Helper.haveSameParent()` to check whether the provided XML nodes have the same parent.
 - Added support for MEI's `data.DURATION.mensural` duration values. However, they are always interpreted in a dyadic meter, not triadic!
