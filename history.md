@@ -2,7 +2,7 @@
 
 
 #### v0.11.13
-- Expanded handling of MEI elements `oStaff` and `oLayer`. Element `ossia` will now be processed
+- Expanded handling of MEI elements `oStaff` and `oLayer`. Element `ossia` will now be processed.
 
 
 #### v0.11.12
