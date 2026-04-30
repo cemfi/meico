@@ -248,7 +248,8 @@ public class GenericStyle<E extends AbstractDef> extends AbstractXmlSubtree {
             return false;
 
         for (AbstractDef def : this.defs.values()) {
-            if (!other.getDef(def.getName()).equals(def))
+            AbstractDef otherDef = other.getDef(def.getName());
+            if ((otherDef == null) || !otherDef.equals(def))
                 return false;
         }
         return true;

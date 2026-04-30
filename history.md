@@ -3,6 +3,7 @@
 
 #### v0.11.13
 - Expanded handling of MEI elements `oStaff` and `oLayer`. Element `ossia` will now be processed.
+- Bugfix in method `meico.mpm.elements.styles.GenericStyle.equals()`.
 
 
 #### v0.11.12
