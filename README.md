@@ -6,7 +6,7 @@
 
 Author: [Axel Berndt](https://github.com/axelberndt) ([Paderborn University](https://www.muwi-detmold-paderborn.de/personen/professorinnen-und-professoren/prof-dr-ing-axel-berndt), Detmold)<br>
 MEI support: [Benjamin W. Bohl](https://github.com/bwbohl), [Johannes Kepper](https://github.com/kepper)<br>
-Contributor: [Matthias Nowakowski](https://github.com/mnowakow), [Simon Waloschek](https://github.com/sonovice)<br>
+Contributor: [Matthias Nowakowski](https://github.com/mnowakow), [Simon Waloschek](https://github.com/sonovice), [Lars Engeln](https://github.com/larsengeln)<br>
 
 #### Java Compatibility
 - meico ![Java compatibility 1.8+](https://img.shields.io/badge/java-1.8%2B-blue.svg)
@@ -45,30 +45,32 @@ The command line mode expects the following command line options:
 
 Usage: `java -jar meicoApp.jar [OPTIONS] FILE`
 
-| Option                            | Description                                                                                                                         |
-|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| `-?`, `--help`                    | show this help text                                                                                                                 |
-| `-v FILE`, `--validate FILE`      | validate loaded MEI file against given schema (e.g. `C:\mei-CMN.rng`)                                                               |
-| `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                              |
-| `-u`, `--fix-duplicate-ids`       | fix duplicate `xml:id`s                                                                                                             |
-| `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` and `sameas` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file |
-| `-n`, `--ignore-repetitions`      | meico automatically expands repetition marks, use this option to prevent this step                                                  |
-| `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                             |
-| `-ex`, `--expressive`             | convert to expressive MIDI                                                                                                          |
+| Option                            | Description                                                                                                                                                |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-?`, `--help`                    | show this help text                                                                                                                                        |
+| `-v FILE`, `--validate FILE`      | validate loaded MEI file against given schema (e.g. `C:\mei-CMN.rng`)                                                                                      |
+| `-a`, `--add-ids`                 | add missing `xml:id`s to note, rest and chord elements in MEI;<br>meico will output a revised MEI file                                                     |
+| `-u`, `--fix-duplicate-ids`       | fix duplicate `xml:id`s                                                                                                                                    |
+| `-r`, `--resolve-copy-ofs`        | resolve elements with `copyof` and `sameas` attributes into selfcontained elements<br>with unique `xml:id`; meico will output a revised MEI file           |
+| `-n`, `--ignore-repetitions`      | meico automatically expands repetition marks, use this option to prevent this step                                                                         |
+| `-e`, `--ignore-expansions`       | expansions in MEI indicate a rearrangement of the source material, use this option to prevent this step                                                    |
+| `-eo`, `--ignore-ornaments`       | ornaments are expanded for having them resolved in MPM, use this option to prevent this step                                                               |
+| `-ex`, `--expressive`             | convert to expressive MIDI                                                                                                                                |
 | `-x FILE argument`, `--xslt FILE argument` | apply an XSL transform `FILE` (e.g. `C:\mei2musicxml.xsl`) to the MEI source and store the result with file extension defined by `argument` (e.g. `"mxl"`) |
-| `-m`, `--msm`                     | convert to MSM                                                                                                                      |
-| `-f`, `--mpm`                     | convert to MPM                                                  |
-| `-o`, `--chroma`                  | convert to chromas                                                                                                                  |
-| `-h`, `--pitches`                 | convert to pitches                                                                                                                  |
-| `-i`, `--midi`                    | convert to MIDI                                                                               |
-| `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                           |
-| `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                        |
-| `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                            |
-| `-w`, `--wav`                     | convert to Wave                                                                                                                     |
-| `-3`, `--mp3`                     | convert to MP3                                                                                                                      |
-| `-q`, `--cqt`                     | convert the audio to CQT spectrogram                                                                                                |
-| `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                     |
-| `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                      |
+| `-m`, `--msm`                     | convert to MSM                                                                                                                                             |
+| `-f`, `--mpm`                     | convert to MPM                                                                                                                                             |
+| `-mx`, `--musicxml`               | convert to MusicXML                                                                                                                                        |
+| `-o`, `--chroma`                  | convert to chromas                                                                                                                                         |
+| `-h`, `--pitches`                 | convert to pitches                                                                                                                                         |
+| `-i`, `--midi`                    | convert to MIDI                                                                                                                                            |
+| `-p`, `--no-program-changes`      | suppress program change events in MIDI, all music will be played by piano                                                                                  |
+| `-c`, `--dont-use-channel-10`     | do not use channel 10 (drum channel) in MIDI                                                                                                               |
+| `-t argument`, `--tempo argument` | set MIDI tempo (bpm), default is 120 bpm                                                                                                                   |
+| `-w`, `--wav`                     | convert to Wave                                                                                                                                            |
+| `-3`, `--mp3`                     | convert to MP3                                                                                                                                             |
+| `-q`, `--cqt`                     | convert the audio to CQT spectrogram                                                                                                                       |
+| `-s FILE`, `--soundbank FILE`     | use a specific sound bank file (.sf2, .dls) for Wave conversion                                                                                            |
+| `-d`, `--debug`                   | write additional debug versions of MEI and MSM                                                                                                             |
 
 
 The final argument should always be a path to a valid MEI file (e.g., `"C:\myMeiCollection\test.mei"`); always in quotes! This is the only mandatory argument if you want to convert something.
@@ -106,5 +108,8 @@ Meico makes use of the following third party libraries:
 - [ProxyMusic](https://github.com/Audiveris/proxymusic) v3.0.1 by Hervé Bitteur, Maxim Poliakovski and Peter Greth, GNU LGPL version 3.0.
 - [SLF4J API](https://www.slf4j.org/) v2.0.7 and [SLF4J Simple](https://www.slf4j.org/) v2.0.7 by QOS.CH Sarl, MIT license.
 
-We publish meico under GNU GPL version 3.0. Meico's development was part of the ZenMEM project funded by the German Federal Ministry of Education and Research (2015-2019, funding code 01UG1414A–C). All MPM-related parts of meico were part of an R&D project that was funded by the [Fritz Thyssen Foundation](https://www.fritz-thyssen-stiftung.de/en/) (2019-2022). The development of MusicXML related functionality was funded by the [German Research Foundation](https://www.dfg.de) as part of the [NFDI4Culture](https://nfdi4culture.de/) action. If you integrate meico or parts of it with your project make sure that you do not conflict with any of the above licenses.
+We publish meico under GNU GPL version 3.0. Meico's development was part of the ZenMEM project funded by the German Federal Ministry of Education and Research (2015-2019, funding code 01UG1414A–C). All MPM-related parts of meico were part of an R&D project that was funded by the [Fritz Thyssen Foundation](https://www.fritz-thyssen-stiftung.de/en/) (2019-2022). 
+The development of MusicXML related functionality was funded by the [German Research Foundation](https://www.dfg.de) as part of the [NFDI4Culture](https://nfdi4culture.de/) action.
+The development of ornament related functionality was funded by the [German Research Foundation](https://www.dfg.de) as part of the [DInt](https://www.uni-paderborn.de/en/projekt/1614) project.
+If you integrate meico or parts of it with your project make sure that you do not conflict with any of the above licenses.
 

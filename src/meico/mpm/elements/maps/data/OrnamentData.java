@@ -2,6 +2,8 @@ package meico.mpm.elements.maps.data;
 
 import meico.mpm.elements.styles.OrnamentationStyle;
 import meico.mpm.elements.styles.defs.OrnamentDef;
+import meico.msm.elements.MsmNoteElement;
+import meico.supplementary.KeyValue;
 import nu.xom.Attribute;
 import nu.xom.Element;
 
@@ -21,9 +23,12 @@ public class OrnamentData {
     public String ornamentDefName = null;
     public OrnamentDef ornamentDef = null;
 
+    public String correspondence = null;
     public double date = 0.0;                       // the date for which the data is assembled
     public double scale = 0.0;
     public ArrayList<String> noteOrder = null;
+    public ArrayList<Element> notes = null;
+    public int repetitions = 0;
 
     /**
      * default constructor
@@ -40,6 +45,10 @@ public class OrnamentData {
         this.date = Double.parseDouble(xml.getAttribute("date").getValue());
         this.ornamentDefName = xml.getAttribute("name.ref").getValue();
 
+        Attribute corresp = xml.getAttribute("noteid");
+        if(corresp != null)
+            this.correspondence = corresp.getValue();
+
         Attribute scale = xml.getAttribute("scale");
         if (scale != null)
             this.scale = Double.parseDouble(scale.getValue());
@@ -53,6 +62,9 @@ public class OrnamentData {
             else
                 this.noteOrder.addAll(Arrays.asList(no.replaceAll("#", "").split("\\s+")));
         }
+
+        this.notes = new ArrayList<>();
+        xml.getChildElements("ornamentNote").forEach(note -> { this.notes.add(note); });
 
         Attribute id = xml.getAttribute("id", "http://www.w3.org/XML/1998/namespace");
         if (id != null)
@@ -68,6 +80,7 @@ public class OrnamentData {
         OrnamentData clone = new OrnamentData();
         clone.xml = (this.xml == null) ? null : this.xml.copy();
         clone.xmlId = this.xmlId;
+        clone.correspondence = this.correspondence;
         clone.styleName = this.styleName;
         clone.style = this.style;
         clone.ornamentDefName = this.ornamentDefName;
@@ -78,6 +91,11 @@ public class OrnamentData {
             clone.noteOrder = new ArrayList<>();
             clone.noteOrder.addAll(this.noteOrder);
         }
+        if (this.notes != null) {
+           clone.notes = new ArrayList<>();
+           clone.notes.addAll(this.notes);
+        }
+        clone.repetitions = this.repetitions;
         return clone;
     }
 
@@ -88,26 +106,35 @@ public class OrnamentData {
      * also return new notes to be added to the chordSequence's underlying map.
      * If notes should be deleted from the performance, they are marked by an according attribute.
      * @param chordSequence the sequence of the chords/notes in which the ornament is applied
-     * @return sequence of chords/notes to be added to the chordSequence's underlying map or null
+     * @return computed spaced start and length (relative in ticks) or null
      */
-    public ArrayList<ArrayList<Element>> apply(ArrayList<ArrayList<Element>> chordSequence) {
-        ArrayList<ArrayList<Element>> chordsToAdd = new ArrayList<>();                      // if new notes are added to the underlying map, these will be collected in this list and returned at the end
+    public KeyValue<Double, Double> apply(ArrayList<ArrayList<Element>> chordSequence) {
+        return apply(chordSequence, null, null, null);
+    }
 
+    /**
+     * Apply the ornament with optional effective frameStart/frameLength overrides.
+     * These overrides are used when multiple ornaments share the same principal note
+     * and their frameLengths need proportional distribution.
+     * @param chordSequence the sequence of the chords/notes in which the ornament is applied
+     * @param effectiveFrameStart if non-null, overrides the ornamentDef's frameStart (in ticks)
+     * @param effectiveFrameLength if non-null, overrides the ornamentDef's frameLength (in ticks)
+     * @param lastNote the last note of the previous chord sequence, used for temporal spread; if null, the temporal spread is applied as if there is no preceding note
+     * @return computed spaced start and length (relative in ticks) or null
+     */
+    public KeyValue<Double, Double> apply(ArrayList<ArrayList<Element>> chordSequence, Double effectiveFrameStart, Double effectiveFrameLength, MsmNoteElement lastNote) {
+        KeyValue<Double, Double> result = null;
         if (this.ornamentDef == null)
-            return chordsToAdd;
+            return result;
 
         ArrayList<ArrayList<Element>> tempChordSequence = new ArrayList<>(chordSequence);   // a note sequence to apply the further transformations
-
-        // TODO: if new notes are generated that might add to or replace the notes in the sequence,
-        //  do this here and forward this incl. the new notes to the dynamicsGradient via tempChordSequence;
-        //  in case of replacement, the notes to be deleted get a corresponding attribute and
 
         if (this.ornamentDef.getDynamicsGradient() != null)
             this.ornamentDef.getDynamicsGradient().apply(tempChordSequence, this.scale);
 
         if (this.ornamentDef.getTemporalSpread() != null)
-            this.ornamentDef.getTemporalSpread().apply(tempChordSequence);
+            result = this.ornamentDef.getTemporalSpread().apply(tempChordSequence, effectiveFrameStart, effectiveFrameLength, lastNote);
 
-        return chordsToAdd;
+        return result;
     }
 }

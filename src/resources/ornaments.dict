@@ -1,0 +1,42 @@
+% This is the ornaments dictionary.
+% It associates diatonic note alterations (one per line) with the ornament "full"name for matching MEI or SMuFL ornaments/symbols (defined in the lines that start with #).
+% The very first line with # is used as display name for the ornament in addition to the matching, and the following lines with # are used as alternative matching names for the same ornament.
+% For SMuFL symbols, either the glyph name can be used directly, or a lowercase space separated version (without "ornament" or "ornamentPrecomp" prefix) of the glyph name can be used.
+% As example, "double cadence lower prefix" can be used as an alternative name for "ornamentPrecompDoubleCadenceLowerPrefix"; see https://w3c.github.io/smufl/latest/tables/precomposed-trills-and-mordents.html .
+% Repetitions (e.g. in trills) are marked with |: (repetition start) and :| (repetition end) in own lines, enclosing the lines that are to be repeated undefined times
+
+%| Example:
+%| % An optional comment, that introduces the following ornament
+%| # displayed name
+%| # alternative name 1
+%| # alternative name 2
+%| 1 0 |: -1 0 :| 1 0
+
+% trill
+# trill
+|: 0 1 :|
+
+% upper turn
+# upper turn
+1 0 -1 0
+
+% lower turn
+# lower turn
+-1 0 1 0
+
+% upper mordent
+# upper mordent
+0 1 0
+
+% lower mordent
+# lower mordent
+0 -1 0
+
+% trill with mordent
+# trill with mordent
+|: 0 1 :| 0 -1 0
+
+% double cadence lower prefix, 2nd line with "ornamentPrecomp.." is not needed for matching, as the first line is already sufficient for resolving (lowercase, space separated version of the SMuFL glyph name)
+# double cadence lower prefix
+# ornamentPrecompDoubleCadenceLowerPrefix
+-1 0 |: 1 0 :|

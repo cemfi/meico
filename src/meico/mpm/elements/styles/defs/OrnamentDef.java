@@ -2,6 +2,9 @@ package meico.mpm.elements.styles.defs;
 
 import meico.mei.Helper;
 import meico.mpm.Mpm;
+import meico.mpm.elements.maps.data.TemporalValue;
+import meico.msm.elements.MsmNoteElement;
+import meico.supplementary.KeyValue;
 import nu.xom.Attribute;
 import nu.xom.Element;
 
@@ -138,13 +141,22 @@ public class OrnamentDef extends AbstractDef {
      * @param intensity
      * @param noteOffShift
      */
-    public void setTemporalSpread(double frameStart, double frameLength, TemporalSpread.FrameDomain frameDomain, double intensity, TemporalSpread.NoteOffShift noteOffShift) {
+    public void setTemporalSpread(double frameStart, double frameLength, TemporalValue.Domain frameDomain, double intensity, TemporalSpread.NoteOffShift noteOffShift) {
+       setTemporalSpread(TemporalValue.create(frameStart, frameDomain), TemporalValue.create(frameLength, frameDomain), intensity, noteOffShift, false);
+    }
+    public void setTemporalSpread(double frameStart, double frameLength, TemporalValue.Domain frameDomain, double intensity, TemporalSpread.NoteOffShift noteOffShift, boolean atEnd) {
+       setTemporalSpread(TemporalValue.create(frameStart, frameDomain), TemporalValue.create(frameLength, frameDomain), intensity, noteOffShift, atEnd);
+    }
+    public void setTemporalSpread(TemporalValue frameStart, TemporalValue frameLength, double intensity, TemporalSpread.NoteOffShift noteOffShift) {
+        setTemporalSpread(frameStart, frameLength, intensity, noteOffShift, false);
+    }
+    public void setTemporalSpread(TemporalValue frameStart, TemporalValue frameLength, double intensity, TemporalSpread.NoteOffShift noteOffShift, boolean atEnd) {
         TemporalSpread temporalSpread = new TemporalSpread();
         temporalSpread.frameStart = frameStart;
-        temporalSpread.setFrameLength(frameLength);
-        temporalSpread.frameDomain = frameDomain;
+        temporalSpread.frameLength = frameLength;
         temporalSpread.intensity = intensity;
         temporalSpread.noteOffShift = noteOffShift;
+        temporalSpread.alignment = atEnd ? "at end" : "at start";
         this.setTemporalSpread(temporalSpread);
     }
 
@@ -195,11 +207,53 @@ public class OrnamentDef extends AbstractDef {
         if (def == null)
             return null;
 
-        switch (name.trim().toLowerCase()) {
+        String shortname = name.trim().toLowerCase();
+
+        switch (shortname) {
             case "arpeg":
             case "arpeggio":
                 def.setDynamicsGradient(-1.0, 1.0);
-                def.setTemporalSpread(-22.0, 44.0, TemporalSpread.FrameDomain.Ticks, 1.0, TemporalSpread.NoteOffShift.False);
+                def.setTemporalSpread(-22.0, 66.0, TemporalValue.Domain.Ticks, 1.0, TemporalSpread.NoteOffShift.False);
+                break;
+            case "mordent":
+            case "upper mordent":
+            case "lower mordent":
+                def.setDynamicsGradient(1.0, -1.0);
+                def.setTemporalSpread(0, 180.0, TemporalValue.Domain.Ticks, 0.9, TemporalSpread.NoteOffShift.Monophonic);
+                break;
+            case "fioritura":
+                def.setDynamicsGradient(1.0, 1.0);
+                def.setTemporalSpread(0, 100, TemporalValue.Domain.Relative,1.0, TemporalSpread.NoteOffShift.Monophonic);
+                break;
+            case "grace unacc":
+                def.setDynamicsGradient(1.0, -1.0);
+                def.setTemporalSpread(-90.0, 90.0, TemporalValue.Domain.Ticks, 1.0, TemporalSpread.NoteOffShift.Monophonic);
+                break;
+            case "grace acc":
+                def.setDynamicsGradient(1.0, -1.0);
+                def.setTemporalSpread(0, 90.0, TemporalValue.Domain.Ticks, 1.0, TemporalSpread.NoteOffShift.Monophonic);
+                break;
+            case "grace acc delayed":
+                def.setDynamicsGradient(1.0, -1.0);
+                def.setTemporalSpread(0, 90.0, TemporalValue.Domain.Ticks, 1.0, TemporalSpread.NoteOffShift.Monophonic, true);
+                break;
+            case "grace unacc delayed":
+                def.setDynamicsGradient(1.0, -1.0);
+                def.setTemporalSpread(0, 90.0, TemporalValue.Domain.Ticks, 1.0, TemporalSpread.NoteOffShift.Monophonic, true);
+                break;
+            case "turn delayed":
+            case "upper turn delayed":
+            case "lower turn delayed":
+                def.setDynamicsGradient(1.0, -1.0);
+                def.setTemporalSpread(0, 50, TemporalValue.Domain.Relative, 1.0, TemporalSpread.NoteOffShift.Monophonic, true);
+                break;
+            case "tremolo":
+                def.setDynamicsGradient(1.0, 0.0);
+                def.setTemporalSpread(0, 100, TemporalValue.Domain.Relative, 1.0f, TemporalSpread.NoteOffShift.Monophonic);
+                break;
+            default:
+                def.setDynamicsGradient(-1.0, 1.0);
+                def.setTemporalSpread(0, 80, TemporalValue.Domain.Relative, 0.9, TemporalSpread.NoteOffShift.Monophonic);
         }
 
         return def;
@@ -210,19 +264,13 @@ public class OrnamentDef extends AbstractDef {
      * @author Axel Berndt
      */
     public static class TemporalSpread {
-        public double frameStart = 0.0;
-        private double frameLength = 0.0;    // must be >= 0.0
-        public FrameDomain frameDomain = FrameDomain.Ticks;
+        public TemporalValue frameStart = TemporalValue.create(0.0, TemporalValue.Domain.Ticks);
+        public TemporalValue frameLength = TemporalValue.create(100.0, TemporalValue.Domain.Relative);    // must be >= 0.0
         public double intensity = 1.0;
         public NoteOffShift noteOffShift = NoteOffShift.False;
+        public String alignment = "at start"; // "at start" (default) or "at end" – controls whether the ornament is anchored at the start or end of the principal note
         private String id = null;
         private Element xml;
-
-        public enum FrameDomain {
-            Ticks,
-            Milliseconds
-//            RelativeToNoteDuration
-        }
 
         public enum NoteOffShift {
             False,
@@ -243,24 +291,32 @@ public class OrnamentDef extends AbstractDef {
             this.xml = xml;
 
             Attribute domain = Helper.getAttribute("time.unit", xml);
-            if (domain == null)
-                this.frameDomain = TemporalSpread.FrameDomain.Ticks;
-            else {
+            frameStart.setDomain(TemporalValue.Domain.Ticks);
+            frameLength.setDomain(TemporalValue.Domain.Ticks);
+
+            if (domain != null) {
                 switch (domain.getValue()) {
                     case "milliseconds":
-                        this.frameDomain = TemporalSpread.FrameDomain.Milliseconds;
+                        frameStart.setDomain(TemporalValue.Domain.Milliseconds);
+                        frameLength.setDomain(TemporalValue.Domain.Milliseconds);
                         break;
-                    // TODO: TemporalSpread.FrameDomain.RelativeToNoteDuration?
+                    case "relative":
+                        frameStart.setDomain(TemporalValue.Domain.Relative);
+                        frameLength.setDomain(TemporalValue.Domain.Relative);
+                        break;
+                    // TODO: TemporalValue.Domain.RelativeToNoteDuration?
                     case "ticks":
                     default:
-//                                this.temporalSpread.frameDomain = TemporalSpread.FrameDomain.Ticks;   // unnecessary because default
-                        break;
+                        // unnecessary because default
                 }
             }
 
-            Attribute start = Helper.getAttribute("frame.start", xml);
+            Attribute start = Helper.getAttribute("frame.offset", xml);
+            if(start == null) {
+                start = Helper.getAttribute("frame.start", xml);
+            }
             if (start != null)
-                this.frameStart = Double.parseDouble(start.getValue());
+                this.frameStart.setValue(start.getValue());
 
             Attribute length = Helper.getAttribute("frameLength", xml);
             if (length != null)
@@ -288,6 +344,10 @@ public class OrnamentDef extends AbstractDef {
             Attribute idAtt = Helper.getAttribute("id", xml);
             if (idAtt != null)
                 this.id = idAtt.getValue();
+
+            Attribute alignmentAtt = Helper.getAttribute("alignment", xml);
+            if (alignmentAtt != null)
+                this.alignment = alignmentAtt.getValue(); // "at start" or "at end"
         }
 
         /**
@@ -295,16 +355,23 @@ public class OrnamentDef extends AbstractDef {
          * @param length must be positive, otherwise it defaults to 0.0
          */
         public void setFrameLength(double length) {
-            this.frameLength = Math.max(0.0, length);
+            this.frameLength.setValue(Math.max(0.0, length));
         }
 
+        public void setFrameLengthDomain(TemporalValue.Domain domain) {
+            this.frameLength.setDomain(domain);
+        }
         /**
          * get the frame length
          * @return
          */
         public double getFrameLength() {
-            return this.frameLength;
+            return this.frameLength.getValue();
         }
+        public TemporalValue.Domain getFrameLengthDomain() {
+            return this.frameLength.getDomain();
+        }
+
 
         /**
          * apply the temporal spread to the chord/note sequence;
@@ -313,37 +380,138 @@ public class OrnamentDef extends AbstractDef {
          * @param chordSequence the sequence of the chords/notes in which the temporal spread is applied
          */
         public void apply(ArrayList<ArrayList<Element>> chordSequence) {
-            if (chordSequence.size() < 1)   // if there is no chord/note or just one
-                return;                     // we don't do anything
-
-            // process all chords/notes except for the final one
-            ArrayList<Element> previous = null;
-            if (chordSequence.size() > 1) {
-                for (int i = 0; i < chordSequence.size() - 1; ++i) {    // for each chord/note until the pre-last
-                    double dateOffset = (Math.pow(((double) i) / (chordSequence.size() - 1), this.intensity) * this.frameLength) + this.frameStart;
-                    previous = this.setOrnamentDateAtts(dateOffset, chordSequence.get(i), previous);
-                }
-            }
-
-            // place the final chord at frameEnd
-            ArrayList<Element> finalchord = chordSequence.get(chordSequence.size() - 1);
-            this.setOrnamentDateAtts(this.frameStart + this.frameLength, finalchord, previous);
+            apply(chordSequence, null, null, null);
         }
 
         /**
+         * apply the temporal spread with optional effective frameStart/frameLength overrides (in ticks).
+         * These overrides are used when multiple ornaments share the same principal note
+         * and their frameLengths need proportional distribution.
+         * @param chordSequence the sequence of the chords/notes in which the temporal spread is applied
+         * @param effectiveFrameStart if non-null, overrides the computed frame start (in ticks)
+         * @param effectiveFrameLength if non-null, overrides the computed frame length (in ticks)
+         * @param lastNote of latest ornament in which we might render into
+         * @return computed spaced start and length (relative in ticks) or null
+         */
+        public KeyValue<Double, Double> apply(ArrayList<ArrayList<Element>> chordSequence, Double effectiveFrameStart, Double effectiveFrameLength, MsmNoteElement lastNote) {
+            if (chordSequence.size() < 1)   // if there is no chord/note or just one
+                return null;     // we don't do anything
+
+            double length = this.frameLength.getValue();
+            double start  = this.frameStart.getValue();
+
+            if(this.frameLength.isRelative() || this.frameStart.isRelative()) {
+                // if the frame length is relative, we have to compute the absolute frame length according to the duration of the chord/note sequence
+                double d = -1.0;
+                for (ArrayList<Element> chord : chordSequence) {
+                    for (Element note : chord) {
+                        d = Double.parseDouble(Helper.getAttributeValue("milliseconds.date.end", note)) - Double.parseDouble(Helper.getAttributeValue("milliseconds.date", note));
+                    }
+                    if(d >= 0.0)
+                        break;
+                }
+                if(this.frameLength.isRelative())
+                    length = (length * 0.01) * d;
+                if(this.frameStart.isRelative())
+                    start = (start * 0.01) * d;
+            }
+
+            // apply effective overrides if provided (from multi-ornament proportional distribution)
+            if (effectiveFrameStart != null)
+                start = effectiveFrameStart;
+            if (effectiveFrameLength != null)
+                length = effectiveFrameLength;
+
+            double spacedStart = start;
+            double spacedLength = length;
+
+            // if atEnd, place the frame at the end of the principal note's duration;
+            // frameStart is treated as an offset, so atEnd with frameStart=0
+            // means the ornament ends exactly at the note's end
+            if (this.isAtEnd() && effectiveFrameStart == null) {
+                double principalDuration = -1.0;
+                for (ArrayList<Element> chord : chordSequence) {
+                    for (Element note : chord) {
+                        Attribute durAtt = Helper.getAttribute("duration", note);
+                        if (durAtt != null) {
+                            principalDuration = Double.parseDouble(durAtt.getValue());
+                            break;
+                        }
+                    }
+                    if (principalDuration >= 0.0)
+                        break;
+                }
+                if (principalDuration >= 0.0)
+                    start = principalDuration - length + start;
+            }
+
+            double lastDateOffset = spacedStart;
+
+            // process all chords/notes; spacing as if there were n+1 positions,
+            // so each note has equal space and the last note still has room to sound until frameEnd
+            ArrayList<Element> previous = null;
+            if(lastNote != null) {
+                previous = new ArrayList<>();
+                previous.add(lastNote.getElement());
+                lastDateOffset = lastNote.getAsDouble("ornament.milliseconds.date.offset");
+            }
+
+
+            for (int i = 0; i < chordSequence.size(); ++i) {
+                boolean removedNote = false;
+                if(i == 0 && lastNote != null) {
+                    // check if we render into an existing note (occurs if another ornament is already applied)
+
+                    for(Element n : chordSequence.get(i)) {
+                        MsmNoteElement note = new MsmNoteElement(n);
+                        if(note.get("midi.pitch").equals(lastNote.get("midi.pitch"))) {
+                            note.removeParent();
+                            removedNote = true;
+                            lastDateOffset = lastNote.getAsDouble("ornament.milliseconds.date.offset");
+                        }
+                    }
+                }
+                double dateOffset = (Math.pow(((double) i) / chordSequence.size(), this.intensity) * length) + start;
+                double lastDuration = dateOffset - lastDateOffset;
+                lastDateOffset = dateOffset;
+
+                if(i == 0) {
+                    spacedStart = dateOffset;
+                }
+
+                previous = this.setOrnamentDateAtts(dateOffset, lastDuration, chordSequence.get(i), previous);
+                if(removedNote) { // expand note up to 2nd if 1st note has been removed
+                    previous = new ArrayList<>();
+                    previous.add(lastNote.getElement());
+                    lastDateOffset = lastNote.getAsDouble("ornament.milliseconds.date.offset");
+                }
+            }
+
+            double lastDuration = spacedStart + spacedLength - lastDateOffset;
+
+            this.setOrnamentDateAtts(lastDateOffset, lastDuration, new ArrayList<Element>(), previous);
+
+            KeyValue<Double, Double> result = new KeyValue<>(spacedStart, spacedLength);
+            return result;
+        }
+
+
+        /**
          * helper method for method apply() to set the ornament attributes on each note:
-         *      - ornament.date.offset or ornament.milliseconds.date.offset (an offset),
-         *      - ornament.duration or ornament.milliseconds.duration (absolute duration),
+         *      - ornament.date.offset, ornament.milliseconds.date.offset, or ornament.relative.date.offset (an offset),
+         *      - ornament.duration, ornament.milliseconds.duration (absolute duration), or ornament.relative.duration)
          *      - ornament.noteoff.shift (true/false)
          * @param dateOffset the offset to the date/milliseconds.date of the chord/notes
+         * @param duration
          * @param chord
          * @param previous the previous chord, so we can treat its duration according to the chords offset, or null
          * @return the chord, if its duration needs treatment along the processing of the next chord (then as previous); otherwise null
          */
-        private ArrayList<Element> setOrnamentDateAtts(double dateOffset, ArrayList<Element> chord, ArrayList<Element> previous) {
+        private ArrayList<Element> setOrnamentDateAtts(double dateOffset, double duration, ArrayList<Element> chord, ArrayList<Element> previous) {
             String dateAttName, durAttName;
-            switch (this.frameDomain) {
+            switch (this.frameStart.getDomain()) {
                 case Ticks:
+                case Relative: // at this moment values are in ticks
                     dateAttName = "ornament.date.offset";
                     durAttName = "ornament.duration";
                     break;
@@ -355,16 +523,30 @@ public class OrnamentDef extends AbstractDef {
                     return null;
             }
 
-            // set the ornament.date.offset or ornament.milliseconds.date.offset, resp.
+            dateAttName = "ornament.milliseconds.date.offset";
+            durAttName = "ornament.milliseconds.duration";
+
+            // set the ornament[.*].date.offset
             for (Element note : chord) {
                 Attribute ornamentDateAtt = Helper.getAttribute(dateAttName, note);
                 if (ornamentDateAtt != null) {
                     ornamentDateAtt.setValue(String.valueOf(dateOffset + Double.parseDouble(ornamentDateAtt.getValue())));
                 } else
                     note.addAttribute(new Attribute(dateAttName, String.valueOf(dateOffset)));
+
+
+                Attribute durationAtt = Helper.getAttribute("duration", note);
+                if(durationAtt == null)
+                    continue;
+                Attribute ornamentDurAtt = Helper.getAttribute(durAttName, note);
+                if (ornamentDurAtt != null) {
+                    ornamentDurAtt.setValue(Helper.getAttributeValue("duration", note));
+                } else
+                    note.addAttribute(new Attribute(durAttName, Helper.getAttributeValue("duration", note)));
+
             }
 
-            // handle the ornament.duration or ornament.milliseconds.duration, resp.
+            // handle the ornament[.*].duration
             switch (this.noteOffShift) {
                 case False:
                     return null;
@@ -380,9 +562,9 @@ public class OrnamentDef extends AbstractDef {
                                 continue;
                             Attribute ornamentDurationAtt = Helper.getAttribute(durAttName, prev);
                             if (ornamentDurationAtt != null)
-                                ornamentDurationAtt.setValue(String.valueOf(dateOffset - Double.parseDouble(prevDateOffsetAtt.getValue())));
+                                ornamentDurationAtt.setValue(String.valueOf(duration));
                             else
-                                prev.addAttribute(new Attribute(durAttName, String.valueOf(dateOffset - Double.parseDouble(prevDateOffsetAtt.getValue()))));
+                                prev.addAttribute(new Attribute(durAttName, String.valueOf(duration)));
                         }
                     }
                     return chord;
@@ -416,20 +598,24 @@ public class OrnamentDef extends AbstractDef {
         public Element generateXML() {
             Element ts = new Element("temporalSpread", Mpm.MPM_NAMESPACE);
 
-            if (this.frameStart != 0.0)
-                ts.addAttribute(new Attribute("frame.start", Double.toString(this.frameStart)));
-            if (this.frameLength != 0.0)
-                ts.addAttribute(new Attribute("frameLength", Double.toString(this.frameLength)));
+            if (this.frameStart.getValue() != 0.0)
+                ts.addAttribute(new Attribute("frame.start", Double.toString(this.frameStart.getValue())));
+            if (this.frameLength.getValue() != 0.0)
+                ts.addAttribute(new Attribute("frameLength", Double.toString(this.frameLength.getValue())));
 
-            switch (this.frameDomain) {
+            switch (this.frameStart.getDomain()) {
                 case Ticks:
                     // not necessary because this is the default value when absent
+                    ts.addAttribute(new Attribute("time.unit", "ticks"));
                     break;
                 case Milliseconds:
                     ts.addAttribute(new Attribute("time.unit", "milliseconds"));
                     break;
+                case Relative:
+                    ts.addAttribute(new Attribute("time.unit", "relative"));
+                    break;
 //            case RelativeToNoteDuration:
-//                throw new UnsupportedDataTypeException("The feature TemporalSpread.FrameDomain.RelativeToNoteDuration is not yet supported.");
+//                throw new UnsupportedDataTypeException("The feature TemporalValue.Domain.RelativeToNoteDuration is not yet supported.");
             }
 
             if (this.intensity != 1.0)
@@ -452,6 +638,9 @@ public class OrnamentDef extends AbstractDef {
                 idAtt.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");
                 ts.addAttribute(idAtt);
             }
+
+            if (this.isAtEnd())
+                ts.addAttribute(new Attribute("alignment", "at end"));
 
             this.setXml(ts);
             return this.xml;
@@ -499,6 +688,15 @@ public class OrnamentDef extends AbstractDef {
          */
         public String getId() {
             return this.id;
+        }
+
+        /**
+         * returns true if this ornament is anchored at the end of the principal note ("at end"),
+         * false if it is anchored at the start ("at start", default)
+         * @return true if alignment is "at end"
+         */
+        public boolean isAtEnd() {
+            return "at end".equals(this.alignment);
         }
     }
 

@@ -14,6 +14,7 @@ import nu.xom.Nodes;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * This class represents an mpm performance. One mpm document can hold several performances.
@@ -474,7 +475,9 @@ public class Performance extends AbstractXmlSubtree {
 
         OrnamentationMap.renderGlobalOrnamentationToParts(this.getAllMsmPartsAffectedByGlobalMap(clone, Mpm.ORNAMENTATION_MAP), globalOrnamentationMap);  // add global ornamentation attributes to affected parts' notes
 
-        for (GenericMap m : maps) {                                                                         // for all maps in the list of maps for timing processing
+        for (GenericMap m : maps) {                         // for all maps in the list of maps for timing processing
+           // if(globalArticulationMap != null && globalOrnamentationMap != null)
+            //    globalOrnamentationMap.applyNotesToMaps(m);
             RubatoMap.renderRubatoToMap(m, globalRubatoMap);
             TempoMap.renderTempoToMap(m, this.getPPQ(), globalTempoMap);                                    // compute millisecond dates and end dates
         }
@@ -521,7 +524,14 @@ public class Performance extends AbstractXmlSubtree {
                 asynchronyMap = (AsynchronyMap) mpmPart.getDated().getMap(Mpm.ASYNCHRONY_MAP);                          // get asynchronyMap
                 dynamicsMap = (DynamicsMap) mpmPart.getDated().getMap(Mpm.DYNAMICS_MAP);                                // get dynamicsMap
                 metricalAccentuationMap = (MetricalAccentuationMap) mpmPart.getDated().getMap(Mpm.METRICAL_ACCENTUATION_MAP);   // get metricalAccentuationMap
-                ornamentationMap = (OrnamentationMap) mpmPart.getDated().getMap(Mpm.ORNAMENTATION_MAP);                 // get ornamentationMap
+                try {
+                    OrnamentationMap oMap = ((OrnamentationMap) mpmPart.getDated().getMap(Mpm.ORNAMENTATION_MAP));
+                    if(oMap != null)
+                        ornamentationMap = oMap.clone();                 // get ornamentationMap
+                }
+                catch (Exception e) {
+                    String exc = e.getLocalizedMessage();
+                }
                 articulationMap = (ArticulationMap) mpmPart.getDated().getMap(Mpm.ARTICULATION_MAP);                    // get articulationMap
                 imprecisionMap_timing = (ImprecisionMap) mpmPart.getDated().getMap(Mpm.IMPRECISION_MAP_TIMING);         // get imprecisionMap.timing
                 imprecisionMap_dynamics = (ImprecisionMap) mpmPart.getDated().getMap(Mpm.IMPRECISION_MAP_DYNAMICS);     // get imprecisionMap.dynamics
@@ -540,7 +550,7 @@ public class Performance extends AbstractXmlSubtree {
                 dynamicsMap = globalDynamicsMap;
             if (metricalAccentuationMap == null)
                 metricalAccentuationMap = globalMetricalAccentuationMap;
-            if (ornamentationMap == null)
+            if (ornamentationMap == null || ornamentationMap.getLocalHeader() == null)
                 ornamentationMap = globalOrnamentationMap;
             if (articulationMap == null)
                 articulationMap = globalArticulationMap;
@@ -556,6 +566,7 @@ public class Performance extends AbstractXmlSubtree {
 
             // here comes the performance rendering of the part
             // some things should be done before the timing transformations
+
             GenericMap channelVolumeMap = DynamicsMap.renderDynamicsToMap(score, dynamicsMap);      // add dynamics data, must be done first because the tick timing will be altered by some articulations and rubato
             if (channelVolumeMap != null) {                                                         // there could be a new map with sub-note dynamics controllers to be added to maps
                 dated.appendChild(channelVolumeMap.getXml());                                       // add it to the MSM
@@ -568,7 +579,7 @@ public class Performance extends AbstractXmlSubtree {
             for (GenericMap m : maps)                                                               // for all maps in the list of maps for timing processing
                 RubatoMap.renderRubatoToMap(m, rubatoMap);                                          // rubato
 
-            OrnamentationMap.renderOrnamentationToMap(score, ornamentationMap);                     // apply ornamentation (incl. pending attributes from global ornamentation), except for milliseconds effects, these come later
+           OrnamentationMap.renderOrnamentationToMap(score, ornamentationMap);                      // apply ornamentation (incl. pending attributes from global ornamentation), except for milliseconds effects, these come later
 
             for (GenericMap m : maps)                                                               // for all maps in the list of maps for timing processing
                 TempoMap.renderTempoToMap(m, this.getPPQ(), tempoMap);                              // compute millisecond dates and end dates
@@ -586,6 +597,7 @@ public class Performance extends AbstractXmlSubtree {
             if (score == null)      // if this msm part has no score
                 continue;           // continue with the next msm part
             AsynchronyMap.renderAsynchronyToMap(score, asynchronyMap);                              // add asynchrony offsets to the millisecond dates
+
             ArticulationMap.renderArticulationToMap_millisecondModifiers(score, articulationMap);   // apply articulations' millisecond modifiers
             OrnamentationMap.renderMillisecondsModifiersToMap(score, ornamentationMap);             // apply ornamentation milliseconds transformations
 
