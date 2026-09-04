@@ -1,6 +1,10 @@
 ### Version History
 
 
+#### v0.11.15
+- Added support for the key signature attribute `keysig` which replaced `key.sig` in older versions of MEI.
+
+
 #### v0.11.14
 - Enhancement of method `meico.mei.Mei2MsmMpmConverter.indexNotesAndChords()`. It will now exclude grace notes.
 - Added an early break condition to method `meico.mei.Mei2MsmMpmConverter.processSlur()`, so it does not process slurs that start or end at grace notes.

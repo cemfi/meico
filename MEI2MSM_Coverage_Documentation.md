@@ -320,7 +320,7 @@ There is an ambiguity in the MEI definition: `restore` negates `del` elements in
 The processing of elements with this attribute is similar to the processing of `@copyof`.
 
 #### scoreDef
-For time signature the following attributes are supported: `meter.count`, `meter.unit`, and `meter.sym`. For key signature meico supportsattributes `key.sig` and `key.sig.mixed`. Further supported attributes are `dur.default`, `octave.default` and `trans.semi`. MIDI-related information are deliberately ignored as meico generates and handles these more consistent and comprehensive. If a `scoreDef` ocurs within a `staff` environment, it is interpreted as a `staffDef`.
+For time signature the following attributes are supported: `meter.count`, `meter.unit`, and `meter.sym`. For key signature meico supportsattributes `key.sig`/`keysig` and `key.sig.mixed`. Further supported attributes are `dur.default`, `octave.default` and `trans.semi`. MIDI-related information are deliberately ignored as meico generates and handles these more consistent and comprehensive. If a `scoreDef` ocurs within a `staff` environment, it is interpreted as a `staffDef`.
 
 #### score
 There is no special processing routine for this element. Meico just processes its children.
@@ -347,7 +347,7 @@ Meico requires either attribute `def` or `n` to associate the `staff` element an
 #### staffDef
 During MEI-to-MSM conversion a `staffDef` will initiate the generation of a new `part` element in MSM. Attribute `label` will be concatenated with a parental `staffGrp` `label`, if such exists, and will be used for the labeling of the MSM `part` element. It will also be used to match an instrument with the staff and generate the corresponding MIDI Program Changes. Attribute `n` should also be present to make the correct associations with succeeding `staff` elements.
 
-For time signature the following attributes are supported: `meter.count`, `meter.unit`, and `meter.sym`. For key signature meico supportsattributes `key.sig` and `key.sig.mixed`. Further supported attributes are `dur.default`, `octave.default` and `trans.semi`. MIDI-related information are deliberately ignored as meico generates and handles these more consistent and comprehensive.
+For time signature the following attributes are supported: `meter.count`, `meter.unit`, and `meter.sym`. For key signature meico supportsattributes `key.sig`/`keysig` and `key.sig.mixed`. Further supported attributes are `dur.default`, `octave.default` and `trans.semi`. MIDI-related information are deliberately ignored as meico generates and handles these more consistent and comprehensive.
 
 #### staffGrp
 There is no special processing routine for this element. Meico just processes its children. During the processing of `staffDef` elements meico will also check for a parental `staffGrp` to use it `label` attribute for the naming of MSM `part` elements and instrument matching and to generate MIDI Program Changes.

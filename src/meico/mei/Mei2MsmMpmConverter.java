@@ -1846,6 +1846,8 @@ public class Mei2MsmMpmConverter {
             // read the key signature related attributes
             if (meiSource.getAttribute("key.sig") != null)
                 sig = meiSource.getAttributeValue("key.sig");
+            else if (meiSource.getAttribute("keysig") != null)
+                sig = meiSource.getAttributeValue("keysig");
             else return null;                                                                           // no key.sig attribut means no key signature change, hence, skip
             if (meiSource.getAttribute("key.sig.mixed") != null)
                 mixed = meiSource.getAttributeValue("key.sig.mixed");
