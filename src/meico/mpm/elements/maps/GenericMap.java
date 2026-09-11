@@ -175,7 +175,7 @@ public class GenericMap extends AbstractXmlSubtree {
      * @param type
      */
     protected void setType(String type) {
-        if (!type.contains("Map")) {
+        if (!type.contains("Map") || type.equals("score")) {
             System.err.println("Cannot set the specified map type. Local name \"" + type + "\" must be non-empty and contain the substring \"Map\", e.g. \"tempoMap\".");
             return;
         }

@@ -1,6 +1,9 @@
 ### Version History
 
 
+#### v0.1.16
+- Added `"score"` as a valid type of `GenericMap`.
+
 #### v0.11.15
 - Added support for the key signature attribute `keysig` which replaced `key.sig` in older versions of MEI.
 
