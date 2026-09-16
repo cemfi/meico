@@ -100,7 +100,9 @@ This repeats the musical contents of the last beat before this element. The leng
 MEI's `breath` elements are converted to MPM `articulation` elements as their effect is to shorten preceding notes by the amount of time needed to breathe. Just as every articulation it should be associated with one or more MEI `note` or `chord` elements using one of the attributes `prev`, `follows` or `startid`. Be aware that, if neither `prev` nor `follows` is specified, `startid` should refer to the preceding(!) `note` or `chord`. If any of the prior two attributes is given `startid` will be ignored by meico and may, thus, refer to anything else. If none of the attributes is specified (not recommended!), `tstamp.ges` or `tstamp` can be used to associate the breath with a musical position and attribute `staff`/`part` to associate it with a staff. However, if it does not coincide with a `note` position it will have no effect on the music. If the `breath` has an `xml:id` the MPM encoding will use the same ID.
 
 #### bTrem
-At the moment, tremoli are not resolved into sequences of notes but interpreted as chords. This is preliminary until we address ornamentations in the further development.
+This element is resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
+More information on the processing of this element can be found in the description of the `ornam` element.
+The amount of repetitions is derived from the "unitdur"/"num"/"stem.mod" attribute.
 
 #### choice
 Similar to `app`, the `choice` element defines one or more alternative readings. The elements, i.e. subtrees, of which meico chooses one to render are (in order of priority) `corr`, `reg`, `expan`, `subst`, `choice`, `orig`, `unclear`, `sic`, and `abbr`. In case of another `choice` it is processed recursively. If none of these can be found as child of `choice` meico chooses the first child whatever type it is. The `cert` attribute, i.e. certainty rating, is not taken into account so far.
@@ -110,7 +112,7 @@ If the `chord` is child of another `chord` meico will look for its duration data
 
 If the `chord` specifies attribute `artic.ges` or `artic` it is applied to all its child `note` elements, except for those that define their own articulations more locally (`artic.ges` is prioritized). Meico supports any articulation denominator in these attributes, not only those allowed in the MEI specification.
 
-Chords with a `grace` attribute are ignored at the moment. These will be subject to the further development when ornamentations are addressed.
+Chords with a `grace` attribute are resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
 
 #### @copyof
 Many MEI elements do also offer an attribute called `copyof`. It can be used for a "slacker" encoding: Whenever an element is similar to another one it sufficed to write it out only once and then refer to that one later on. Meico resolves these "copyof elements" during preprocessing. Of course, this requires the reference ID to be actually existent. MEI does even allow consecutive and recursive copyof references, i.e. the copyof refers to another copyof element or an element that containes further copyof elements. Meico can resolve these, too, and it detects circular cases that cannot be resolved because there is no initial element to copy. Resolving a copyof element means that meico will replace it with a deep copy (including all subtrees) of the referred element. During the resolution of copyofs `xml:id` attributes will get duplicated; meico will concatenate it with a newly generated UUID and ensure that each ID ocurs only once. Furthermore, meico will check the whole XML document for elements that refer to those copied. If these referring elements are within the same subtree just copied, their referencing attributes are updated to the ID of the copied elements. If they are outside the subtree just copied, meico creates copies of these elements, too, and then sets their referencing attributes to the copied elements. This mechanism should preserve more of the integrity of the notation. However, there are cases possible (due to ambiguity of MEI in this regard) that still require manual correction.
@@ -170,7 +172,15 @@ The MEI definition allows the use of `expansion` elements only as children of `l
 MEI's `expansion` elements can be regarded as the gestural counterparts of repetition barlines and Da Capi etc. But within a subtree there might still be inner repetitions that are not described by expansions. Hence, meico can do both: during MEI-to-MSM conversion expansions are realized, and during MSM processing repetitions (encoded in the `sequencingMap`) are resolved. It is possible for the user/application to prevent either of these steps if `expansion` elements were used to encode the repetitions.
 
 #### fTrem
-At the moment, tremoli are not resolved into sequences of notes but interpreted as chords. This is preliminary until we address ornamentations in the further development.
+This element is resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
+More information on the processing of this element can be found in the description of the `ornam` element.
+The amount of repetitions is derived from the "unitdur"/"num"/"stem.mod" attribute.
+
+#### graceGrp
+This element is resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
+More information on the processing of this element can be found in the description of the `ornam` element.
+Graces will consume a note's duration according to the `grace` attribute (`acc`/`unacc`).
+For a fioritura (ornamental run encoded with a `graceGrp`) a `space` is needed to compute the correct duration of the fioritura.
 
 #### hairpin
 Hairpins indicate a continuous dynamics transition. Their processing is similar to the corresponding `dynam` element.
@@ -230,6 +240,10 @@ There is no special processing routine for this element. Meico just processes it
 #### midi
 This element is deliberately ignored. Meico handles and generates MIDI-related information individually, more comprehensive and more consistent than MEI does.
 
+#### mordent
+This element is resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
+More information on the processing of this element can be found in the description of the `ornam` element.
+
 #### mRest
 A measure rest is a rest with the duration of one measure. This requires an underlying time signature/`meterSig`. The `mRest` element must be child of a `staff`/`layer`! Outside of a `staff` it will be ignored.
 
@@ -257,7 +271,7 @@ If the `note` specifies one of the attributes `artic` and `artic.ges` (the latte
 
 Attribute `syl` is also supported and will be converted to an MSM `lyrics` element that is child of the MSM `note`.
 
-Grace notes are not yet supported.
+Grace notes are resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).  
 
 #### octave
 Attribute `dis` or `dis.place` is mandatory. Valid values of `dis` are `"8"`, `"15"` and `"22"`. Valid values of `dis.place` are `"below"` and `"above"`. The processing is sensitive to `layer` environment of the `startid` associate (but only if there is a `startid` attribute) and to attribute `layer`.
@@ -271,6 +285,24 @@ This element is processed by the same routine as MEI `layer` elements. This is a
 
 #### orig
 This element is processed as part of the `choice` environment and also outside of that environment, assuming it is part of an `orig`-`reg` pair.
+
+#### ornam
+This element is resolved like other fix named ornaments (`mordent`, `trill`, `turn`) during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
+
+For this pre-processing, the `recources/ornamentation.dict` is used to define the ornaments alterations according to the principal note.
+The dictionary associates the alterations (one per line) with the ornament full name (defined in the lines that start with `#`, e.g. "trill" derived from the MEI elements local name `trill`; or according to the `symbol`'s `glyph.name` of an `ornam`, e.g. "double cadence lower prefix"). 
+Hereby, "full name" is referring to variants of ornaments that are descripted with the `form` attribute in MEI (e.g. `<mordent form="upper" ..` resulting into `mordent upper`).
+
+Repetitions (e.g. in a `trill`) are marked with `|:` (repetition start) and `:|` (repetition end) in own lines, enclosing the lines that are to be repeated undefined times.
+The `trill` is defined as follows in the dictionary:
+```
+# trill
+|:
+0
+1
+:|
+```
+Thereby, `0` indicates the principal note, `1` indicates the alteration of the upper auxiliary note.
 
 #### oStaff
 This element is processed by the same routine as MEI `staff` elements. This is an alternative the usual `staff` and should not be processed in addition to that. Hence, meico checks if the parent element `ossia` does contain a corresponding `staff` element with the same value for attribute `n` (if present). If so, meico prefers the `staff` over the `oStaff`.
@@ -339,7 +371,8 @@ If a `slur` element defines a `plist`, meico uses this to identify all `note` an
 If (and only if) no `plist` is specified, meico will compute the start date from `tstamp.ges`, `tstamp`, `startid` or `plist` and the end date from `dur`, `tstamp2.ges`, `tstamp2` or `endid`. Attributes `staff` and `layer` are taken into account to determine the notes to be articulated. In the absence of a `staff` or `layer` attribute meico checks whether `startid` and `endid` are in the same staff or layer, respectively, and articulates only notes within this same staff or layer. If they are in different layers, the whole staff content under the slur will be articulated. If even the staff relation is indefinite, all musical content under the `slur` is played legato. The final notes of a `slur`, i.e. those notes that are at the slur's end, are always articulated `"legatoStop"` even if another `slur` starts at this note or goes further.
 
 #### space
-If this element encodes a textual gap (e.g. in lyrics) it has no musical meaning and is ignored. Otherwise, it is interpreted as `rest`.
+If this element encodes a textual gap (e.g. in lyrics) it has no musical meaning and is ignored. Otherwise, it is interpreted as `rest`. 
+For a fioritura (ornamental run encoded with a `graceGrp`) the `space` is needed to compute the correct duration of the fioritura.
 
 #### staff
 Meico requires either attribute `def` or `n` to associate the `staff` element and its contents with a preceding `staffDef`. If none is give or there is no corresponding `staffDef` meico will generate a new `part` during MSM export.
@@ -357,6 +390,10 @@ This element is processed as part of the `choice` environment and also outside o
 
 #### supplied
 There is no special processing routine for this element. Meico just processes its children.
+
+Although, it is used to store information for rendering ornamentations, as it is generated during pre-processing of `graceGrp` (plus `note` and `chord` with `grace`attribute), `mordent`, `ornam`, `trill`, `turn` elements. 
+See `ornam` for more information on the pre-processing of ornaments.
+These `supplied`s are non-invasive (as less as possible, the original MEI remains untouched) and can be identified by their `reason`, as it states that is has been generated by meico. In addition, they are `label`ed with the resolved ornament's name (even the subgroups are labeled, as multiple ornaments might be applied to one note).
 
 #### syl
 MEI `syl` elements are only processed if they are descendants of a `note` to be associated with. Meico generates an MSM `lyrics` element from it. If it have a parental `verse` element meico uses their attribute `n` to add a verse number.
@@ -399,6 +436,10 @@ Meico requires attributes `startid` and `endid`. The editor should ensure that t
 #### title
 This element is located in the `meiHead` environment, more precisely in one of these two subtrees `mei/meiHead/fileDesc/titleStmt` or `mei/meiHead/workDesc/work/titleStmt`. Meico prefers the former and uses the latter only in absence of the former. Meico keeps the title string during MEI-to-MSM conversion and writes it to MSM's root element `msm`. However, if more than one `title` element are present, meico uses only the first!
 
+#### trill
+This element is resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
+More information on the processing of this element can be found in the description of the `ornam` element.
+
 #### tuplet
 These elements are processed during the computation of durations. Required attributes are `dur`, `numbase` and `num`. Meico does also support nested and overlapping tuplets.
 
@@ -408,6 +449,10 @@ Required attributes `num` and `numbase`. The processing of this element is sensi
 Attributes `part` (priority) and `staff` can be used to associate the instruction with one or more `staff` elements, i.e. MSM `part` elements. If these attributes are omitted the instruction is treated as global, i.e. relevant to all musical parts. In attribute `part` - and in contrast to the MEI specification - the following values are supported: `%all` and space separated staff numbers.
 
 For computing the `date` of the `tupletSpan`, attributes `tstamp.ges`, `tstamp`, `startid` and `plist` are supported. For the end date, attributes `dur`, `tstamp2.ges`, `tstamp2` and `endid` are supported (in this exact priority, i.e. `endid` is only used if none of the other three is given).
+
+#### turn
+This element is resolved during pre-processing into a `supplied` that stores information for ornamentation rendering (see `supplied`).
+More information on the processing of this element can be found in the description of the `ornam` element.
 
 #### unclear
 This element is processed as part of the `choice` environment and also outside of that environment.

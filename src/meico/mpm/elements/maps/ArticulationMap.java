@@ -11,6 +11,7 @@ import nu.xom.Element;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class interfaces MPM's articulationMaps

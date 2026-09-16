@@ -46,6 +46,38 @@ public class Helper {
     }
 
     /**
+     * find child of parent by id
+     * @param parent
+     * @param id
+     * @return
+     */
+    public static Element getFirstDescendantById(Element parent, String id) {
+        return getFirstDescendantByAttributeValue(parent, id, "id");
+    }
+
+    /**
+     * find child in parent where the attribute's value equals value
+     * @param parent
+     * @param value
+     * @param attribute
+     * @return
+     */
+    public static Element getFirstDescendantByAttributeValue(Element parent, String value, String attribute) {
+        LinkedList<Element> children = Helper.getAllChildElements(parent);
+        for (int i = 0; i < children.size(); ++i) {
+            Element el = children.get(i);
+            Attribute attr = Helper.getAttribute(attribute, el);
+            if((attr != null) && attr.getValue().equals(value)) {
+                return el;
+            }
+            Element child = getFirstDescendantByAttributeValue(el, value, attribute);
+            if(child != null)
+                return child;
+        }
+        return null;
+    }
+    
+    /**
      * get the first child of an xml element
      * @param ofThis
      * @return
@@ -173,10 +205,15 @@ public class Helper {
             return null;                                                    // there can be no siblings, hence return null
 
         int index = ofThis.getParent().indexOf(ofThis);
-        if (index >= (ofThis.getParent().getChildCount() - 1))
-            return null;
-
-        return (Element) ofThis.getParent().getChild(index + 1);
+        int childCount = ofThis.getParent().getChildCount();
+        int next = index + 1;
+        while (next < childCount) {                                         // skip Text and Comment nodes
+            Node candidate = ofThis.getParent().getChild(next);
+            if (candidate instanceof Element)
+                return (Element) candidate;
+            next++;
+        }
+        return null;
     }
 
     /**
@@ -220,10 +257,14 @@ public class Helper {
             return null;                                                    // there can be no siblings, hence return null
 
         int index = ofThis.getParent().indexOf(ofThis);
-        if (index == 0)
-            return null;
-
-        return (Element) ofThis.getParent().getChild(index - 1);
+        int prev = index - 1;
+        while (prev >= 0) {                                                 // skip Text and Comment nodes
+            Node candidate = ofThis.getParent().getChild(prev);
+            if (candidate instanceof Element)
+                return (Element) candidate;
+            prev--;
+        }
+        return null;
     }
 
     /**
@@ -378,7 +419,10 @@ public class Helper {
         Element clone = new Element(e.getLocalName());
         clone.setNamespaceURI(e.getNamespaceURI());
         for (int i = e.getAttributeCount()-1; i >= 0; --i) {
-            clone.addAttribute(new Attribute(e.getAttribute(i).getLocalName(), e.getAttribute(i).getValue()));
+            Attribute att = new Attribute(e.getAttribute(i).getLocalName(), e.getAttribute(i).getValue());
+            if(att.getLocalName().equals("id"))
+                att.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");
+            clone.addAttribute(att);
         }
 
         return clone;
@@ -406,7 +450,7 @@ public class Helper {
     }
 
     /**
-     * returns the vale of attribute name in Element ofThis as String, or empty string if attribute does not exist, namespace is ignored
+     * returns the value of attribute name in Element ofThis as String, or empty string if attribute does not exist, namespace is ignored
      * @param name
      * @param ofThis
      * @return
@@ -418,16 +462,91 @@ public class Helper {
     }
 
     /**
+     * removes all attributes fromThis element, but keeps the attributes listed in exceptThese
+     * @param fromThis
+     * @param exceptThese e.g. Arrays.asList("accid", "pname", "oct", "dur", "id")
+     */
+    public static void removeAllAttributes(Element fromThis, List<String> exceptThese) {
+        for(int i = 0; i < fromThis.getAttributeCount();) {
+            Attribute attr = fromThis.getAttribute(i);
+            if(exceptThese.contains(attr.getLocalName())) {
+                i++;
+                continue;
+            }
+            fromThis.removeAttribute(attr);
+        }
+    }
+
+    /**
+     * creates an Element with localName and UUID
+     * @param localName
+     * @return
+     */
+    public static Element createElement(String localName) {
+        return Helper.createElement(localName, false);
+    }
+    /**
+     * creates an Element with localName and UUID
+     * @param localName the MEI name
+     * @param shortUUID indicates to give a short UUID or not
+     * @return
+     */
+    public static Element createElement(String localName, boolean shortUUID) {
+        Element e = new Element(localName);
+        Helper.addUUID(e, shortUUID);
+        return e;
+    }
+
+    /**
+     * appends child directly after sibling to sibling's parent
+     * @param child
+     * @param sibling
+     */
+    public static void appendChildAfterSibling(Element child, Element sibling) {
+        Element parent = Helper.getParentElement(sibling);
+        int index = parent.indexOf(sibling) + 1;
+        parent.insertChild(child, index);
+    }
+
+    /**
      * Add a UUID-based xml:id to the specified element.
      * Caution: If the element has already an xml:id, it will be overwritten!
      * @param toThis
      * @return
      */
     public static String addUUID(Element toThis) {
-        String uuid = "meico_" + UUID.randomUUID().toString();              // generate new id
+        return addUUID(toThis, false, true);
+    }
+    /**
+     * Add a UUID-based xml:id to the specified element.
+     * Caution: If the element has already an xml:id, it will be overwritten!
+     * @param toThis
+     * @param shortVersion cuts the UUID to a shorter version, that might not be unique anymore
+     * @return
+     */
+    public static String addUUID(Element toThis, boolean shortVersion) {
+        return addUUID(toThis, shortVersion, true);
+    }
+    /**
+     * Add a UUID-based xml:id to the specified element.
+     * Caution: If the element has already an xml:id, it will be overwritten!
+     * @param toThis
+     * @param shortVersion cuts the UUID to a shorter version, that might not be unique anymore
+     * @param addNamespace adds xml as namespace -> xml:id (this is for MEI not MSM)
+     * @return
+     */
+    public static String addUUID(Element toThis, boolean shortVersion, boolean addNamespace) {
+        String uuid = "meico_" + UUID.randomUUID().toString();             // generate new id
+        if (shortVersion) {
+            String[] splitted = uuid.split("-", 2);
+            if (splitted.length > 0)
+                uuid = splitted[0];
+        }
         Attribute a = new Attribute("id", uuid);                            // create an attribute
-        a.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");      // set its namespace to xml
-        toThis.addAttribute(a);                                             // add attribute to the element
+        if(addNamespace)
+            a.setNamespace("xml", "http://www.w3.org/XML/1998/namespace");      // set its namespace to xml
+        if(toThis != null)
+            toThis.addAttribute(a);                                             // add attribute to the element
         return uuid;
     }
 
@@ -839,6 +958,61 @@ public class Helper {
             return "&#119085;";
         }
         return "?";
+    }
+
+    /**
+     * Shifts MEI note diatonically by a given number of steps.
+     * Updates both the pitch name ("pname") and the octave ("oct") of the note element accordingly.
+     *
+     * @param note MEI note
+     * @param steps Number of steps that are shifted. 0 is no shift (unison) and thereby 7 is shifting an octave.
+     */
+    public static void shiftNoteDiatonicly(Element note, int steps) {
+        Attribute pname = note.getAttribute("pname");
+        if(pname == null)
+            return;
+
+        List<String> names = Arrays.asList( "c", "d", "e", "f", "g", "a", "b" );
+        String noteName = pname.getValue().toLowerCase();
+        int index = names.indexOf(noteName);
+        int shift = (index + steps);
+        int shiftedOctaves = (int) Math.floor((float)shift / 7.0F);     // floor down as the "0"-octave is [0..6]
+        int oct = Integer.parseInt(note.getAttributeValue("oct"));
+        note.addAttribute(new Attribute("oct", String.valueOf(oct + shiftedOctaves)));
+
+        int shiftedIndex = shift % names.size();
+        if (shiftedIndex < 0)                                   // modulo could be negativ
+            shiftedIndex += names.size();
+        String shiftedNoteName = names.get(shiftedIndex);
+        note.addAttribute(new Attribute("pname", shiftedNoteName));
+    }
+
+    /**
+     * returns halfsteps according to c (from c to pname)
+     * @param pname
+     * @return
+     */
+    public static int getHalfstepsFromC(String pname) {
+        switch(pname.toLowerCase()) {
+            case "c": return 0;
+            case "d": return 2;
+            case "e": return 4;
+            case "f": return 5;
+            case "g": return 7;
+            case "a": return 9;
+            case "b": return 11;
+            default:  return 0;
+        }
+    }
+
+    /**
+     * returns halfsteps between pname1 and pname2 (always positive)
+     * @param pname1
+     * @param pname2
+     * @return semitone difference (always positive, within an octave)
+     */
+    public static int getHalfstepsBetween(String pname1, String pname2) {
+        return Math.abs(getHalfstepsFromC(pname2) - getHalfstepsFromC(pname1));
     }
 
     /**

@@ -11,7 +11,7 @@ import java.util.HashMap;
  * attributes in the specified subtree and sorts them into HashMaps depending
  * on whether they are IDs, copyof/sameas or other references.
  */
-public class AttributesWithIds {
+class AttributesWithIds {
     private final Element root;
     private HashMap<Attribute, String> copyofs = new HashMap<>();
     private final HashMap<String, Attribute> ids = new HashMap<>();
