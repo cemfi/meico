@@ -1,7 +1,11 @@
 ### Version History
 
 
-#### v0.1.16
+#### v0.11.17
+- Bugfix in method `meico.mpm.elements.Dated.addMap(Element xml)`. The bug prevented non-registered map types from being filled with their contents.
+
+
+#### v0.11.16
 - Added `"score"` as a valid type of `GenericMap`.
 
 #### v0.11.15

@@ -131,7 +131,7 @@ public class Dated extends AbstractXmlSubtree {
                 m = OrnamentationMap.createOrnamentationMap(xml);
                 break;
             default:
-                m = GenericMap.createGenericMap(type);
+                m = GenericMap.createGenericMap(xml);
         }
 
         return this.addMap(m);
